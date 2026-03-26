@@ -1,0 +1,48 @@
+import React from 'react';
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
+import { AnimatePresence } from 'framer-motion';
+import { GameProvider } from './context/GameContext';
+
+import SplashScreen from './screens/SplashScreen';
+import LanguageScreen from './screens/LanguageScreen';
+import AgeScreen from './screens/AgeScreen';
+import ArjunIntroScreen from './screens/ArjunIntroScreen';
+import VideoScreen from './screens/VideoScreen';
+import HubScreen from './screens/HubScreen';
+
+const AnimatedRoutes = () => {
+  const location = useLocation();
+  
+  return (
+    <AnimatePresence mode="wait">
+      <Routes location={location} key={location.pathname}>
+        <Route path="/" element={<SplashScreen />} />
+        <Route path="/language" element={<LanguageScreen />} />
+        <Route path="/age" element={<AgeScreen />} />
+        <Route path="/intro" element={<ArjunIntroScreen />} />
+        <Route path="/video" element={<VideoScreen />} />
+        <Route path="/hub" element={<HubScreen />} />
+      </Routes>
+    </AnimatePresence>
+  );
+};
+
+function App() {
+  return (
+    <GameProvider>
+      <BrowserRouter>
+        <div 
+          className="relative w-full min-h-screen overflow-hidden text-white selection:bg-[#22c55e] selection:text-black m-0 p-0"
+          style={{ 
+            fontFamily: 'Nunito, sans-serif',
+            background: 'linear-gradient(135deg, #050a15 0%, #0a1628 100%)'
+          }}
+        >
+          <AnimatedRoutes />
+        </div>
+      </BrowserRouter>
+    </GameProvider>
+  );
+}
+
+export default App;
