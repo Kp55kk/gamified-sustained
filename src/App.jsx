@@ -9,6 +9,7 @@ import AgeScreen from './screens/AgeScreen';
 import ArjunIntroScreen from './screens/ArjunIntroScreen';
 import VideoScreen from './screens/VideoScreen';
 import HubScreen from './screens/HubScreen';
+import Level1 from './game-strategy/Level1';
 
 const AnimatedRoutes = () => {
   const location = useLocation();
@@ -22,6 +23,7 @@ const AnimatedRoutes = () => {
         <Route path="/intro" element={<ArjunIntroScreen />} />
         <Route path="/video" element={<VideoScreen />} />
         <Route path="/hub" element={<HubScreen />} />
+        <Route path="/level1" element={<Level1 />} />
       </Routes>
     </AnimatePresence>
   );

@@ -1,0 +1,355 @@
+/* Level 1 - 3D House Exploration Game Styles */
+
+@import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Nunito:wght@400;600;700&display=swap');
+
+.level1-container {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: #0a0a1a;
+}
+
+/* ─── HUD Top Bar ─── */
+.level1-hud {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  background: linear-gradient(180deg, rgba(5,10,21,0.92) 0%, rgba(5,10,21,0) 100%);
+  pointer-events: none;
+}
+
+.level1-hud > * {
+  pointer-events: auto;
+}
+
+.hud-back-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 12px;
+  background: rgba(255,255,255,0.06);
+  color: #cbd5e1;
+  font-family: 'Nunito', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  transition: all 0.2s;
+}
+
+.hud-back-btn:hover {
+  background: rgba(255,255,255,0.12);
+  color: #fff;
+  border-color: rgba(255,255,255,0.3);
+}
+
+.hud-room-name {
+  padding: 8px 20px;
+  border-radius: 20px;
+  background: rgba(34,197,94,0.15);
+  border: 1px solid rgba(34,197,94,0.3);
+  color: #22c55e;
+  font-family: 'Fredoka', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  backdrop-filter: blur(8px);
+}
+
+.hud-instructions {
+  padding: 8px 16px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: #9ca3af;
+  font-family: 'Nunito', sans-serif;
+  font-size: 12px;
+  backdrop-filter: blur(8px);
+}
+
+/* ─── Cloud Speech Bubble ─── */
+.speech-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(5,10,21,0.6);
+  backdrop-filter: blur(4px);
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.cloud-bubble-wrapper {
+  position: relative;
+  max-width: 480px;
+  width: 90%;
+  animation: bubblePop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes bubblePop {
+  from { transform: scale(0.7); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
+}
+
+.cloud-bubble {
+  position: relative;
+  background: rgba(255, 255, 255, 0.97);
+  border-radius: 28px;
+  padding: 28px 28px 24px;
+  color: #1e293b;
+  box-shadow:
+    0 20px 60px rgba(0,0,0,0.3),
+    inset 0 1px 0 rgba(255,255,255,0.5);
+}
+
+/* Cloud bumps on top */
+.cloud-bubble::before {
+  content: '';
+  position: absolute;
+  width: 60px;
+  height: 45px;
+  background: rgba(255, 255, 255, 0.97);
+  border-radius: 50%;
+  top: -22px;
+  left: 25%;
+  box-shadow: 0 -4px 12px rgba(0,0,0,0.05);
+}
+
+.cloud-bubble::after {
+  content: '';
+  position: absolute;
+  width: 80px;
+  height: 50px;
+  background: rgba(255, 255, 255, 0.97);
+  border-radius: 50%;
+  top: -25px;
+  left: 48%;
+  box-shadow: 0 -4px 12px rgba(0,0,0,0.05);
+}
+
+/* Thought-trail dots below the bubble */
+.cloud-tail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.cloud-tail-dot {
+  border-radius: 50%;
+  background: rgba(255,255,255,0.95);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.cloud-tail-dot:nth-child(1) { width: 20px; height: 20px; }
+.cloud-tail-dot:nth-child(2) { width: 14px; height: 14px; }
+.cloud-tail-dot:nth-child(3) { width: 8px;  height: 8px;  }
+
+/* Bubble Content */
+.bubble-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.bubble-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  background: linear-gradient(135deg, #22c55e22, #3b82f622);
+  border: 1px solid rgba(34,197,94,0.2);
+  flex-shrink: 0;
+}
+
+.bubble-title {
+  font-family: 'Fredoka', sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+}
+
+.bubble-room {
+  font-family: 'Nunito', sans-serif;
+  font-size: 11px;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  font-weight: 600;
+}
+
+.bubble-description {
+  font-family: 'Nunito', sans-serif;
+  font-size: 14px;
+  line-height: 1.65;
+  color: #334155;
+  margin-bottom: 16px;
+  border-left: 3px solid #22c55e;
+  padding-left: 14px;
+}
+
+.bubble-stats {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.stat-card {
+  flex: 1;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #f1f5f9;
+  text-align: center;
+}
+
+.stat-value {
+  font-family: 'Fredoka', sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.stat-label {
+  font-family: 'Nunito', sans-serif;
+  font-size: 10px;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-top: 2px;
+}
+
+.bubble-close-btn {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  color: #fff;
+  font-family: 'Fredoka', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 4px 12px rgba(34,197,94,0.3);
+}
+
+.bubble-close-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(34,197,94,0.4);
+}
+
+.bubble-close-btn:active {
+  transform: scale(0.97);
+}
+
+/* ─── Appliance Labels ─── */
+.appliance-label {
+  padding: 4px 10px;
+  border-radius: 8px;
+  background: rgba(0,0,0,0.75);
+  color: #fff;
+  font-family: 'Nunito', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  pointer-events: none;
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+/* ─── Room Labels (3D) ─── */
+.room-label-3d {
+  font-family: 'Fredoka', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.6);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  pointer-events: none;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+}
+
+/* ─── Loading Screen ─── */
+.level1-loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #050a15;
+  color: #fff;
+  font-family: 'Fredoka', sans-serif;
+  z-index: 500;
+}
+
+.loading-spinner {
+  width: 50px;
+  height: 50px;
+  border: 3px solid rgba(34,197,94,0.2);
+  border-top-color: #22c55e;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 20px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Interaction hint */
+.interaction-hint {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  padding: 10px 20px;
+  border-radius: 14px;
+  background: rgba(5,10,21,0.85);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: #9ca3af;
+  font-family: 'Nunito', sans-serif;
+  font-size: 13px;
+  backdrop-filter: blur(8px);
+  pointer-events: none;
+  animation: fadeInUp 0.5s ease 1s both;
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateX(-50%) translateY(10px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+.key-icon {
+  display: inline-block;
+  padding: 2px 8px;
+  margin: 0 3px;
+  border-radius: 5px;
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.2);
+  font-size: 11px;
+  font-weight: 700;
+  color: #e2e8f0;
+}

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { useGame } from '../context/GameContext';
 import HexNode from '../components/HexNode';
 import Particles from '../components/Particles';
@@ -16,6 +17,7 @@ const levelData = [
 const HubScreen = () => {
   const { carbonCoins, currentLevel } = useGame();
   const [selectedNode, setSelectedNode] = useState(null);
+  const navigate = useNavigate();
 
   const getStatus = (nodeId) => {
     if (nodeId < currentLevel) return 'completed';
@@ -138,7 +140,7 @@ const HubScreen = () => {
                <button 
                  className="w-full py-2.5 rounded-lg font-bold tracking-wide transition-all shadow-lg active:scale-95 text-white bg-[#3b82f6]"
                  style={{ fontFamily: 'Fredoka, sans-serif', boxShadow: 'inset 0 0 10px rgba(255,255,255,0.2)' }}
-                 onClick={() => { setSelectedNode(null); alert('Mission started!'); }}
+                 onClick={() => { setSelectedNode(null); navigate('/level1'); }}
                >
                  START MISSION →
                </button>
