@@ -1,8 +1,9 @@
-import React, { useRef, useEffect, useMemo } from 'react';
+import React, { useRef, useEffect } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 
 // Wall collision segments - each wall is axis-aligned
+// NOTE: The back vertical wall has moved from x=0 to x=4 (bathroom is now smaller)
 const WALL_SEGMENTS = [
   // Front wall (z = -8) with door gap at x=[-6,-4]
   { type: 'h', z: -8, x1: -10, x2: -6 },
@@ -20,9 +21,9 @@ const WALL_SEGMENTS = [
   // Vertical middle front (x = 0, z[-8,0]) with door at z=[-5,-3]
   { type: 'v', x: 0, z1: -8, z2: -5 },
   { type: 'v', x: 0, z1: -3, z2: 0 },
-  // Vertical middle back (x = 0, z[0,8]) with door at z=[3,5]
-  { type: 'v', x: 0, z1: 0, z2: 3 },
-  { type: 'v', x: 0, z1: 5, z2: 8 },
+  // Vertical middle back (x = 4, z[0,8]) with door at z=[3,5] — MOVED from x=0 to x=4
+  { type: 'v', x: 4, z1: 0, z2: 3 },
+  { type: 'v', x: 4, z1: 5, z2: 8 },
 ];
 
 const PLAYER_SPEED = 5;
@@ -47,32 +48,53 @@ function checkCollisionAxis(x, z, axis) {
 function getCurrentRoom(x, z) {
   if (x < 0 && z < 0) return 'Living Room';
   if (x >= 0 && z < 0) return 'Bedroom';
-  if (x < 0 && z >= 0) return 'Kitchen';
+  // Back section: wall at x=4 divides Kitchen (x<4) from Bathroom (x>=4)
+  if (x < 4 && z >= 0) return 'Kitchen';
   return 'Bathroom';
 }
 
-// Arjun 3D Character
+// Arjun 3D Character with REALISTIC alternating arm/leg walk cycle
 function ArjunModel({ isMoving, facingAngle }) {
-  const armRef = useRef();
-  const legRef = useRef();
+  const leftArmRef = useRef();
+  const rightArmRef = useRef();
+  const leftLegRef = useRef();
+  const rightLegRef = useRef();
   const bodyRef = useRef();
 
   useFrame((_, delta) => {
     if (!bodyRef.current) return;
-    // Walking animation - bob and arm/leg swing
+
     if (isMoving) {
       const t = performance.now() * 0.008;
-      bodyRef.current.position.y = Math.sin(t * 2) * 0.03;
-      if (armRef.current) {
-        armRef.current.rotation.x = Math.sin(t) * 0.5;
+      const swingSpeed = 1.0;
+
+      // Body bob - slight up/down while walking
+      bodyRef.current.position.y = Math.sin(t * 2 * swingSpeed) * 0.04;
+
+      // Natural walk cycle: opposite arm/leg pairs swing together
+      // Left arm + Right leg swing forward, then Right arm + Left leg
+      const swingAngle = 0.6; // max swing angle in radians
+      const legSwing = 0.5;
+
+      if (leftArmRef.current) {
+        leftArmRef.current.rotation.x = Math.sin(t * swingSpeed) * swingAngle;
       }
-      if (legRef.current) {
-        legRef.current.rotation.x = Math.sin(t + Math.PI) * 0.4;
+      if (rightArmRef.current) {
+        rightArmRef.current.rotation.x = Math.sin(t * swingSpeed + Math.PI) * swingAngle;
+      }
+      if (leftLegRef.current) {
+        leftLegRef.current.rotation.x = Math.sin(t * swingSpeed + Math.PI) * legSwing;
+      }
+      if (rightLegRef.current) {
+        rightLegRef.current.rotation.x = Math.sin(t * swingSpeed) * legSwing;
       }
     } else {
+      // Idle: everything returns to zero
       bodyRef.current.position.y = 0;
-      if (armRef.current) armRef.current.rotation.x = 0;
-      if (legRef.current) legRef.current.rotation.x = 0;
+      if (leftArmRef.current) leftArmRef.current.rotation.x = 0;
+      if (rightArmRef.current) rightArmRef.current.rotation.x = 0;
+      if (leftLegRef.current) leftLegRef.current.rotation.x = 0;
+      if (rightLegRef.current) rightLegRef.current.rotation.x = 0;
     }
   });
 
@@ -84,26 +106,39 @@ function ArjunModel({ isMoving, facingAngle }) {
 
   return (
     <group ref={bodyRef}>
-      {/* ─── LEGS ─── */}
-      <group ref={legRef}>
-        {/* Left Leg */}
-        <mesh position={[-0.12, 0.35, 0]} castShadow>
-          <cylinderGeometry args={[0.07, 0.06, 0.5]} />
+      {/* ─── LEFT LEG ─── */}
+      <group ref={leftLegRef} position={[-0.12, 0.6, 0]}>
+        {/* Upper leg (thigh) */}
+        <mesh position={[0, -0.13, 0]} castShadow>
+          <cylinderGeometry args={[0.08, 0.07, 0.25]} />
+          <meshStandardMaterial color={pantsColor} />
+        </mesh>
+        {/* Lower leg (shin) */}
+        <mesh position={[0, -0.35, 0]} castShadow>
+          <cylinderGeometry args={[0.065, 0.055, 0.25]} />
           <meshStandardMaterial color={pantsColor} />
         </mesh>
         {/* Left Shoe */}
-        <mesh position={[-0.12, 0.07, 0.04]} castShadow>
+        <mesh position={[0, -0.5, 0.04]} castShadow>
           <boxGeometry args={[0.12, 0.1, 0.2]} />
           <meshStandardMaterial color={shoeColor} />
         </mesh>
       </group>
-      {/* Right Leg */}
-      <group>
-        <mesh position={[0.12, 0.35, 0]} castShadow>
-          <cylinderGeometry args={[0.07, 0.06, 0.5]} />
+
+      {/* ─── RIGHT LEG ─── */}
+      <group ref={rightLegRef} position={[0.12, 0.6, 0]}>
+        {/* Upper leg */}
+        <mesh position={[0, -0.13, 0]} castShadow>
+          <cylinderGeometry args={[0.08, 0.07, 0.25]} />
           <meshStandardMaterial color={pantsColor} />
         </mesh>
-        <mesh position={[0.12, 0.07, 0.04]} castShadow>
+        {/* Lower leg */}
+        <mesh position={[0, -0.35, 0]} castShadow>
+          <cylinderGeometry args={[0.065, 0.055, 0.25]} />
+          <meshStandardMaterial color={pantsColor} />
+        </mesh>
+        {/* Right Shoe */}
+        <mesh position={[0, -0.5, 0.04]} castShadow>
           <boxGeometry args={[0.12, 0.1, 0.2]} />
           <meshStandardMaterial color={shoeColor} />
         </mesh>
@@ -120,19 +155,43 @@ function ArjunModel({ isMoving, facingAngle }) {
         <meshStandardMaterial color="#fff" />
       </mesh>
 
-      {/* ─── ARMS ─── */}
-      <group ref={armRef}>
-        {/* Left Arm */}
-        <mesh position={[-0.3, 0.82, 0]} castShadow>
-          <cylinderGeometry args={[0.05, 0.045, 0.45]} />
+      {/* ─── LEFT ARM ─── */}
+      <group ref={leftArmRef} position={[-0.3, 1.0, 0]}>
+        {/* Upper arm */}
+        <mesh position={[0, -0.12, 0]} castShadow>
+          <cylinderGeometry args={[0.055, 0.05, 0.25]} />
+          <meshStandardMaterial color={shirtColor} />
+        </mesh>
+        {/* Forearm */}
+        <mesh position={[0, -0.32, 0]} castShadow>
+          <cylinderGeometry args={[0.045, 0.04, 0.2]} />
+          <meshStandardMaterial color={skinColor} />
+        </mesh>
+        {/* Hand */}
+        <mesh position={[0, -0.44, 0]} castShadow>
+          <sphereGeometry args={[0.04, 8, 8]} />
           <meshStandardMaterial color={skinColor} />
         </mesh>
       </group>
-      {/* Right Arm */}
-      <mesh position={[0.3, 0.82, 0]} castShadow>
-        <cylinderGeometry args={[0.05, 0.045, 0.45]} />
-        <meshStandardMaterial color={skinColor} />
-      </mesh>
+
+      {/* ─── RIGHT ARM ─── */}
+      <group ref={rightArmRef} position={[0.3, 1.0, 0]}>
+        {/* Upper arm */}
+        <mesh position={[0, -0.12, 0]} castShadow>
+          <cylinderGeometry args={[0.055, 0.05, 0.25]} />
+          <meshStandardMaterial color={shirtColor} />
+        </mesh>
+        {/* Forearm */}
+        <mesh position={[0, -0.32, 0]} castShadow>
+          <cylinderGeometry args={[0.045, 0.04, 0.2]} />
+          <meshStandardMaterial color={skinColor} />
+        </mesh>
+        {/* Hand */}
+        <mesh position={[0, -0.44, 0]} castShadow>
+          <sphereGeometry args={[0.04, 8, 8]} />
+          <meshStandardMaterial color={skinColor} />
+        </mesh>
+      </group>
 
       {/* ─── NECK ─── */}
       <mesh position={[0, 1.15, 0]}>

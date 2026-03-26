@@ -163,10 +163,12 @@ export const APPLIANCE_POSITIONS = {
   fan_bedroom:     { pos: [5, 2.85, -4], rot: [0, 0, 0] },
   light_bedroom:   { pos: [7, 2.9, -6], rot: [0, 0, 0] },
   charging_bedroom:{ pos: [9.7, 0.5, -6], rot: [0, -Math.PI / 2, 0] },
-  fridge:          { pos: [-9, 0.9, 1.5], rot: [0, Math.PI / 2, 0] },
-  induction:       { pos: [-5, 0.95, 7.3], rot: [0, Math.PI, 0] },
-  light_kitchen:   { pos: [-5, 2.9, 4], rot: [0, 0, 0] },
-  exhaust:         { pos: [-5, 2.3, 7.8], rot: [0, Math.PI, 0] },
+  // Kitchen appliances (fridge, stove, etc. are now built into House.jsx)
+  fridge:          { pos: [-1.5, 0.9, 7.2], rot: [0, Math.PI, 0] },
+  induction:       { pos: [-8.5, 0.95, 7.3], rot: [0, Math.PI, 0] },
+  light_kitchen:   { pos: [-3, 2.9, 4], rot: [0, 0, 0] },
+  exhaust:         { pos: [-8.5, 2.3, 7.8], rot: [0, Math.PI, 0] },
+  // Bathroom appliances (smaller room: x=[4,10])
   geyser:          { pos: [9.7, 2.0, 2], rot: [0, -Math.PI / 2, 0] },
-  light_bathroom:  { pos: [5, 2.9, 4], rot: [0, 0, 0] },
+  light_bathroom:  { pos: [7, 2.9, 4], rot: [0, 0, 0] },
 };
