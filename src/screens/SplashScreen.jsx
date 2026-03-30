@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useGame } from '../context/GameContext';
 import Particles from '../components/Particles';
 import GlowOrb from '../components/GlowOrb';
 import ArjunCharacter from '../components/ArjunCharacter';
@@ -31,6 +32,8 @@ const SplashScreen = () => {
     }
     return () => clearTimeout(timeout);
   }, [loadingComplete, navigate]);
+
+  const { t } = useGame();
 
   const handleStart = () => { navigate('/language'); };
 
@@ -87,11 +90,11 @@ const SplashScreen = () => {
           className="text-5xl md:text-7xl mb-2 text-transparent bg-clip-text font-bold tracking-wide animate-pulse"
           style={{ fontFamily: 'Fredoka, sans-serif', backgroundImage: 'linear-gradient(to right, #22c55e, #ffffff, #22c55e)' }}
         >
-          BUILD TO INSPIRE
+          {t?.splash?.title || 'BUILD TO INSPIRE'}
         </motion.h1>
 
         <motion.p className="text-gray-400 uppercase tracking-[0.3em] font-semibold mb-12 text-[10px] md:text-xs">
-          Save the Planet. One Home at a Time.
+          {t?.splash?.subtitle || 'Save the Planet. One Home at a Time.'}
         </motion.p>
 
         <div className="w-full max-w-sm h-20 flex flex-col items-center justify-center relative">
@@ -99,7 +102,7 @@ const SplashScreen = () => {
             {!loadingComplete ? (
               <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, y: -20 }} className="w-full">
                 <div className="mb-2 text-[10px] uppercase tracking-wider text-center flex justify-between font-bold" style={{ color: '#22c55e', fontFamily: 'Fredoka, sans-serif' }}>
-                  <span>Initializing Mission...</span><span>{Math.floor(progress)}%</span>
+                  <span>{t?.splash?.loading || 'Initializing Mission...'}</span><span>{Math.floor(progress)}%</span>
                 </div>
                 {/* Advanced Loading Bar with Energy Particles */}
                 <div className="w-full h-[6px] bg-black/40 rounded-full border border-white/10 relative overflow-hidden">
@@ -121,7 +124,7 @@ const SplashScreen = () => {
                   onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(34,197,94,0.4)'; }}
                   onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'rgba(34,197,94,0.2)'; }}
                 >
-                  <span className="animate-pulse flex items-center justify-center gap-2">PRESS START <span className="text-xl">🚀</span></span>
+                  <span className="animate-pulse flex items-center justify-center gap-2">{t?.splash?.pressStart || 'PRESS START 🚀'}</span>
                 </button>
               </motion.div>
             )}

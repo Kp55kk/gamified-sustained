@@ -23,13 +23,13 @@ const itemVariants = { hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0, 
 
 const LanguageScreen = () => {
   const navigate = useNavigate();
-  const { setSelectedLanguage } = useGame();
+  const { setSelectedLanguage, t } = useGame();
   const [clickedId, setClickedId] = useState(null);
 
   const handleSelect = (lang) => {
     setClickedId(lang.id);
     setSelectedLanguage(lang.id);
-    setTimeout(() => { navigate('/age'); }, 600);
+    setTimeout(() => { navigate('/intro'); }, 600);
   };
 
   return (
@@ -60,11 +60,11 @@ const LanguageScreen = () => {
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
         >
-          Pick Your Language <span role="img" aria-label="speak">🗣️</span>
+          {t?.language?.heading || 'Pick Your Language'} <span role="img" aria-label="speak">🗣️</span>
         </motion.h1>
         
         <motion.p className="text-gray-400 mb-6 text-sm" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}>
-          Choose the language you think in
+          {t?.language?.subtitle || 'Choose the language you think in'}
         </motion.p>
 
         <motion.div className="grid grid-cols-2 lg:grid-cols-5 gap-3 w-full px-4" variants={containerVariants} initial="hidden" animate="show">

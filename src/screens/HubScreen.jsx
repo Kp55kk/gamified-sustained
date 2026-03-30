@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useGame } from '../context/GameContext';
+import { getTranslation } from '../translations';
 import HexNode from '../components/HexNode';
 import Particles from '../components/Particles';
 
@@ -15,7 +16,8 @@ const levelData = [
 ];
 
 const HubScreen = () => {
-  const { carbonCoins, currentLevel } = useGame();
+  const { carbonCoins, currentLevel, language } = useGame();
+  const t = getTranslation(language);
   const [selectedNode, setSelectedNode] = useState(null);
   const navigate = useNavigate();
 
@@ -47,7 +49,7 @@ const HubScreen = () => {
         <div className="flex items-center gap-2">
            <div className="w-8 h-8 rounded-full flex items-center justify-center text-lg shadow-[0_0_8px_#22c55e]" style={{ backgroundColor: '#22c55e', color: '#050a15' }}>🌍</div>
            <div className="flex flex-col">
-              <span className="text-[9px] uppercase tracking-widest text-[#9ca3af]" style={{ fontFamily: 'Nunito, sans-serif' }}>Planetary Health</span>
+              <span className="text-[9px] uppercase tracking-widest text-[#9ca3af]" style={{ fontFamily: 'Nunito, sans-serif' }}>{t?.hub?.planetaryHealth || 'Planetary Health'}</span>
               <div className="w-24 h-1.5 rounded-full overflow-hidden bg-[#050a15] border border-white/20">
                  <div className="h-full rounded-full transition-all duration-1000 bg-[#22c55e]" style={{ width: '15%' }} />
               </div>
@@ -86,17 +88,22 @@ const HubScreen = () => {
             />
          </svg>
 
-         {levelData.map((node) => (
-            <div key={node.id} className="absolute transform -translate-x-1/2 -translate-y-1/2 z-10" style={{ left: `${node.x}%`, top: `${node.y}%` }}>
-              <HexNode 
-                status={getStatus(node.id)}
-                icon={node.icon}
-                title={node.title}
-                color={node.color}
-                onClick={() => handleNodeClick(node)}
-              />
-            </div>
-         ))}
+         {levelData.map((node) => {
+            const status = getStatus(node.id);
+            const levelT = t?.hub?.levels?.[node.id];
+            const title = levelT?.title || node.title;
+            return (
+              <div key={node.id} className="absolute transform -translate-x-1/2 -translate-y-1/2 z-10" style={{ left: `${node.x}%`, top: `${node.y}%` }}>
+                <HexNode 
+                  status={status}
+                  icon={status === 'locked' ? '🔒' : node.icon}
+                  title={status === 'locked' ? (t?.hub?.locked || 'Locked') : title}
+                  color={node.color}
+                  onClick={() => handleNodeClick(node)}
+                />
+              </div>
+            );
+         })}
       </div>
 
       {/* Bottom Padding */}
@@ -128,13 +135,17 @@ const HubScreen = () => {
                    {selectedNode.icon}
                  </div>
                  <div className="flex flex-col">
-                   <h3 className="text-xl font-bold tracking-wide text-white" style={{ fontFamily: 'Fredoka, sans-serif' }}>{selectedNode.title}</h3>
-                   <span className="text-[10px] uppercase tracking-widest text-[#3b82f6]">Mission {selectedNode.id}</span>
+                   <h3 className="text-xl font-bold tracking-wide text-white" style={{ fontFamily: 'Fredoka, sans-serif' }}>
+                     {t?.hub?.levels?.[selectedNode.id]?.title || selectedNode.title}
+                   </h3>
+                   <span className="text-[10px] uppercase tracking-widest text-[#3b82f6]">
+                     {t?.hub?.mission || 'Mission'} {selectedNode.id}
+                   </span>
                  </div>
                </div>
                
                <p className="text-[#cbd5e1] mb-6 border-l-2 pl-3 text-sm border-white/20">
-                  This mission explores how household appliances consume electricity and their carbon footprint.
+                  {t?.hub?.levels?.[selectedNode.id]?.desc || 'This mission explores how household appliances consume electricity and their carbon footprint.'}
                </p>
                
                <button 
@@ -142,7 +153,7 @@ const HubScreen = () => {
                  style={{ fontFamily: 'Fredoka, sans-serif', boxShadow: 'inset 0 0 10px rgba(255,255,255,0.2)' }}
                  onClick={() => { setSelectedNode(null); navigate('/level1'); }}
                >
-                 START MISSION →
+                 {t?.hub?.startMission || 'START MISSION →'}
                </button>
              </motion.div>
            </motion.div>

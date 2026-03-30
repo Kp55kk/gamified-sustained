@@ -1,25 +1,38 @@
 import React, { useState, useCallback, Suspense, useEffect, useRef } from 'react';
-import { Canvas } from '@react-three/fiber';
+import { Canvas, useThree, useFrame } from '@react-three/fiber';
 import { useNavigate } from 'react-router-dom';
+import * as THREE from 'three';
 import House from './House';
 import Appliances from './Appliances';
-import Player, { cameraMode } from './Player';
+import Player, { cameraMode, playerState } from './Player';
 import { APPLIANCE_DATA, APPLIANCE_POSITIONS, INTERACTABLE_IDS, QUIZ_QUESTIONS, ACHIEVEMENTS } from './applianceData';
+import { useGame } from '../context/GameContext';
+import { getTranslation, getVoiceLocale } from '../translations/index';
 import './Level1.css';
 
-// ─── Speech Engine ───
-function speak(text, rate = 0.9, pitch = 1.05) {
+// ─── Speech Engine (ENGLISH ONLY — FIX 3) ───
+let isSpeakingGlobal = false;
+function speak(text, langCode = 'en', rate = 0.9, pitch = 1.05, onEnd) {
+  // FIX 3: Only play voiceover for English
+  if (langCode !== 'en') {
+    if (onEnd) onEnd();
+    return;
+  }
   if ('speechSynthesis' in window) {
     window.speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(text);
     u.rate = rate;
     u.pitch = pitch;
-    u.lang = 'en-IN';
+    u.lang = getVoiceLocale(langCode);
+    isSpeakingGlobal = true;
+    u.onend = () => { isSpeakingGlobal = false; if (onEnd) onEnd(); };
+    u.onerror = () => { isSpeakingGlobal = false; if (onEnd) onEnd(); };
     window.speechSynthesis.speak(u);
   }
 }
 function stopSpeech() {
   if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+  isSpeakingGlobal = false;
 }
 
 // ─── Audio System ───
@@ -33,15 +46,13 @@ function playInteractSound() {
     const ctx = getAudioCtx();
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
-    osc.connect(gain);
-    gain.connect(ctx.destination);
+    osc.connect(gain); gain.connect(ctx.destination);
     osc.frequency.setValueAtTime(523, ctx.currentTime);
     osc.frequency.setValueAtTime(659, ctx.currentTime + 0.08);
     osc.frequency.setValueAtTime(784, ctx.currentTime + 0.16);
     gain.gain.setValueAtTime(0.15, ctx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
-    osc.start(ctx.currentTime);
-    osc.stop(ctx.currentTime + 0.4);
+    osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.4);
   } catch (e) {}
 }
 function playCorrectSound() {
@@ -104,46 +115,21 @@ function playLevelCompleteSound() {
   } catch (e) {}
 }
 
-// ─── Ambient Music ───
-function useAmbientMusic() {
-  const gainRef = useRef(null);
-  useEffect(() => {
-    try {
-      const ctx = getAudioCtx();
-      const gain = ctx.createGain();
-      gain.gain.value = 0.03;
-      gain.connect(ctx.destination);
-      gainRef.current = gain;
-
-      const notes = [220, 277, 330, 440];
-      const oscs = notes.map(freq => {
-        const o = ctx.createOscillator();
-        o.type = 'sine';
-        o.frequency.value = freq;
-        o.connect(gain);
-        o.start();
-        return o;
-      });
-
-      return () => {
-        oscs.forEach(o => { try { o.stop(); } catch(e) {} });
-        gain.disconnect();
-      };
-    } catch (e) {}
-  }, []);
-}
+// ─── Ambient Music (disabled) ───
+function useAmbientMusic() {}
 
 // ─── Flash Card (Memory Boost) ───
-function FlashCard({ appliance, visible }) {
+function FlashCard({ appliance, visible, t }) {
   if (!visible || !appliance) return null;
+  const at = t?.appliances?.[appliance.id];
   return (
     <div className="flash-card">
       <div className="flash-card-inner">
         <span className="flash-icon">{appliance.icon}</span>
         <div className="flash-info">
-          <strong>{appliance.name}</strong>
+          <strong>{at?.name || appliance.name}</strong>
           <span>{appliance.wattage}W • {appliance.annualKwh} kWh/yr</span>
-          <span className="flash-fact">💡 {appliance.funFact || appliance.description?.slice(0, 80) + '...'}</span>
+          <span className="flash-fact">💡 {at?.funFact || appliance.funFact || appliance.description?.slice(0, 80) + '...'}</span>
         </div>
       </div>
     </div>
@@ -151,122 +137,203 @@ function FlashCard({ appliance, visible }) {
 }
 
 // ─── Achievement Toast ───
-function AchievementToast({ achievement, visible }) {
+function AchievementToast({ achievement, visible, t }) {
   if (!visible || !achievement) return null;
+  const at = t?.achievements?.[achievement.id];
   return (
     <div className="achievement-toast">
       <div className="achievement-icon">{achievement.icon}</div>
       <div className="achievement-info">
-        <div className="achievement-label">Achievement Unlocked!</div>
-        <div className="achievement-title">{achievement.title}</div>
-        <div className="achievement-desc">{achievement.description}</div>
+        <div className="achievement-label">{t?.achievements?.unlocked || 'Achievement Unlocked!'}</div>
+        <div className="achievement-title">{at?.title || achievement.title}</div>
+        <div className="achievement-desc">{at?.description || achievement.description}</div>
       </div>
     </div>
   );
 }
 
-// ─── Enhanced Speech Bubble ───
-function SpeechBubble({ appliance, onClose }) {
-  const [tab, setTab] = useState('about');
-  if (!appliance) return null;
+// ─── Category color mapping for pills ───
+const CATEGORY_COLORS = {
+  'Cooling': { bg: '#dbeafe', color: '#2563eb' },
+  'Lighting': { bg: '#fef9c3', color: '#a16207' },
+  'Electronics': { bg: '#e0e7ff', color: '#4338ca' },
+  'Heating': { bg: '#fee2e2', color: '#dc2626' },
+  'Heating/Cooking': { bg: '#fee2e2', color: '#dc2626' },
+  'Cooling/Preservation': { bg: '#dbeafe', color: '#2563eb' },
+  'Motors/Laundry': { bg: '#ede9fe', color: '#7c3aed' },
+  'Motors/Cooking': { bg: '#ede9fe', color: '#7c3aed' },
+  'Electronics/Comms': { bg: '#e0e7ff', color: '#4338ca' },
+  'Electronics/Entertainment': { bg: '#e0e7ff', color: '#4338ca' },
+  'Electronics/Charging': { bg: '#e0e7ff', color: '#4338ca' },
+};
 
-  const data = APPLIANCE_DATA[appliance.id] || appliance;
+// ─── Screen-Centered Appliance Popup (Full content, no truncation) ───
+function ApplianceTooltip({ appliance, onClose, t, langCode }) {
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [closing, setClosing] = useState(false);
+
+  const data = appliance ? (APPLIANCE_DATA[appliance.id] || appliance) : null;
+  const at = appliance ? t?.appliances?.[appliance.id] : null;
+
+  // ESC to close
+  useEffect(() => {
+    if (!appliance) return;
+    const handleEsc = (e) => { if (e.key === 'Escape') handleClose(); };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [appliance]);
+
+  const handleClose = () => {
+    setClosing(true);
+    setTimeout(() => { setClosing(false); onClose(); }, 150);
+  };
+
+  if (!appliance || !data) return null;
+
+  const catColors = CATEGORY_COLORS[data.category] || { bg: '#f1f5f9', color: '#475569' };
+  const description = at?.display_text || data.description || '';
+  const funFact = at?.funFact || data.funFact || '';
+  const energyTip = at?.energyTip || data.researchNote || '';
+  const annualKwh = data.annualKwh || '—';
+  const co2PerYear = data.co2PerYear || '—';
+  const beeRated = data.beeRated || t?.ui?.notBeeRated || 'Not BEE rated';
+
+  // BEE star display
+  const beeStars = beeRated === 'No' || beeRated === 'Not BEE rated'
+    ? null
+    : beeRated;
+
+  const usageLine = data.usePerDay && data.daysPerYear
+    ? `${data.usePerDay} • ${data.daysPerYear} ${t?.ui?.daysUsed || 'days/yr'}`
+    : data.usePerDay || '';
+
+  // FIX 5: Full voiceover — reads name, wattage, usage, full description
+  const handleReplay = () => {
+    if (langCode !== 'en') return;
+    setIsSpeaking(true);
+    const fullVoice = `${data.name}. ${data.wattage} watts. ${usageLine}. ${at?.voice_text || data.description}`;
+    speak(fullVoice, langCode, 0.85, data.voicePitch || 1.05, () => setIsSpeaking(false));
+  };
 
   return (
-    <div className="speech-overlay" onClick={onClose}>
-      <div className="cloud-bubble-wrapper" onClick={(e) => e.stopPropagation()}>
-        <div className="cloud-bubble">
-          <div className="bubble-header">
-            <div className="bubble-icon">{data.icon}</div>
-            <div>
-              <h3 className="bubble-title">{data.name}</h3>
-              <span className="bubble-room">{data.room} • {data.category}</span>
-            </div>
-            {data.hiddenConsumer && (
-              <span className="hidden-badge">⚠️ HIDDEN CONSUMER</span>
-            )}
-          </div>
+    <div className="popup-overlay" onClick={handleClose}>
+      <div
+        className={`popup-card ${closing ? 'closing' : ''}`}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Icon */}
+        <div className="popup-icon">{data.icon || '⚡'}</div>
 
-          {/* Tab buttons */}
-          <div className="bubble-tabs">
-            <button className={`tab-btn ${tab === 'about' ? 'active' : ''}`} onClick={() => setTab('about')}>About</button>
-            <button className={`tab-btn ${tab === 'stats' ? 'active' : ''}`} onClick={() => setTab('stats')}>Energy Stats</button>
-            <button className={`tab-btn ${tab === 'tips' ? 'active' : ''}`} onClick={() => setTab('tips')}>Tips & Facts</button>
-          </div>
+        {/* Name */}
+        <div className="popup-name">{at?.name || data.name}</div>
 
-          {tab === 'about' && (
-            <>
-              <p className="bubble-description">{data.description}</p>
-              <div className="bubble-stats">
-                <div className="stat-card">
-                  <div className="stat-value">{data.wattage}W</div>
-                  <div className="stat-label">Power</div>
-                </div>
-                <div className="stat-card">
-                  <div className="stat-value">{data.monthlyKwh}</div>
-                  <div className="stat-label">kWh/Mo</div>
-                </div>
-                <div className="stat-card">
-                  <div className="stat-value">{data.essential ? '✅' : '❌'}</div>
-                  <div className="stat-label">Essential?</div>
-                </div>
-              </div>
-            </>
-          )}
-
-          {tab === 'stats' && (
-            <div className="stats-detail">
-              <div className="stat-row"><span>Annual Usage:</span><strong>{data.annualKwh} kWh/yr</strong></div>
-              <div className="stat-row"><span>CO₂ Emissions:</span><strong>{data.co2PerYear} kg/yr</strong></div>
-              <div className="stat-row"><span>Usage Pattern:</span><strong>{data.usePerDay}</strong></div>
-              <div className="stat-row"><span>Days Used/Year:</span><strong>{data.daysPerYear}</strong></div>
-              {data.standbyPower ? (
-                <div className="stat-row standby-highlight">
-                  <span>⚡ Standby Power:</span><strong>{data.standbyPower}</strong>
-                </div>
-              ) : null}
-              {data.standbyKwhYear ? (
-                <div className="stat-row standby-highlight">
-                  <span>⚡ Standby kWh/yr:</span><strong>{data.standbyKwhYear}</strong>
-                </div>
-              ) : null}
-              <div className="stat-row"><span>BEE Rating:</span><strong>{data.beeRated || 'No'}</strong></div>
-              <div className="stat-row"><span>Source:</span><span className="source-text">{data.source}</span></div>
-            </div>
-          )}
-
-          {tab === 'tips' && (
-            <div className="tips-section">
-              <div className="fun-fact">
-                <span className="fact-icon">💡</span>
-                <p>{data.funFact || data.researchNote}</p>
-              </div>
-              {data.researchNote && data.funFact && (
-                <div className="research-note">
-                  <span className="note-icon">📊</span>
-                  <p>{data.researchNote}</p>
-                </div>
-              )}
-            </div>
-          )}
-
-          <button className="bubble-close-btn" onClick={onClose}>
-            Got it! ✓
-          </button>
+        {/* Category pill */}
+        <div className="popup-category" style={{ background: catColors.bg, color: catColors.color }}>
+          {data.category}
         </div>
 
-        <div className="cloud-tail">
-          <div className="cloud-tail-dot" />
-          <div className="cloud-tail-dot" />
-          <div className="cloud-tail-dot" />
+        {/* Divider */}
+        <div className="popup-divider" />
+
+        {/* Wattage */}
+        <div className="popup-wattage">{data.wattage}W</div>
+
+        {/* Usage */}
+        {usageLine && <div className="popup-usage">{usageLine}</div>}
+
+        {/* Divider */}
+        <div className="popup-divider" />
+
+        {/* Full description — NO truncation */}
+        {description && <div className="popup-description-full">{description}</div>}
+
+        {/* Energy Stats Row */}
+        <div className="popup-stats-row">
+          <div className="popup-stat">
+            <div className="popup-stat-value">{annualKwh}</div>
+            <div className="popup-stat-label">{t?.ui?.annualUsage || 'kWh/year'}</div>
+          </div>
+          <div className="popup-stat">
+            <div className="popup-stat-value">{co2PerYear}</div>
+            <div className="popup-stat-label">{t?.ui?.co2Emissions || 'kg CO₂/yr'}</div>
+          </div>
+          <div className="popup-stat">
+            <div className="popup-stat-value">{beeStars ? '⭐' : '—'}</div>
+            <div className="popup-stat-label">{beeStars || (t?.ui?.beeRating || 'Not rated')}</div>
+          </div>
         </div>
+
+        {/* Energy Saving Tip */}
+        {energyTip && (
+          <div className="popup-tip-box">
+            <div className="popup-tip-label">💡 {t?.ui?.energySavingTip || 'Energy Saving Tip'}</div>
+            <div className="popup-tip-text">{energyTip}</div>
+          </div>
+        )}
+
+        {/* Fun Fact */}
+        {funFact && (
+          <div className="popup-funfact-box">
+            <div className="popup-funfact-label">🤔 {t?.ui?.didYouKnow || 'Did You Know?'}</div>
+            <div className="popup-funfact-text">{funFact}</div>
+          </div>
+        )}
+
+        {/* Bottom row */}
+        <div className="popup-bottom-row">
+          {langCode === 'en' && (
+            <button
+              className={`popup-speaker ${isSpeaking ? 'speaking' : ''}`}
+              onClick={handleReplay}
+            >
+              🔊
+            </button>
+          )}
+          <div style={{ flex: 1 }} />
+          <button className="popup-close-btn" onClick={handleClose}>✕</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Room icons ───
+const ROOM_ICONS = {
+  'Living Room': '🛋️',
+  'Bedroom': '🛏️',
+  'Kitchen': '🍳',
+  'Bathroom': '🚿',
+};
+
+// ─── Room Entry Banner (Fix 4: small elegant pill, slides down, fades out in 2s) ───
+function RoomEntryBanner({ room, visible, t }) {
+  if (!visible || !room) return null;
+  const rt = t?.rooms?.[room];
+  const icon = ROOM_ICONS[room] || '📍';
+  return (
+    <div className="room-entry-banner">
+      <span className="room-entry-icon">{icon}</span>
+      <span className="room-entry-text">{rt?.name?.replace('📍 ', '') || room}</span>
+    </div>
+  );
+}
+
+// ─── Arjun Thought Bubble ───
+function ThoughtBubble({ text, visible }) {
+  if (!visible || !text) return null;
+  return (
+    <div className="thought-bubble">
+      <div className="thought-bubble-content">{text}</div>
+      <div className="thought-bubble-tail">
+        <div className="thought-tail-dot" />
+        <div className="thought-tail-dot small" />
       </div>
     </div>
   );
 }
 
 // ─── Progress Checklist Panel ───
-function ChecklistPanel({ interacted, isOpen, onToggle }) {
+function ChecklistPanel({ interacted, isOpen, onToggle, t }) {
   const count = interacted.size;
   const total = INTERACTABLE_IDS.length;
 
@@ -277,21 +344,22 @@ function ChecklistPanel({ interacted, isOpen, onToggle }) {
       </button>
       {isOpen && (
         <div className="checklist-content">
-          <h3 className="checklist-title">🏠 Home Audit Mission</h3>
+          <h3 className="checklist-title">{t?.ui?.homeAuditMission || '🏠 Home Audit Mission'}</h3>
           <div className="progress-bar-container">
             <div className="progress-bar-fill" style={{ width: `${(count / total) * 100}%` }} />
-            <span className="progress-text">{count} / {total} Appliances</span>
+            <span className="progress-text">{count} / {total} {t?.ui?.appliances || 'Appliances'}</span>
           </div>
           <div className="checklist-items">
             {INTERACTABLE_IDS.map((id) => {
               const data = APPLIANCE_DATA[id];
               if (!data) return null;
               const done = interacted.has(id);
+              const at = t?.appliances?.[id];
               return (
                 <div key={id} className={`checklist-item ${done ? 'done' : ''}`}>
                   <span className="check-mark">{done ? '✅' : '⬜'}</span>
                   <span className="check-icon">{data.icon}</span>
-                  <span className="check-name">{data.name}</span>
+                  <span className="check-name">{at?.name || data.name}</span>
                 </div>
               );
             })}
@@ -303,7 +371,7 @@ function ChecklistPanel({ interacted, isOpen, onToggle }) {
 }
 
 // ─── Full Quiz Modal (post-completion) ───
-function FullQuizModal({ questions, onComplete }) {
+function FullQuizModal({ questions, onComplete, t }) {
   const [currentIdx, setCurrentIdx] = useState(0);
   const [score, setScore] = useState(0);
   const [answered, setAnswered] = useState(false);
@@ -312,7 +380,6 @@ function FullQuizModal({ questions, onComplete }) {
   const [consecutiveCorrect, setConsecutiveCorrect] = useState(0);
   const [orderedQuestions, setOrderedQuestions] = useState([]);
 
-  // Initialize with adaptive ordering
   useEffect(() => {
     const sorted = [...questions].sort((a, b) => (a.difficulty || 1) - (b.difficulty || 1));
     setOrderedQuestions(sorted);
@@ -323,7 +390,6 @@ function FullQuizModal({ questions, onComplete }) {
   if (!question) return null;
 
   const total = orderedQuestions.length;
-  const pct = total > 0 ? Math.round((currentIdx / total) * 100) : 0;
 
   const handleAnswer = (idx) => {
     if (answered) return;
@@ -341,7 +407,6 @@ function FullQuizModal({ questions, onComplete }) {
       setConsecutiveWrong(c => c + 1);
       setConsecutiveCorrect(0);
 
-      // Adaptive: if 2+ wrong, reorder remaining to put easier ones first
       if (consecutiveWrong >= 1) {
         setOrderedQuestions(prev => {
           const done = prev.slice(0, currentIdx + 1);
@@ -351,7 +416,6 @@ function FullQuizModal({ questions, onComplete }) {
       }
     }
 
-    // Auto advance after delay
     setTimeout(() => {
       setAnswered(false);
       setSelectedIndex(null);
@@ -369,11 +433,11 @@ function FullQuizModal({ questions, onComplete }) {
       <div className="quiz-modal full-quiz">
         <div className="quiz-header">
           <span className="quiz-icon">🧠</span>
-          <h3>Energy Knowledge Quiz</h3>
+          <h3>{t?.quiz?.title || 'Energy Knowledge Quiz'}</h3>
         </div>
         <div className="quiz-progress-bar">
           <div className="quiz-progress-fill" style={{ width: `${((currentIdx + 1) / total) * 100}%` }} />
-          <span className="quiz-progress-text">Question {currentIdx + 1} / {total}</span>
+          <span className="quiz-progress-text">{t?.quiz?.question || 'Question'} {currentIdx + 1} / {total}</span>
         </div>
         <p className="quiz-question">{question.question}</p>
         <div className="quiz-options">
@@ -384,12 +448,7 @@ function FullQuizModal({ questions, onComplete }) {
               else if (i === selectedIndex) cls += ' wrong';
             }
             return (
-              <button
-                key={i}
-                className={cls}
-                onClick={() => handleAnswer(i)}
-                disabled={answered}
-              >
+              <button key={i} className={cls} onClick={() => handleAnswer(i)} disabled={answered}>
                 {String.fromCharCode(65 + i)}. {opt}
               </button>
             );
@@ -398,8 +457,8 @@ function FullQuizModal({ questions, onComplete }) {
         {answered && (
           <div className={`quiz-feedback ${selectedIndex === question.correctIndex ? 'correct' : 'wrong'}`}>
             {selectedIndex === question.correctIndex
-              ? '✅ Correct!'
-              : `❌ Wrong! The answer is ${String.fromCharCode(65 + question.correctIndex)}.`}
+              ? (t?.quiz?.correct || '✅ Correct!')
+              : `${t?.quiz?.wrongPrefix || '❌ Wrong! The answer is'} ${String.fromCharCode(65 + question.correctIndex)}.`}
             <p className="quiz-explanation">{question.explanation}</p>
           </div>
         )}
@@ -409,7 +468,7 @@ function FullQuizModal({ questions, onComplete }) {
 }
 
 // ─── Level Completed Screen ───
-function LevelCompleteScreen({ score, total, stars, onContinue }) {
+function LevelCompleteScreen({ score, total, stars, onContinue, t }) {
   const pct = Math.round((score / total) * 100);
 
   return (
@@ -426,8 +485,8 @@ function LevelCompleteScreen({ score, total, stars, onContinue }) {
           ))}
         </div>
         <div className="lc-celebration">🎉</div>
-        <h2 className="lc-title">Level Completed!</h2>
-        <p className="lc-subtitle">Home Energy Audit Complete</p>
+        <h2 className="lc-title">{t?.rewards?.levelCompleted || 'Level Completed!'}</h2>
+        <p className="lc-subtitle">{t?.rewards?.homeAuditComplete || 'Home Energy Audit Complete'}</p>
 
         <div className="lc-stars">
           {[1, 2, 3].map(s => (
@@ -440,17 +499,17 @@ function LevelCompleteScreen({ score, total, stars, onContinue }) {
 
         <div className="lc-score">
           <div className="lc-score-number">{score}/{total}</div>
-          <div className="lc-score-label">Correct Answers ({pct}%)</div>
+          <div className="lc-score-label">{t?.rewards?.correctAnswers || 'Correct Answers'} ({pct}%)</div>
         </div>
 
         <div className="lc-rating-label">
-          {stars === 3 && '🏆 Outstanding! You\'re an Energy Expert!'}
-          {stars === 2 && '👍 Great Work! Keep learning!'}
-          {stars === 1 && '💪 Good effort! Try again to improve!'}
+          {stars === 3 && (t?.rewards?.outstanding || '🏆 Outstanding! You\'re an Energy Expert!')}
+          {stars === 2 && (t?.rewards?.greatWork || '👍 Great Work! Keep learning!')}
+          {stars === 1 && (t?.rewards?.goodEffort || '💪 Good effort! Try again to improve!')}
         </div>
 
         <button className="lc-continue-btn" onClick={onContinue}>
-          Continue →
+          {t?.rewards?.continue || 'Continue →'}
         </button>
       </div>
     </div>
@@ -466,35 +525,27 @@ function RewardsDisplay({ stars }) {
   );
 }
 
-// ─── Day/Night Cycle ───
-function DayNightCycle() {
+// ─── Warm Evening Lighting (Fix 4: inviting Indian home feel) ───
+function WarmLighting() {
   const lightRef = useRef();
   const ambientRef = useRef();
   const hemiRef = useRef();
 
   useEffect(() => {
-    // Run a slow cycle
     let frame;
     const cycle = () => {
-      const t = (Date.now() % 300000) / 300000; // 5-min cycle
-      const brightness = 0.3 + Math.sin(t * Math.PI * 2) * 0.2;
-      const warmth = 0.8 + Math.sin(t * Math.PI * 2) * 0.2;
-      
-      if (ambientRef.current) {
-        ambientRef.current.intensity = brightness + 0.1;
-      }
+      const t = (Date.now() % 600000) / 600000; // slower cycle
+      // Warm evening: higher baseline, subtle variation
+      const brightness = 0.45 + Math.sin(t * Math.PI * 2) * 0.08;
+      const warmth = 1.0 + Math.sin(t * Math.PI * 2) * 0.15;
+      if (ambientRef.current) ambientRef.current.intensity = brightness;
       if (lightRef.current) {
         lightRef.current.intensity = warmth;
+        // Sun low on horizon for evening feel
         const angle = t * Math.PI * 2;
-        lightRef.current.position.set(
-          10 * Math.cos(angle),
-          12 + 3 * Math.sin(angle),
-          10 * Math.sin(angle)
-        );
+        lightRef.current.position.set(8 * Math.cos(angle), 8 + 2 * Math.sin(angle), 10 * Math.sin(angle));
       }
-      if (hemiRef.current) {
-        hemiRef.current.intensity = brightness;
-      }
+      if (hemiRef.current) hemiRef.current.intensity = brightness * 0.7;
       frame = requestAnimationFrame(cycle);
     };
     cycle();
@@ -503,30 +554,33 @@ function DayNightCycle() {
 
   return (
     <>
-      <ambientLight ref={ambientRef} intensity={0.4} />
-      <directionalLight
-        ref={lightRef}
-        position={[10, 15, 10]}
-        intensity={1}
-        castShadow
-        shadow-mapSize-width={2048}
-        shadow-mapSize-height={2048}
-        shadow-camera-far={50}
-        shadow-camera-left={-15}
-        shadow-camera-right={15}
-        shadow-camera-top={15}
-        shadow-camera-bottom={-15}
-      />
-      <hemisphereLight ref={hemiRef} args={['#b1e1ff', '#b97a20', 0.3]} />
+      {/* Warm amber ambient */}
+      <ambientLight ref={ambientRef} intensity={0.45} color="#ffe8cc" />
+      {/* Warm golden directional (sunset feel) */}
+      <directionalLight ref={lightRef} position={[8, 10, 10]} intensity={1.0} color="#ffd699" />
+      {/* Warm hemisphere: golden sky, brown ground */}
+      <hemisphereLight ref={hemiRef} args={['#ffecd2', '#b97a20', 0.35]} />
+      {/* Fill light from opposite side for softer shadows */}
+      <pointLight position={[-8, 4, -5]} intensity={0.3} color="#ffeedd" distance={20} />
     </>
   );
 }
 
+// ─── Camera Ref Forwarder (to pass camera ref out of Canvas) ───
+function CameraRefForwarder({ cameraRef }) {
+  const { camera } = useThree();
+  useEffect(() => {
+    cameraRef.current = camera;
+  }, [camera, cameraRef]);
+  return null;
+}
+
 // ─── 3D Scene Content ───
-function SceneContent({ onApplianceClick, onRoomChange, onNearestChange, onInteract, activeApplianceId, interactedAppliances }) {
+function SceneContent({ onApplianceClick, onRoomChange, onNearestChange, onInteract, activeApplianceId, interactedAppliances, cameraRef }) {
   return (
     <>
-      <DayNightCycle />
+      <WarmLighting />
+      <CameraRefForwarder cameraRef={cameraRef} />
       <House />
       <Appliances
         onApplianceClick={onApplianceClick}
@@ -545,6 +599,14 @@ function SceneContent({ onApplianceClick, onRoomChange, onNearestChange, onInter
 // ─── Main Level 1 Component ───
 export default function Level1() {
   const navigate = useNavigate();
+  const { selectedLanguage } = useGame();
+  const langCode = selectedLanguage || 'en';
+  const t = getTranslation(langCode);
+
+  // Camera and canvas refs for tooltip positioning
+  const cameraRef = useRef(null);
+  const canvasRef = useRef(null);
+
   const [activeAppliance, setActiveAppliance] = useState(null);
   const [currentRoom, setCurrentRoom] = useState('Living Room');
   const [nearestAppliance, setNearestAppliance] = useState(null);
@@ -572,8 +634,20 @@ export default function Level1() {
   const [currentAchievement, setCurrentAchievement] = useState(null);
   const [showAchievement, setShowAchievement] = useState(false);
 
-  // Ambient music
+  // Room entry voiceover state
+  const [visitedRooms, setVisitedRooms] = useState(new Set());
+  const [roomBanner, setRoomBanner] = useState(null);
+  const [showRoomBanner, setShowRoomBanner] = useState(false);
+  const [thoughtText, setThoughtText] = useState(null);
+  const [showThought, setShowThought] = useState(false);
+
+  // Speaking indicator
+  const [isSpeaking, setIsSpeaking] = useState(false);
+
+  // Ambient music (disabled)
   useAmbientMusic();
+
+  // FIX 1: No pointer lock — removed pointer lock management entirely
 
   // Achievement checker
   const triggerAchievement = useCallback((triggerId) => {
@@ -598,7 +672,12 @@ export default function Level1() {
 
     playInteractSound();
     setActiveAppliance(data);
-    speak(data.description, data.voiceRate || 0.9, data.voicePitch || 1.05);
+
+    // Speak using voice_text from translation, fallback to English description
+    const at = t?.appliances?.[applianceId];
+    const voiceText = at?.voice_text || data.description;
+    setIsSpeaking(true);
+    speak(voiceText, langCode, data.voiceRate || 0.9, data.voicePitch || 1.05, () => setIsSpeaking(false));
 
     // Cinematic camera zoom
     const pos = APPLIANCE_POSITIONS?.[applianceId];
@@ -620,7 +699,6 @@ export default function Level1() {
         setStars(s => s + 1);
         const newCount = next.size;
 
-        // Achievement triggers
         if (newCount === 1) triggerAchievement('interact_1');
         if (newCount === 3) triggerAchievement('interact_3');
         if (newCount === 6) triggerAchievement('interact_6');
@@ -628,16 +706,13 @@ export default function Level1() {
         if (newCount === 12) triggerAchievement('interact_12');
         if (newCount === 15) triggerAchievement('interact_15');
 
-        // Trigger full quiz after all 12 interactions
         if (newCount >= INTERACTABLE_IDS.length) {
-          setTimeout(() => {
-            setShowFullQuiz(true);
-          }, 2000);
+          setTimeout(() => setShowFullQuiz(true), 2000);
         }
       }
       return next;
     });
-  }, [activeAppliance, showFullQuiz, showLevelComplete, triggerAchievement]);
+  }, [activeAppliance, showFullQuiz, showLevelComplete, triggerAchievement, t, langCode]);
 
   const handleApplianceClick = useCallback((applianceId) => {
     handleInteract(applianceId);
@@ -645,14 +720,13 @@ export default function Level1() {
 
   const handleCloseBubble = useCallback(() => {
     stopSpeech();
+    setIsSpeaking(false);
     const closedAppliance = activeAppliance;
     setActiveAppliance(null);
 
-    // Reset cinematic camera
     cameraMode.cinematic = false;
     setIsCinematic(false);
 
-    // Show memory flash card
     if (closedAppliance) {
       setFlashCard(closedAppliance);
       setShowFlash(true);
@@ -666,25 +740,54 @@ export default function Level1() {
     setShowFullQuiz(false);
     setQuizCompleted(true);
 
-    // Calculate stars
     const pct = (score / total) * 100;
     let earnedStars = 1;
     if (pct >= 90) earnedStars = 3;
     else if (pct >= 60) earnedStars = 2;
     setFinalStars(earnedStars);
 
-    // Achievement for quiz performance
     if (pct === 100) triggerAchievement('quiz_perfect');
     if (earnedStars >= 3) triggerAchievement('quiz_3stars');
 
     playLevelCompleteSound();
-
     setTimeout(() => setShowLevelComplete(true), 500);
   }, [triggerAchievement]);
 
+  // Room change handler with entry voiceover
   const handleRoomChange = useCallback((room) => {
-    setCurrentRoom(prev => prev !== room ? room : prev);
-  }, []);
+    setCurrentRoom(prev => {
+      if (prev !== room) {
+        // Check if room is being visited for the first time
+        if (!visitedRooms.has(room)) {
+          setVisitedRooms(vr => {
+            const next = new Set(vr);
+            next.add(room);
+            return next;
+          });
+
+          // Show room banner (2 seconds)
+          setRoomBanner(room);
+          setShowRoomBanner(true);
+          setTimeout(() => setShowRoomBanner(false), 2000);
+
+          // Room entry voiceover
+          const rt = t?.rooms?.[room];
+          if (rt) {
+            // Show thought bubble
+            setThoughtText(rt.display_text);
+            setShowThought(true);
+
+            // Speak the room voice text
+            speak(rt.voice_text || rt.display_text, langCode, 0.9, 1.0, () => {
+              setTimeout(() => setShowThought(false), 1000);
+            });
+          }
+        }
+        return room;
+      }
+      return prev;
+    });
+  }, [visitedRooms, t, langCode]);
 
   const handleNearestChange = useCallback((id) => {
     setNearestAppliance(id);
@@ -695,12 +798,14 @@ export default function Level1() {
       {/* 3D Canvas */}
       <div className={`canvas-wrapper ${isCinematic ? 'cinematic-blur' : ''}`}>
         <Canvas
-          shadows
           camera={{ position: [-5, 6, 1], fov: 50 }}
+          gl={{ antialias: false }}
           onCreated={({ gl }) => {
-            gl.setClearColor('#87CEEB');
+            canvasRef.current = gl.domElement;
+            gl.setClearColor('#f5deb3');
             gl.toneMapping = 1;
-            gl.toneMappingExposure = 1.2;
+            gl.toneMappingExposure = 1.1;
+            gl.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
           }}
         >
           <Suspense fallback={null}>
@@ -711,16 +816,24 @@ export default function Level1() {
               onInteract={handleInteract}
               activeApplianceId={activeAppliance?.id}
               interactedAppliances={interacted}
+              cameraRef={cameraRef}
             />
           </Suspense>
         </Canvas>
+        {/* Vignette overlay */}
+        <div className="vignette-overlay" />
+      </div>
+
+      {/* Cursor/Play instruction (Fix 7) */}
+      <div className="cursor-instruction">
+        {t?.ui?.clickToPlay || 'Click to play | ESC to exit'}
       </div>
 
       {/* HUD */}
       <div className="level1-hud">
-        <button className="hud-back-btn" onClick={() => navigate('/hub')}>← Back</button>
-        <div className="hud-room-name">📍 {currentRoom}</div>
-        <div className="hud-instructions">🏠 Home Audit Mission</div>
+        <button className="hud-back-btn" onClick={() => { stopSpeech(); navigate('/hub'); }}>{t?.ui?.back || '← Back'}</button>
+        <div className="hud-room-name">{t?.rooms?.[currentRoom]?.name || `📍 ${currentRoom}`}</div>
+        <div className="hud-instructions">{t?.ui?.homeAuditMission || '🏠 Home Audit Mission'}</div>
       </div>
 
       {/* Stars */}
@@ -731,35 +844,48 @@ export default function Level1() {
         interacted={interacted}
         isOpen={checklistOpen}
         onToggle={() => setChecklistOpen(o => !o)}
+        t={t}
       />
 
       {/* Bottom hint */}
       <div className="interaction-hint">
         <span className="key-icon">W</span><span className="key-icon">A</span>
-        <span className="key-icon">S</span><span className="key-icon">D</span> Move
-        &nbsp;•&nbsp; 🖱️ Look Around
-        &nbsp;•&nbsp; <span className="key-icon">E</span> Interact
+        <span className="key-icon">S</span><span className="key-icon">D</span> {t?.ui?.move || 'Move'}
+        &nbsp;•&nbsp; {t?.ui?.lookAround || '🖱️ Look Around'}
+        &nbsp;•&nbsp; <span className="key-icon">E</span> {t?.ui?.interact || 'Interact'}
         {nearestAppliance && !activeAppliance && (
           <span className="hint-nearby">
-            &nbsp;— <span className="pulse-text">{APPLIANCE_DATA[nearestAppliance]?.icon} {APPLIANCE_DATA[nearestAppliance]?.name} nearby!</span>
+            &nbsp;— <span className="pulse-text">{APPLIANCE_DATA[nearestAppliance]?.icon} {t?.appliances?.[nearestAppliance]?.name || APPLIANCE_DATA[nearestAppliance]?.name} {t?.ui?.nearby || 'nearby!'}</span>
           </span>
         )}
       </div>
 
-      {/* Speech Bubble */}
-      <SpeechBubble appliance={activeAppliance} onClose={handleCloseBubble} />
+      {/* Room Entry Banner */}
+      <RoomEntryBanner room={roomBanner} visible={showRoomBanner} t={t} />
+
+      {/* Arjun Thought Bubble */}
+      <ThoughtBubble text={thoughtText} visible={showThought} />
+
+      {/* Screen-Centered Appliance Popup */}
+      <ApplianceTooltip
+        appliance={activeAppliance}
+        onClose={handleCloseBubble}
+        t={t}
+        langCode={langCode}
+      />
 
       {/* Memory Flash Card */}
-      <FlashCard appliance={flashCard} visible={showFlash} />
+      <FlashCard appliance={flashCard} visible={showFlash} t={t} />
 
       {/* Achievement Toast */}
-      <AchievementToast achievement={currentAchievement} visible={showAchievement} />
+      <AchievementToast achievement={currentAchievement} visible={showAchievement} t={t} />
 
-      {/* Full Quiz after all 12 interactions */}
+      {/* Full Quiz */}
       {showFullQuiz && (
         <FullQuizModal
           questions={QUIZ_QUESTIONS}
           onComplete={handleQuizComplete}
+          t={t}
         />
       )}
 
@@ -770,6 +896,7 @@ export default function Level1() {
           total={quizTotal}
           stars={finalStars}
           onContinue={() => navigate('/hub')}
+          t={t}
         />
       )}
     </div>

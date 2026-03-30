@@ -5,7 +5,6 @@ import { GameProvider } from './context/GameContext';
 
 import SplashScreen from './screens/SplashScreen';
 import LanguageScreen from './screens/LanguageScreen';
-import AgeScreen from './screens/AgeScreen';
 import ArjunIntroScreen from './screens/ArjunIntroScreen';
 import VideoScreen from './screens/VideoScreen';
 import HubScreen from './screens/HubScreen';
@@ -19,7 +18,6 @@ const AnimatedRoutes = () => {
       <Routes location={location} key={location.pathname}>
         <Route path="/" element={<SplashScreen />} />
         <Route path="/language" element={<LanguageScreen />} />
-        <Route path="/age" element={<AgeScreen />} />
         <Route path="/intro" element={<ArjunIntroScreen />} />
         <Route path="/video" element={<VideoScreen />} />
         <Route path="/hub" element={<HubScreen />} />

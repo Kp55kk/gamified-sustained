@@ -6,10 +6,9 @@ export const useGame = () => useContext(GameContext);
 
 export const GameProvider = ({ children }) => {
   const [selectedLanguage, setSelectedLanguage] = useState(null);
-  const [ageGroup, setAgeGroup] = useState(null); // 'sslc' | 'hsc'
   const [carbonCoins, setCarbonCoins] = useState(0);
   const [completedLevels, setCompletedLevels] = useState([]);
-  const [currentLevel, setCurrentLevel] = useState(1); // Default to unlocked level 1
+  const [currentLevel, setCurrentLevel] = useState(1);
 
   const addCarbonCoins = (amount) => setCarbonCoins((prev) => prev + amount);
   
@@ -28,8 +27,7 @@ export const GameProvider = ({ children }) => {
   const value = {
     selectedLanguage,
     setSelectedLanguage,
-    ageGroup,
-    setAgeGroup,
+    language: selectedLanguage,
     carbonCoins,
     addCarbonCoins,
     completedLevels,
@@ -44,3 +42,4 @@ export const GameProvider = ({ children }) => {
     </GameContext.Provider>
   );
 };
+

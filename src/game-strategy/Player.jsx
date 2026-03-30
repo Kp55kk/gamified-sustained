@@ -4,107 +4,73 @@ import * as THREE from 'three';
 import { APPLIANCE_POSITIONS, INTERACTABLE_IDS } from './applianceData';
 
 // ════════════════════════════════════════════════════════════
-//  WALL / COLLISION DATA
+//  WALL COLLISION DATA — ONLY WALLS, NOT DOORWAYS/APPLIANCES
+//  Doorways have gaps so character can walk through
 // ════════════════════════════════════════════════════════════
 
-// Player wall collision segments (thin lines for capsule-like test)
 const WALL_SEGMENTS = [
-  { type: 'h', z: -8, x1: -10, x2: -6 },
-  { type: 'h', z: -8, x1: -4, x2: 10 },
+  // Front wall (z = -8) — door gap at [-6.5,-3.5]
+  { type: 'h', z: -8, x1: -10, x2: -6.5 },
+  { type: 'h', z: -8, x1: -3.5, x2: 10 },
+
+  // Back wall (z = 8)
   { type: 'h', z: 8, x1: -10, x2: 10 },
-  { type: 'h', z: 0, x1: -10, x2: -6 },
-  { type: 'h', z: 0, x1: -4, x2: 4 },
-  { type: 'h', z: 0, x1: 6, x2: 10 },
+
+  // Horizontal middle wall (z = 0) — gaps for doorways
+  { type: 'h', z: 0, x1: -10, x2: -6.5 },
+  { type: 'h', z: 0, x1: -3.5, x2: 3.5 },
+  { type: 'h', z: 0, x1: 6.5, x2: 10 },
+
+  // Left wall (x = -10)
   { type: 'v', x: -10, z1: -8, z2: 8 },
+  // Right wall (x = 10)
   { type: 'v', x: 10, z1: -8, z2: 8 },
-  { type: 'v', x: 0, z1: -8, z2: -5 },
-  { type: 'v', x: 0, z1: -3, z2: 0 },
-  { type: 'v', x: 4, z1: 0, z2: 3 },
-  { type: 'v', x: 4, z1: 5, z2: 8 },
+
+  // Vertical wall front (x = 0, z = [-8, 0]) — gap for doorway
+  { type: 'v', x: 0, z1: -8, z2: -5.5 },
+  { type: 'v', x: 0, z1: -2.5, z2: 0 },
+
+  // Vertical wall back (x = 4, z = [0, 8]) — gap for doorway
+  { type: 'v', x: 4, z1: 0, z2: 2.5 },
+  { type: 'v', x: 4, z1: 5.5, z2: 8 },
 ];
 
-// Thick AABB boxes for camera raycasting (slightly oversized for safety)
-const WALL_BOXES = [
-  // Outer walls
-  { min: [-10.2, 0, -8.2], max: [-5.8, 3.2, -7.8] },
-  { min: [-4.2, 0, -8.2], max: [10.2, 3.2, -7.8] },
-  { min: [-10.2, 0, 7.8],  max: [10.2, 3.2, 8.2] },
-  { min: [-10.2, 0, -8.2], max: [-9.8, 3.2, 8.2] },
-  { min: [9.8, 0, -8.2],   max: [10.2, 3.2, 8.2] },
-  // Inner walls
-  { min: [-10.1, 0, -0.15], max: [-5.9, 3.2, 0.15] },
-  { min: [-4.1, 0, -0.15],  max: [4.1, 3.2, 0.15] },
-  { min: [5.9, 0, -0.15],   max: [10.1, 3.2, 0.15] },
-  { min: [-0.15, 0, -8.1],  max: [0.15, 3.2, -4.9] },
-  { min: [-0.15, 0, -3.1],  max: [0.15, 3.2, 0.1] },
-  { min: [3.85, 0, -0.1],   max: [4.15, 3.2, 3.1] },
-  { min: [3.85, 0, 4.9],    max: [4.15, 3.2, 8.1] },
-  // NOTE: No ceiling AABB — camera is allowed to orbit above walls
+// Small collision radius so character fits through doors
+const PLAYER_RADIUS = 0.3;
+const INTERACTION_RADIUS = 2.8;
+
+// ════════════════════════════════════════════════════════════
+//  FURNITURE COLLISION BOXES (large objects only)
+//  Small appliances (router, charger, STB) have NO collision
+//  Doorframes have NO collision
+//  Floor has NO collision
+// ════════════════════════════════════════════════════════════
+
+const FURNITURE_BOXES = [
+  // Fridge (Kitchen)
+  { minX: -2.2, maxX: -0.8, minZ: 6.5, maxZ: 7.8 },
+  // Washing Machine (Bathroom)
+  { minX: 4.8, maxX: 6.2, minZ: 6.5, maxZ: 7.8 },
+  // Kitchen counter back wall
+  { minX: -9.5, maxX: -3.5, minZ: 6.8, maxZ: 7.8 },
+  // Living room sofa (L-shaped)
+  { minX: -9.5, maxX: -6.5, minZ: -7.5, maxZ: -5.5 },
+  // Living room TV stand
+  { minX: -6.0, maxX: -4.0, minZ: -7.7, maxZ: -7.2 },
+  // Bedroom bed
+  { minX: 5.0, maxX: 9.5, minZ: -7.5, maxZ: -4.5 },
+  // Bedroom desk
+  { minX: 1.5, maxX: 3.5, minZ: -7.7, maxZ: -7.0 },
+  // Bathroom fixtures area
+  { minX: 8.5, maxX: 9.8, minZ: 1.0, maxZ: 3.0 },
 ];
 
-// Pre-build THREE.Box3 objects once (avoids GC churn every frame)
-const WALL_AABBS = WALL_BOXES.map(b =>
-  new THREE.Box3(
-    new THREE.Vector3(b.min[0], b.min[1], b.min[2]),
-    new THREE.Vector3(b.max[0], b.max[1], b.max[2])
-  )
-);
-
 // ════════════════════════════════════════════════════════════
-//  TUNING CONSTANTS — tweak these for feel
-// ════════════════════════════════════════════════════════════
-
-const PLAYER_SPEED        = 4.8;    // max m/s
-const PLAYER_RADIUS       = 0.45;   // capsule radius for wall test
-const INTERACTION_RADIUS  = 2.8;
-
-// Camera
-const CAM_DIST_OUTDOOR    = 7;      // camera distance outdoors / large rooms
-const CAM_DIST_LIVING     = 6;
-const CAM_DIST_BEDROOM    = 6;
-const CAM_DIST_KITCHEN    = 5;
-const CAM_DIST_BATHROOM   = 4;
-const CAM_HEIGHT_OUTDOOR  = 5;
-const CAM_HEIGHT_INDOOR   = 4;
-const CAM_MIN_DIST        = 2.0;    // absolute minimum (very close zoom)
-const CAM_WALL_PULLBACK   = 0.35;   // how far in front of wall to place cam
-
-// Smoothing
-const CAM_POS_SMOOTH      = 0.09;   // position lerp — lower = more lag (cinematic)
-const CAM_POS_SMOOTH_FAR  = 0.18;   // when camera is far away, catch up faster
-const CAM_DIST_SMOOTH     = 0.04;   // how fast camera distance adapts to room
-const CAM_HEIGHT_SMOOTH   = 0.04;
-const CAM_AUTOCENTER_SPEED = 0.3;   // how fast camera auto-centers behind player (rad/s)
-const CAM_AUTOCENTER_DELAY = 2.0;   // seconds before auto-center kicks in
-
-// Movement
-const ACCEL_RATE          = 14;     // how fast we reach max speed
-const DECEL_RATE          = 10;     // how fast we stop
-const TURN_SPEED          = 0.15;   // character mesh rotation smoothing (0..1)
-const VEL_DEADZONE        = 0.05;   // below this velocity, consider stopped
-
-// Mouse
-const MOUSE_SENSITIVITY   = 0.002;
-const PITCH_MIN           = 0.2;    // prevent looking straight across
-const PITCH_MAX           = 1.15;   // prevent looking under ground
-
-// Smart Camera Brain
-const DIRECTION_FOLLOW    = 0.12;   // camera follows turn direction (same side)
-const LOCKON_RADIUS       = 3.5;    // focus on appliance within this distance
-const LOCKON_STRENGTH     = 0.025;  // how strongly camera pulls toward appliance
-const SHOULDER_OFFSET     = 0.4;    // slight right-side offset (over-shoulder view)
-const CAM_ASSIST_SPEED    = 0.6;    // camera assist — aligns behind movement direction
-const SHARP_TURN_SLOWMO   = 0.7;    // subtle time slowdown on sharp turns (1.0 = none)
-const SHARP_TURN_THRESHOLD = 2.0;   // radians/sec to trigger slow-motion feel
-
-// Footstep audio
-const FOOTSTEP_INTERVAL   = 0.35;   // seconds between footstep sounds
-
-// ════════════════════════════════════════════════════════════
-//  UTILITY FUNCTIONS
+//  COLLISION — WALLS + LARGE FURNITURE
 // ════════════════════════════════════════════════════════════
 
 function checkCollision(x, z) {
+  // Check walls
   for (const w of WALL_SEGMENTS) {
     if (w.type === 'h') {
       if (Math.abs(z - w.z) < PLAYER_RADIUS &&
@@ -116,41 +82,29 @@ function checkCollision(x, z) {
           z <= w.z2 + PLAYER_RADIUS) return true;
     }
   }
+  // Check furniture
+  for (const box of FURNITURE_BOXES) {
+    if (x + PLAYER_RADIUS > box.minX && x - PLAYER_RADIUS < box.maxX &&
+        z + PLAYER_RADIUS > box.minZ && z - PLAYER_RADIUS < box.maxZ) return true;
+  }
   return false;
 }
 
-// Navigation assist — tries to slide player along wall surface
-function slideMove(x, z, dx, dz) {
+// moveWithCollisions equivalent — try full move, then slide
+function moveWithCollisions(x, z, dx, dz) {
   const nx = x + dx;
   const nz = z + dz;
-
-  // Try full move first
   if (!checkCollision(nx, nz)) return { x: nx, z: nz };
-
-  // Try X only (slide along Z-axis wall)
   if (!checkCollision(nx, z)) return { x: nx, z: z };
-
-  // Try Z only (slide along X-axis wall)
   if (!checkCollision(x, nz)) return { x: x, z: nz };
-
-  // Stuck — try micro-nudge to unstick from corners
-  const nudge = 0.02;
-  for (const [ndx, ndz] of [[nudge, 0], [-nudge, 0], [0, nudge], [0, -nudge]]) {
-    if (!checkCollision(x + ndx, z + ndz)) return { x: x + ndx, z: z + ndz };
-  }
-
-  return { x, z }; // truly stuck, don't move
+  return { x, z };
 }
 
 function getCurrentRoom(x, z) {
-  if (x < 0 && z < 0)  return 'Living Room';
-  if (x >= 0 && z < 0)  return 'Bedroom';
-  if (x < 4 && z >= 0)  return 'Kitchen';
+  if (x < 0 && z < 0) return 'Living Room';
+  if (x >= 0 && z < 0) return 'Bedroom';
+  if (x < 4 && z >= 0) return 'Kitchen';
   return 'Bathroom';
-}
-
-function isInsideHouse(x, z) {
-  return x > -9.8 && x < 9.8 && z > -7.8 && z < 7.8;
 }
 
 function getNearestAppliance(px, pz) {
@@ -167,97 +121,8 @@ function getNearestAppliance(px, pz) {
   return nearest;
 }
 
-// Shortest angular difference (wraps around ±π)
-function angleDiff(a, b) {
-  let d = ((b - a + Math.PI) % (Math.PI * 2)) - Math.PI;
-  if (d < -Math.PI) d += Math.PI * 2;
-  return d;
-}
-
-// Footstep sound generator
-let footstepCtx = null;
-function playFootstep(indoor) {
-  try {
-    if (!footstepCtx) footstepCtx = new (window.AudioContext || window.webkitAudioContext)();
-    const ctx = footstepCtx;
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    const filter = ctx.createBiquadFilter();
-    osc.connect(filter);
-    filter.connect(gain);
-    gain.connect(ctx.destination);
-    
-    // Different sound for indoor vs outdoor
-    if (indoor) {
-      // Indoor: crisp tap with slight reverb feel
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(120 + Math.random() * 40, ctx.currentTime);
-      filter.type = 'lowpass';
-      filter.frequency.value = 800;
-      gain.gain.setValueAtTime(0.04, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
-      osc.start(ctx.currentTime);
-      osc.stop(ctx.currentTime + 0.15);
-    } else {
-      // Outdoor: softer, more open
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(80 + Math.random() * 30, ctx.currentTime);
-      filter.type = 'lowpass';
-      filter.frequency.value = 400;
-      gain.gain.setValueAtTime(0.025, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
-      osc.start(ctx.currentTime);
-      osc.stop(ctx.currentTime + 0.12);
-    }
-  } catch (e) {}
-}
-
 // ════════════════════════════════════════════════════════════
-//  CAMERA COLLISION — Multi-ray sphere-cast approximation
-// ════════════════════════════════════════════════════════════
-
-const _ray = new THREE.Ray();
-const _hit = new THREE.Vector3();
-const _dir = new THREE.Vector3();
-const _p3  = new THREE.Vector3();
-
-// Sphere-cast approximation: cast centre ray + 4 offset rays
-function cameraSphereCast(playerPos, camPos) {
-  _dir.subVectors(camPos, playerPos);
-  const totalDist = _dir.length();
-  if (totalDist < 0.2) return totalDist;
-  _dir.normalize();
-
-  let closest = totalDist;
-
-  // centre + 4 corners of a virtual sphere
-  const offsets = [
-    [0, 0, 0],       // centre
-    [0, 0.3, 0],     // up
-    [0, -0.3, 0],    // down
-    [0.3, 0, 0],     // right (approximate)
-    [-0.3, 0, 0],    // left
-  ];
-
-  for (const [ox, oy, oz] of offsets) {
-    _p3.set(playerPos.x + ox, playerPos.y + oy, playerPos.z + oz);
-    _ray.set(_p3, _dir);
-
-    for (const aabb of WALL_AABBS) {
-      if (_ray.intersectBox(aabb, _hit)) {
-        const d = _hit.distanceTo(_p3);
-        if (d > 0.2 && d < closest) {
-          closest = d;
-        }
-      }
-    }
-  }
-
-  return Math.max(CAM_MIN_DIST, closest - CAM_WALL_PULLBACK);
-}
-
-// ════════════════════════════════════════════════════════════
-//  CHARACTER MODEL (unchanged)
+//  CHARACTER MODEL (Arjun)
 // ════════════════════════════════════════════════════════════
 
 function ArjunModel({ isMoving }) {
@@ -269,20 +134,18 @@ function ArjunModel({ isMoving }) {
 
   useFrame(() => {
     if (!bodyRef.current) return;
-
     if (isMoving) {
       const t = performance.now() * 0.008;
-      bodyRef.current.position.y = Math.sin(t * 2) * 0.04;
-      const swing = 0.6, legSwing = 0.5;
-      if (leftArmRef.current) leftArmRef.current.rotation.x = Math.sin(t) * swing;
-      if (rightArmRef.current) rightArmRef.current.rotation.x = Math.sin(t + Math.PI) * swing;
-      if (leftLegRef.current) leftLegRef.current.rotation.x = Math.sin(t + Math.PI) * legSwing;
-      if (rightLegRef.current) rightLegRef.current.rotation.x = Math.sin(t) * legSwing;
+      bodyRef.current.position.y = Math.sin(t * 2) * 0.06;
+      if (leftArmRef.current) leftArmRef.current.rotation.x = Math.sin(t) * 0.6;
+      if (rightArmRef.current) rightArmRef.current.rotation.x = Math.sin(t + Math.PI) * 0.6;
+      if (leftLegRef.current) leftLegRef.current.rotation.x = Math.sin(t + Math.PI) * 0.5;
+      if (rightLegRef.current) rightLegRef.current.rotation.x = Math.sin(t) * 0.5;
     } else {
       const t = performance.now() * 0.002;
-      bodyRef.current.position.y = Math.sin(t) * 0.015;
-      if (leftArmRef.current) { leftArmRef.current.rotation.x = Math.sin(t * 0.7) * 0.04; leftArmRef.current.rotation.z = Math.sin(t * 0.5) * 0.02 - 0.05; }
-      if (rightArmRef.current) { rightArmRef.current.rotation.x = Math.sin(t * 0.7 + 0.5) * 0.04; rightArmRef.current.rotation.z = Math.sin(t * 0.5 + 0.5) * 0.02 + 0.05; }
+      bodyRef.current.position.y = Math.sin(t) * 0.02;
+      if (leftArmRef.current) { leftArmRef.current.rotation.x = Math.sin(t * 0.7) * 0.05; leftArmRef.current.rotation.z = -0.05; }
+      if (rightArmRef.current) { rightArmRef.current.rotation.x = Math.sin(t * 0.7 + 0.5) * 0.05; rightArmRef.current.rotation.z = 0.05; }
       if (leftLegRef.current) leftLegRef.current.rotation.x = 0;
       if (rightLegRef.current) rightLegRef.current.rotation.x = 0;
     }
@@ -292,51 +155,40 @@ function ArjunModel({ isMoving }) {
 
   return (
     <group ref={bodyRef}>
-      {/* LEFT LEG */}
       <group ref={leftLegRef} position={[-0.12, 0.6, 0]}>
         <mesh position={[0, -0.13, 0]} castShadow><cylinderGeometry args={[0.08, 0.07, 0.25]} /><meshStandardMaterial color={pants} /></mesh>
         <mesh position={[0, -0.35, 0]} castShadow><cylinderGeometry args={[0.065, 0.055, 0.25]} /><meshStandardMaterial color={pants} /></mesh>
         <mesh position={[0, -0.5, 0.04]} castShadow><boxGeometry args={[0.12, 0.1, 0.2]} /><meshStandardMaterial color={shoe} /></mesh>
       </group>
-      {/* RIGHT LEG */}
       <group ref={rightLegRef} position={[0.12, 0.6, 0]}>
         <mesh position={[0, -0.13, 0]} castShadow><cylinderGeometry args={[0.08, 0.07, 0.25]} /><meshStandardMaterial color={pants} /></mesh>
         <mesh position={[0, -0.35, 0]} castShadow><cylinderGeometry args={[0.065, 0.055, 0.25]} /><meshStandardMaterial color={pants} /></mesh>
         <mesh position={[0, -0.5, 0.04]} castShadow><boxGeometry args={[0.12, 0.1, 0.2]} /><meshStandardMaterial color={shoe} /></mesh>
       </group>
-      {/* TORSO */}
       <mesh position={[0, 0.85, 0]} castShadow><boxGeometry args={[0.45, 0.55, 0.25]} /><meshStandardMaterial color={shirt} /></mesh>
       <mesh position={[0, 0.88, 0.13]}><circleGeometry args={[0.07, 6]} /><meshStandardMaterial color="#fff" /></mesh>
-      {/* LEFT ARM */}
       <group ref={leftArmRef} position={[-0.3, 1.0, 0]}>
         <mesh position={[0, -0.12, 0]} castShadow><cylinderGeometry args={[0.055, 0.05, 0.25]} /><meshStandardMaterial color={shirt} /></mesh>
         <mesh position={[0, -0.32, 0]} castShadow><cylinderGeometry args={[0.045, 0.04, 0.2]} /><meshStandardMaterial color={skin} /></mesh>
         <mesh position={[0, -0.44, 0]} castShadow><sphereGeometry args={[0.04, 8, 8]} /><meshStandardMaterial color={skin} /></mesh>
       </group>
-      {/* RIGHT ARM */}
       <group ref={rightArmRef} position={[0.3, 1.0, 0]}>
         <mesh position={[0, -0.12, 0]} castShadow><cylinderGeometry args={[0.055, 0.05, 0.25]} /><meshStandardMaterial color={shirt} /></mesh>
         <mesh position={[0, -0.32, 0]} castShadow><cylinderGeometry args={[0.045, 0.04, 0.2]} /><meshStandardMaterial color={skin} /></mesh>
         <mesh position={[0, -0.44, 0]} castShadow><sphereGeometry args={[0.04, 8, 8]} /><meshStandardMaterial color={skin} /></mesh>
       </group>
-      {/* NECK */}
       <mesh position={[0, 1.15, 0]}><cylinderGeometry args={[0.06, 0.06, 0.08]} /><meshStandardMaterial color={skin} /></mesh>
-      {/* HEAD */}
       <group position={[0, 1.38, 0]}>
         <mesh castShadow><sphereGeometry args={[0.2, 16, 16]} /><meshStandardMaterial color={skin} /></mesh>
         <mesh position={[0, 0.08, -0.02]}><sphereGeometry args={[0.21, 16, 12, 0, Math.PI * 2, 0, Math.PI / 2]} /><meshStandardMaterial color={hair} /></mesh>
         <mesh position={[0, 0.1, 0.12]}><boxGeometry args={[0.25, 0.08, 0.08]} /><meshStandardMaterial color={hair} /></mesh>
-        {/* Eyes */}
         <mesh position={[-0.07, 0.02, 0.18]}><sphereGeometry args={[0.035, 8, 8]} /><meshStandardMaterial color="#fff" /></mesh>
         <mesh position={[-0.07, 0.02, 0.2]}><sphereGeometry args={[0.018, 8, 8]} /><meshStandardMaterial color="#22c55e" /></mesh>
         <mesh position={[0.07, 0.02, 0.18]}><sphereGeometry args={[0.035, 8, 8]} /><meshStandardMaterial color="#fff" /></mesh>
         <mesh position={[0.07, 0.02, 0.2]}><sphereGeometry args={[0.018, 8, 8]} /><meshStandardMaterial color="#22c55e" /></mesh>
-        {/* Eyebrows */}
         <mesh position={[-0.07, 0.065, 0.19]} rotation={[0, 0, 0.15]}><boxGeometry args={[0.06, 0.015, 0.01]} /><meshStandardMaterial color={hair} /></mesh>
         <mesh position={[0.07, 0.065, 0.19]} rotation={[0, 0, -0.15]}><boxGeometry args={[0.06, 0.015, 0.01]} /><meshStandardMaterial color={hair} /></mesh>
-        {/* Mouth */}
         <mesh position={[0, -0.06, 0.19]}><boxGeometry args={[0.06, 0.015, 0.01]} /><meshStandardMaterial color="#a0522d" /></mesh>
-        {/* Ears */}
         <mesh position={[-0.2, 0, 0]}><sphereGeometry args={[0.04, 8, 8]} /><meshStandardMaterial color={skin} /></mesh>
         <mesh position={[0.2, 0, 0]}><sphereGeometry args={[0.04, 8, 8]} /><meshStandardMaterial color={skin} /></mesh>
       </group>
@@ -345,7 +197,7 @@ function ArjunModel({ isMoving }) {
 }
 
 // ════════════════════════════════════════════════════════════
-//  SHARED STATE (exported for Appliances, Level1, etc.)
+//  SHARED STATE
 // ════════════════════════════════════════════════════════════
 
 export const playerState = {
@@ -362,171 +214,96 @@ export const cameraMode = {
 
 // ════════════════════════════════════════════════════════════
 //  PLAYER COMPONENT
+//  - NO pointer lock
+//  - NO mouse camera rotation
+//  - Camera: above + behind character, lerp follow (like UniversalCamera with inputs.clear())
+//  - Movement: WASD/Arrows rotate + move character, speed 0.15, turnSpeed 0.05
+//  - Collisions: WALLS ONLY via moveWithCollisions
 // ════════════════════════════════════════════════════════════
 
 export default function Player({ onRoomChange, onNearestApplianceChange, onInteract }) {
   const groupRef = useRef();
-  const { camera, gl } = useThree();
+  const { camera } = useThree();
 
-  // Input refs
-  const keysRef    = useRef({ up: false, down: false, left: false, right: false });
-  const isLockedRef = useRef(false);
+  // Input map — exactly as specified
+  const keys = useRef({});
+  const posRef = useRef({ x: -5, z: -6.5 });
+  const rotRef = useRef(0); // character rotation.y
+  const movingRef = useRef(false);
 
-  // Position / velocity
-  const posRef     = useRef({ x: -5, z: -6.5 });
-  const velRef     = useRef({ x: 0, z: 0 });
-  const speedRef   = useRef(0);           // scalar speed for animation blending
-  const movingRef  = useRef(false);
-
-  // Character facing angle (smoothed)
-  const facingRef  = useRef(0);
-
-  // Camera orbit
-  const yawRef     = useRef(0);
-  const pitchRef   = useRef(0.55);
-  const prevYawRef = useRef(0);            // for predictive shift
-
-  // Camera adaptive
-  const camDistRef   = useRef(CAM_DIST_OUTDOOR);
-  const camHeightRef = useRef(CAM_HEIGHT_OUTDOOR);
-
-  // Auto-center timer
-  const idleTimeRef = useRef(0);
-
-  // Footstep timer
-  const footstepTimerRef = useRef(0);
-
-  // ── Pointer Lock ──
+  // ── Keyboard: keydown/keyup with preventDefault to stop page scroll ──
   useEffect(() => {
-    const canvas = gl.domElement;
-    const requestLock = () => { if (!isLockedRef.current) canvas.requestPointerLock(); };
-    const onLockChange = () => { isLockedRef.current = document.pointerLockElement === canvas; };
-    const onMouseMove = (e) => {
-      if (!isLockedRef.current) return;
-      yawRef.current -= e.movementX * MOUSE_SENSITIVITY;
-      pitchRef.current = Math.max(PITCH_MIN, Math.min(PITCH_MAX, pitchRef.current - e.movementY * MOUSE_SENSITIVITY));
-      idleTimeRef.current = 0; // reset auto-center on mouse movement
+    const onKeyDown = (e) => {
+      const k = e.key.toLowerCase();
+      keys.current[k] = true;
+      // Prevent page scroll on arrow keys
+      if (['arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(k)) {
+        e.preventDefault();
+      }
+      // E to interact
+      if (k === 'e' && onInteract && playerState.nearestAppliance) {
+        onInteract(playerState.nearestAppliance);
+      }
     };
-    canvas.addEventListener('click', requestLock);
-    document.addEventListener('pointerlockchange', onLockChange);
-    document.addEventListener('mousemove', onMouseMove);
+    const onKeyUp = (e) => {
+      keys.current[e.key.toLowerCase()] = false;
+    };
+    window.addEventListener('keydown', onKeyDown);
+    window.addEventListener('keyup', onKeyUp);
     return () => {
-      canvas.removeEventListener('click', requestLock);
-      document.removeEventListener('pointerlockchange', onLockChange);
-      document.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('keyup', onKeyUp);
     };
-  }, [gl]);
-
-  // ── Keyboard ──
-  useEffect(() => {
-    const down = (e) => {
-      switch (e.key.toLowerCase()) {
-        case 'w': case 'arrowup':    keysRef.current.up    = true; break;
-        case 's': case 'arrowdown':  keysRef.current.down  = true; break;
-        case 'a': case 'arrowleft':  keysRef.current.left  = true; break;
-        case 'd': case 'arrowright': keysRef.current.right = true; break;
-        case 'e': if (onInteract && playerState.nearestAppliance) onInteract(playerState.nearestAppliance); break;
-      }
-    };
-    const up = (e) => {
-      switch (e.key.toLowerCase()) {
-        case 'w': case 'arrowup':    keysRef.current.up    = false; break;
-        case 's': case 'arrowdown':  keysRef.current.down  = false; break;
-        case 'a': case 'arrowleft':  keysRef.current.left  = false; break;
-        case 'd': case 'arrowright': keysRef.current.right = false; break;
-      }
-    };
-    window.addEventListener('keydown', down);
-    window.addEventListener('keyup', up);
-    return () => { window.removeEventListener('keydown', down); window.removeEventListener('keyup', up); };
   }, [onInteract]);
 
   // ══════════════════════════════════════════════════════════
-  //  GAME LOOP
+  //  RENDER LOOP — exact logic from user spec
   // ══════════════════════════════════════════════════════════
-  useFrame((_, rawDelta) => {
-    // Clamp delta to prevent huge jumps on tab-switch
-    const delta = Math.min(rawDelta, 0.05);
-    const keys = keysRef.current;
-    const yaw = yawRef.current;
+  useFrame(() => {
+    const k = keys.current;
+    const speed = 0.15;   // FAST — as specified
+    const turnSpeed = 0.05; // as specified
 
-    // ─────── 1. INPUT → TARGET VELOCITY ───────
-    let inX = 0, inZ = 0;
-    if (keys.up)    inZ += 1;
-    if (keys.down)  inZ -= 1;
-    if (keys.left)  inX += 1;
-    if (keys.right) inX -= 1;
-
-    const hasInput = inX !== 0 || inZ !== 0;
-
-    if (hasInput) {
-      idleTimeRef.current = 0; // reset auto-center
-
-      // Normalize diagonal
-      const len = Math.sqrt(inX * inX + inZ * inZ);
-      const nx = inX / len;
-      const nz = inZ / len;
-
-      // Rotate by camera yaw → camera-relative movement
-      const cosY = Math.cos(yaw);
-      const sinY = Math.sin(yaw);
-      const targetVX = (nx * cosY - nz * sinY) * PLAYER_SPEED;
-      const targetVZ = (nx * sinY + nz * cosY) * PLAYER_SPEED;
-
-      // Smooth acceleration (exponential approach)
-      const lerpFactor = 1 - Math.exp(-ACCEL_RATE * delta);
-      velRef.current.x += (targetVX - velRef.current.x) * lerpFactor;
-      velRef.current.z += (targetVZ - velRef.current.z) * lerpFactor;
-
-    } else {
-      // Smooth deceleration
-      const lerpFactor = 1 - Math.exp(-DECEL_RATE * delta);
-      velRef.current.x *= (1 - lerpFactor);
-      velRef.current.z *= (1 - lerpFactor);
-
-      // Hard stop at deadzone
-      if (Math.abs(velRef.current.x) < VEL_DEADZONE) velRef.current.x = 0;
-      if (Math.abs(velRef.current.z) < VEL_DEADZONE) velRef.current.z = 0;
-
-      idleTimeRef.current += delta;
+    // ─── ROTATE character left/right ───
+    if (k['a'] || k['arrowleft']) {
+      rotRef.current -= turnSpeed;
+    }
+    if (k['d'] || k['arrowright']) {
+      rotRef.current += turnSpeed;
     }
 
-    // Scalar speed (for animation checks)
-    speedRef.current = Math.sqrt(velRef.current.x ** 2 + velRef.current.z ** 2);
-    const isMoving = speedRef.current > 0.15;
-    movingRef.current = isMoving;
+    // ─── Calculate forward direction based on character rotation ───
+    const forwardX = Math.sin(rotRef.current);
+    const forwardZ = Math.cos(rotRef.current);
 
-    // ─────── 2. POSITION UPDATE + WALL SLIDING ───────
-    const dx = velRef.current.x * delta;
-    const dz = velRef.current.z * delta;
-    const result = slideMove(posRef.current.x, posRef.current.z, dx, dz);
-    posRef.current.x = result.x;
-    posRef.current.z = result.z;
+    let moved = false;
 
-    // ─────── 3. CHARACTER ROTATION (smooth, no snap) ───────
-    if (isMoving) {
-      const targetFacing = Math.atan2(velRef.current.x, velRef.current.z);
-      // Use shortest-path angular interpolation
-      const diff = angleDiff(facingRef.current, targetFacing);
-      facingRef.current += diff * TURN_SPEED;
+    // ─── MOVE character forward/backward ───
+    if (k['w'] || k['arrowup']) {
+      const result = moveWithCollisions(
+        posRef.current.x, posRef.current.z,
+        forwardX * speed, forwardZ * speed
+      );
+      posRef.current.x = result.x;
+      posRef.current.z = result.z;
+      moved = true;
+    }
+    if (k['s'] || k['arrowdown']) {
+      const result = moveWithCollisions(
+        posRef.current.x, posRef.current.z,
+        -forwardX * speed, -forwardZ * speed
+      );
+      posRef.current.x = result.x;
+      posRef.current.z = result.z;
+      moved = true;
     }
 
-    // ─────── 3b. FOOTSTEP AUDIO ───────
-    if (isMoving) {
-      footstepTimerRef.current += delta;
-      if (footstepTimerRef.current >= FOOTSTEP_INTERVAL) {
-        footstepTimerRef.current = 0;
-        const indoor = isInsideHouse(posRef.current.x, posRef.current.z);
-        playFootstep(indoor);
-      }
-    } else {
-      footstepTimerRef.current = FOOTSTEP_INTERVAL * 0.8; // near-ready when moving again
-    }
+    movingRef.current = moved;
 
-    // ─────── 4. UPDATE SHARED STATE ───────
+    // ─── Update shared state ───
     playerState.x = posRef.current.x;
     playerState.z = posRef.current.z;
-    playerState.cameraYaw = yaw;
+    playerState.cameraYaw = rotRef.current;
 
     // Nearest appliance
     const nearest = getNearestAppliance(posRef.current.x, posRef.current.z);
@@ -535,141 +312,49 @@ export default function Player({ onRoomChange, onNearestApplianceChange, onInter
       if (onNearestApplianceChange) onNearestApplianceChange(nearest);
     }
 
-    // Room
+    // Room detection
     const room = getCurrentRoom(posRef.current.x, posRef.current.z);
     if (onRoomChange) onRoomChange(room);
 
-    // ─────── 5. UPDATE MESH ───────
+    // ─── Update character mesh ───
     if (groupRef.current) {
       groupRef.current.position.x = posRef.current.x;
       groupRef.current.position.z = posRef.current.z;
-      groupRef.current.rotation.y = facingRef.current;
+      groupRef.current.rotation.y = rotRef.current;
     }
 
     // ═══════════════════════════════════════════════════════
-    //  6. CAMERA SYSTEM — "Smart Camera Brain"
+    //  CAMERA — above + behind character, smooth lerp
+    //  Equivalent to UniversalCamera with inputs.clear()
+    //  Camera NEVER responds to mouse or keyboard directly
     // ═══════════════════════════════════════════════════════
 
     if (cameraMode.cinematic) {
-      // ── Cinematic lock-on to appliance ──
       const midX = (posRef.current.x + cameraMode.targetX) * 0.5;
       const midZ = (posRef.current.z + cameraMode.targetZ) * 0.5;
       const cinematicTarget = new THREE.Vector3(midX, cameraMode.targetY + 1.5, midZ);
       camera.position.lerp(cinematicTarget, 0.04);
       camera.lookAt(cameraMode.targetX, cameraMode.targetY, cameraMode.targetZ);
-      prevYawRef.current = yaw;
       return;
     }
 
-    // ── A. Target distance/height based on room ──
-    const inside = isInsideHouse(posRef.current.x, posRef.current.z);
-    let targetDist, targetHeight;
+    // Target camera position: behind character based on rotation
+    const targetCamX = posRef.current.x - Math.sin(rotRef.current) * 8;
+    const targetCamY = 6; // character.position.y + 6 (character is at y=0)
+    const targetCamZ = posRef.current.z - Math.cos(rotRef.current) * 8;
 
-    if (!inside) {
-      targetDist = CAM_DIST_OUTDOOR;
-      targetHeight = CAM_HEIGHT_OUTDOOR;
-    } else {
-      targetHeight = CAM_HEIGHT_INDOOR;
-      switch (room) {
-        case 'Bathroom':   targetDist = CAM_DIST_BATHROOM; break;
-        case 'Kitchen':    targetDist = CAM_DIST_KITCHEN;  break;
-        case 'Living Room': targetDist = CAM_DIST_LIVING;  break;
-        default:           targetDist = CAM_DIST_BEDROOM;
-      }
-    }
+    // Smooth lerp — exactly 0.05 as specified
+    camera.position.x += (targetCamX - camera.position.x) * 0.05;
+    camera.position.y += (targetCamY - camera.position.y) * 0.05;
+    camera.position.z += (targetCamZ - camera.position.z) * 0.05;
 
-    // Smooth distance / height transitions
-    camDistRef.current   += (targetDist   - camDistRef.current)   * CAM_DIST_SMOOTH;
-    camHeightRef.current += (targetHeight - camHeightRef.current) * CAM_HEIGHT_SMOOTH;
-
-    // ── B. Auto-center behind player when idle ──
-    if (!isMoving && idleTimeRef.current > CAM_AUTOCENTER_DELAY) {
-      // Slowly nudge yaw toward opposite of facing (behind the player)
-      const behindYaw = facingRef.current + Math.PI;
-      const yawDiff = angleDiff(yawRef.current, behindYaw);
-      yawRef.current += yawDiff * CAM_AUTOCENTER_SPEED * delta;
-    }
-
-    // ── B2. Camera Assist — align behind movement direction while moving ──
-    if (isMoving && speedRef.current > 1.5) {
-      const movementYaw = Math.atan2(velRef.current.x, velRef.current.z) + Math.PI;
-      const moveYawDiff = angleDiff(yawRef.current, movementYaw);
-      // Only assist if camera is significantly misaligned
-      if (Math.abs(moveYawDiff) > 0.5) {
-        yawRef.current += moveYawDiff * CAM_ASSIST_SPEED * delta * 0.3;
-      }
-    }
-
-    // ── C. Direction-following camera shift (Smart Camera Brain) ──
-    const yawDelta = yawRef.current - prevYawRef.current;
-    prevYawRef.current = yawRef.current;
-    // When turning left, camera follows left (same direction) for better visibility
-    const directionYaw = yawRef.current + yawDelta * DIRECTION_FOLLOW;
-
-    // ── C2. Subtle slow-motion feel on sharp turns ──
-    const turnRate = Math.abs(yawDelta) / Math.max(delta, 0.001);
-    // (The slow-mo is visual only — we slightly reduce camera smoothing on sharp turns
-    //  which creates a micro-cinematic effect)
-    const sharpTurnFactor = turnRate > SHARP_TURN_THRESHOLD ? SHARP_TURN_SLOWMO : 1.0;
-
-    // ── D. Calculate ideal camera position ──
-    const pitch = pitchRef.current;
-    const orbitDist = camDistRef.current;
-    const orbitHeight = camHeightRef.current;
-
-    const idealCamX = posRef.current.x + Math.sin(directionYaw) * Math.cos(pitch) * orbitDist;
-    const idealCamZ = posRef.current.z + Math.cos(directionYaw) * Math.cos(pitch) * orbitDist;
-    const idealCamY = Math.sin(pitch) * orbitHeight;
-
-    // ── E. Sphere-cast collision — prevent wall clipping ──
-    const playerEye = new THREE.Vector3(posRef.current.x, 1.2, posRef.current.z);
-    const idealCamPos = new THREE.Vector3(idealCamX, idealCamY, idealCamZ);
-    const safeDist = cameraSphereCast(playerEye, idealCamPos);
-    const actualDist = Math.min(safeDist, orbitDist);
-
-    // Recalculate with safe distance
-    const ratio = actualDist / Math.max(orbitDist, 0.01);
-    const safeCamX = posRef.current.x + Math.sin(directionYaw) * Math.cos(pitch) * actualDist;
-    const safeCamZ = posRef.current.z + Math.cos(directionYaw) * Math.cos(pitch) * actualDist;
-    const safeCamY = Math.max(1.2, idealCamY * ratio);
-
-    // ── E2. Shoulder offset (slight right-side shift like GTA) ──
-    const shoulderX = safeCamX + Math.cos(directionYaw) * SHOULDER_OFFSET;
-    const shoulderZ = safeCamZ - Math.sin(directionYaw) * SHOULDER_OFFSET;
-
-    // ── F. Lock-on focus — gently pull camera toward nearby appliance ──
-    let lookX = posRef.current.x;
-    let lookZ = posRef.current.z;
-    const lookY = 1.2;
-
-    if (nearest) {
-      const ap = APPLIANCE_POSITIONS[nearest];
-      if (ap) {
-        const adx = ap.pos[0] - posRef.current.x;
-        const adz = ap.pos[2] - posRef.current.z;
-        const aDist = Math.sqrt(adx * adx + adz * adz);
-        if (aDist < LOCKON_RADIUS) {
-          const lockStr = LOCKON_STRENGTH * (1 - aDist / LOCKON_RADIUS);
-          lookX = THREE.MathUtils.lerp(lookX, (posRef.current.x + ap.pos[0]) * 0.5, lockStr);
-          lookZ = THREE.MathUtils.lerp(lookZ, (posRef.current.z + ap.pos[2]) * 0.5, lockStr);
-        }
-      }
-    }
-
-    // ── G. Apply with smooth lag + slow-motion turn effect ──
-    const camTarget = new THREE.Vector3(shoulderX, safeCamY, shoulderZ);
-    const dist2Cam = camera.position.distanceTo(camTarget);
-    const baseLag = dist2Cam > 4 ? CAM_POS_SMOOTH_FAR : CAM_POS_SMOOTH;
-    const lagFactor = baseLag * sharpTurnFactor; // slow down camera on sharp turns for cinematic feel
-
-    camera.position.lerp(camTarget, lagFactor);
-    camera.lookAt(lookX, lookY, lookZ);
+    // Look at character (position + Vector3(0, 1.5, 0))
+    camera.lookAt(posRef.current.x, 1.5, posRef.current.z);
   });
 
   return (
     <group ref={groupRef} position={[-5, 0, -6.5]}>
       <ArjunModel isMoving={movingRef.current} />
-      {/* Shadow disc */}
       <mesh position={[0, 0.01, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <circleGeometry args={[0.3, 16]} />
         <meshBasicMaterial color="#000" transparent opacity={0.2} />
