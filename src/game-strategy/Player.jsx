@@ -89,9 +89,16 @@ const PITCH_MIN           = 0.2;    // prevent looking straight across
 const PITCH_MAX           = 1.15;   // prevent looking under ground
 
 // Smart Camera Brain
-const PREDICTIVE_SHIFT    = 0.15;   // how much camera shifts opposite to turning
+const DIRECTION_FOLLOW    = 0.12;   // camera follows turn direction (same side)
 const LOCKON_RADIUS       = 3.5;    // focus on appliance within this distance
-const LOCKON_STRENGTH     = 0.02;   // how strongly camera pulls toward appliance
+const LOCKON_STRENGTH     = 0.025;  // how strongly camera pulls toward appliance
+const SHOULDER_OFFSET     = 0.4;    // slight right-side offset (over-shoulder view)
+const CAM_ASSIST_SPEED    = 0.6;    // camera assist — aligns behind movement direction
+const SHARP_TURN_SLOWMO   = 0.7;    // subtle time slowdown on sharp turns (1.0 = none)
+const SHARP_TURN_THRESHOLD = 2.0;   // radians/sec to trigger slow-motion feel
+
+// Footstep audio
+const FOOTSTEP_INTERVAL   = 0.35;   // seconds between footstep sounds
 
 // ════════════════════════════════════════════════════════════
 //  UTILITY FUNCTIONS
@@ -165,6 +172,44 @@ function angleDiff(a, b) {
   let d = ((b - a + Math.PI) % (Math.PI * 2)) - Math.PI;
   if (d < -Math.PI) d += Math.PI * 2;
   return d;
+}
+
+// Footstep sound generator
+let footstepCtx = null;
+function playFootstep(indoor) {
+  try {
+    if (!footstepCtx) footstepCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const ctx = footstepCtx;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    const filter = ctx.createBiquadFilter();
+    osc.connect(filter);
+    filter.connect(gain);
+    gain.connect(ctx.destination);
+    
+    // Different sound for indoor vs outdoor
+    if (indoor) {
+      // Indoor: crisp tap with slight reverb feel
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(120 + Math.random() * 40, ctx.currentTime);
+      filter.type = 'lowpass';
+      filter.frequency.value = 800;
+      gain.gain.setValueAtTime(0.04, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.15);
+    } else {
+      // Outdoor: softer, more open
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(80 + Math.random() * 30, ctx.currentTime);
+      filter.type = 'lowpass';
+      filter.frequency.value = 400;
+      gain.gain.setValueAtTime(0.025, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.12);
+    }
+  } catch (e) {}
 }
 
 // ════════════════════════════════════════════════════════════
@@ -348,6 +393,9 @@ export default function Player({ onRoomChange, onNearestApplianceChange, onInter
   // Auto-center timer
   const idleTimeRef = useRef(0);
 
+  // Footstep timer
+  const footstepTimerRef = useRef(0);
+
   // ── Pointer Lock ──
   useEffect(() => {
     const canvas = gl.domElement;
@@ -404,10 +452,10 @@ export default function Player({ onRoomChange, onNearestApplianceChange, onInter
 
     // ─────── 1. INPUT → TARGET VELOCITY ───────
     let inX = 0, inZ = 0;
-    if (keys.up)    inZ -= 1;
-    if (keys.down)  inZ += 1;
-    if (keys.left)  inX -= 1;
-    if (keys.right) inX += 1;
+    if (keys.up)    inZ += 1;
+    if (keys.down)  inZ -= 1;
+    if (keys.left)  inX += 1;
+    if (keys.right) inX -= 1;
 
     const hasInput = inX !== 0 || inZ !== 0;
 
@@ -461,6 +509,18 @@ export default function Player({ onRoomChange, onNearestApplianceChange, onInter
       // Use shortest-path angular interpolation
       const diff = angleDiff(facingRef.current, targetFacing);
       facingRef.current += diff * TURN_SPEED;
+    }
+
+    // ─────── 3b. FOOTSTEP AUDIO ───────
+    if (isMoving) {
+      footstepTimerRef.current += delta;
+      if (footstepTimerRef.current >= FOOTSTEP_INTERVAL) {
+        footstepTimerRef.current = 0;
+        const indoor = isInsideHouse(posRef.current.x, posRef.current.z);
+        playFootstep(indoor);
+      }
+    } else {
+      footstepTimerRef.current = FOOTSTEP_INTERVAL * 0.8; // near-ready when moving again
     }
 
     // ─────── 4. UPDATE SHARED STATE ───────
@@ -523,26 +583,42 @@ export default function Player({ onRoomChange, onNearestApplianceChange, onInter
     camHeightRef.current += (targetHeight - camHeightRef.current) * CAM_HEIGHT_SMOOTH;
 
     // ── B. Auto-center behind player when idle ──
-    if (idleTimeRef.current > CAM_AUTOCENTER_DELAY && isMoving) {
+    if (!isMoving && idleTimeRef.current > CAM_AUTOCENTER_DELAY) {
       // Slowly nudge yaw toward opposite of facing (behind the player)
       const behindYaw = facingRef.current + Math.PI;
       const yawDiff = angleDiff(yawRef.current, behindYaw);
       yawRef.current += yawDiff * CAM_AUTOCENTER_SPEED * delta;
     }
 
-    // ── C. Predictive camera shift (Smart Camera Brain) ──
+    // ── B2. Camera Assist — align behind movement direction while moving ──
+    if (isMoving && speedRef.current > 1.5) {
+      const movementYaw = Math.atan2(velRef.current.x, velRef.current.z) + Math.PI;
+      const moveYawDiff = angleDiff(yawRef.current, movementYaw);
+      // Only assist if camera is significantly misaligned
+      if (Math.abs(moveYawDiff) > 0.5) {
+        yawRef.current += moveYawDiff * CAM_ASSIST_SPEED * delta * 0.3;
+      }
+    }
+
+    // ── C. Direction-following camera shift (Smart Camera Brain) ──
     const yawDelta = yawRef.current - prevYawRef.current;
     prevYawRef.current = yawRef.current;
-    // When turning left, shift camera slightly right (and vice versa)
-    const predictiveYaw = yawRef.current - yawDelta * PREDICTIVE_SHIFT;
+    // When turning left, camera follows left (same direction) for better visibility
+    const directionYaw = yawRef.current + yawDelta * DIRECTION_FOLLOW;
+
+    // ── C2. Subtle slow-motion feel on sharp turns ──
+    const turnRate = Math.abs(yawDelta) / Math.max(delta, 0.001);
+    // (The slow-mo is visual only — we slightly reduce camera smoothing on sharp turns
+    //  which creates a micro-cinematic effect)
+    const sharpTurnFactor = turnRate > SHARP_TURN_THRESHOLD ? SHARP_TURN_SLOWMO : 1.0;
 
     // ── D. Calculate ideal camera position ──
     const pitch = pitchRef.current;
     const orbitDist = camDistRef.current;
     const orbitHeight = camHeightRef.current;
 
-    const idealCamX = posRef.current.x + Math.sin(predictiveYaw) * Math.cos(pitch) * orbitDist;
-    const idealCamZ = posRef.current.z + Math.cos(predictiveYaw) * Math.cos(pitch) * orbitDist;
+    const idealCamX = posRef.current.x + Math.sin(directionYaw) * Math.cos(pitch) * orbitDist;
+    const idealCamZ = posRef.current.z + Math.cos(directionYaw) * Math.cos(pitch) * orbitDist;
     const idealCamY = Math.sin(pitch) * orbitHeight;
 
     // ── E. Sphere-cast collision — prevent wall clipping ──
@@ -553,9 +629,13 @@ export default function Player({ onRoomChange, onNearestApplianceChange, onInter
 
     // Recalculate with safe distance
     const ratio = actualDist / Math.max(orbitDist, 0.01);
-    const safeCamX = posRef.current.x + Math.sin(predictiveYaw) * Math.cos(pitch) * actualDist;
-    const safeCamZ = posRef.current.z + Math.cos(predictiveYaw) * Math.cos(pitch) * actualDist;
+    const safeCamX = posRef.current.x + Math.sin(directionYaw) * Math.cos(pitch) * actualDist;
+    const safeCamZ = posRef.current.z + Math.cos(directionYaw) * Math.cos(pitch) * actualDist;
     const safeCamY = Math.max(1.2, idealCamY * ratio);
+
+    // ── E2. Shoulder offset (slight right-side shift like GTA) ──
+    const shoulderX = safeCamX + Math.cos(directionYaw) * SHOULDER_OFFSET;
+    const shoulderZ = safeCamZ - Math.sin(directionYaw) * SHOULDER_OFFSET;
 
     // ── F. Lock-on focus — gently pull camera toward nearby appliance ──
     let lookX = posRef.current.x;
@@ -576,10 +656,11 @@ export default function Player({ onRoomChange, onNearestApplianceChange, onInter
       }
     }
 
-    // ── G. Apply with smooth lag ──
-    const camTarget = new THREE.Vector3(safeCamX, safeCamY, safeCamZ);
+    // ── G. Apply with smooth lag + slow-motion turn effect ──
+    const camTarget = new THREE.Vector3(shoulderX, safeCamY, shoulderZ);
     const dist2Cam = camera.position.distanceTo(camTarget);
-    const lagFactor = dist2Cam > 4 ? CAM_POS_SMOOTH_FAR : CAM_POS_SMOOTH;
+    const baseLag = dist2Cam > 4 ? CAM_POS_SMOOTH_FAR : CAM_POS_SMOOTH;
+    const lagFactor = baseLag * sharpTurnFactor; // slow down camera on sharp turns for cinematic feel
 
     camera.position.lerp(camTarget, lagFactor);
     camera.lookAt(lookX, lookY, lookZ);

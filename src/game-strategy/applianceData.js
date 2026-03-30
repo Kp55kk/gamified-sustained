@@ -4,11 +4,12 @@
 
 const CO2_FACTOR = 0.710; // kg CO₂ per kWh
 
-// 12 primary interactable appliances for the checklist
+// 15 primary interactable appliances for the checklist
 export const INTERACTABLE_IDS = [
   'ceiling_fan', 'led_bulb', 'tv_smart', 'ac_1_5ton',
   'fridge', 'washing_machine', 'geyser', 'induction',
   'microwave', 'mixer_grinder', 'wifi_router', 'set_top_box',
+  'led_tube', 'phone_charger', 'table_fan',
 ];
 
 export const APPLIANCE_DATA = {
@@ -391,15 +392,75 @@ export const APPLIANCE_DATA = {
     name: 'Phone Charger',
     icon: '🔌',
     room: 'Bedroom',
-    wattage: '5–25',
-    annualKwh: '18–27',
-    co2PerYear: '13–19',
+    wattage: 15,
+    usePerDay: '3 hr/day',
+    daysPerYear: 365,
+    monthlyKwh: 1.4,
+    annualKwh: 16,
+    co2PerYear: +(16 * CO2_FACTOR).toFixed(1),
     category: 'Electronics/Charging',
     essential: true,
+    beeRated: 'No',
     standbyPower: '0.1–0.5W',
+    standbyKwhYear: 4.4,
     hiddenConsumer: true,
-    description: "I'm the Phone Charger — a tiny hidden consumer! I draw 0.1–0.5W even when no phone is connected.",
+    personality: 'sneaky',
+    voiceRate: 1.0,
+    voicePitch: 1.15,
+    description: "I'm the Phone Charger — a tiny hidden consumer! Even when your phone is fully charged, I draw 0.1–0.5W sitting plugged in. That's phantom power! Over a year, my standby alone wastes 4.4 kWh. Always unplug me when not charging!",
+    researchNote: "U.S. DOE LBNL confirms idle chargers draw 0.1–0.5W. With 1.4 billion mobile users in India, phantom charger load is a significant national energy concern.",
+    funFact: "If every Indian unplugged their charger when done, we'd save enough electricity to power a small city!",
     source: 'U.S. DOE LBNL; BEE India',
+  },
+
+  led_tube: {
+    id: 'led_tube',
+    name: 'LED Tube Light',
+    icon: '💡',
+    room: 'Kitchen',
+    wattage: 18,
+    usePerDay: '8 hr/day',
+    daysPerYear: 365,
+    monthlyKwh: 4.3,
+    annualKwh: 52,
+    co2PerYear: +(52 * CO2_FACTOR).toFixed(1),
+    category: 'Lighting',
+    essential: true,
+    beeRated: 'Mandatory',
+    standbyPower: 0,
+    hiddenConsumer: false,
+    personality: 'bright',
+    voiceRate: 0.95,
+    voicePitch: 1.05,
+    description: "Hello! I'm the LED Tube Light — the backbone of room illumination! At 18W, I replace old 40W fluorescent tubes, saving over 50% energy. I light up your kitchen for 8 hours daily and last 25,000+ hours!",
+    researchNote: "LED tubes have a CRI of 80+ and consume 55% less than fluorescent. BEE mandates star labeling for LED luminaires.",
+    funFact: "One LED tube produces the same light as a 40W fluorescent but uses less than half the power — like getting 2-for-1!",
+    source: 'BEE India S&L',
+  },
+
+  table_fan: {
+    id: 'table_fan',
+    name: 'Table Fan',
+    icon: '🌪️',
+    room: 'Bedroom',
+    wattage: 50,
+    usePerDay: '6 hr/day',
+    daysPerYear: 200,
+    monthlyKwh: 9.0,
+    annualKwh: 60,
+    co2PerYear: +(60 * CO2_FACTOR).toFixed(1),
+    category: 'Cooling',
+    essential: true,
+    beeRated: 'No',
+    standbyPower: 0,
+    hiddenConsumer: false,
+    personality: 'breezy',
+    voiceRate: 0.95,
+    voicePitch: 0.95,
+    description: "Hey, I'm the Table Fan! I'm the portable cooling companion at 50W. I run about 6 hours a day during summer. I'm not BEE rated, but I use 30% less power than a ceiling fan!",
+    researchNote: "Table fans typically use 40-60W. While not BEE rated in India, they offer localized cooling that can reduce AC dependency.",
+    funFact: "I can reduce the 'feels like' temperature by 3-4°C, which means you can set your AC 3 degrees higher when I'm around!",
+    source: 'BEE India; NSSO Survey',
   },
 };
 
@@ -421,6 +482,10 @@ export const APPLIANCE_POSITIONS = {
   // Bathroom
   geyser:         { pos: [9.7, 2.0, 2],     rot: [0, -Math.PI / 2, 0] },
   washing_machine:{ pos: [5.5, 0.42, 7.2],  rot: [0, Math.PI, 0] },
+  // New appliances
+  led_tube:       { pos: [-7, 2.85, 4],     rot: [0, 0, 0] },           // Kitchen ceiling
+  phone_charger:  { pos: [5, 0.55, -7.5],   rot: [0, 0, 0] },           // Bedroom desk
+  table_fan:      { pos: [3, 0.55, -5],     rot: [0, Math.PI / 4, 0] }, // Bedroom table
 };
 
 // ─── Quiz Questions (with difficulty: 1=easy, 2=medium, 3=hard) ───
@@ -522,8 +587,8 @@ export const ACHIEVEMENTS = [
   { id: 'first_discovery', title: 'First Discovery', description: 'Interacted with your first appliance!', icon: '🔍', trigger: 'interact_1' },
   { id: 'curious_mind', title: 'Curious Mind', description: 'Explored 3 different appliances', icon: '🧠', trigger: 'interact_3' },
   { id: 'halfway_there', title: 'Halfway There', description: 'Discovered 6 out of 12 appliances!', icon: '🏃', trigger: 'interact_6' },
-  { id: 'almost_done', title: 'Almost Done!', description: 'Only 3 appliances left to find!', icon: '🔥', trigger: 'interact_9' },
-  { id: 'appliance_master', title: 'Appliance Master', description: 'Explored all 12 appliances!', icon: '🏆', trigger: 'interact_12' },
+  { id: 'almost_done', title: 'Almost Done!', description: 'Only 3 appliances left to find!', icon: '🔥', trigger: 'interact_12' },
+  { id: 'appliance_master', title: 'Appliance Master', description: 'Explored all 15 appliances!', icon: '🏆', trigger: 'interact_15' },
   { id: 'quiz_whiz', title: 'Quiz Whiz', description: 'Scored 100% on the final quiz!', icon: '🎓', trigger: 'quiz_perfect' },
   { id: 'energy_expert', title: 'Energy Expert', description: 'Earned 3 stars on the quiz!', icon: '⭐', trigger: 'quiz_3stars' },
 ];

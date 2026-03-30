@@ -626,6 +626,7 @@ export default function Level1() {
         if (newCount === 6) triggerAchievement('interact_6');
         if (newCount === 9) triggerAchievement('interact_9');
         if (newCount === 12) triggerAchievement('interact_12');
+        if (newCount === 15) triggerAchievement('interact_15');
 
         // Trigger full quiz after all 12 interactions
         if (newCount >= INTERACTABLE_IDS.length) {

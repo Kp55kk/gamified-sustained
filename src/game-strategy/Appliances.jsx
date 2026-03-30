@@ -548,6 +548,139 @@ function WashingMachine({ onClick, active }) {
   );
 }
 
+// ─── LED Tube Light ───
+function LEDTubeLight({ onClick, active }) {
+  const pos = APPLIANCE_POSITIONS.led_tube?.pos || [-7, 2.85, 4];
+  const rot = APPLIANCE_POSITIONS.led_tube?.rot || [0, 0, 0];
+  const glowRef = useRef();
+
+  useFrame(() => {
+    if (glowRef.current) {
+      const t = performance.now() * 0.001;
+      glowRef.current.material.emissiveIntensity = 0.6 + Math.sin(t) * 0.1;
+    }
+  });
+
+  return (
+    <group position={pos} rotation={rot} onClick={onClick}>
+      {/* Tube housing */}
+      <mesh castShadow>
+        <boxGeometry args={[1.2, 0.06, 0.06]} />
+        <meshStandardMaterial color="#e0e0e0" metalness={0.4} roughness={0.3} />
+      </mesh>
+      {/* Glowing tube */}
+      <mesh ref={glowRef} position={[0, -0.04, 0]}>
+        <boxGeometry args={[1.0, 0.03, 0.04]} />
+        <meshStandardMaterial color="#fff" emissive="#ffe0b0" emissiveIntensity={0.6} />
+      </mesh>
+      {/* End caps */}
+      <mesh position={[-0.55, 0, 0]}><boxGeometry args={[0.05, 0.08, 0.08]} /><meshStandardMaterial color="#999" /></mesh>
+      <mesh position={[0.55, 0, 0]}><boxGeometry args={[0.05, 0.08, 0.08]} /><meshStandardMaterial color="#999" /></mesh>
+      <AnimatedFace active={active} offset={[0, -0.2, 0.1]} />
+      <Html position={[0, 0.2, 0]} center><div className="appliance-label">💡 LED Tube</div></Html>
+    </group>
+  );
+}
+
+// ─── Phone Charger ───
+function PhoneCharger({ onClick, active }) {
+  const pos = APPLIANCE_POSITIONS.phone_charger?.pos || [5, 0.55, -7.5];
+  const rot = APPLIANCE_POSITIONS.phone_charger?.rot || [0, 0, 0];
+  const ledRef = useRef();
+
+  useFrame(() => {
+    if (ledRef.current) {
+      const t = performance.now() * 0.003;
+      ledRef.current.material.emissiveIntensity = 0.4 + Math.sin(t * 2) * 0.3;
+    }
+  });
+
+  return (
+    <group position={pos} rotation={rot} onClick={onClick}>
+      {/* Charger body */}
+      <mesh castShadow>
+        <boxGeometry args={[0.12, 0.06, 0.08]} />
+        <meshStandardMaterial color="#f5f5f5" />
+      </mesh>
+      {/* USB port */}
+      <mesh position={[0.06, 0, 0]}>
+        <boxGeometry args={[0.02, 0.03, 0.05]} />
+        <meshStandardMaterial color="#555" />
+      </mesh>
+      {/* Cable */}
+      <mesh position={[0.08, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
+        <cylinderGeometry args={[0.008, 0.008, 0.3]} />
+        <meshStandardMaterial color="#333" />
+      </mesh>
+      {/* LED indicator */}
+      <mesh ref={ledRef} position={[0, 0.035, 0]}>
+        <sphereGeometry args={[0.01, 8, 8]} />
+        <meshStandardMaterial color="#22c55e" emissive="#22c55e" emissiveIntensity={0.5} />
+      </mesh>
+      <AnimatedFace active={active} offset={[0, 0.25, 0.1]} />
+      <Html position={[0, 0.4, 0]} center><div className="appliance-label">🔌 Charger</div></Html>
+    </group>
+  );
+}
+
+// ─── Table Fan ───
+function TableFan({ onClick, active }) {
+  const pos = APPLIANCE_POSITIONS.table_fan?.pos || [3, 0.55, -5];
+  const rot = APPLIANCE_POSITIONS.table_fan?.rot || [0, Math.PI / 4, 0];
+  const bladeRef = useRef();
+  const headRef = useRef();
+
+  useFrame(() => {
+    if (bladeRef.current) {
+      bladeRef.current.rotation.z += 0.15; // spinning blades
+    }
+    if (headRef.current) {
+      // Gentle oscillation
+      const t = performance.now() * 0.001;
+      headRef.current.rotation.y = Math.sin(t * 0.5) * 0.4;
+    }
+  });
+
+  return (
+    <group position={pos} rotation={rot} onClick={onClick}>
+      {/* Base */}
+      <mesh castShadow position={[0, 0, 0]}>
+        <cylinderGeometry args={[0.15, 0.17, 0.05, 16]} />
+        <meshStandardMaterial color="#1e3a5f" />
+      </mesh>
+      {/* Stem */}
+      <mesh position={[0, 0.15, 0]}>
+        <cylinderGeometry args={[0.025, 0.03, 0.25]} />
+        <meshStandardMaterial color="#2a5082" />
+      </mesh>
+      {/* Fan head */}
+      <group ref={headRef} position={[0, 0.3, 0]}>
+        {/* Motor housing */}
+        <mesh position={[0, 0, 0.05]}>
+          <sphereGeometry args={[0.06, 12, 12]} />
+          <meshStandardMaterial color="#1e3a5f" metalness={0.3} />
+        </mesh>
+        {/* Guard ring */}
+        <mesh position={[0, 0, 0.1]}>
+          <torusGeometry args={[0.14, 0.008, 8, 24]} />
+          <meshStandardMaterial color="#ccc" metalness={0.5} />
+        </mesh>
+        {/* Blades */}
+        <group ref={bladeRef} position={[0, 0, 0.08]}>
+          {[0, 1, 2].map(i => (
+            <mesh key={i} rotation={[0, 0, (i * Math.PI * 2) / 3]}>
+              <boxGeometry args={[0.12, 0.03, 0.005]} />
+              <meshStandardMaterial color="#4a90d9" />
+            </mesh>
+          ))}
+        </group>
+      </group>
+      <AnimatedFace active={active} offset={[0, 0.55, 0.15]} />
+      <Html position={[0, 0.7, 0]} center><div className="appliance-label">🌪️ Table Fan</div></Html>
+    </group>
+  );
+}
+
 // ─── Guidance Arrow (points to nearest unvisited appliance) ───
 function GuidanceArrow({ interacted }) {
   const arrowRef = useRef();
@@ -653,6 +786,10 @@ export default function Appliances({ onApplianceClick, activeApplianceId, intera
         <MixerGrinder onClick={handleClick('mixer_grinder')} active={activeApplianceId === 'mixer_grinder'} />
       </GlowAppliance>
 
+      <GlowAppliance id="led_tube" activeId={activeApplianceId} interacted={interactedAppliances}>
+        <LEDTubeLight onClick={handleClick('led_tube')} active={activeApplianceId === 'led_tube'} />
+      </GlowAppliance>
+
       {/* Bathroom */}
       <GlowAppliance id="geyser" activeId={activeApplianceId} interacted={interactedAppliances}>
         <Geyser onClick={handleClick('geyser')} active={activeApplianceId === 'geyser'} />
@@ -660,6 +797,15 @@ export default function Appliances({ onApplianceClick, activeApplianceId, intera
 
       <GlowAppliance id="washing_machine" activeId={activeApplianceId} interacted={interactedAppliances}>
         <WashingMachine onClick={handleClick('washing_machine')} active={activeApplianceId === 'washing_machine'} />
+      </GlowAppliance>
+
+      {/* Bedroom — new appliances */}
+      <GlowAppliance id="phone_charger" activeId={activeApplianceId} interacted={interactedAppliances}>
+        <PhoneCharger onClick={handleClick('phone_charger')} active={activeApplianceId === 'phone_charger'} />
+      </GlowAppliance>
+
+      <GlowAppliance id="table_fan" activeId={activeApplianceId} interacted={interactedAppliances}>
+        <TableFan onClick={handleClick('table_fan')} active={activeApplianceId === 'table_fan'} />
       </GlowAppliance>
 
       {/* Guidance Arrow */}
