@@ -423,10 +423,11 @@ export const APPLIANCE_POSITIONS = {
   washing_machine:{ pos: [5.5, 0.42, 7.2],  rot: [0, Math.PI, 0] },
 };
 
-// ─── Quiz Questions ───
+// ─── Quiz Questions (with difficulty: 1=easy, 2=medium, 3=hard) ───
 export const QUIZ_QUESTIONS = [
   {
     id: 'q1',
+    difficulty: 1,
     question: 'Which of these is NOT classified as an essential appliance?',
     options: ['Ceiling Fan', 'Air Conditioner', 'Refrigerator', 'LED Lights'],
     correctIndex: 1,
@@ -435,6 +436,7 @@ export const QUIZ_QUESTIONS = [
   },
   {
     id: 'q2',
+    difficulty: 1,
     question: 'A charger plugged in but not charging still uses electricity. True or False?',
     options: ['True', 'False'],
     correctIndex: 0,
@@ -443,6 +445,7 @@ export const QUIZ_QUESTIONS = [
   },
   {
     id: 'q3',
+    difficulty: 1,
     question: 'Which room typically has the MOST appliances?',
     options: ['Bathroom', 'Kitchen', 'Bedroom', 'Balcony'],
     correctIndex: 1,
@@ -451,6 +454,7 @@ export const QUIZ_QUESTIONS = [
   },
   {
     id: 'q4',
+    difficulty: 2,
     question: 'The Wi-Fi router runs how many hours per day?',
     options: ['6 hours', '12 hours', '24 hours', '8 hours'],
     correctIndex: 2,
@@ -459,12 +463,69 @@ export const QUIZ_QUESTIONS = [
   },
   {
     id: 'q5',
+    difficulty: 2,
     question: 'Which appliance is the WORST hidden consumer in standby mode?',
     options: ['Microwave Oven', 'Wi-Fi Router', 'Set-Top Box', 'Phone Charger'],
     correctIndex: 2,
     explanation: 'Set-Top Box standby (8–15W) nearly equals its active power. IEA flagged it globally. It wastes 70–131 kWh/year in standby!',
     source: 'IEA; U.S. DOE',
   },
+  {
+    id: 'q6',
+    difficulty: 2,
+    question: 'How much energy can you save by switching from a regular ceiling fan (70W) to a BLDC fan (28W)?',
+    options: ['20%', '40%', '60%', '80%'],
+    correctIndex: 2,
+    explanation: 'A BLDC fan uses just 28W compared to 70W — that\'s a 60% energy saving!',
+    source: 'BEE India S&L',
+  },
+  {
+    id: 'q7',
+    difficulty: 2,
+    question: 'Which appliance uses the MOST watts in your home?',
+    options: ['Refrigerator (150W)', 'Washing Machine (420W)', 'Geyser (2000W)', 'AC (1300W)'],
+    correctIndex: 2,
+    explanation: 'The Geyser runs at 2,000 watts — the highest wattage appliance, though used briefly.',
+    source: 'BEE India S&L',
+  },
+  {
+    id: 'q8',
+    difficulty: 3,
+    question: 'An induction cooktop is 85% efficient vs a gas stove at what efficiency?',
+    options: ['60%', '50%', '40%', '30%'],
+    correctIndex: 2,
+    explanation: 'Gas stoves are only ~40% efficient. Induction cooktops at 85% are over twice as efficient!',
+    source: 'BEE India',
+  },
+  {
+    id: 'q9',
+    difficulty: 3,
+    question: 'How much CO₂ per kWh does India\'s electricity grid emit (CEA FY 2024-25)?',
+    options: ['0.500 kg', '0.710 kg', '0.900 kg', '1.200 kg'],
+    correctIndex: 1,
+    explanation: 'India\'s grid emission factor is 0.710 kg CO₂/kWh as per CEA India Ver 21.0.',
+    source: 'CEA India FY 2024-25',
+  },
+  {
+    id: 'q10',
+    difficulty: 3,
+    question: 'Setting your AC to 24°C instead of 18°C saves approximately what percentage of energy?',
+    options: ['10%', '15%', '25%', '35%'],
+    correctIndex: 2,
+    explanation: 'Each degree higher saves ~6% energy. Going from 18°C to 24°C saves approximately 25%!',
+    source: 'BEE India',
+  },
+];
+
+// ─── Achievement Definitions ───
+export const ACHIEVEMENTS = [
+  { id: 'first_discovery', title: 'First Discovery', description: 'Interacted with your first appliance!', icon: '🔍', trigger: 'interact_1' },
+  { id: 'curious_mind', title: 'Curious Mind', description: 'Explored 3 different appliances', icon: '🧠', trigger: 'interact_3' },
+  { id: 'halfway_there', title: 'Halfway There', description: 'Discovered 6 out of 12 appliances!', icon: '🏃', trigger: 'interact_6' },
+  { id: 'almost_done', title: 'Almost Done!', description: 'Only 3 appliances left to find!', icon: '🔥', trigger: 'interact_9' },
+  { id: 'appliance_master', title: 'Appliance Master', description: 'Explored all 12 appliances!', icon: '🏆', trigger: 'interact_12' },
+  { id: 'quiz_whiz', title: 'Quiz Whiz', description: 'Scored 100% on the final quiz!', icon: '🎓', trigger: 'quiz_perfect' },
+  { id: 'energy_expert', title: 'Energy Expert', description: 'Earned 3 stars on the quiz!', icon: '⭐', trigger: 'quiz_3stars' },
 ];
 
 // ─── Idle Chatter Lines ───

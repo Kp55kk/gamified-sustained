@@ -7,6 +7,23 @@ import * as THREE from 'three';
 
 const GLOW_RADIUS = 2.8;
 
+// Track room visits globally for emotional states
+const roomVisitTracker = { 'Living Room': 0, 'Bedroom': 0, 'Kitchen': 0, 'Bathroom': 0 };
+let lastTrackedRoom = '';
+
+function trackRoomVisit(room) {
+  if (room !== lastTrackedRoom) {
+    lastTrackedRoom = room;
+    if (roomVisitTracker[room] !== undefined) {
+      roomVisitTracker[room]++;
+    }
+  }
+}
+
+function getApplianceRoom(id) {
+  return APPLIANCE_DATA[id]?.room || 'Living Room';
+}
+
 // ─── Animated Face (eyes + mouth) for talking appliances ───
 function AnimatedFace({ active, offset = [0, 0.4, 0.3] }) {
   const leftEyeRef = useRef();
@@ -68,39 +85,80 @@ function AnimatedFace({ active, offset = [0, 0.4, 0.3] }) {
 // ─── Glow Effect Wrapper ───
 function GlowAppliance({ children, id, activeId, interacted }) {
   const glowRef = useRef();
+  const emotionRef = useRef();
   const scaleRef = useRef(1);
   const [chatter, setChatter] = useState(null);
   const chatterTimerRef = useRef(0);
   const lastChatterRef = useRef(0);
+  const recentlyInteractedRef = useRef(false);
+  const interactTimeRef = useRef(0);
 
   const isNear = playerState.nearestAppliance === id;
   const isActive = activeId === id;
   const isInteracted = interacted?.has(id);
 
+  // Track room visits
+  const appRoom = getApplianceRoom(id);
+  
   useFrame((_, delta) => {
     if (!glowRef.current) return;
     const t = performance.now() * 0.003;
+    const now = performance.now();
 
-    // Glow pulsing
-    const glowIntensity = isNear && !isActive ? (0.3 + Math.sin(t * 2) * 0.15) : 0;
-    glowRef.current.material.emissiveIntensity = glowIntensity;
-    glowRef.current.visible = isNear && !isActive;
+    // Track room visits for emotional state
+    const currentRoom = playerState.x < 0 && playerState.z < 0 ? 'Living Room'
+      : playerState.x >= 0 && playerState.z < 0 ? 'Bedroom'
+      : playerState.x < 4 && playerState.z >= 0 ? 'Kitchen' : 'Bathroom';
+    trackRoomVisit(currentRoom);
 
-    // Pop effect when activated
-    const targetScale = isActive ? 1.0 : 1.0;
-    scaleRef.current = THREE.MathUtils.lerp(scaleRef.current, targetScale, 0.1);
+    // Emotional state: sad if room visited 3+ times but not interacted
+    const isSad = !isInteracted && roomVisitTracker[appRoom] >= 3;
+    const isHappy = isInteracted && (now - interactTimeRef.current < 10000);
+
+    // Glow pulsing — enhanced with emotion colors
+    if (isNear && !isActive) {
+      glowRef.current.visible = true;
+      const baseGlow = 0.3 + Math.sin(t * 2) * 0.15;
+      glowRef.current.material.emissiveIntensity = baseGlow;
+      glowRef.current.material.color.set(isSad ? '#f59e0b' : '#22c55e');
+      glowRef.current.material.emissive.set(isSad ? '#f59e0b' : '#22c55e');
+    } else if (isSad) {
+      // Subtle sad glow when not near
+      glowRef.current.visible = true;
+      glowRef.current.material.emissiveIntensity = 0.08 + Math.sin(t) * 0.04;
+      glowRef.current.material.color.set('#f59e0b');
+      glowRef.current.material.emissive.set('#f59e0b');
+    } else if (isHappy) {
+      // Happy pulse after interaction
+      glowRef.current.visible = true;
+      const fadeOut = Math.max(0, 1 - (now - interactTimeRef.current) / 10000);
+      glowRef.current.material.emissiveIntensity = (0.15 + Math.sin(t * 3) * 0.1) * fadeOut;
+      glowRef.current.material.color.set('#22c55e');
+      glowRef.current.material.emissive.set('#22c55e');
+    } else {
+      glowRef.current.visible = false;
+    }
+
+    // Detect newly interacted (to trigger happy state)
+    if (isInteracted && !recentlyInteractedRef.current) {
+      recentlyInteractedRef.current = true;
+      interactTimeRef.current = now;
+    }
 
     // Idle chatter for unvisited appliances
     if (!isInteracted && !isNear && !isActive) {
       chatterTimerRef.current += delta;
-      const now = performance.now();
       if (chatterTimerRef.current > 15 + Math.random() * 20 && now - lastChatterRef.current > 30000) {
         const dist = Math.sqrt(
           (playerState.x - (APPLIANCE_POSITIONS[id]?.pos[0] || 0)) ** 2 +
           (playerState.z - (APPLIANCE_POSITIONS[id]?.pos[2] || 0)) ** 2
         );
         if (dist < 5) {
-          setChatter(IDLE_CHATTER[Math.floor(Math.random() * IDLE_CHATTER.length)]);
+          // Sad appliances have different chatter
+          const lines = isSad 
+            ? ["😢 You keep passing me by...", "😢 Don't you want to learn about me?", "😢 I feel so ignored..."]
+            : IDLE_CHATTER;
+          setChatter(lines[Math.floor(Math.random() * lines.length)]);
           lastChatterRef.current = now;
           chatterTimerRef.current = 0;
           setTimeout(() => setChatter(null), 3000);
@@ -110,6 +168,8 @@ function GlowAppliance({ children, id, activeId, interacted }) {
   });
 
   const pos = APPLIANCE_POSITIONS[id]?.pos || [0, 0, 0];
+  const appRoom2 = getApplianceRoom(id);
+  const isSadNow = !isInteracted && roomVisitTracker[appRoom2] >= 3;
 
   return (
     <group>
@@ -126,6 +186,12 @@ function GlowAppliance({ children, id, activeId, interacted }) {
           side={THREE.DoubleSide}
         />
       </mesh>
+      {/* Emotional emoji indicator */}
+      {isSadNow && !isNear && !isActive && (
+        <Html position={[pos[0], pos[1] + 0.6, pos[2]]} center>
+          <div className="emotion-indicator sad">😢</div>
+        </Html>
+      )}
       {/* "Press E" prompt */}
       {isNear && !isActive && (
         <Html position={[pos[0], pos[1] + 0.8, pos[2]]} center>

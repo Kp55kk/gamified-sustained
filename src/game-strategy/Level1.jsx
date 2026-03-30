@@ -3,8 +3,8 @@ import { Canvas } from '@react-three/fiber';
 import { useNavigate } from 'react-router-dom';
 import House from './House';
 import Appliances from './Appliances';
-import Player from './Player';
-import { APPLIANCE_DATA, INTERACTABLE_IDS, QUIZ_QUESTIONS } from './applianceData';
+import Player, { cameraMode } from './Player';
+import { APPLIANCE_DATA, APPLIANCE_POSITIONS, INTERACTABLE_IDS, QUIZ_QUESTIONS, ACHIEVEMENTS } from './applianceData';
 import './Level1.css';
 
 // ─── Speech Engine ───
@@ -71,6 +71,38 @@ function playWrongSound() {
     osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.4);
   } catch (e) {}
 }
+function playAchievementSound() {
+  try {
+    const ctx = getAudioCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(440, ctx.currentTime);
+    osc.frequency.setValueAtTime(660, ctx.currentTime + 0.1);
+    osc.frequency.setValueAtTime(880, ctx.currentTime + 0.2);
+    osc.frequency.setValueAtTime(1100, ctx.currentTime + 0.3);
+    gain.gain.setValueAtTime(0.12, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6);
+    osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.6);
+  } catch (e) {}
+}
+function playLevelCompleteSound() {
+  try {
+    const ctx = getAudioCtx();
+    const notes = [523, 659, 784, 1047];
+    notes.forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.frequency.setValueAtTime(freq, ctx.currentTime + i * 0.15);
+      gain.gain.setValueAtTime(0.1, ctx.currentTime + i * 0.15);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.15 + 0.5);
+      osc.start(ctx.currentTime + i * 0.15);
+      osc.stop(ctx.currentTime + i * 0.15 + 0.5);
+    });
+  } catch (e) {}
+}
 
 // ─── Ambient Music ───
 function useAmbientMusic() {
@@ -83,7 +115,6 @@ function useAmbientMusic() {
       gain.connect(ctx.destination);
       gainRef.current = gain;
 
-      // Simple pad-like ambient
       const notes = [220, 277, 330, 440];
       const oscs = notes.map(freq => {
         const o = ctx.createOscillator();
@@ -100,6 +131,38 @@ function useAmbientMusic() {
       };
     } catch (e) {}
   }, []);
+}
+
+// ─── Flash Card (Memory Boost) ───
+function FlashCard({ appliance, visible }) {
+  if (!visible || !appliance) return null;
+  return (
+    <div className="flash-card">
+      <div className="flash-card-inner">
+        <span className="flash-icon">{appliance.icon}</span>
+        <div className="flash-info">
+          <strong>{appliance.name}</strong>
+          <span>{appliance.wattage}W • {appliance.annualKwh} kWh/yr</span>
+          <span className="flash-fact">💡 {appliance.funFact || appliance.description?.slice(0, 80) + '...'}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Achievement Toast ───
+function AchievementToast({ achievement, visible }) {
+  if (!visible || !achievement) return null;
+  return (
+    <div className="achievement-toast">
+      <div className="achievement-icon">{achievement.icon}</div>
+      <div className="achievement-info">
+        <div className="achievement-label">Achievement Unlocked!</div>
+        <div className="achievement-title">{achievement.title}</div>
+        <div className="achievement-desc">{achievement.description}</div>
+      </div>
+    </div>
+  );
 }
 
 // ─── Enhanced Speech Bubble ───
@@ -239,16 +302,78 @@ function ChecklistPanel({ interacted, isOpen, onToggle }) {
   );
 }
 
-// ─── Quiz Modal ───
-function QuizModal({ question, onAnswer, answered, selectedIndex }) {
+// ─── Full Quiz Modal (post-completion) ───
+function FullQuizModal({ questions, onComplete }) {
+  const [currentIdx, setCurrentIdx] = useState(0);
+  const [score, setScore] = useState(0);
+  const [answered, setAnswered] = useState(false);
+  const [selectedIndex, setSelectedIndex] = useState(null);
+  const [consecutiveWrong, setConsecutiveWrong] = useState(0);
+  const [consecutiveCorrect, setConsecutiveCorrect] = useState(0);
+  const [orderedQuestions, setOrderedQuestions] = useState([]);
+
+  // Initialize with adaptive ordering
+  useEffect(() => {
+    const sorted = [...questions].sort((a, b) => (a.difficulty || 1) - (b.difficulty || 1));
+    setOrderedQuestions(sorted);
+  }, [questions]);
+
+  if (orderedQuestions.length === 0) return null;
+  const question = orderedQuestions[currentIdx];
   if (!question) return null;
+
+  const total = orderedQuestions.length;
+  const pct = total > 0 ? Math.round((currentIdx / total) * 100) : 0;
+
+  const handleAnswer = (idx) => {
+    if (answered) return;
+    setSelectedIndex(idx);
+    setAnswered(true);
+
+    const isCorrect = idx === question.correctIndex;
+    if (isCorrect) {
+      playCorrectSound();
+      setScore(s => s + 1);
+      setConsecutiveCorrect(c => c + 1);
+      setConsecutiveWrong(0);
+    } else {
+      playWrongSound();
+      setConsecutiveWrong(c => c + 1);
+      setConsecutiveCorrect(0);
+
+      // Adaptive: if 2+ wrong, reorder remaining to put easier ones first
+      if (consecutiveWrong >= 1) {
+        setOrderedQuestions(prev => {
+          const done = prev.slice(0, currentIdx + 1);
+          const remaining = prev.slice(currentIdx + 1).sort((a, b) => (a.difficulty || 1) - (b.difficulty || 1));
+          return [...done, ...remaining];
+        });
+      }
+    }
+
+    // Auto advance after delay
+    setTimeout(() => {
+      setAnswered(false);
+      setSelectedIndex(null);
+      if (currentIdx + 1 >= total) {
+        const finalScore = isCorrect ? score + 1 : score;
+        onComplete(finalScore, total);
+      } else {
+        setCurrentIdx(i => i + 1);
+      }
+    }, 2500);
+  };
 
   return (
     <div className="quiz-overlay">
-      <div className="quiz-modal">
+      <div className="quiz-modal full-quiz">
         <div className="quiz-header">
           <span className="quiz-icon">🧠</span>
-          <h3>Quick Quiz!</h3>
+          <h3>Energy Knowledge Quiz</h3>
+        </div>
+        <div className="quiz-progress-bar">
+          <div className="quiz-progress-fill" style={{ width: `${((currentIdx + 1) / total) * 100}%` }} />
+          <span className="quiz-progress-text">Question {currentIdx + 1} / {total}</span>
         </div>
         <p className="quiz-question">{question.question}</p>
         <div className="quiz-options">
@@ -262,7 +387,7 @@ function QuizModal({ question, onAnswer, answered, selectedIndex }) {
               <button
                 key={i}
                 className={cls}
-                onClick={() => !answered && onAnswer(i)}
+                onClick={() => handleAnswer(i)}
                 disabled={answered}
               >
                 {String.fromCharCode(65 + i)}. {opt}
@@ -273,7 +398,7 @@ function QuizModal({ question, onAnswer, answered, selectedIndex }) {
         {answered && (
           <div className={`quiz-feedback ${selectedIndex === question.correctIndex ? 'correct' : 'wrong'}`}>
             {selectedIndex === question.correctIndex
-              ? '✅ Correct! +1 ⭐'
+              ? '✅ Correct!'
               : `❌ Wrong! The answer is ${String.fromCharCode(65 + question.correctIndex)}.`}
             <p className="quiz-explanation">{question.explanation}</p>
           </div>
@@ -283,33 +408,104 @@ function QuizModal({ question, onAnswer, answered, selectedIndex }) {
   );
 }
 
-// ─── Stars & Badge Display ───
-function RewardsDisplay({ stars, badge, showBadge }) {
+// ─── Level Completed Screen ───
+function LevelCompleteScreen({ score, total, stars, onContinue }) {
+  const pct = Math.round((score / total) * 100);
+
   return (
-    <>
-      <div className="stars-display">
-        {'⭐'.repeat(stars)} {stars > 0 && <span className="star-count">{stars}</span>}
-      </div>
-      {showBadge && (
-        <div className="badge-overlay">
-          <div className="badge-modal">
-            <div className="badge-celebration">🎉</div>
-            <h2 className="badge-title">Appliance Master!</h2>
-            <p className="badge-text">You've explored all 12 appliances and completed your Home Energy Audit!</p>
-            <div className="badge-stars">{'⭐'.repeat(stars)}</div>
-          </div>
+    <div className="level-complete-overlay">
+      <div className="level-complete-modal">
+        <div className="confetti-container">
+          {Array.from({ length: 30 }).map((_, i) => (
+            <div key={i} className="confetti-piece" style={{
+              '--delay': `${Math.random() * 2}s`,
+              '--x': `${Math.random() * 100}%`,
+              '--rotation': `${Math.random() * 360}deg`,
+              '--color': ['#22c55e', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'][i % 6],
+            }} />
+          ))}
         </div>
-      )}
-    </>
+        <div className="lc-celebration">🎉</div>
+        <h2 className="lc-title">Level Completed!</h2>
+        <p className="lc-subtitle">Home Energy Audit Complete</p>
+
+        <div className="lc-stars">
+          {[1, 2, 3].map(s => (
+            <span key={s} className={`lc-star ${s <= stars ? 'earned' : 'empty'}`}
+              style={{ animationDelay: `${s * 0.3}s` }}>
+              ⭐
+            </span>
+          ))}
+        </div>
+
+        <div className="lc-score">
+          <div className="lc-score-number">{score}/{total}</div>
+          <div className="lc-score-label">Correct Answers ({pct}%)</div>
+        </div>
+
+        <div className="lc-rating-label">
+          {stars === 3 && '🏆 Outstanding! You\'re an Energy Expert!'}
+          {stars === 2 && '👍 Great Work! Keep learning!'}
+          {stars === 1 && '💪 Good effort! Try again to improve!'}
+        </div>
+
+        <button className="lc-continue-btn" onClick={onContinue}>
+          Continue →
+        </button>
+      </div>
+    </div>
   );
 }
 
-// ─── 3D Scene Content ───
-function SceneContent({ onApplianceClick, onRoomChange, onNearestChange, onInteract, activeApplianceId, interactedAppliances }) {
+// ─── Stars & Badge Display ───
+function RewardsDisplay({ stars }) {
+  return (
+    <div className="stars-display">
+      {'⭐'.repeat(Math.min(stars, 20))} {stars > 0 && <span className="star-count">{stars}</span>}
+    </div>
+  );
+}
+
+// ─── Day/Night Cycle ───
+function DayNightCycle() {
+  const lightRef = useRef();
+  const ambientRef = useRef();
+  const hemiRef = useRef();
+
+  useEffect(() => {
+    // Run a slow cycle
+    let frame;
+    const cycle = () => {
+      const t = (Date.now() % 300000) / 300000; // 5-min cycle
+      const brightness = 0.3 + Math.sin(t * Math.PI * 2) * 0.2;
+      const warmth = 0.8 + Math.sin(t * Math.PI * 2) * 0.2;
+      
+      if (ambientRef.current) {
+        ambientRef.current.intensity = brightness + 0.1;
+      }
+      if (lightRef.current) {
+        lightRef.current.intensity = warmth;
+        const angle = t * Math.PI * 2;
+        lightRef.current.position.set(
+          10 * Math.cos(angle),
+          12 + 3 * Math.sin(angle),
+          10 * Math.sin(angle)
+        );
+      }
+      if (hemiRef.current) {
+        hemiRef.current.intensity = brightness;
+      }
+      frame = requestAnimationFrame(cycle);
+    };
+    cycle();
+    return () => cancelAnimationFrame(frame);
+  }, []);
+
   return (
     <>
-      <ambientLight intensity={0.4} />
+      <ambientLight ref={ambientRef} intensity={0.4} />
       <directionalLight
+        ref={lightRef}
         position={[10, 15, 10]}
         intensity={1}
         castShadow
@@ -321,8 +517,16 @@ function SceneContent({ onApplianceClick, onRoomChange, onNearestChange, onInter
         shadow-camera-top={15}
         shadow-camera-bottom={-15}
       />
-      <hemisphereLight args={['#b1e1ff', '#b97a20', 0.3]} />
+      <hemisphereLight ref={hemiRef} args={['#b1e1ff', '#b97a20', 0.3]} />
+    </>
+  );
+}
 
+// ─── 3D Scene Content ───
+function SceneContent({ onApplianceClick, onRoomChange, onNearestChange, onInteract, activeApplianceId, interactedAppliances }) {
+  return (
+    <>
+      <DayNightCycle />
       <House />
       <Appliances
         onApplianceClick={onApplianceClick}
@@ -346,30 +550,65 @@ export default function Level1() {
   const [nearestAppliance, setNearestAppliance] = useState(null);
   const [interacted, setInteracted] = useState(new Set());
   const [checklistOpen, setChecklistOpen] = useState(true);
+  const [isCinematic, setIsCinematic] = useState(false);
 
-  // Quiz state
-  const [showQuiz, setShowQuiz] = useState(false);
-  const [currentQuiz, setCurrentQuiz] = useState(null);
-  const [quizAnswered, setQuizAnswered] = useState(false);
-  const [quizSelected, setQuizSelected] = useState(null);
-  const [quizIndex, setQuizIndex] = useState(0);
-  const [askedQuizCount, setAskedQuizCount] = useState(0);
+  // Flash card state
+  const [flashCard, setFlashCard] = useState(null);
+  const [showFlash, setShowFlash] = useState(false);
+
+  // Quiz states
+  const [showFullQuiz, setShowFullQuiz] = useState(false);
+  const [quizCompleted, setQuizCompleted] = useState(false);
+  const [quizScore, setQuizScore] = useState(0);
+  const [quizTotal, setQuizTotal] = useState(0);
+  const [finalStars, setFinalStars] = useState(0);
+  const [showLevelComplete, setShowLevelComplete] = useState(false);
 
   // Rewards
   const [stars, setStars] = useState(0);
-  const [showBadge, setShowBadge] = useState(false);
+
+  // Achievements
+  const [unlockedAchievements, setUnlockedAchievements] = useState(new Set());
+  const [currentAchievement, setCurrentAchievement] = useState(null);
+  const [showAchievement, setShowAchievement] = useState(false);
 
   // Ambient music
   useAmbientMusic();
 
+  // Achievement checker
+  const triggerAchievement = useCallback((triggerId) => {
+    const achievement = ACHIEVEMENTS.find(a => a.trigger === triggerId);
+    if (!achievement || unlockedAchievements.has(achievement.id)) return;
+
+    setUnlockedAchievements(prev => {
+      const next = new Set(prev);
+      next.add(achievement.id);
+      return next;
+    });
+    playAchievementSound();
+    setCurrentAchievement(achievement);
+    setShowAchievement(true);
+    setTimeout(() => setShowAchievement(false), 4000);
+  }, [unlockedAchievements]);
+
   const handleInteract = useCallback((applianceId) => {
-    if (activeAppliance || showQuiz) return; // Already interacting or in quiz
+    if (activeAppliance || showFullQuiz || showLevelComplete) return;
     const data = APPLIANCE_DATA[applianceId];
     if (!data) return;
 
     playInteractSound();
     setActiveAppliance(data);
     speak(data.description, data.voiceRate || 0.9, data.voicePitch || 1.05);
+
+    // Cinematic camera zoom
+    const pos = APPLIANCE_POSITIONS?.[applianceId];
+    if (pos) {
+      cameraMode.cinematic = true;
+      cameraMode.targetX = pos.pos[0];
+      cameraMode.targetY = pos.pos[1];
+      cameraMode.targetZ = pos.pos[2];
+    }
+    setIsCinematic(true);
 
     // Mark as interacted
     setInteracted(prev => {
@@ -379,25 +618,25 @@ export default function Level1() {
 
       if (wasNew) {
         setStars(s => s + 1);
-        // Check for quiz trigger (every 4 interactions)
         const newCount = next.size;
-        if (newCount > 0 && newCount % 4 === 0 && askedQuizCount < QUIZ_QUESTIONS.length) {
-          setTimeout(() => {
-            setCurrentQuiz(QUIZ_QUESTIONS[askedQuizCount]);
-            setShowQuiz(true);
-            setQuizAnswered(false);
-            setQuizSelected(null);
-            setAskedQuizCount(c => c + 1);
-          }, 500);
-        }
-        // Check for completion
+
+        // Achievement triggers
+        if (newCount === 1) triggerAchievement('interact_1');
+        if (newCount === 3) triggerAchievement('interact_3');
+        if (newCount === 6) triggerAchievement('interact_6');
+        if (newCount === 9) triggerAchievement('interact_9');
+        if (newCount === 12) triggerAchievement('interact_12');
+
+        // Trigger full quiz after all 12 interactions
         if (newCount >= INTERACTABLE_IDS.length) {
-          setTimeout(() => setShowBadge(true), 1000);
+          setTimeout(() => {
+            setShowFullQuiz(true);
+          }, 2000);
         }
       }
       return next;
     });
-  }, [activeAppliance, showQuiz, askedQuizCount]);
+  }, [activeAppliance, showFullQuiz, showLevelComplete, triggerAchievement]);
 
   const handleApplianceClick = useCallback((applianceId) => {
     handleInteract(applianceId);
@@ -405,26 +644,42 @@ export default function Level1() {
 
   const handleCloseBubble = useCallback(() => {
     stopSpeech();
+    const closedAppliance = activeAppliance;
     setActiveAppliance(null);
-  }, []);
 
-  const handleQuizAnswer = useCallback((index) => {
-    setQuizSelected(index);
-    setQuizAnswered(true);
-    if (index === currentQuiz?.correctIndex) {
-      playCorrectSound();
-      setStars(s => s + 1);
-    } else {
-      playWrongSound();
+    // Reset cinematic camera
+    cameraMode.cinematic = false;
+    setIsCinematic(false);
+
+    // Show memory flash card
+    if (closedAppliance) {
+      setFlashCard(closedAppliance);
+      setShowFlash(true);
+      setTimeout(() => setShowFlash(false), 3500);
     }
-    // Auto-close quiz after 3 seconds
-    setTimeout(() => {
-      setShowQuiz(false);
-      setCurrentQuiz(null);
-      setQuizAnswered(false);
-      setQuizSelected(null);
-    }, 3500);
-  }, [currentQuiz]);
+  }, [activeAppliance]);
+
+  const handleQuizComplete = useCallback((score, total) => {
+    setQuizScore(score);
+    setQuizTotal(total);
+    setShowFullQuiz(false);
+    setQuizCompleted(true);
+
+    // Calculate stars
+    const pct = (score / total) * 100;
+    let earnedStars = 1;
+    if (pct >= 90) earnedStars = 3;
+    else if (pct >= 60) earnedStars = 2;
+    setFinalStars(earnedStars);
+
+    // Achievement for quiz performance
+    if (pct === 100) triggerAchievement('quiz_perfect');
+    if (earnedStars >= 3) triggerAchievement('quiz_3stars');
+
+    playLevelCompleteSound();
+
+    setTimeout(() => setShowLevelComplete(true), 500);
+  }, [triggerAchievement]);
 
   const handleRoomChange = useCallback((room) => {
     setCurrentRoom(prev => prev !== room ? room : prev);
@@ -437,26 +692,28 @@ export default function Level1() {
   return (
     <div className="level1-container">
       {/* 3D Canvas */}
-      <Canvas
-        shadows
-        camera={{ position: [-5, 6, 1], fov: 50 }}
-        onCreated={({ gl }) => {
-          gl.setClearColor('#87CEEB');
-          gl.toneMapping = 1;
-          gl.toneMappingExposure = 1.2;
-        }}
-      >
-        <Suspense fallback={null}>
-          <SceneContent
-            onApplianceClick={handleApplianceClick}
-            onRoomChange={handleRoomChange}
-            onNearestChange={handleNearestChange}
-            onInteract={handleInteract}
-            activeApplianceId={activeAppliance?.id}
-            interactedAppliances={interacted}
-          />
-        </Suspense>
-      </Canvas>
+      <div className={`canvas-wrapper ${isCinematic ? 'cinematic-blur' : ''}`}>
+        <Canvas
+          shadows
+          camera={{ position: [-5, 6, 1], fov: 50 }}
+          onCreated={({ gl }) => {
+            gl.setClearColor('#87CEEB');
+            gl.toneMapping = 1;
+            gl.toneMappingExposure = 1.2;
+          }}
+        >
+          <Suspense fallback={null}>
+            <SceneContent
+              onApplianceClick={handleApplianceClick}
+              onRoomChange={handleRoomChange}
+              onNearestChange={handleNearestChange}
+              onInteract={handleInteract}
+              activeApplianceId={activeAppliance?.id}
+              interactedAppliances={interacted}
+            />
+          </Suspense>
+        </Canvas>
+      </div>
 
       {/* HUD */}
       <div className="level1-hud">
@@ -466,7 +723,7 @@ export default function Level1() {
       </div>
 
       {/* Stars */}
-      <RewardsDisplay stars={stars} showBadge={showBadge} />
+      <RewardsDisplay stars={stars} />
 
       {/* Progress Checklist */}
       <ChecklistPanel
@@ -491,13 +748,27 @@ export default function Level1() {
       {/* Speech Bubble */}
       <SpeechBubble appliance={activeAppliance} onClose={handleCloseBubble} />
 
-      {/* Quiz */}
-      {showQuiz && (
-        <QuizModal
-          question={currentQuiz}
-          onAnswer={handleQuizAnswer}
-          answered={quizAnswered}
-          selectedIndex={quizSelected}
+      {/* Memory Flash Card */}
+      <FlashCard appliance={flashCard} visible={showFlash} />
+
+      {/* Achievement Toast */}
+      <AchievementToast achievement={currentAchievement} visible={showAchievement} />
+
+      {/* Full Quiz after all 12 interactions */}
+      {showFullQuiz && (
+        <FullQuizModal
+          questions={QUIZ_QUESTIONS}
+          onComplete={handleQuizComplete}
+        />
+      )}
+
+      {/* Level Complete Screen */}
+      {showLevelComplete && (
+        <LevelCompleteScreen
+          score={quizScore}
+          total={quizTotal}
+          stars={finalStars}
+          onContinue={() => navigate('/hub')}
         />
       )}
     </div>
