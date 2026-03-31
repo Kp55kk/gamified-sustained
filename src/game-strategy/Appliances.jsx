@@ -156,7 +156,7 @@ function GlowAppliance({ children, id, activeId, interacted }) {
         if (dist < 5) {
           // Sad appliances have different chatter
           const lines = isSad 
-            ? ["😢 You keep passing me by...", "😢 Don't you want to learn about me?", "😢 I feel so ignored..."]
+            ? ["\u{1F622} You keep passing me by...", "\u{1F622} Don't you want to learn about me?", "\u{1F622} I feel so ignored..."]
             : IDLE_CHATTER;
           setChatter(lines[Math.floor(Math.random() * lines.length)]);
           lastChatterRef.current = now;
@@ -189,7 +189,7 @@ function GlowAppliance({ children, id, activeId, interacted }) {
       {/* Emotional emoji indicator */}
       {isSadNow && !isNear && !isActive && (
         <Html position={[pos[0], pos[1] + 0.6, pos[2]]} center>
-          <div className="emotion-indicator sad">😢</div>
+          <div className="emotion-indicator sad">{"\u{1F622}"}</div>
         </Html>
       )}
       {/* "Press E" prompt */}
@@ -233,7 +233,7 @@ function TV({ onClick, active }) {
         <meshStandardMaterial color="#1a2a4a" emissive="#1a2a4a" emissiveIntensity={0.4} />
       </mesh>
       <AnimatedFace active={active} offset={[0, 0.1, 0.06]} />
-      <Html position={[0, 0.7, 0]} center><div className="appliance-label">📺 Smart TV</div></Html>
+      <Html position={[0, 0.7, 0]} center><div className="appliance-label">{"\u{1F4FA}"} Smart TV</div></Html>
     </group>
   );
 }
@@ -255,7 +255,7 @@ function AC({ onClick, active }) {
         <meshStandardMaterial color="#22c55e" emissive="#22c55e" emissiveIntensity={2} />
       </mesh>
       <AnimatedFace active={active} offset={[0, 0, 0.14]} />
-      <Html position={[0, 0.35, 0]} center><div className="appliance-label">❄️ AC 1.5T</div></Html>
+      <Html position={[0, 0.35, 0]} center><div className="appliance-label">{"\u{2744}\u{FE0F}"} AC 1.5T</div></Html>
     </group>
   );
 }
@@ -329,7 +329,7 @@ function Fridge({ onClick, active }) {
         <meshStandardMaterial color="#aaa" metalness={0.6} roughness={0.3} />
       </mesh>
       <AnimatedFace active={active} offset={[0, 0.6, 0.35]} />
-      <Html position={[0, 1.1, 0]} center><div className="appliance-label">🧊 Fridge</div></Html>
+      <Html position={[0, 1.1, 0]} center><div className="appliance-label">{"\u{1F9CA}"} Fridge</div></Html>
     </group>
   );
 }
@@ -351,7 +351,7 @@ function InductionStove({ onClick, active }) {
         <meshStandardMaterial color="#222" />
       </mesh>
       <AnimatedFace active={active} offset={[0, 0.15, 0]} />
-      <Html position={[0, 0.3, 0]} center><div className="appliance-label">🍳 Induction</div></Html>
+      <Html position={[0, 0.3, 0]} center><div className="appliance-label">{"\u{1F373}"} Induction</div></Html>
     </group>
   );
 }
@@ -380,7 +380,7 @@ function Microwave({ onClick, active }) {
         <meshStandardMaterial color="#22c55e" emissive="#22c55e" emissiveIntensity={0.5} />
       </mesh>
       <AnimatedFace active={active} offset={[-0.05, 0.05, 0.2]} />
-      <Html position={[0, 0.35, 0]} center><div className="appliance-label">📡 Microwave</div></Html>
+      <Html position={[0, 0.35, 0]} center><div className="appliance-label">{"\u{1F4E1}"} Microwave</div></Html>
     </group>
   );
 }
@@ -410,7 +410,7 @@ function MixerGrinder({ onClick, active }) {
         <meshStandardMaterial color="#e74c3c" />
       </mesh>
       <AnimatedFace active={active} offset={[0, 0.3, 0.1]} />
-      <Html position={[0, 0.5, 0]} center><div className="appliance-label">⚡ Mixer</div></Html>
+      <Html position={[0, 0.5, 0]} center><div className="appliance-label">{"\u{26A1}"} Mixer</div></Html>
     </group>
   );
 }
@@ -445,7 +445,7 @@ function WifiRouter({ onClick, active }) {
         <meshStandardMaterial color="#22c55e" emissive="#22c55e" emissiveIntensity={1} />
       </mesh>
       <AnimatedFace active={active} offset={[0, 0.1, 0.1]} />
-      <Html position={[0, 0.3, 0]} center><div className="appliance-label">📶 Router</div></Html>
+      <Html position={[0, 0.3, 0]} center><div className="appliance-label">{"\u{1F4F6}"} Router</div></Html>
     </group>
   );
 }
@@ -476,7 +476,7 @@ function SetTopBox({ onClick, active }) {
         <meshStandardMaterial color="#222" />
       </mesh>
       <AnimatedFace active={active} offset={[0, 0.08, 0.1]} />
-      <Html position={[0, 0.2, 0]} center><div className="appliance-label">📦 Set-Top Box</div></Html>
+      <Html position={[0, 0.2, 0]} center><div className="appliance-label">{"\u{1F4E6}"} Set-Top Box</div></Html>
     </group>
   );
 }
@@ -498,7 +498,7 @@ function Geyser({ onClick, active }) {
         <meshStandardMaterial color="#aaa" metalness={0.7} />
       </mesh>
       <AnimatedFace active={active} offset={[0, 0.15, 0.22]} />
-      <Html position={[0, 0.5, 0]} center><div className="appliance-label">🚿 Geyser</div></Html>
+      <Html position={[0, 0.5, 0]} center><div className="appliance-label">{"\u{1F6BF}"} Geyser</div></Html>
     </group>
   );
 }
@@ -543,7 +543,7 @@ function WashingMachine({ onClick, active }) {
         <meshStandardMaterial color="#444" />
       </mesh>
       <AnimatedFace active={active} offset={[0, 0.15, 0.34]} />
-      <Html position={[0, 0.65, 0]} center><div className="appliance-label">👕 Washer</div></Html>
+      <Html position={[0, 0.65, 0]} center><div className="appliance-label">{"\u{1F455}"} Washer</div></Html>
     </group>
   );
 }
@@ -577,7 +577,7 @@ function LEDTubeLight({ onClick, active }) {
       <mesh position={[-0.55, 0, 0]}><boxGeometry args={[0.05, 0.08, 0.08]} /><meshStandardMaterial color="#999" /></mesh>
       <mesh position={[0.55, 0, 0]}><boxGeometry args={[0.05, 0.08, 0.08]} /><meshStandardMaterial color="#999" /></mesh>
       <AnimatedFace active={active} offset={[0, -0.2, 0.1]} />
-      <Html position={[0, 0.2, 0]} center><div className="appliance-label">💡 LED Tube</div></Html>
+      <Html position={[0, 0.2, 0]} center><div className="appliance-label">{"\u{1F4A1}"} LED Tube</div></Html>
     </group>
   );
 }
@@ -618,7 +618,7 @@ function PhoneCharger({ onClick, active }) {
         <meshStandardMaterial color="#22c55e" emissive="#22c55e" emissiveIntensity={0.5} />
       </mesh>
       <AnimatedFace active={active} offset={[0, 0.25, 0.1]} />
-      <Html position={[0, 0.4, 0]} center><div className="appliance-label">🔌 Charger</div></Html>
+      <Html position={[0, 0.4, 0]} center><div className="appliance-label">{"\u{1F50C}"} Charger</div></Html>
     </group>
   );
 }
@@ -676,7 +676,7 @@ function TableFan({ onClick, active }) {
         </group>
       </group>
       <AnimatedFace active={active} offset={[0, 0.55, 0.15]} />
-      <Html position={[0, 0.7, 0]} center><div className="appliance-label">🌪️ Table Fan</div></Html>
+      <Html position={[0, 0.7, 0]} center><div className="appliance-label">{"\u{1F32A}\u{FE0F}"} Table Fan</div></Html>
     </group>
   );
 }

@@ -261,8 +261,8 @@ export default function Player({ onRoomChange, onNearestApplianceChange, onInter
   // ══════════════════════════════════════════════════════════
   useFrame(() => {
     const k = keys.current;
-    const speed = 0.15;   // FAST — as specified
-    const turnSpeed = 0.05; // as specified
+    const speed = 0.06;   // Slowed down for better control
+    const turnSpeed = 0.025; // Smoother turning
 
     // ─── ROTATE character left/right ───
     if (k['a'] || k['arrowleft']) {

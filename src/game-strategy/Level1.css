@@ -615,14 +615,14 @@
 
 /* ─── Quiz Modal ─── */
 .quiz-overlay {
-  position: absolute;
+  position: fixed;
   inset: 0;
-  z-index: 250;
+  z-index: 10000;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(5,10,21,0.7);
-  backdrop-filter: blur(6px);
+  background: rgba(5,10,21,0.92);
+  backdrop-filter: blur(12px);
   animation: fadeIn 0.3s ease;
 }
 
@@ -1095,14 +1095,14 @@
 
 /* ─── Level Complete Screen ─── */
 .level-complete-overlay {
-  position: absolute;
+  position: fixed;
   inset: 0;
-  z-index: 400;
+  z-index: 10000;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: radial-gradient(ellipse at center, rgba(5,10,21,0.85) 0%, rgba(5,10,21,0.95) 100%);
-  backdrop-filter: blur(10px);
+  background: radial-gradient(ellipse at center, rgba(5,10,21,0.92) 0%, rgba(5,10,21,0.98) 100%);
+  backdrop-filter: blur(12px);
   animation: fadeIn 0.5s ease;
 }
 
@@ -1466,7 +1466,31 @@
   color: #6b7280;
   line-height: 1.6;
   text-align: left;
+  margin-bottom: 4px;
+}
+
+/* Section-wise layout for appliance popup */
+.popup-section {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.popup-section:first-of-type {
+  margin-top: 10px;
+}
+
+.popup-section-label {
+  font-family: 'Fredoka', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
   margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 /* Stats row — 3 columns */

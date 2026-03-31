@@ -118,6 +118,40 @@ function playLevelCompleteSound() {
 // ─── Ambient Music (disabled) ───
 function useAmbientMusic() {}
 
+// ─── JS Emoji Icons (replacing Unicode emoji) ───
+const ICONS = {
+  bulb: '\u{1F4A1}',
+  brain: '\u{1F9E0}',
+  check: '\u{2705}',
+  cross: '\u{274C}',
+  star: '\u{2B50}',
+  fire: '\u{1F525}',
+  trophy: '\u{1F3C6}',
+  party: '\u{1F389}',
+  thumbsUp: '\u{1F44D}',
+  muscle: '\u{1F4AA}',
+  speaker: '\u{1F50A}',
+  house: '\u{1F3E0}',
+  pin: '\u{1F4CD}',
+  search: '\u{1F50D}',
+  grad: '\u{1F393}',
+  runner: '\u{1F3C3}',
+  zap: '\u{26A1}',
+  leaf: '\u{1F33F}',
+  info: '\u{2139}\u{FE0F}',
+  think: '\u{1F914}',
+  cry: '\u{1F622}',
+  wave: '\u{1F44B}',
+  couch: '\u{1F6CB}\u{FE0F}',
+  bed: '\u{1F6CF}\u{FE0F}',
+  cook: '\u{1F373}',
+  shower: '\u{1F6BF}',
+  close: '\u{2715}',
+  checkBox: '\u{2705}',
+  emptyBox: '\u{2B1C}',
+  mouse: '\u{1F5B1}\u{FE0F}',
+};
+
 // ─── Flash Card (Memory Boost) ───
 function FlashCard({ appliance, visible, t }) {
   if (!visible || !appliance) return null;
@@ -128,8 +162,8 @@ function FlashCard({ appliance, visible, t }) {
         <span className="flash-icon">{appliance.icon}</span>
         <div className="flash-info">
           <strong>{at?.name || appliance.name}</strong>
-          <span>{appliance.wattage}W • {appliance.annualKwh} kWh/yr</span>
-          <span className="flash-fact">💡 {at?.funFact || appliance.funFact || appliance.description?.slice(0, 80) + '...'}</span>
+          <span>{appliance.wattage}W {ICONS.zap} {appliance.annualKwh} kWh/yr</span>
+          <span className="flash-fact">{ICONS.bulb} {at?.funFact || appliance.funFact || appliance.description?.slice(0, 80) + '...'}</span>
         </div>
       </div>
     </div>
@@ -144,7 +178,7 @@ function AchievementToast({ achievement, visible, t }) {
     <div className="achievement-toast">
       <div className="achievement-icon">{achievement.icon}</div>
       <div className="achievement-info">
-        <div className="achievement-label">{t?.achievements?.unlocked || 'Achievement Unlocked!'}</div>
+        <div className="achievement-label">{t?.achievements?.unlocked || `${ICONS.trophy} Achievement Unlocked!`}</div>
         <div className="achievement-title">{at?.title || achievement.title}</div>
         <div className="achievement-desc">{at?.description || achievement.description}</div>
       </div>
@@ -167,7 +201,7 @@ const CATEGORY_COLORS = {
   'Electronics/Charging': { bg: '#e0e7ff', color: '#4338ca' },
 };
 
-// ─── Screen-Centered Appliance Popup (Full content, no truncation) ───
+// ─── Screen-Centered Appliance Popup (Section-wise, no BEE, JS emoji) ───
 function ApplianceTooltip({ appliance, onClose, t, langCode }) {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [closing, setClosing] = useState(false);
@@ -194,20 +228,14 @@ function ApplianceTooltip({ appliance, onClose, t, langCode }) {
   const description = at?.display_text || data.description || '';
   const funFact = at?.funFact || data.funFact || '';
   const energyTip = at?.energyTip || data.researchNote || '';
-  const annualKwh = data.annualKwh || '—';
-  const co2PerYear = data.co2PerYear || '—';
-  const beeRated = data.beeRated || t?.ui?.notBeeRated || 'Not BEE rated';
-
-  // BEE star display
-  const beeStars = beeRated === 'No' || beeRated === 'Not BEE rated'
-    ? null
-    : beeRated;
+  const annualKwh = data.annualKwh || String.fromCharCode(8212);
+  const co2PerYear = data.co2PerYear || String.fromCharCode(8212);
 
   const usageLine = data.usePerDay && data.daysPerYear
-    ? `${data.usePerDay} • ${data.daysPerYear} ${t?.ui?.daysUsed || 'days/yr'}`
+    ? `${data.usePerDay} ${ICONS.zap} ${data.daysPerYear} ${t?.ui?.daysUsed || 'days/yr'}`
     : data.usePerDay || '';
 
-  // FIX 5: Full voiceover — reads name, wattage, usage, full description
+  // Full voiceover
   const handleReplay = () => {
     if (langCode !== 'en') return;
     setIsSpeaking(true);
@@ -221,95 +249,94 @@ function ApplianceTooltip({ appliance, onClose, t, langCode }) {
         className={`popup-card ${closing ? 'closing' : ''}`}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Icon */}
-        <div className="popup-icon">{data.icon || '⚡'}</div>
-
-        {/* Name */}
+        {/* ── Section 1: Identity ── */}
+        <div className="popup-icon">{data.icon || ICONS.zap}</div>
         <div className="popup-name">{at?.name || data.name}</div>
-
-        {/* Category pill */}
         <div className="popup-category" style={{ background: catColors.bg, color: catColors.color }}>
           {data.category}
         </div>
 
-        {/* Divider */}
-        <div className="popup-divider" />
+        {/* ── Section 2: Power & Usage ── */}
+        <div className="popup-section">
+          <div className="popup-section-label">{ICONS.zap} Power & Usage</div>
+          <div className="popup-wattage">{data.wattage}W</div>
+          {usageLine && <div className="popup-usage">{usageLine}</div>}
+        </div>
 
-        {/* Wattage */}
-        <div className="popup-wattage">{data.wattage}W</div>
-
-        {/* Usage */}
-        {usageLine && <div className="popup-usage">{usageLine}</div>}
-
-        {/* Divider */}
-        <div className="popup-divider" />
-
-        {/* Full description — NO truncation */}
-        {description && <div className="popup-description-full">{description}</div>}
-
-        {/* Energy Stats Row */}
-        <div className="popup-stats-row">
-          <div className="popup-stat">
-            <div className="popup-stat-value">{annualKwh}</div>
-            <div className="popup-stat-label">{t?.ui?.annualUsage || 'kWh/year'}</div>
+        {/* ── Section 3: About ── */}
+        {description && (
+          <div className="popup-section">
+            <div className="popup-section-label">{ICONS.info} About</div>
+            <div className="popup-description-full">{description}</div>
           </div>
-          <div className="popup-stat">
-            <div className="popup-stat-value">{co2PerYear}</div>
-            <div className="popup-stat-label">{t?.ui?.co2Emissions || 'kg CO₂/yr'}</div>
-          </div>
-          <div className="popup-stat">
-            <div className="popup-stat-value">{beeStars ? '⭐' : '—'}</div>
-            <div className="popup-stat-label">{beeStars || (t?.ui?.beeRating || 'Not rated')}</div>
+        )}
+
+        {/* ── Section 4: Energy Impact (NO BEE rating) ── */}
+        <div className="popup-section">
+          <div className="popup-section-label">{ICONS.leaf} Energy Impact</div>
+          <div className="popup-stats-row">
+            <div className="popup-stat">
+              <div className="popup-stat-value">{annualKwh}</div>
+              <div className="popup-stat-label">{t?.ui?.annualUsage || 'kWh/year'}</div>
+            </div>
+            <div className="popup-stat">
+              <div className="popup-stat-value">{co2PerYear}</div>
+              <div className="popup-stat-label">{t?.ui?.co2Emissions || 'kg CO\u2082/yr'}</div>
+            </div>
           </div>
         </div>
 
-        {/* Energy Saving Tip */}
+        {/* ── Section 5: Energy Saving Tip ── */}
         {energyTip && (
-          <div className="popup-tip-box">
-            <div className="popup-tip-label">💡 {t?.ui?.energySavingTip || 'Energy Saving Tip'}</div>
-            <div className="popup-tip-text">{energyTip}</div>
+          <div className="popup-section">
+            <div className="popup-tip-box">
+              <div className="popup-tip-label">{ICONS.bulb} {t?.ui?.energySavingTip || 'Energy Saving Tip'}</div>
+              <div className="popup-tip-text">{energyTip}</div>
+            </div>
           </div>
         )}
 
-        {/* Fun Fact */}
+        {/* ── Section 6: Fun Fact ── */}
         {funFact && (
-          <div className="popup-funfact-box">
-            <div className="popup-funfact-label">🤔 {t?.ui?.didYouKnow || 'Did You Know?'}</div>
-            <div className="popup-funfact-text">{funFact}</div>
+          <div className="popup-section">
+            <div className="popup-funfact-box">
+              <div className="popup-funfact-label">{ICONS.think} {t?.ui?.didYouKnow || 'Did You Know?'}</div>
+              <div className="popup-funfact-text">{funFact}</div>
+            </div>
           </div>
         )}
 
-        {/* Bottom row */}
+        {/* ── Bottom row ── */}
         <div className="popup-bottom-row">
           {langCode === 'en' && (
             <button
               className={`popup-speaker ${isSpeaking ? 'speaking' : ''}`}
               onClick={handleReplay}
             >
-              🔊
+              {ICONS.speaker}
             </button>
           )}
           <div style={{ flex: 1 }} />
-          <button className="popup-close-btn" onClick={handleClose}>✕</button>
+          <button className="popup-close-btn" onClick={handleClose}>{ICONS.close}</button>
         </div>
       </div>
     </div>
   );
 }
 
-// ─── Room icons ───
+// ─── Room icons (JS strings) ───
 const ROOM_ICONS = {
-  'Living Room': '🛋️',
-  'Bedroom': '🛏️',
-  'Kitchen': '🍳',
-  'Bathroom': '🚿',
+  'Living Room': ICONS.couch,
+  'Bedroom': ICONS.bed,
+  'Kitchen': ICONS.cook,
+  'Bathroom': ICONS.shower,
 };
 
 // ─── Room Entry Banner (Fix 4: small elegant pill, slides down, fades out in 2s) ───
 function RoomEntryBanner({ room, visible, t }) {
   if (!visible || !room) return null;
   const rt = t?.rooms?.[room];
-  const icon = ROOM_ICONS[room] || '📍';
+  const icon = ROOM_ICONS[room] || ICONS.pin;
   return (
     <div className="room-entry-banner">
       <span className="room-entry-icon">{icon}</span>
@@ -344,7 +371,7 @@ function ChecklistPanel({ interacted, isOpen, onToggle, t }) {
       </button>
       {isOpen && (
         <div className="checklist-content">
-          <h3 className="checklist-title">{t?.ui?.homeAuditMission || '🏠 Home Audit Mission'}</h3>
+          <h3 className="checklist-title">{t?.ui?.homeAuditMission || `${ICONS.house} Home Audit Mission`}</h3>
           <div className="progress-bar-container">
             <div className="progress-bar-fill" style={{ width: `${(count / total) * 100}%` }} />
             <span className="progress-text">{count} / {total} {t?.ui?.appliances || 'Appliances'}</span>
@@ -357,7 +384,7 @@ function ChecklistPanel({ interacted, isOpen, onToggle, t }) {
               const at = t?.appliances?.[id];
               return (
                 <div key={id} className={`checklist-item ${done ? 'done' : ''}`}>
-                  <span className="check-mark">{done ? '✅' : '⬜'}</span>
+                  <span className="check-mark">{done ? ICONS.checkBox : ICONS.emptyBox}</span>
                   <span className="check-icon">{data.icon}</span>
                   <span className="check-name">{at?.name || data.name}</span>
                 </div>
@@ -432,7 +459,7 @@ function FullQuizModal({ questions, onComplete, t }) {
     <div className="quiz-overlay">
       <div className="quiz-modal full-quiz">
         <div className="quiz-header">
-          <span className="quiz-icon">🧠</span>
+          <span className="quiz-icon">{ICONS.brain}</span>
           <h3>{t?.quiz?.title || 'Energy Knowledge Quiz'}</h3>
         </div>
         <div className="quiz-progress-bar">
@@ -457,8 +484,8 @@ function FullQuizModal({ questions, onComplete, t }) {
         {answered && (
           <div className={`quiz-feedback ${selectedIndex === question.correctIndex ? 'correct' : 'wrong'}`}>
             {selectedIndex === question.correctIndex
-              ? (t?.quiz?.correct || '✅ Correct!')
-              : `${t?.quiz?.wrongPrefix || '❌ Wrong! The answer is'} ${String.fromCharCode(65 + question.correctIndex)}.`}
+              ? (t?.quiz?.correct || `${ICONS.check} Correct!`)
+              : `${t?.quiz?.wrongPrefix || `${ICONS.cross} Wrong! The answer is`} ${String.fromCharCode(65 + question.correctIndex)}.`}
             <p className="quiz-explanation">{question.explanation}</p>
           </div>
         )}
@@ -484,7 +511,7 @@ function LevelCompleteScreen({ score, total, stars, onContinue, t }) {
             }} />
           ))}
         </div>
-        <div className="lc-celebration">🎉</div>
+        <div className="lc-celebration">{ICONS.party}</div>
         <h2 className="lc-title">{t?.rewards?.levelCompleted || 'Level Completed!'}</h2>
         <p className="lc-subtitle">{t?.rewards?.homeAuditComplete || 'Home Energy Audit Complete'}</p>
 
@@ -492,7 +519,7 @@ function LevelCompleteScreen({ score, total, stars, onContinue, t }) {
           {[1, 2, 3].map(s => (
             <span key={s} className={`lc-star ${s <= stars ? 'earned' : 'empty'}`}
               style={{ animationDelay: `${s * 0.3}s` }}>
-              ⭐
+              {ICONS.star}
             </span>
           ))}
         </div>
@@ -503,9 +530,9 @@ function LevelCompleteScreen({ score, total, stars, onContinue, t }) {
         </div>
 
         <div className="lc-rating-label">
-          {stars === 3 && (t?.rewards?.outstanding || '🏆 Outstanding! You\'re an Energy Expert!')}
-          {stars === 2 && (t?.rewards?.greatWork || '👍 Great Work! Keep learning!')}
-          {stars === 1 && (t?.rewards?.goodEffort || '💪 Good effort! Try again to improve!')}
+          {stars === 3 && (t?.rewards?.outstanding || `${ICONS.trophy} Outstanding! You're an Energy Expert!`)}
+          {stars === 2 && (t?.rewards?.greatWork || `${ICONS.thumbsUp} Great Work! Keep learning!`)}
+          {stars === 1 && (t?.rewards?.goodEffort || `${ICONS.muscle} Good effort! Try again to improve!`)}
         </div>
 
         <button className="lc-continue-btn" onClick={onContinue}>
@@ -520,7 +547,7 @@ function LevelCompleteScreen({ score, total, stars, onContinue, t }) {
 function RewardsDisplay({ stars }) {
   return (
     <div className="stars-display">
-      {'⭐'.repeat(Math.min(stars, 20))} {stars > 0 && <span className="star-count">{stars}</span>}
+      {ICONS.star.repeat(Math.min(stars, 20))} {stars > 0 && <span className="star-count">{stars}</span>}
     </div>
   );
 }
@@ -829,56 +856,70 @@ export default function Level1() {
         {t?.ui?.clickToPlay || 'Click to play | ESC to exit'}
       </div>
 
-      {/* HUD */}
-      <div className="level1-hud">
-        <button className="hud-back-btn" onClick={() => { stopSpeech(); navigate('/hub'); }}>{t?.ui?.back || '← Back'}</button>
-        <div className="hud-room-name">{t?.rooms?.[currentRoom]?.name || `📍 ${currentRoom}`}</div>
-        <div className="hud-instructions">{t?.ui?.homeAuditMission || '🏠 Home Audit Mission'}</div>
-      </div>
+      {/* HUD - hidden during quiz */}
+      {!showFullQuiz && !showLevelComplete && (
+        <>
+          <div className="level1-hud">
+            <button className="hud-back-btn" onClick={() => { stopSpeech(); navigate('/hub'); }}>{t?.ui?.back || String.fromCharCode(8592) + ' Back'}</button>
+            <div className="hud-room-name">{t?.rooms?.[currentRoom]?.name || `${ICONS.pin} ${currentRoom}`}</div>
+            <div className="hud-instructions">{t?.ui?.homeAuditMission || `${ICONS.house} Home Audit Mission`}</div>
+          </div>
 
-      {/* Stars */}
-      <RewardsDisplay stars={stars} />
+          {/* Stars */}
+          <RewardsDisplay stars={stars} />
 
-      {/* Progress Checklist */}
-      <ChecklistPanel
-        interacted={interacted}
-        isOpen={checklistOpen}
-        onToggle={() => setChecklistOpen(o => !o)}
-        t={t}
-      />
+          {/* Progress Checklist */}
+          <ChecklistPanel
+            interacted={interacted}
+            isOpen={checklistOpen}
+            onToggle={() => setChecklistOpen(o => !o)}
+            t={t}
+          />
 
-      {/* Bottom hint */}
-      <div className="interaction-hint">
-        <span className="key-icon">W</span><span className="key-icon">A</span>
-        <span className="key-icon">S</span><span className="key-icon">D</span> {t?.ui?.move || 'Move'}
-        &nbsp;•&nbsp; {t?.ui?.lookAround || '🖱️ Look Around'}
-        &nbsp;•&nbsp; <span className="key-icon">E</span> {t?.ui?.interact || 'Interact'}
-        {nearestAppliance && !activeAppliance && (
-          <span className="hint-nearby">
-            &nbsp;— <span className="pulse-text">{APPLIANCE_DATA[nearestAppliance]?.icon} {t?.appliances?.[nearestAppliance]?.name || APPLIANCE_DATA[nearestAppliance]?.name} {t?.ui?.nearby || 'nearby!'}</span>
-          </span>
-        )}
-      </div>
+          {/* Bottom hint */}
+          <div className="interaction-hint">
+            <span className="key-icon">W</span><span className="key-icon">A</span>
+            <span className="key-icon">S</span><span className="key-icon">D</span> {t?.ui?.move || 'Move'}
+            &nbsp;{ICONS.mouse}&nbsp; {t?.ui?.lookAround || 'Look Around'}
+            &nbsp;•&nbsp; <span className="key-icon">E</span> {t?.ui?.interact || 'Interact'}
+            {nearestAppliance && !activeAppliance && (
+              <span className="hint-nearby">
+                &nbsp;{String.fromCharCode(8212)} <span className="pulse-text">{APPLIANCE_DATA[nearestAppliance]?.icon} {t?.appliances?.[nearestAppliance]?.name || APPLIANCE_DATA[nearestAppliance]?.name} {t?.ui?.nearby || 'nearby!'}</span>
+              </span>
+            )}
+          </div>
+        </>
+      )}
 
-      {/* Room Entry Banner */}
-      <RoomEntryBanner room={roomBanner} visible={showRoomBanner} t={t} />
+      {/* Room Entry Banner - hidden during quiz */}
+      {!showFullQuiz && !showLevelComplete && (
+        <RoomEntryBanner room={roomBanner} visible={showRoomBanner} t={t} />
+      )}
 
-      {/* Arjun Thought Bubble */}
-      <ThoughtBubble text={thoughtText} visible={showThought} />
+      {/* Arjun Thought Bubble - hidden during quiz */}
+      {!showFullQuiz && !showLevelComplete && (
+        <ThoughtBubble text={thoughtText} visible={showThought} />
+      )}
 
-      {/* Screen-Centered Appliance Popup */}
-      <ApplianceTooltip
-        appliance={activeAppliance}
-        onClose={handleCloseBubble}
-        t={t}
-        langCode={langCode}
-      />
+      {/* Screen-Centered Appliance Popup - hidden during quiz */}
+      {!showFullQuiz && !showLevelComplete && (
+        <ApplianceTooltip
+          appliance={activeAppliance}
+          onClose={handleCloseBubble}
+          t={t}
+          langCode={langCode}
+        />
+      )}
 
-      {/* Memory Flash Card */}
-      <FlashCard appliance={flashCard} visible={showFlash} t={t} />
+      {/* Memory Flash Card - hidden during quiz */}
+      {!showFullQuiz && !showLevelComplete && (
+        <FlashCard appliance={flashCard} visible={showFlash} t={t} />
+      )}
 
-      {/* Achievement Toast */}
-      <AchievementToast achievement={currentAchievement} visible={showAchievement} t={t} />
+      {/* Achievement Toast - hidden during quiz */}
+      {!showFullQuiz && !showLevelComplete && (
+        <AchievementToast achievement={currentAchievement} visible={showAchievement} t={t} />
+      )}
 
       {/* Full Quiz */}
       {showFullQuiz && (
