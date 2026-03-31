@@ -8,11 +8,11 @@ import Particles from '../components/Particles';
 
 // Adjust Y positions slightly to fit better within 100vh
 const levelData = [
-  { id: 1, title: 'Energy Intro', icon: '🔋', type: 'info', x: 20, y: 75, color: 'blue' },
-  { id: 2, title: 'Home Audit', icon: '🏠', type: 'activity', x: 50, y: 60, color: 'green' },
-  { id: 3, title: 'Vampire Power', icon: '🦇', type: 'challenge', x: 80, y: 45, color: 'purple' },
-  { id: 4, title: 'Solar Builder', icon: '☀️', type: 'activity', x: 50, y: 30, color: 'amber' },
-  { id: 5, title: 'City Grid', icon: '🏙️', type: 'boss', x: 20, y: 15, color: 'red' }
+  { id: 1, title: 'Energy Intro', icon: '\u{1F50B}', type: 'info', x: 20, y: 75, color: 'blue' },
+  { id: 2, title: 'Energy Meter', icon: '\u{26A1}', type: 'activity', x: 50, y: 60, color: 'green' },
+  { id: 3, title: 'Vampire Power', icon: '\u{1F987}', type: 'challenge', x: 80, y: 45, color: 'purple' },
+  { id: 4, title: 'Solar Builder', icon: '\u{2600}\u{FE0F}', type: 'activity', x: 50, y: 30, color: 'amber' },
+  { id: 5, title: 'City Grid', icon: '\u{1F3D9}\u{FE0F}', type: 'boss', x: 20, y: 15, color: 'red' }
 ];
 
 const HubScreen = () => {
@@ -47,7 +47,7 @@ const HubScreen = () => {
         style={{ backgroundColor: '#050a15', borderColor: '#1e293b' }}
       >
         <div className="flex items-center gap-2">
-           <div className="w-8 h-8 rounded-full flex items-center justify-center text-lg shadow-[0_0_8px_#22c55e]" style={{ backgroundColor: '#22c55e', color: '#050a15' }}>🌍</div>
+           <div className="w-8 h-8 rounded-full flex items-center justify-center text-lg shadow-[0_0_8px_#22c55e]" style={{ backgroundColor: '#22c55e', color: '#050a15' }}>{'\u{1F30D}'}</div>
            <div className="flex flex-col">
               <span className="text-[9px] uppercase tracking-widest text-[#9ca3af]" style={{ fontFamily: 'Nunito, sans-serif' }}>{t?.hub?.planetaryHealth || 'Planetary Health'}</span>
               <div className="w-24 h-1.5 rounded-full overflow-hidden bg-[#050a15] border border-white/20">
@@ -57,7 +57,7 @@ const HubScreen = () => {
         </div>
         
         <div className="flex items-center gap-1.5 px-3 py-1 rounded-full border bg-[#f59e0b]/20 border-[#f59e0b]">
-           <span className="text-sm animate-pulse drop-shadow-[0_0_5px_#f59e0b]">🪙</span>
+           <span className="text-sm animate-pulse drop-shadow-[0_0_5px_#f59e0b]">{'\u{1FA99}'}</span>
            <span className="font-bold text-sm text-[#f59e0b]" style={{ fontFamily: 'Fredoka, sans-serif' }}>{carbonCoins}</span>
         </div>
       </div>
@@ -96,7 +96,7 @@ const HubScreen = () => {
               <div key={node.id} className="absolute transform -translate-x-1/2 -translate-y-1/2 z-10" style={{ left: `${node.x}%`, top: `${node.y}%` }}>
                 <HexNode 
                   status={status}
-                  icon={status === 'locked' ? '🔒' : node.icon}
+                  icon={status === 'locked' ? '\u{1F512}' : node.icon}
                   title={status === 'locked' ? (t?.hub?.locked || 'Locked') : title}
                   color={node.color}
                   onClick={() => handleNodeClick(node)}
@@ -127,7 +127,7 @@ const HubScreen = () => {
                   onClick={() => setSelectedNode(null)}
                   className="absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center text-[#9ca3af] hover:text-white bg-white/10 active:scale-95 transition-all"
                >
-                 ✕
+                 {'\u{2715}'}
                </button>
                
                <div className="flex items-center gap-3 mb-4">
@@ -151,9 +151,9 @@ const HubScreen = () => {
                <button 
                  className="w-full py-2.5 rounded-lg font-bold tracking-wide transition-all shadow-lg active:scale-95 text-white bg-[#3b82f6]"
                  style={{ fontFamily: 'Fredoka, sans-serif', boxShadow: 'inset 0 0 10px rgba(255,255,255,0.2)' }}
-                 onClick={() => { setSelectedNode(null); navigate('/level1'); }}
+                 onClick={() => { setSelectedNode(null); navigate(`/level${selectedNode.id}`); }}
                >
-                 {t?.hub?.startMission || 'START MISSION →'}
+                 {t?.hub?.startMission || 'START MISSION \u{2192}'}
                </button>
              </motion.div>
            </motion.div>
