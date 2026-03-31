@@ -4,128 +4,246 @@
 
 export const CO2_FACTOR = 0.710;
 
-// ─── Appliance Data (D1 Table — Essential + Non-Essential) ───
-export const APPLIANCES = [
-  // Essential
-  { id: 'ceiling_fan',     name: 'Ceiling Fan (\u00D73)',   icon: '\u{1F300}',  wattage: 225, hoursPerDay: 12, daysPerYear: 300, kwhPerYear: 810,  co2: 575,  type: 'essential', category: 'Cooling',       room: 'Living Room', color: '#3b82f6' },
-  { id: 'fridge',          name: 'Refrigerator (200L)',     icon: '\u{1F9CA}',  wattage: 150, hoursPerDay: 8,  daysPerYear: 365, kwhPerYear: 400,  co2: 284,  type: 'essential', category: 'Preservation',  room: 'Kitchen',     color: '#06b6d4' },
-  { id: 'led_lights',      name: 'LED Lights (8\u00D710W)', icon: '\u{1F4A1}',  wattage: 80,  hoursPerDay: 6,  daysPerYear: 365, kwhPerYear: 175,  co2: 124,  type: 'essential', category: 'Lighting',      room: 'All Rooms',   color: '#eab308' },
-  { id: 'tv_led',          name: 'Television (32" LED)',    icon: '\u{1F4FA}',  wattage: 55,  hoursPerDay: 5,  daysPerYear: 365, kwhPerYear: 100,  co2: 71,   type: 'essential', category: 'Entertainment', room: 'Living Room', color: '#8b5cf6' },
-  { id: 'wifi_router',     name: 'Wi-Fi Router',            icon: '\u{1F4F6}',  wattage: 12,  hoursPerDay: 24, daysPerYear: 365, kwhPerYear: 105,  co2: 75,   type: 'essential', category: 'Comms',         room: 'Living Room', color: '#14b8a6' },
-  { id: 'chargers',        name: 'Mobile + Laptop Charger', icon: '\u{1F50C}',  wattage: 65,  hoursPerDay: 4,  daysPerYear: 365, kwhPerYear: 95,   co2: 67,   type: 'essential', category: 'Charging',      room: 'Bedroom',     color: '#f97316' },
-  { id: 'iron',            name: 'Electric Iron',           icon: '\u{2668}\u{FE0F}', wattage: 1000, hoursPerDay: 0.25, daysPerYear: 300, kwhPerYear: 75, co2: 53, type: 'essential', category: 'Laundry', room: 'Bedroom', color: '#ef4444' },
-  { id: 'water_purifier',  name: 'Water Purifier (RO)',     icon: '\u{1F4A7}',  wattage: 60,  hoursPerDay: 3,  daysPerYear: 365, kwhPerYear: 66,   co2: 47,   type: 'essential', category: 'Utility',       room: 'Kitchen',     color: '#0ea5e9' },
+// ─── Energy Tier Thresholds (for meter bar color) ───
+export const ENERGY_TIERS = {
+  low:    { max: 500,      color: '#22c55e', label: 'Low Usage',    icon: '\u{1F7E2}' },
+  medium: { max: 2000,     color: '#f59e0b', label: 'Medium Usage', icon: '\u{1F7E1}' },
+  high:   { max: 5000,     color: '#ef4444', label: 'High Usage',   icon: '\u{1F534}' },
+  extreme:{ max: Infinity, color: '#dc2626', label: 'Extreme!',     icon: '\u{1F525}' },
+};
 
-  // Non-Essential
-  { id: 'ac',              name: 'Air Conditioner (1.5T)',   icon: '\u{2744}\u{FE0F}', wattage: 1500, hoursPerDay: 8, daysPerYear: 150, kwhPerYear: 1800, co2: 1278, type: 'non-essential', category: 'Cooling',   room: 'Bedroom',  color: '#3b82f6' },
-  { id: 'room_heater',     name: 'Room Heater (Radiant)',   icon: '\u{1F525}',  wattage: 2000, hoursPerDay: 5,  daysPerYear: 60,  kwhPerYear: 600,  co2: 426,  type: 'non-essential', category: 'Heating',   room: 'Bedroom',  color: '#ef4444' },
-  { id: 'dishwasher',      name: 'Dishwasher',              icon: '\u{1F37D}\u{FE0F}', wattage: 1800, hoursPerDay: 1, daysPerYear: 200, kwhPerYear: 360, co2: 256, type: 'non-essential', category: 'Kitchen', room: 'Kitchen', color: '#64748b' },
-  { id: 'desktop',         name: 'Desktop Computer',        icon: '\u{1F5A5}\u{FE0F}', wattage: 250, hoursPerDay: 4, daysPerYear: 300, kwhPerYear: 300, co2: 213, type: 'non-essential', category: 'Computing', room: 'Bedroom', color: '#6366f1' },
-  { id: 'dryer',           name: 'Clothes Dryer',           icon: '\u{1F32C}\u{FE0F}', wattage: 2500, hoursPerDay: 1, daysPerYear: 100, kwhPerYear: 250, co2: 178, type: 'non-essential', category: 'Laundry', room: 'Bathroom', color: '#a855f7' },
-  { id: 'geyser',          name: 'Electric Geyser (25L)',   icon: '\u{1F6BF}',  wattage: 2000, hoursPerDay: 0.5, daysPerYear: 180, kwhPerYear: 180, co2: 128,  type: 'non-essential', category: 'Heating',   room: 'Bathroom', color: '#f43f5e' },
-  { id: 'oven',            name: 'Electric Oven / OTG',     icon: '\u{1F35E}',  wattage: 2000, hoursPerDay: 0.5, daysPerYear: 150, kwhPerYear: 150, co2: 107,  type: 'non-essential', category: 'Cooking',   room: 'Kitchen',  color: '#d97706' },
-  { id: 'gaming',          name: 'Gaming Console',          icon: '\u{1F3AE}',  wattage: 200, hoursPerDay: 2,   daysPerYear: 250, kwhPerYear: 100, co2: 71,   type: 'non-essential', category: 'Entertainment', room: 'Living Room', color: '#10b981' },
-  { id: 'washing_machine', name: 'Washing Machine (7kg)',   icon: '\u{1F455}',  wattage: 500, hoursPerDay: 1,   daysPerYear: 200, kwhPerYear: 100, co2: 71,   type: 'non-essential', category: 'Laundry',   room: 'Bathroom', color: '#0284c7' },
-  { id: 'microwave',       name: 'Microwave Oven',          icon: '\u{1F4E1}',  wattage: 1200, hoursPerDay: 0.25, daysPerYear: 300, kwhPerYear: 90, co2: 64,  type: 'non-essential', category: 'Cooking',   room: 'Kitchen',  color: '#ea580c' },
-];
-
-// Step 1 Discovery: subset of appliances for ON/OFF room interaction
-export const DISCOVERY_APPLIANCES = APPLIANCES.filter(a =>
-  ['ceiling_fan', 'fridge', 'led_lights', 'tv_led', 'ac', 'geyser', 'washing_machine', 'microwave', 'iron', 'desktop'].includes(a.id)
-);
-
-// Step 4 Ranking: sorted by kwhPerYear (answer key)
-export const RANKING_ANSWER = [...APPLIANCES]
-  .sort((a, b) => b.kwhPerYear - a.kwhPerYear)
-  .slice(0, 8);
-
-// ─── Electricity Rate Slabs (Indian Domestic) ───
-export const RATE_SLABS = [
-  { min: 0,   max: 100, rate: 3,  label: '0-100 units' },
-  { min: 101, max: 200, rate: 5,  label: '101-200 units' },
-  { min: 201, max: 300, rate: 7,  label: '201-300 units' },
-  { min: 301, max: Infinity, rate: 9, label: '300+ units' },
-];
-
-export function calculateBill(monthlyKwh) {
-  let remaining = monthlyKwh;
-  let total = 0;
-  const breakdown = [];
-  for (const slab of RATE_SLABS) {
-    const slabUnits = Math.min(remaining, slab.max - slab.min + 1);
-    if (slabUnits <= 0) break;
-    const cost = slabUnits * slab.rate;
-    breakdown.push({ ...slab, units: slabUnits, cost });
-    total += cost;
-    remaining -= slabUnits;
-  }
-  return { total: Math.round(total), breakdown, monthlyKwh: Math.round(monthlyKwh) };
+export function getEnergyTier(watts) {
+  if (watts <= ENERGY_TIERS.low.max) return ENERGY_TIERS.low;
+  if (watts <= ENERGY_TIERS.medium.max) return ENERGY_TIERS.medium;
+  if (watts <= ENERGY_TIERS.high.max) return ENERGY_TIERS.high;
+  return ENERGY_TIERS.extreme;
 }
 
-// ─── Sharma Family Example ───
-export const SHARMA_FAMILY = [
-  { name: '3 Ceiling Fans',   dailyUse: '12 hrs', days: 300, kwh: 810,  co2: 575 },
-  { name: '8 LED Lights',     dailyUse: '6 hrs',  days: 365, kwh: 175,  co2: 124 },
-  { name: '1 Refrigerator',   dailyUse: '24 hrs', days: 365, kwh: 400,  co2: 284 },
-  { name: '1 LED TV (32")',   dailyUse: '4 hrs',  days: 365, kwh: 80,   co2: 57 },
-  { name: '1 AC (1.5 Ton)',   dailyUse: '6 hrs',  days: 120, kwh: 1080, co2: 767 },
-  { name: '1 Washing Machine', dailyUse: '1 hr',  days: 156, kwh: 78,   co2: 55 },
-  { name: '1 Geyser',         dailyUse: '30 min', days: 120, kwh: 120,  co2: 85 },
-  { name: 'Router + Chargers', dailyUse: 'Various', days: 365, kwh: 170, co2: 121 },
+// Max watts for meter fill
+export const MAX_POSSIBLE_WATTS = 7661;
+
+// ─── Watt thresholds for smart messages ───
+export const HIGH_WATT_THRESHOLD = 500;
+
+export function getSmartMessage(wattage) {
+  if (wattage >= 1500) return { text: 'This consumes a LOT of energy!', type: 'danger', icon: '\u{26A0}\u{FE0F}' };
+  if (wattage >= HIGH_WATT_THRESHOLD) return { text: 'Moderate energy consumption', type: 'warning', icon: '\u{26A1}' };
+  return { text: 'Energy efficient choice', type: 'good', icon: '\u{2705}' };
+}
+
+// ─── Level 2 Toggleable Appliances (13 appliances for 3D scene) ───
+export const LEVEL2_APPLIANCES = [
+  // Living Room
+  { id: 'ceiling_fan',   name: 'Ceiling Fan',          icon: '\u{1F300}',            wattage: 70,   room: 'Living Room', animationType: 'spin',    category: 'Cooling' },
+  { id: 'tv_smart',      name: 'Smart TV (43")',        icon: '\u{1F4FA}',            wattage: 75,   room: 'Living Room', animationType: 'glow',    category: 'Electronics' },
+  { id: 'wifi_router',   name: 'Wi-Fi Router',          icon: '\u{1F4F6}',            wattage: 12,   room: 'Living Room', animationType: 'led',     category: 'Electronics' },
+  { id: 'set_top_box',   name: 'Set-Top Box',           icon: '\u{1F4E6}',            wattage: 25,   room: 'Living Room', animationType: 'led',     category: 'Electronics' },
+  // Bedroom
+  { id: 'ac_1_5ton',     name: 'AC (1.5 Ton)',          icon: '\u{2744}\u{FE0F}',     wattage: 1500, room: 'Bedroom',     animationType: 'airflow', category: 'Cooling' },
+  { id: 'phone_charger', name: 'Phone Charger',         icon: '\u{1F50C}',            wattage: 15,   room: 'Bedroom',     animationType: 'led',     category: 'Charging' },
+  // Kitchen
+  { id: 'fridge',        name: 'Refrigerator',          icon: '\u{1F9CA}',            wattage: 150,  room: 'Kitchen',     animationType: 'led',     category: 'Cooling' },
+  { id: 'induction',     name: 'Induction Cooktop',     icon: '\u{1F373}',            wattage: 1500, room: 'Kitchen',     animationType: 'glow',    category: 'Cooking' },
+  { id: 'microwave',     name: 'Microwave Oven',        icon: '\u{1F4E1}',            wattage: 1000, room: 'Kitchen',     animationType: 'glow',    category: 'Cooking' },
+  { id: 'mixer_grinder', name: 'Mixer Grinder',         icon: '\u{26A1}',             wattage: 600,  room: 'Kitchen',     animationType: 'spin',    category: 'Cooking' },
+  { id: 'led_tube',      name: 'LED Tube Light',        icon: '\u{1F4A1}',            wattage: 18,   room: 'Kitchen',     animationType: 'glow',    category: 'Lighting' },
+  // Bathroom
+  { id: 'geyser',        name: 'Geyser (2000W)',        icon: '\u{1F6BF}',            wattage: 2000, room: 'Bathroom',    animationType: 'glow',    category: 'Heating' },
+  { id: 'washing_machine', name: 'Washing Machine',     icon: '\u{1F455}',            wattage: 420,  room: 'Bathroom',    animationType: 'spin',    category: 'Laundry' },
 ];
 
-// ─── Quiz Questions (difficulty: 1=easy, 2=medium, 3=hard) ───
+export const L2_APPLIANCE_IDS = LEVEL2_APPLIANCES.map(a => a.id);
+
+// ─── Quick lookup map ───
+export const L2_APPLIANCE_MAP = {};
+LEVEL2_APPLIANCES.forEach(a => { L2_APPLIANCE_MAP[a.id] = a; });
+
+// ═══════════════════════════════════════════════════════════
+//  PROBLEM-BASED TASK SYSTEM
+// ═══════════════════════════════════════════════════════════
+
+export const TASKS = [
+  {
+    id: 'task_hot_room',
+    scenario: 'The room is too hot!',
+    icon: '\u{1F525}',
+    hint: 'You need something that cools the room down.',
+    correctIds: ['ceiling_fan', 'ac_1_5ton'],
+    bestId: 'ceiling_fan',
+    wrongHint: 'This appliance doesn\'t reduce temperature.',
+    comparison: {
+      efficient: { id: 'ceiling_fan', label: 'Ceiling Fan', watts: 70 },
+      alternative: { id: 'ac_1_5ton', label: 'AC (1.5 Ton)', watts: 1500 },
+      message: 'Fan uses 70W vs AC at 1500W \u{2014} that\'s 21x less energy!',
+      lesson: 'Use a fan when possible. Reserve AC for extreme heat.',
+    },
+  },
+  {
+    id: 'task_dark_room',
+    scenario: 'The room is dark!',
+    icon: '\u{1F319}',
+    hint: 'You need a light source.',
+    correctIds: ['led_tube'],
+    bestId: 'led_tube',
+    wrongHint: 'This appliance doesn\'t produce light.',
+    comparison: null,
+  },
+  {
+    id: 'task_phone_dead',
+    scenario: 'Phone battery is dead!',
+    icon: '\u{1F4F1}',
+    hint: 'You need something that charges your phone.',
+    correctIds: ['phone_charger'],
+    bestId: 'phone_charger',
+    wrongHint: 'This won\'t charge your phone!',
+    comparison: null,
+  },
+  {
+    id: 'task_reheat_food',
+    scenario: 'Need to warm up yesterday\'s food!',
+    icon: '\u{1F35C}',
+    hint: 'You need a cooking appliance that can reheat food.',
+    correctIds: ['microwave', 'induction'],
+    bestId: 'microwave',
+    wrongHint: 'This appliance can\'t reheat food.',
+    comparison: {
+      efficient: { id: 'microwave', label: 'Microwave', watts: 1000 },
+      alternative: { id: 'induction', label: 'Induction', watts: 1500 },
+      message: 'Microwave reheats faster and uses less energy for small portions!',
+      lesson: 'Use microwave for reheating. Induction is better for full cooking.',
+    },
+  },
+  {
+    id: 'task_dirty_clothes',
+    scenario: 'Clothes need washing!',
+    icon: '\u{1F455}',
+    hint: 'You need a machine that washes clothes.',
+    correctIds: ['washing_machine'],
+    bestId: 'washing_machine',
+    wrongHint: 'This appliance can\'t wash clothes.',
+    comparison: null,
+  },
+  {
+    id: 'task_hot_water',
+    scenario: 'Need hot water for a bath!',
+    icon: '\u{1F6C0}',
+    hint: 'You need something that heats water.',
+    correctIds: ['geyser'],
+    bestId: 'geyser',
+    wrongHint: 'This appliance doesn\'t heat water.',
+    comparison: null,
+  },
+  {
+    id: 'task_grind_spices',
+    scenario: 'Need to grind masala for cooking!',
+    icon: '\u{1F336}\u{FE0F}',
+    hint: 'You need a kitchen appliance that grinds.',
+    correctIds: ['mixer_grinder'],
+    bestId: 'mixer_grinder',
+    wrongHint: 'This appliance can\'t grind spices.',
+    comparison: null,
+  },
+];
+
+// ═══════════════════════════════════════════════════════════
+//  LEARNING INSERTS (shown between tasks)
+// ═══════════════════════════════════════════════════════════
+
+export const LEARNING_INSERTS = [
+  {
+    id: 'learn_kwh',
+    title: 'How Energy is Measured',
+    icon: '\u{1F4A1}',
+    content: 'Energy depends on power (Watts) and time (Hours).',
+    formula: 'kWh = (Watts \u{00D7} Hours) \u{00F7} 1000',
+    example: 'A 70W fan running 10 hours = (70 \u{00D7} 10) \u{00F7} 1000 = 0.7 kWh',
+    afterTask: 2,
+  },
+  {
+    id: 'learn_impact',
+    title: 'Why It Matters',
+    icon: '\u{1F30D}',
+    content: 'Every kWh of electricity in India releases 0.710 kg of CO\u{2082}.',
+    formula: 'CO\u{2082} = kWh \u{00D7} 0.710',
+    example: 'AC using 1800 kWh/year = 1,278 kg CO\u{2082} \u{2014} more than ALL essential appliances combined!',
+    afterTask: 4,
+  },
+];
+
+// ═══════════════════════════════════════════════════════════
+//  MICRO INTERACTIONS (quick in-game questions)
+// ═══════════════════════════════════════════════════════════
+
+export const MICRO_QUESTIONS = [
+  {
+    id: 'micro_ac_hours',
+    question: 'AC runs 8 hours/day \u{2014} high or low energy?',
+    options: ['Low Energy', 'High Energy'],
+    correctIndex: 1,
+    explanation: 'AC at 1500W for 8 hours = 12 kWh/day! That\'s very high energy usage.',
+    afterTask: 5,
+  },
+  {
+    id: 'micro_charger',
+    question: 'A charger left plugged in (not charging) \u{2014} does it still use energy?',
+    options: ['No, it\'s idle', 'Yes, phantom power'],
+    correctIndex: 1,
+    explanation: 'Idle chargers draw 0.1\u{2013}0.5W continuously. Unplug when not charging!',
+    afterTask: 6,
+  },
+];
+
+// ─── Quiz Questions (3-5, based on player experience) ───
 export const QUIZ_QUESTIONS = [
   {
     id: 'l2q1', difficulty: 1,
-    question: 'What is the formula to calculate daily energy consumption (kWh)?',
-    options: ['Watts \u00D7 Hours', '(Watts \u00D7 Hours) \u00F7 1000', 'Watts \u00F7 Hours', 'Watts + Hours'],
+    question: 'What is the formula to calculate energy consumption (kWh)?',
+    options: ['Watts \u{00D7} Hours', '(Watts \u{00D7} Hours) \u{00F7} 1000', 'Watts \u{00F7} Hours', 'Watts + Hours'],
     correctIndex: 1,
-    explanation: 'kWh = (Watts \u00D7 Hours) \u00F7 1000. We divide by 1000 because 1 kWh = 1000 watt-hours.',
+    explanation: 'kWh = (Watts \u{00D7} Hours) \u{00F7} 1000. We divide by 1000 because 1 kWh = 1000 Wh.',
   },
   {
     id: 'l2q2', difficulty: 1,
-    question: 'Which single appliance emits the MOST CO\u2082 per year in an Indian home?',
-    options: ['Ceiling Fan', 'Refrigerator', 'Air Conditioner', 'Geyser'],
-    correctIndex: 2,
-    explanation: 'The AC emits ~1278 kg CO\u2082/year \u2014 more than ALL essential appliances combined! High wattage (1500W) + long hours (8h/day).',
+    question: 'Which is more energy-efficient for cooling a room?',
+    options: ['AC (1500W)', 'Ceiling Fan (70W)', 'Geyser (2000W)', 'Microwave (1000W)'],
+    correctIndex: 1,
+    explanation: 'A ceiling fan at 70W uses 21x less energy than an AC at 1500W!',
   },
   {
-    id: 'l2q3', difficulty: 1,
-    question: 'How much CO\u2082 is released per unit (kWh) of electricity in India?',
-    options: ['0.500 kg', '0.710 kg', '0.900 kg', '1.200 kg'],
-    correctIndex: 1,
-    explanation: 'India\'s grid emission factor is 0.710 kg CO\u2082/kWh (CEA India FY 2024-25, Ver 21.0).',
+    id: 'l2q3', difficulty: 2,
+    question: 'Turning OFF which appliance saves the MOST energy instantly?',
+    options: ['Ceiling Fan (70W)', 'Wi-Fi Router (12W)', 'Geyser (2000W)', 'Phone Charger (15W)'],
+    correctIndex: 2,
+    explanation: 'Geyser at 2000W saves the most \u{2014} every minute costs more than a fan running an hour!',
   },
   {
     id: 'l2q4', difficulty: 2,
-    question: 'A 75W ceiling fan runs 12 hours/day for 300 days. What is its annual kWh?',
-    options: ['180 kWh', '270 kWh', '360 kWh', '900 kWh'],
-    correctIndex: 1,
-    explanation: 'Daily = (75 \u00D7 12) \u00F7 1000 = 0.9 kWh. Annual = 0.9 \u00D7 300 = 270 kWh.',
-  },
-  {
-    id: 'l2q5', difficulty: 2,
-    question: 'Essential appliances account for what percentage of total household CO\u2082?',
-    options: ['15%', '32%', '50%', '68%'],
-    correctIndex: 1,
-    explanation: 'Essential appliances produce ~1296 kg CO\u2082/year, which is about 32% of the total ~4088 kg.',
-  },
-  {
-    id: 'l2q6', difficulty: 2,
-    question: 'Which factor does NOT affect how much CO\u2082 an appliance produces?',
-    options: ['Wattage of the appliance', 'Hours used per day', 'Color of the appliance', 'Days used per year'],
+    question: 'If AC (1500W) and Geyser (2000W) are both ON, what\'s the total?',
+    options: ['2000W', '2500W', '3500W', '1500W'],
     correctIndex: 2,
-    explanation: 'CO\u2082 depends on wattage, hours/day, and days/year. The color has no effect on energy consumption!',
+    explanation: 'Total = Sum of all ON appliances. 1500W + 2000W = 3500W!',
   },
   {
-    id: 'l2q7', difficulty: 3,
-    question: 'The Sharma family uses ~2913 kWh/year. What is their approximate annual CO\u2082 emission?',
-    options: ['~1500 kg', '~2068 kg', '~2913 kg', '~3500 kg'],
-    correctIndex: 1,
-    explanation: '2913 kWh \u00D7 0.710 kg/kWh = ~2068 kg CO\u2082. That\'s about 2.1 tonnes per year!',
+    id: 'l2q5', difficulty: 3,
+    question: 'Setting AC to 24\u{00B0}C instead of 18\u{00B0}C saves approximately what percentage?',
+    options: ['10%', '15%', '25%', '35%'],
+    correctIndex: 2,
+    explanation: 'Each degree higher saves ~6%. From 18\u{00B0}C to 24\u{00B0}C = ~25% energy saved!',
   },
 ];
+
+// ─── Star Rating Thresholds ───
+export function calculateStars(correctTasks, totalTasks, efficientChoices, quizScore, quizTotal) {
+  // Weight: 40% task accuracy, 30% efficient choices, 30% quiz score
+  const taskPct = (correctTasks / totalTasks) * 100;
+  const efficientPct = (efficientChoices / totalTasks) * 100;
+  const quizPct = (quizScore / quizTotal) * 100;
+  const overall = taskPct * 0.4 + efficientPct * 0.3 + quizPct * 0.3;
+
+  if (overall >= 85) return 3;
+  if (overall >= 60) return 2;
+  return 1;
+}
 
 // ─── Achievement/Badge ───
 export const LEVEL2_BADGE = {
@@ -136,11 +254,12 @@ export const LEVEL2_BADGE = {
   coins: 50,
 };
 
-// ─── Energy Impact Messages ───
-export const IMPACT_MESSAGES = [
-  'AC uses ~1800 kWh/year \u{2014} more than ALL essential appliances combined!',
-  'Top 3 appliances (AC, Fans, Heater) cause ~56% of all household CO\u2082.',
-  'Switching to BLDC fans saves 50-60% energy \u{2014} from 75W down to 28W!',
+// ─── Energy Tips ───
+export const ENERGY_TIPS = [
+  'The AC + Geyser together use more than all other appliances combined!',
+  'Switching to a BLDC fan saves 60% energy \u{2014} from 70W down to 28W!',
   'Setting AC to 24\u{00B0}C instead of 18\u{00B0}C saves ~25% energy.',
-  'India\'s grid gets cleaner every year \u{2014} emission factor dropped from 0.774 to 0.710 in a decade.',
+  'Your Wi-Fi router runs 24/7. That\u{2019}s 105 kWh/year!',
+  'A phone charger left plugged in wastes energy even when not charging.',
+  'The microwave\u{2019}s clock display uses more electricity per year than charging your phone!',
 ];

@@ -1,9 +1,9 @@
 import React from 'react';
-import { LEVEL2_BADGE, IMPACT_MESSAGES } from './level2Data';
+import { LEVEL2_BADGE, ENERGY_TIPS } from './level2Data';
 
 export default function RewardScreen({ stars, score, total, pct, totalScore, onContinue }) {
   const coinsEarned = LEVEL2_BADGE.coins + (stars * 10) + totalScore;
-  const impactMsg = IMPACT_MESSAGES[Math.floor(Math.random() * IMPACT_MESSAGES.length)];
+  const impactMsg = ENERGY_TIPS[Math.floor(Math.random() * ENERGY_TIPS.length)];
 
   return (
     <div className="l2-reward-overlay">
