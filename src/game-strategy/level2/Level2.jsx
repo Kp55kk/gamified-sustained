@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef, useEffect, Suspense } from 'react';
+import React, { useState, useCallback, useRef, useEffect, useMemo, Suspense } from 'react';
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
 import { useNavigate } from 'react-router-dom';
 import * as THREE from 'three';
@@ -10,6 +10,10 @@ import {
   getEnergyTier, MAX_POSSIBLE_WATTS, ENERGY_TIPS,
   QUIZ_QUESTIONS, LEVEL2_BADGE, TASKS, LEARNING_INSERTS,
   MICRO_QUESTIONS, getSmartMessage, calculateStars,
+  getBarColor, getBarTierLabel, CO2_FACTOR,
+  calculateBill, calculateCO2, calculateAnnualEnergy,
+  USAGE_HOURS, BILL_SLABS, SHOCK_FACTS,
+  SMART_INSIGHTS, GENERIC_INSIGHTS, COMPARISON_PAIRS,
 } from './level2Data';
 import { APPLIANCE_POSITIONS } from '../applianceData';
 import QuizModal from './QuizModal';
@@ -22,21 +26,17 @@ function getAudioCtx() {
   if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   return audioCtx;
 }
-
 function playToggleOnSound() {
   try {
     const ctx = getAudioCtx();
-    const click = ctx.createOscillator();
-    const clickGain = ctx.createGain();
+    const click = ctx.createOscillator(); const clickGain = ctx.createGain();
     click.connect(clickGain); clickGain.connect(ctx.destination);
     click.frequency.setValueAtTime(800, ctx.currentTime);
     clickGain.gain.setValueAtTime(0.15, ctx.currentTime);
     clickGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
     click.start(ctx.currentTime); click.stop(ctx.currentTime + 0.1);
-    const hum = ctx.createOscillator();
-    const humGain = ctx.createGain();
-    hum.connect(humGain); humGain.connect(ctx.destination);
-    hum.type = 'sine';
+    const hum = ctx.createOscillator(); const humGain = ctx.createGain();
+    hum.connect(humGain); humGain.connect(ctx.destination); hum.type = 'sine';
     hum.frequency.setValueAtTime(200, ctx.currentTime + 0.05);
     hum.frequency.linearRampToValueAtTime(400, ctx.currentTime + 0.3);
     humGain.gain.setValueAtTime(0.08, ctx.currentTime + 0.05);
@@ -44,14 +44,10 @@ function playToggleOnSound() {
     hum.start(ctx.currentTime + 0.05); hum.stop(ctx.currentTime + 0.5);
   } catch (e) {}
 }
-
 function playToggleOffSound() {
   try {
-    const ctx = getAudioCtx();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.connect(gain); gain.connect(ctx.destination);
-    osc.type = 'sine';
+    const ctx = getAudioCtx(); const osc = ctx.createOscillator(); const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination); osc.type = 'sine';
     osc.frequency.setValueAtTime(400, ctx.currentTime);
     osc.frequency.linearRampToValueAtTime(150, ctx.currentTime + 0.25);
     gain.gain.setValueAtTime(0.1, ctx.currentTime);
@@ -59,15 +55,12 @@ function playToggleOffSound() {
     osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.35);
   } catch (e) {}
 }
-
 function playCorrectSound() {
   try {
     const ctx = getAudioCtx();
     [523, 659, 784].forEach((freq, i) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain); gain.connect(ctx.destination);
-      osc.type = 'triangle';
+      const osc = ctx.createOscillator(); const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination); osc.type = 'triangle';
       osc.frequency.setValueAtTime(freq, ctx.currentTime + i * 0.1);
       gain.gain.setValueAtTime(0.1, ctx.currentTime + i * 0.1);
       gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.1 + 0.3);
@@ -75,14 +68,10 @@ function playCorrectSound() {
     });
   } catch (e) {}
 }
-
 function playWrongSound() {
   try {
-    const ctx = getAudioCtx();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.connect(gain); gain.connect(ctx.destination);
-    osc.type = 'sawtooth';
+    const ctx = getAudioCtx(); const osc = ctx.createOscillator(); const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination); osc.type = 'sawtooth';
     osc.frequency.setValueAtTime(200, ctx.currentTime);
     osc.frequency.linearRampToValueAtTime(100, ctx.currentTime + 0.3);
     gain.gain.setValueAtTime(0.08, ctx.currentTime);
@@ -90,15 +79,12 @@ function playWrongSound() {
     osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.4);
   } catch (e) {}
 }
-
 function playMilestoneSound() {
   try {
     const ctx = getAudioCtx();
     [523, 659, 784, 1047].forEach((freq, i) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain); gain.connect(ctx.destination);
-      osc.type = 'triangle';
+      const osc = ctx.createOscillator(); const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination); osc.type = 'triangle';
       osc.frequency.setValueAtTime(freq, ctx.currentTime + i * 0.12);
       gain.gain.setValueAtTime(0.1, ctx.currentTime + i * 0.12);
       gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.12 + 0.4);
@@ -115,22 +101,16 @@ const ICONS = {
   brain: '\u{1F9E0}', mouse: '\u{1F5B1}\u{FE0F}', warn: '\u{26A0}\u{FE0F}',
   cross: '\u{274C}', think: '\u{1F914}', happy: '\u{1F60A}', oops: '\u{1F605}',
   target: '\u{1F3AF}', memo: '\u{1F4DD}', globe: '\u{1F30D}', coin: '\u{1FA99}',
+  chart: '\u{1F4CA}', money: '\u{1F4B0}', tree: '\u{1F333}', shock: '\u{1F633}',
 };
-
-// ─── Room icons ───
 const ROOM_ICONS = {
-  'Living Room': '\u{1F6CB}\u{FE0F}',
-  'Bedroom': '\u{1F6CF}\u{FE0F}',
-  'Kitchen': '\u{1F373}',
-  'Bathroom': '\u{1F6BF}',
+  'Living Room': '\u{1F6CB}\u{FE0F}', 'Bedroom': '\u{1F6CF}\u{FE0F}',
+  'Kitchen': '\u{1F373}', 'Bathroom': '\u{1F6BF}',
 };
 
 // ─── Warm Evening Lighting ───
 function WarmLighting() {
-  const lightRef = useRef();
-  const ambientRef = useRef();
-  const hemiRef = useRef();
-
+  const lightRef = useRef(); const ambientRef = useRef(); const hemiRef = useRef();
   useEffect(() => {
     let frame;
     const cycle = () => {
@@ -149,7 +129,6 @@ function WarmLighting() {
     cycle();
     return () => cancelAnimationFrame(frame);
   }, []);
-
   return (
     <>
       <ambientLight ref={ambientRef} intensity={0.45} color="#ffe8cc" />
@@ -166,29 +145,18 @@ function CameraRefForwarder({ cameraRef }) {
   return null;
 }
 
-// ─── 3D Scene ───
 function SceneContent({ applianceStates, nearestAppliance, taskTargetIds, onRoomChange, onNearestChange, onInteract, cameraRef }) {
   return (
     <>
       <WarmLighting />
       <CameraRefForwarder cameraRef={cameraRef} />
       <House />
-      <Level2Appliances
-        applianceStates={applianceStates}
-        nearestAppliance={nearestAppliance}
-        taskTargetIds={taskTargetIds}
-      />
-      <Player
-        onRoomChange={onRoomChange}
-        onNearestApplianceChange={onNearestChange}
-        onInteract={onInteract}
-        applianceIdList={L2_APPLIANCE_IDS}
-      />
+      <Level2Appliances applianceStates={applianceStates} nearestAppliance={nearestAppliance} taskTargetIds={taskTargetIds} />
+      <Player onRoomChange={onRoomChange} onNearestApplianceChange={onNearestChange} onInteract={onInteract} applianceIdList={L2_APPLIANCE_IDS} />
     </>
   );
 }
 
-// ─── Animated Watt Counter ───
 function AnimatedWattCounter({ targetValue }) {
   const [displayValue, setDisplayValue] = useState(0);
   const animRef = useRef(null);
@@ -207,13 +175,32 @@ function AnimatedWattCounter({ targetValue }) {
   return <span className="l2-watt-number">{displayValue.toLocaleString()}W</span>;
 }
 
-// ─── Floating Text ───
 function FloatingText({ text, type, id, onDone }) {
-  useEffect(() => {
-    const timer = setTimeout(() => onDone(id), 2000);
-    return () => clearTimeout(timer);
-  }, [id, onDone]);
+  useEffect(() => { const timer = setTimeout(() => onDone(id), 2000); return () => clearTimeout(timer); }, [id, onDone]);
   return <div className={`l2-floating-text ${type}`}>{text}</div>;
+}
+
+// ─── History Sparkline ───
+function Sparkline({ data, width = 180, height = 40 }) {
+  if (data.length < 2) return null;
+  const maxVal = Math.max(...data.map(d => d.watts), 100);
+  const points = data.map((d, i) => {
+    const x = (i / (data.length - 1)) * width;
+    const y = height - (d.watts / maxVal) * (height - 4);
+    return `${x},${y}`;
+  }).join(' ');
+  return (
+    <svg width={width} height={height} className="l2-sparkline-svg">
+      <defs>
+        <linearGradient id="sparkGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#f59e0b" stopOpacity="0.4" />
+          <stop offset="100%" stopColor="#f59e0b" stopOpacity="0.05" />
+        </linearGradient>
+      </defs>
+      <polygon points={`0,${height} ${points} ${width},${height}`} fill="url(#sparkGrad)" />
+      <polyline points={points} fill="none" stroke="#f59e0b" strokeWidth="1.5" strokeLinejoin="round" />
+    </svg>
+  );
 }
 
 // ════════════════════════════════════════════════════════════
@@ -225,11 +212,8 @@ export default function Level2() {
   const { addCarbonCoins, completeLevel, unlockLevel } = useGame();
   const cameraRef = useRef(null);
 
-  // ─── Phase: intro → explore → tasks → learning → micro → quiz → reward ───
   const [phase, setPhase] = useState('intro');
   const [introStep, setIntroStep] = useState(0);
-
-  // ─── Appliance states + energy ───
   const [applianceStates, setApplianceStates] = useState(() => {
     const initial = {};
     L2_APPLIANCE_IDS.forEach(id => { initial[id] = false; });
@@ -238,37 +222,31 @@ export default function Level2() {
   const [totalWatts, setTotalWatts] = useState(0);
   const [onCount, setOnCount] = useState(0);
   const [sessionEnergy, setSessionEnergy] = useState(0);
-
-  // ─── Explore mode state ───
   const [toggledSet, setToggledSet] = useState(new Set());
-
-  // ─── Info popup (shown when toggling ON in explore mode) ───
   const [infoPopup, setInfoPopup] = useState(null);
-
-  // ─── Task system ───
   const [currentTaskIdx, setCurrentTaskIdx] = useState(0);
   const [taskFeedback, setTaskFeedback] = useState(null);
   const [taskComparison, setTaskComparison] = useState(null);
   const [correctTasks, setCorrectTasks] = useState(0);
   const [efficientChoices, setEfficientChoices] = useState(0);
   const [taskHint, setTaskHint] = useState(null);
-
-  // ─── Learning insert ───
   const [learningInsert, setLearningInsert] = useState(null);
-
-  // ─── Micro interaction ───
   const [microQuestion, setMicroQuestion] = useState(null);
   const [microAnswer, setMicroAnswer] = useState(null);
-
-  // ─── Quiz + reward ───
   const [quizResult, setQuizResult] = useState(null);
   const [stars, setStars] = useState(0);
-
-  // ─── UI ───
   const [currentRoom, setCurrentRoom] = useState('Living Room');
   const [nearestAppliance, setNearestAppliance] = useState(null);
   const [floatingTexts, setFloatingTexts] = useState([]);
   const floatingIdRef = useRef(0);
+
+  // ─── NEW: 7 Systems State ───
+  const [showGraph, setShowGraph] = useState(false);
+  const [showBill, setShowBill] = useState(false);
+  const [showCO2Panel, setShowCO2Panel] = useState(false);
+  const [energyHistory, setEnergyHistory] = useState([{ watts: 0, time: Date.now() }]);
+  const [insightIdx, setInsightIdx] = useState(0);
+  const [interactionCount, setInteractionCount] = useState(0);
 
   // ─── Compute totals ───
   useEffect(() => {
@@ -280,6 +258,53 @@ export default function Level2() {
     setOnCount(count);
   }, [applianceStates]);
 
+  // ─── Active insights (context-aware) ───
+  const activeInsights = useMemo(() => {
+    const contextual = SMART_INSIGHTS.filter(ins => ins.condition(applianceStates));
+    return contextual.length > 0 ? contextual : GENERIC_INSIGHTS;
+  }, [applianceStates]);
+
+  // ─── Rotate insights ───
+  useEffect(() => {
+    if (phase !== 'explore' && phase !== 'tasks') return;
+    const t = setInterval(() => setInsightIdx(i => (i + 1) % activeInsights.length), 5000);
+    return () => clearInterval(t);
+  }, [phase, activeInsights.length]);
+
+  // ─── Active comparisons for graph ───
+  const activeComparisons = useMemo(() => {
+    return COMPARISON_PAIRS.filter(c => applianceStates[c.a] && applianceStates[c.b]).map(c => {
+      const wA = L2_APPLIANCE_MAP[c.a].wattage;
+      const wB = L2_APPLIANCE_MAP[c.b].wattage;
+      const ratio = Math.round(wA / wB);
+      return { ...c, message: c.message.replace('{x}', ratio), wA, wB };
+    });
+  }, [applianceStates]);
+
+  // ─── ON appliances list for graph ───
+  const onAppliances = useMemo(() => {
+    return LEVEL2_APPLIANCES.filter(a => applianceStates[a.id]).sort((a, b) => b.wattage - a.wattage);
+  }, [applianceStates]);
+
+  // ─── Bill calculation ───
+  const billData = useMemo(() => {
+    let monthlyKwh = 0;
+    L2_APPLIANCE_IDS.forEach(id => {
+      if (applianceStates[id]) {
+        const w = L2_APPLIANCE_MAP[id].wattage;
+        const h = USAGE_HOURS[id] || 4;
+        monthlyKwh += (w * h * 30) / 1000;
+      }
+    });
+    return calculateBill(monthlyKwh);
+  }, [applianceStates]);
+
+  // ─── CO2 calculation ───
+  const co2Data = useMemo(() => {
+    const totalKwh = billData.totalUnits;
+    return { kwhMonth: totalKwh, co2Month: calculateCO2(totalKwh), co2Year: calculateCO2(totalKwh * 12) };
+  }, [billData]);
+
   // ─── Intro animation ───
   useEffect(() => {
     if (phase === 'intro') {
@@ -290,225 +315,144 @@ export default function Level2() {
     }
   }, [phase]);
 
-  // ─── Check explore → tasks transition ───
   const canStartTasks = toggledSet.size >= 4;
-
-  // ─── Current task ───
   const currentTask = TASKS[currentTaskIdx] || null;
   const taskTargetIds = (phase === 'tasks' && currentTask) ? currentTask.correctIds : null;
 
-  // ─── Add floating text helper ───
   const addFloating = useCallback((text, type) => {
     const id = floatingIdRef.current++;
     setFloatingTexts(prev => [...prev, { id, text, type }]);
   }, []);
-
   const removeFloatingText = useCallback((id) => {
     setFloatingTexts(prev => prev.filter(t => t.id !== id));
+  }, []);
+
+  // ─── Record history point ───
+  const recordHistory = useCallback((watts) => {
+    setEnergyHistory(prev => [...prev.slice(-49), { watts, time: Date.now() }]);
   }, []);
 
   // ─── EXPLORE MODE: Toggle handler ───
   const handleExploreInteract = useCallback((applianceId) => {
     if (!L2_APPLIANCE_IDS.includes(applianceId)) return;
-
     setApplianceStates(prev => {
       const newState = !prev[applianceId];
       const appliance = L2_APPLIANCE_MAP[applianceId];
-
       if (newState) {
         playToggleOnSound();
         addFloating(`+${appliance.wattage}W added!`, 'add');
         setSessionEnergy(s => s + appliance.wattage);
-        // Show info popup
         const smartMsg = getSmartMessage(appliance.wattage);
-        setInfoPopup({
-          name: appliance.name,
-          icon: appliance.icon,
-          wattage: appliance.wattage,
-          message: smartMsg,
-        });
-        setTimeout(() => setInfoPopup(null), 3500);
+        const co2hint = `${ICONS.globe} CO\u{2082}: ${calculateCO2((appliance.wattage * (USAGE_HOURS[applianceId] || 4) * 30) / 1000)} kg/month`;
+        setInfoPopup({ name: appliance.name, icon: appliance.icon, wattage: appliance.wattage, message: smartMsg, co2hint });
+        setTimeout(() => setInfoPopup(null), 4000);
       } else {
         playToggleOffSound();
         addFloating(`${appliance.wattage}W saved!`, 'save');
       }
-
-      return { ...prev, [applianceId]: newState };
+      const newStates = { ...prev, [applianceId]: newState };
+      let w = 0;
+      L2_APPLIANCE_IDS.forEach(id => { if (newStates[id]) w += L2_APPLIANCE_MAP[id].wattage; });
+      recordHistory(w);
+      return newStates;
     });
-
-    setToggledSet(prev => {
-      const next = new Set(prev);
-      next.add(applianceId);
-      return next;
-    });
-  }, [addFloating]);
+    setToggledSet(prev => { const next = new Set(prev); next.add(applianceId); return next; });
+    setInteractionCount(c => c + 1);
+  }, [addFloating, recordHistory]);
 
   // ─── TASK MODE: Toggle handler ───
   const handleTaskInteract = useCallback((applianceId) => {
     if (!L2_APPLIANCE_IDS.includes(applianceId)) return;
     if (!currentTask || taskFeedback) return;
-
     const appliance = L2_APPLIANCE_MAP[applianceId];
     const isCorrect = currentTask.correctIds.includes(applianceId);
     const isBest = applianceId === currentTask.bestId;
-
     if (isCorrect) {
-      playCorrectSound();
-      playToggleOnSound();
+      playCorrectSound(); playToggleOnSound();
       setApplianceStates(prev => ({ ...prev, [applianceId]: true }));
       setSessionEnergy(s => s + appliance.wattage);
       setCorrectTasks(c => c + 1);
       if (isBest) setEfficientChoices(e => e + 1);
-
-      // Show feedback
       if (currentTask.comparison && !isBest) {
-        // Correct but not the most efficient — show comparison
         setTaskComparison(currentTask.comparison);
-        setTaskFeedback({
-          type: 'correct-compare',
-          text: `${ICONS.check} Correct! But there's a better option...`,
-        });
+        setTaskFeedback({ type: 'correct-compare', text: `${ICONS.check} Correct! But there's a better option...` });
       } else if (currentTask.comparison && isBest) {
-        setTaskFeedback({
-          type: 'correct-best',
-          text: `${ICONS.check} Perfect! Most efficient choice!`,
-        });
+        setTaskFeedback({ type: 'correct-best', text: `${ICONS.check} Perfect! Most efficient choice!` });
         addFloating('Best Choice!', 'best');
       } else {
-        setTaskFeedback({
-          type: 'correct',
-          text: `${ICONS.check} Correct Choice!`,
-        });
+        setTaskFeedback({ type: 'correct', text: `${ICONS.check} Correct Choice!` });
         addFloating(`${ICONS.check} Correct!`, 'correct');
       }
     } else {
       playWrongSound();
       setTaskHint(currentTask.wrongHint);
-      setTaskFeedback({
-        type: 'wrong',
-        text: `${ICONS.oops} Oops! That won't solve the problem.`,
-      });
+      setTaskFeedback({ type: 'wrong', text: `${ICONS.oops} Oops! That won't solve the problem.` });
       addFloating('Try again!', 'wrong');
-      // Clear wrong feedback after 2s to allow retry
-      setTimeout(() => {
-        setTaskFeedback(null);
-        setTaskHint(null);
-      }, 2500);
+      setTimeout(() => { setTaskFeedback(null); setTaskHint(null); }, 2500);
     }
   }, [currentTask, taskFeedback, addFloating]);
 
-  // ─── Advance to next task ───
   const advanceTask = useCallback(() => {
-    setTaskFeedback(null);
-    setTaskComparison(null);
-    setTaskHint(null);
-
+    setTaskFeedback(null); setTaskComparison(null); setTaskHint(null);
     const nextIdx = currentTaskIdx + 1;
-
-    // Check for learning insert
     const insert = LEARNING_INSERTS.find(l => l.afterTask === nextIdx);
-    if (insert) {
-      setLearningInsert(insert);
-      return;
-    }
-
-    // Check for micro question
+    if (insert) { setLearningInsert(insert); return; }
     const micro = MICRO_QUESTIONS.find(m => m.afterTask === nextIdx);
-    if (micro && !microAnswer) {
-      setMicroQuestion(micro);
-      return;
-    }
-
-    // Check if tasks complete
-    if (nextIdx >= TASKS.length) {
-      playMilestoneSound();
-      setPhase('quiz');
-      return;
-    }
-
+    if (micro && !microAnswer) { setMicroQuestion(micro); return; }
+    if (nextIdx >= TASKS.length) { playMilestoneSound(); setPhase('quiz'); return; }
     setCurrentTaskIdx(nextIdx);
   }, [currentTaskIdx, microAnswer]);
 
-  // ─── Close learning insert ───
   const closeLearning = useCallback(() => {
     setLearningInsert(null);
-    // Continue to next task or micro question
     const nextIdx = currentTaskIdx + 1;
     const micro = MICRO_QUESTIONS.find(m => m.afterTask === nextIdx);
-    if (micro && !microAnswer) {
-      setMicroQuestion(micro);
-      return;
-    }
-    if (nextIdx >= TASKS.length) {
-      playMilestoneSound();
-      setPhase('quiz');
-      return;
-    }
+    if (micro && !microAnswer) { setMicroQuestion(micro); return; }
+    if (nextIdx >= TASKS.length) { playMilestoneSound(); setPhase('quiz'); return; }
     setCurrentTaskIdx(nextIdx);
   }, [currentTaskIdx, microAnswer]);
 
-  // ─── Handle micro answer ───
   const handleMicroAnswer = useCallback((idx) => {
     const isCorrect = idx === microQuestion.correctIndex;
-    if (isCorrect) playCorrectSound();
-    else playWrongSound();
+    if (isCorrect) playCorrectSound(); else playWrongSound();
     setMicroAnswer({ selectedIdx: idx, isCorrect });
   }, [microQuestion]);
 
-  // ─── Close micro and advance ───
   const closeMicro = useCallback(() => {
-    setMicroQuestion(null);
-    setMicroAnswer(null);
+    setMicroQuestion(null); setMicroAnswer(null);
     const nextIdx = currentTaskIdx + 1;
-    if (nextIdx >= TASKS.length) {
-      playMilestoneSound();
-      setPhase('quiz');
-      return;
-    }
+    if (nextIdx >= TASKS.length) { playMilestoneSound(); setPhase('quiz'); return; }
     setCurrentTaskIdx(nextIdx);
   }, [currentTaskIdx]);
 
-  // ─── Unified interact dispatcher ───
   const handleInteract = useCallback((applianceId) => {
     if (phase === 'explore') handleExploreInteract(applianceId);
     else if (phase === 'tasks') handleTaskInteract(applianceId);
   }, [phase, handleExploreInteract, handleTaskInteract]);
 
-  // ─── Quiz completion ───
   const handleQuizComplete = useCallback((result) => {
     const s = calculateStars(correctTasks, TASKS.length, efficientChoices, result.score, result.total);
-    setStars(s);
-    setQuizResult(result);
-    setPhase('reward');
+    setStars(s); setQuizResult(result); setPhase('reward');
   }, [correctTasks, efficientChoices]);
 
-  // ─── Reward → Hub ───
   const handleContinue = useCallback(() => {
     const coinsEarned = LEVEL2_BADGE.coins + (stars * 10) + (correctTasks * 5) + (efficientChoices * 10);
-    addCarbonCoins(coinsEarned);
-    completeLevel(2);
-    unlockLevel(3);
-    navigate('/hub');
+    addCarbonCoins(coinsEarned); completeLevel(2); unlockLevel(3); navigate('/hub');
   }, [stars, correctTasks, efficientChoices, addCarbonCoins, completeLevel, unlockLevel, navigate]);
 
   const handleRoomChange = useCallback((room) => setCurrentRoom(room), []);
   const handleNearestChange = useCallback((id) => setNearestAppliance(id), []);
 
   // ═══════════════════════════════════════════════════════
-  //  RENDER — INTRO PHASE
+  //  RENDER — INTRO
   // ═══════════════════════════════════════════════════════
-
   if (phase === 'intro') {
     return (
       <div className="l2-container">
         <div className="l2-intro-overlay">
           <div className="l2-intro-particles">
             {Array.from({ length: 20 }).map((_, i) => (
-              <div key={i} className="l2-intro-particle" style={{
-                '--x': `${Math.random() * 100}%`,
-                '--delay': `${Math.random() * 3}s`,
-                '--duration': `${2 + Math.random() * 3}s`,
-              }} />
+              <div key={i} className="l2-intro-particle" style={{ '--x': `${Math.random() * 100}%`, '--delay': `${Math.random() * 3}s`, '--duration': `${2 + Math.random() * 3}s` }} />
             ))}
           </div>
           <div className={`l2-intro-badge ${introStep >= 1 ? 'visible' : ''}`}>
@@ -526,8 +470,7 @@ export default function Level2() {
               Toggle them ON and OFF to see the energy impact in real-time."
             </p>
           </div>
-          <button className={`l2-intro-start-btn ${introStep >= 3 ? 'visible' : ''}`}
-            onClick={() => setPhase('explore')}>
+          <button className={`l2-intro-start-btn ${introStep >= 3 ? 'visible' : ''}`} onClick={() => setPhase('explore')}>
             Begin Level 2 {'\u{2192}'}
           </button>
         </div>
@@ -536,23 +479,18 @@ export default function Level2() {
   }
 
   // ═══════════════════════════════════════════════════════
-  //  RENDER — QUIZ PHASE
+  //  RENDER — QUIZ
   // ═══════════════════════════════════════════════════════
-
   if (phase === 'quiz') {
-    return (
-      <div className="l2-container">
-        <QuizModal onComplete={handleQuizComplete} />
-      </div>
-    );
+    return <div className="l2-container"><QuizModal onComplete={handleQuizComplete} /></div>;
   }
 
   // ═══════════════════════════════════════════════════════
-  //  RENDER — REWARD PHASE
+  //  RENDER — REWARD (with CO₂ impact)
   // ═══════════════════════════════════════════════════════
-
   if (phase === 'reward' && quizResult) {
     const coinsEarned = LEVEL2_BADGE.coins + (stars * 10) + (correctTasks * 5) + (efficientChoices * 10);
+    const randomFact = SHOCK_FACTS[Math.floor(Math.random() * SHOCK_FACTS.length)];
     return (
       <div className="l2-container">
         <div className="l2-reward-overlay">
@@ -560,44 +498,31 @@ export default function Level2() {
             <div className="l2-reward-badge">{LEVEL2_BADGE.icon}</div>
             <div className="l2-reward-title">{LEVEL2_BADGE.title}</div>
             <div className="l2-reward-subtitle">{LEVEL2_BADGE.description}</div>
-
             <div className="l2-reward-stars">
               {[1, 2, 3].map(s => (
-                <span key={s} className={`l2-reward-star ${s <= stars ? 'earned' : 'empty'}`}
-                  style={{ animationDelay: `${s * 0.3}s` }}>{ICONS.star}</span>
+                <span key={s} className={`l2-reward-star ${s <= stars ? 'earned' : 'empty'}`} style={{ animationDelay: `${s * 0.3}s` }}>{ICONS.star}</span>
               ))}
             </div>
-
             <div className="l2-reward-stats">
-              <div className="l2-reward-stat">
-                <span className="l2-reward-stat-label">Tasks Correct</span>
-                <span className="l2-reward-stat-value">{correctTasks}/{TASKS.length}</span>
-              </div>
-              <div className="l2-reward-stat">
-                <span className="l2-reward-stat-label">Efficient Choices</span>
-                <span className="l2-reward-stat-value">{efficientChoices}</span>
-              </div>
-              <div className="l2-reward-stat">
-                <span className="l2-reward-stat-label">Quiz Score</span>
-                <span className="l2-reward-stat-value">{quizResult.score}/{quizResult.total}</span>
-              </div>
+              <div className="l2-reward-stat"><span className="l2-reward-stat-label">Tasks Correct</span><span className="l2-reward-stat-value">{correctTasks}/{TASKS.length}</span></div>
+              <div className="l2-reward-stat"><span className="l2-reward-stat-label">Efficient Choices</span><span className="l2-reward-stat-value">{efficientChoices}</span></div>
+              <div className="l2-reward-stat"><span className="l2-reward-stat-label">Quiz Score</span><span className="l2-reward-stat-value">{quizResult.score}/{quizResult.total}</span></div>
             </div>
-
+            {/* CO₂ Impact Section */}
+            <div className="l2-reward-co2">
+              <div className="l2-reward-co2-title">{ICONS.globe} Environmental Impact</div>
+              <div className="l2-reward-co2-grid">
+                <div className="l2-co2-stat"><span className="l2-co2-val">{co2Data.kwhMonth}</span><span className="l2-co2-lbl">kWh/month</span></div>
+                <div className="l2-co2-stat"><span className="l2-co2-val">{co2Data.co2Month} kg</span><span className="l2-co2-lbl">CO{'\u{2082}'}/month</span></div>
+                <div className="l2-co2-stat"><span className="l2-co2-val">{co2Data.co2Year} kg</span><span className="l2-co2-lbl">CO{'\u{2082}'}/year</span></div>
+              </div>
+              <div className="l2-co2-shock">{ICONS.shock} {randomFact.fact}</div>
+            </div>
             <div className="l2-reward-coins">
               <span className="l2-reward-coins-icon">{ICONS.coin}</span>
               <span className="l2-reward-coins-text">+{coinsEarned} Carbon Coins</span>
             </div>
-
-            <div className="l2-reward-impact">
-              <div className="l2-reward-impact-text">
-                {ICONS.globe} AC uses ~1,800 kWh/year {'\u{1F633}'}
-                <br />Choosing efficient appliances saves energy and reduces CO{'\u{2082}'} emissions!
-              </div>
-            </div>
-
-            <button className="l2-continue-btn" onClick={handleContinue}>
-              Return to Hub {'\u{2192}'}
-            </button>
+            <button className="l2-continue-btn" onClick={handleContinue}>Return to Hub {'\u{2192}'}</button>
           </div>
         </div>
       </div>
@@ -605,148 +530,111 @@ export default function Level2() {
   }
 
   // ═══════════════════════════════════════════════════════
-  //  RENDER — EXPLORE + TASKS (3D SCENE + HUD)
+  //  RENDER — EXPLORE + TASKS (3D SCENE + HUD + ALL 7 SYSTEMS)
   // ═══════════════════════════════════════════════════════
-
   const tier = getEnergyTier(totalWatts);
   const meterPct = Math.min((totalWatts / MAX_POSSIBLE_WATTS) * 100, 100);
+  const currentInsight = activeInsights[insightIdx % activeInsights.length];
 
   return (
     <div className="l2-container">
-      {/* ─── 3D Canvas ─── */}
+      {/* 3D Canvas */}
       <div className="l2-canvas-wrapper">
-        <Canvas
-          camera={{ position: [-5, 6, 1], fov: 50 }}
-          gl={{ antialias: false }}
-          onCreated={({ gl }) => {
-            gl.setClearColor('#f5deb3');
-            gl.toneMapping = 1;
-            gl.toneMappingExposure = 1.1;
-            gl.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
-          }}
-        >
+        <Canvas camera={{ position: [-5, 6, 1], fov: 50 }} gl={{ antialias: false }}
+          onCreated={({ gl }) => { gl.setClearColor('#f5deb3'); gl.toneMapping = 1; gl.toneMappingExposure = 1.1; gl.setPixelRatio(Math.min(window.devicePixelRatio, 1.5)); }}>
           <Suspense fallback={null}>
-            <SceneContent
-              applianceStates={applianceStates}
-              nearestAppliance={nearestAppliance}
-              taskTargetIds={taskTargetIds}
-              onRoomChange={handleRoomChange}
-              onNearestChange={handleNearestChange}
-              onInteract={handleInteract}
-              cameraRef={cameraRef}
-            />
+            <SceneContent applianceStates={applianceStates} nearestAppliance={nearestAppliance} taskTargetIds={taskTargetIds}
+              onRoomChange={handleRoomChange} onNearestChange={handleNearestChange} onInteract={handleInteract} cameraRef={cameraRef} />
           </Suspense>
         </Canvas>
         <div className="l2-vignette" />
       </div>
 
-      {/* ─── HUD TOP BAR ─── */}
+      {/* HUD TOP BAR */}
       <div className="l2-hud-top">
-        <button className="l2-back-btn" onClick={() => navigate('/hub')}>
-          {'\u{2190}'} Back
-        </button>
+        <button className="l2-back-btn" onClick={() => navigate('/hub')}>{'\u{2190}'} Back</button>
         <div className="l2-hud-title">{ICONS.zap} Energy Meter</div>
         <div className="l2-hud-room">{ROOM_ICONS[currentRoom] || ICONS.pin} {currentRoom}</div>
       </div>
 
-      {/* ─── TASK BAR (shown in task mode) ─── */}
+      {/* TASK BAR */}
       {phase === 'tasks' && currentTask && !taskFeedback && !learningInsert && !microQuestion && (
         <div className="l2-task-bar">
-          <div className="l2-task-progress-label">
-            {ICONS.target} Task {currentTaskIdx + 1} of {TASKS.length}
-          </div>
-          <div className="l2-task-scenario">
-            <span className="l2-task-icon">{currentTask.icon}</span>
-            <span className="l2-task-text">{currentTask.scenario}</span>
-          </div>
-          <div className="l2-task-hint-text">
-            {ICONS.bulb} {currentTask.hint}
-          </div>
+          <div className="l2-task-progress-label">{ICONS.target} Task {currentTaskIdx + 1} of {TASKS.length}</div>
+          <div className="l2-task-scenario"><span className="l2-task-icon">{currentTask.icon}</span><span className="l2-task-text">{currentTask.scenario}</span></div>
+          <div className="l2-task-hint-text">{ICONS.bulb} {currentTask.hint}</div>
         </div>
       )}
 
-      {/* ─── EXPLORE → TASKS transition button ─── */}
-      {phase === 'explore' && canStartTasks && (
-        <div className="l2-start-tasks-container">
-          <button className="l2-start-tasks-btn" onClick={() => {
-            // Reset all appliances to OFF for task mode
-            const reset = {};
-            L2_APPLIANCE_IDS.forEach(id => { reset[id] = false; });
-            setApplianceStates(reset);
-            setTotalWatts(0);
-            setOnCount(0);
-            setPhase('tasks');
-          }}>
-            {ICONS.target} Ready for Tasks! Start Problem Solving {'\u{2192}'}
-          </button>
+      {/* EXPLORE → TASKS + Graph/Bill/CO2 buttons */}
+      {phase === 'explore' && (
+        <div className="l2-action-buttons">
+          {interactionCount >= 2 && <button className="l2-action-btn graph-btn" onClick={() => setShowGraph(true)}>{ICONS.chart} Energy Graph</button>}
+          {interactionCount >= 2 && <button className="l2-action-btn bill-btn" onClick={() => setShowBill(true)}>{ICONS.money} Bill Calc</button>}
+          {interactionCount >= 2 && <button className="l2-action-btn co2-btn" onClick={() => setShowCO2Panel(true)}>{ICONS.globe} CO{'\u{2082}'} Impact</button>}
+          {canStartTasks && <button className="l2-start-tasks-btn" onClick={() => {
+            const reset = {}; L2_APPLIANCE_IDS.forEach(id => { reset[id] = false; });
+            setApplianceStates(reset); setTotalWatts(0); setOnCount(0); setPhase('tasks');
+          }}>{ICONS.target} Start Tasks {'\u{2192}'}</button>}
         </div>
       )}
 
-      {/* ─── ENERGY METER PANEL ─── */}
+      {/* ENERGY METER PANEL */}
       <div className="l2-energy-panel">
         <div className="l2-energy-header">
-          <span className="l2-energy-icon">{ICONS.zap}</span>
-          <span className="l2-energy-label">Total Power Usage</span>
+          <span className="l2-energy-icon">{ICONS.zap}</span><span className="l2-energy-label">Total Power Usage</span>
         </div>
-        <div className="l2-watt-display">
-          <AnimatedWattCounter targetValue={totalWatts} />
-        </div>
+        <div className="l2-watt-display"><AnimatedWattCounter targetValue={totalWatts} /></div>
         <div className="l2-meter-bar-container">
-          <div className="l2-meter-bar-fill" style={{
-            width: `${meterPct}%`,
-            backgroundColor: tier.color,
-            boxShadow: `0 0 12px ${tier.color}60, inset 0 1px 0 rgba(255,255,255,0.3)`,
-          }} />
-          <div className="l2-meter-ticks">
-            <span>0W</span><span>2kW</span><span>5kW</span><span>7.6kW</span>
-          </div>
+          <div className="l2-meter-bar-fill" style={{ width: `${meterPct}%`, backgroundColor: tier.color, boxShadow: `0 0 12px ${tier.color}60, inset 0 1px 0 rgba(255,255,255,0.3)` }} />
+          <div className="l2-meter-ticks"><span>0W</span><span>2kW</span><span>5kW</span><span>7.7kW</span></div>
         </div>
-        <div className="l2-meter-tier" style={{ color: tier.color }}>
-          {tier.icon} {tier.label}
-        </div>
+        <div className="l2-meter-tier" style={{ color: tier.color }}>{tier.icon} {tier.label}</div>
         <div className="l2-appliance-count">
-          <span className="l2-count-on">{onCount}</span>
-          <span className="l2-count-sep">/</span>
-          <span className="l2-count-total">{L2_APPLIANCE_IDS.length}</span>
-          <span className="l2-count-label">ON</span>
+          <span className="l2-count-on">{onCount}</span><span className="l2-count-sep">/</span>
+          <span className="l2-count-total">{L2_APPLIANCE_IDS.length}</span><span className="l2-count-label">ON</span>
         </div>
+        {/* CO₂ mini display */}
+        <div className="l2-co2-mini">
+          {ICONS.globe} CO{'\u{2082}'}: <strong>{co2Data.co2Month} kg/mo</strong>
+        </div>
+        {/* Mini Sparkline History */}
+        {energyHistory.length > 1 && (
+          <div className="l2-sparkline-container">
+            <div className="l2-sparkline-label">{ICONS.chart} Usage History</div>
+            <Sparkline data={energyHistory} />
+          </div>
+        )}
       </div>
 
-      {/* ─── MINI ENERGY TRACKER ─── */}
-      <div className="l2-session-tracker">
-        {ICONS.zap} Session Energy: <strong>{sessionEnergy.toLocaleString()}W</strong>
-      </div>
+      {/* SESSION TRACKER */}
+      <div className="l2-session-tracker">{ICONS.zap} Session: <strong>{sessionEnergy.toLocaleString()}W</strong></div>
 
-      {/* ─── PROGRESS PANEL (Explore mode) ─── */}
+      {/* INTELLIGENT INSIGHT TICKER */}
+      {currentInsight && (phase === 'explore' || phase === 'tasks') && (
+        <div className="l2-insight-ticker" key={insightIdx}>
+          <span className="l2-insight-icon">{currentInsight.icon}</span>
+          <span className="l2-insight-text">{currentInsight.text}</span>
+        </div>
+      )}
+
+      {/* PROGRESS PANEL */}
       {phase === 'explore' && (
         <div className="l2-progress-panel">
           <div className="l2-progress-header">{ICONS.check} Discovery</div>
-          <div className="l2-progress-bar-outer">
-            <div className="l2-progress-bar-inner"
-              style={{ width: `${(toggledSet.size / L2_APPLIANCE_IDS.length) * 100}%` }} />
-          </div>
-          <div className="l2-progress-text">
-            {toggledSet.size}/{L2_APPLIANCE_IDS.length} tested
-            {canStartTasks && <span className="l2-progress-complete"> {ICONS.party} Ready!</span>}
-          </div>
+          <div className="l2-progress-bar-outer"><div className="l2-progress-bar-inner" style={{ width: `${(toggledSet.size / L2_APPLIANCE_IDS.length) * 100}%` }} /></div>
+          <div className="l2-progress-text">{toggledSet.size}/{L2_APPLIANCE_IDS.length} tested{canStartTasks && <span className="l2-progress-complete"> {ICONS.party} Ready!</span>}</div>
         </div>
       )}
-
-      {/* ─── TASK PROGRESS (Task mode) ─── */}
       {phase === 'tasks' && (
         <div className="l2-progress-panel">
           <div className="l2-progress-header">{ICONS.target} Task Progress</div>
-          <div className="l2-progress-bar-outer">
-            <div className="l2-progress-bar-inner"
-              style={{ width: `${((currentTaskIdx) / TASKS.length) * 100}%` }} />
-          </div>
-          <div className="l2-progress-text">
-            {correctTasks}/{currentTaskIdx} correct {efficientChoices > 0 && `| ${ICONS.star} ${efficientChoices} efficient`}
-          </div>
+          <div className="l2-progress-bar-outer"><div className="l2-progress-bar-inner" style={{ width: `${(currentTaskIdx / TASKS.length) * 100}%` }} /></div>
+          <div className="l2-progress-text">{correctTasks}/{currentTaskIdx} correct {efficientChoices > 0 && `| ${ICONS.star} ${efficientChoices} efficient`}</div>
         </div>
       )}
 
-      {/* ─── APPLIANCE INFO POPUP ─── */}
+      {/* INFO POPUP (with CO₂) */}
       {infoPopup && (
         <div className={`l2-info-popup ${infoPopup.message.type}`}>
           <div className="l2-info-popup-header">
@@ -754,45 +642,28 @@ export default function Level2() {
             <span className="l2-info-popup-name">{infoPopup.name}</span>
             <span className="l2-info-popup-watt">{infoPopup.wattage}W</span>
           </div>
-          <div className="l2-info-popup-message">
-            <span className="l2-info-msg-icon">{infoPopup.message.icon}</span>
-            <span>{infoPopup.message.text}</span>
-          </div>
+          <div className="l2-info-popup-message"><span className="l2-info-msg-icon">{infoPopup.message.icon}</span><span>{infoPopup.message.text}</span></div>
+          {infoPopup.co2hint && <div className="l2-info-popup-co2">{infoPopup.co2hint}</div>}
         </div>
       )}
 
-      {/* ─── TASK FEEDBACK ─── */}
+      {/* TASK FEEDBACK */}
       {taskFeedback && (
         <div className={`l2-task-feedback ${taskFeedback.type}`}>
           <div className="l2-task-feedback-text">{taskFeedback.text}</div>
-
-          {/* Smart Hint for wrong answer */}
-          {taskFeedback.type === 'wrong' && taskHint && (
-            <div className="l2-task-hint">
-              {ICONS.bulb} Hint: {taskHint}
-            </div>
-          )}
-
-          {/* Energy Comparison */}
+          {taskFeedback.type === 'wrong' && taskHint && <div className="l2-task-hint">{ICONS.bulb} Hint: {taskHint}</div>}
           {taskComparison && (
             <div className="l2-comparison-card">
               <div className="l2-comparison-title">{ICONS.zap} Energy Comparison</div>
               <div className="l2-comparison-bars">
                 <div className="l2-comparison-row efficient">
                   <span className="l2-comp-label">{taskComparison.efficient.label}</span>
-                  <div className="l2-comp-bar-outer">
-                    <div className="l2-comp-bar-fill" style={{
-                      width: `${(taskComparison.efficient.watts / taskComparison.alternative.watts) * 100}%`,
-                      background: '#22c55e',
-                    }} />
-                  </div>
+                  <div className="l2-comp-bar-outer"><div className="l2-comp-bar-fill" style={{ width: `${(taskComparison.efficient.watts / taskComparison.alternative.watts) * 100}%`, background: '#22c55e' }} /></div>
                   <span className="l2-comp-watts">{taskComparison.efficient.watts}W</span>
                 </div>
                 <div className="l2-comparison-row alternative">
                   <span className="l2-comp-label">{taskComparison.alternative.label}</span>
-                  <div className="l2-comp-bar-outer">
-                    <div className="l2-comp-bar-fill" style={{ width: '100%', background: '#ef4444' }} />
-                  </div>
+                  <div className="l2-comp-bar-outer"><div className="l2-comp-bar-fill" style={{ width: '100%', background: '#ef4444' }} /></div>
                   <span className="l2-comp-watts">{taskComparison.alternative.watts}W</span>
                 </div>
               </div>
@@ -800,16 +671,13 @@ export default function Level2() {
               <div className="l2-comparison-lesson">{taskComparison.lesson}</div>
             </div>
           )}
-
           {taskFeedback.type !== 'wrong' && (
-            <button className="l2-task-next-btn" onClick={advanceTask}>
-              {currentTaskIdx + 1 >= TASKS.length ? 'Finish Tasks' : 'Next Task'} {'\u{2192}'}
-            </button>
+            <button className="l2-task-next-btn" onClick={advanceTask}>{currentTaskIdx + 1 >= TASKS.length ? 'Finish Tasks' : 'Next Task'} {'\u{2192}'}</button>
           )}
         </div>
       )}
 
-      {/* ─── LEARNING INSERT ─── */}
+      {/* LEARNING INSERT */}
       {learningInsert && (
         <div className="l2-learning-overlay">
           <div className="l2-learning-card">
@@ -817,17 +685,14 @@ export default function Level2() {
             <h3 className="l2-learning-title">{learningInsert.title}</h3>
             <p className="l2-learning-content">{learningInsert.content}</p>
             <div className="l2-learning-formula">{learningInsert.formula}</div>
-            <div className="l2-learning-example">
-              {ICONS.bulb} Example: {learningInsert.example}
-            </div>
-            <button className="l2-learning-btn" onClick={closeLearning}>
-              Got it! {'\u{2192}'}
-            </button>
+            {learningInsert.simpleLogic && <div className="l2-learning-simple">{ICONS.brain} {learningInsert.simpleLogic}</div>}
+            <div className="l2-learning-example">{ICONS.bulb} Example: {learningInsert.example}</div>
+            <button className="l2-learning-btn" onClick={closeLearning}>Got it! {'\u{2192}'}</button>
           </div>
         </div>
       )}
 
-      {/* ─── MICRO INTERACTION ─── */}
+      {/* MICRO INTERACTION */}
       {microQuestion && (
         <div className="l2-learning-overlay">
           <div className="l2-micro-card">
@@ -836,15 +701,8 @@ export default function Level2() {
             <p className="l2-micro-question">{microQuestion.question}</p>
             <div className="l2-micro-options">
               {microQuestion.options.map((opt, i) => (
-                <button key={i}
-                  className={`l2-micro-option ${microAnswer
-                    ? (i === microQuestion.correctIndex ? 'correct' : (i === microAnswer.selectedIdx ? 'wrong' : ''))
-                    : ''}`}
-                  onClick={() => !microAnswer && handleMicroAnswer(i)}
-                  disabled={!!microAnswer}
-                >
-                  {opt}
-                </button>
+                <button key={i} className={`l2-micro-option ${microAnswer ? (i === microQuestion.correctIndex ? 'correct' : (i === microAnswer.selectedIdx ? 'wrong' : '')) : ''}`}
+                  onClick={() => !microAnswer && handleMicroAnswer(i)} disabled={!!microAnswer}>{opt}</button>
               ))}
             </div>
             {microAnswer && (
@@ -853,39 +711,142 @@ export default function Level2() {
                 <p>{microQuestion.explanation}</p>
               </div>
             )}
-            {microAnswer && (
-              <button className="l2-learning-btn" onClick={closeMicro}>
-                Continue {'\u{2192}'}
-              </button>
+            {microAnswer && <button className="l2-learning-btn" onClick={closeMicro}>Continue {'\u{2192}'}</button>}
+          </div>
+        </div>
+      )}
+
+      {/* ═══ GRAPH OVERLAY ═══ */}
+      {showGraph && (
+        <div className="l2-learning-overlay" onClick={() => setShowGraph(false)}>
+          <div className="l2-graph-panel" onClick={e => e.stopPropagation()}>
+            <div className="l2-graph-header">
+              <span>{ICONS.chart} Appliance vs Watts</span>
+              <button className="l2-graph-close" onClick={() => setShowGraph(false)}>{ICONS.cross}</button>
+            </div>
+            {onAppliances.length === 0 ? (
+              <div className="l2-graph-empty">{ICONS.bulb} Turn ON some appliances to see the chart!</div>
+            ) : (
+              <div className="l2-graph-bars">
+                {onAppliances.map((a, i) => {
+                  const maxW = Math.max(...onAppliances.map(x => x.wattage), 1);
+                  return (
+                    <div key={a.id} className="l2-graph-row" style={{ animationDelay: `${i * 0.08}s` }}>
+                      <div className="l2-graph-label">{a.icon} {a.name}</div>
+                      <div className="l2-graph-bar-outer">
+                        <div className="l2-graph-bar-fill" style={{ width: `${(a.wattage / maxW) * 100}%`, backgroundColor: getBarColor(a.wattage), animationDelay: `${i * 0.08}s` }} />
+                      </div>
+                      <div className="l2-graph-watts" style={{ color: getBarColor(a.wattage) }}>{a.wattage}W</div>
+                      <div className="l2-graph-tier-badge" style={{ color: getBarColor(a.wattage) }}>{getBarTierLabel(a.wattage)}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            {/* Smart Comparisons */}
+            {activeComparisons.length > 0 && (
+              <div className="l2-graph-comparisons">
+                <div className="l2-graph-comp-title">{ICONS.zap} Comparison Mode</div>
+                {activeComparisons.slice(0, 2).map((c, i) => (
+                  <div key={i} className="l2-graph-comp-item">{ICONS.bulb} {c.message}</div>
+                ))}
+              </div>
+            )}
+            {/* Auto insights */}
+            {onAppliances.length >= 2 && (
+              <div className="l2-graph-insight">
+                {ICONS.brain} {onAppliances[0].name} consumes much more energy than {onAppliances[onAppliances.length - 1].name}
+              </div>
             )}
           </div>
         </div>
       )}
 
-      {/* ─── FLOATING TEXTS ─── */}
+      {/* ═══ BILL OVERLAY ═══ */}
+      {showBill && (
+        <div className="l2-learning-overlay" onClick={() => setShowBill(false)}>
+          <div className="l2-bill-panel" onClick={e => e.stopPropagation()}>
+            <div className="l2-bill-header">
+              <span>{ICONS.money} Monthly Electricity Bill</span>
+              <button className="l2-graph-close" onClick={() => setShowBill(false)}>{ICONS.cross}</button>
+            </div>
+            <div className="l2-bill-total">
+              <div className="l2-bill-units">{billData.totalUnits} kWh</div>
+              <div className="l2-bill-cost">{'\u{20B9}'}{billData.totalCost}</div>
+              <div className="l2-bill-period">Estimated Monthly Bill</div>
+            </div>
+            <div className="l2-bill-breakdown">
+              <div className="l2-bill-breakdown-title">Slab Breakdown</div>
+              {billData.breakdown.map((slab, i) => (
+                <div key={i} className="l2-bill-slab-row">
+                  <span className="l2-bill-slab-label">{slab.label}</span>
+                  <span className="l2-bill-slab-units">{slab.units} units</span>
+                  <span className="l2-bill-slab-rate">{'\u{20B9}'}{slab.rate}/unit</span>
+                  <span className="l2-bill-slab-cost">{'\u{20B9}'}{slab.cost}</span>
+                </div>
+              ))}
+            </div>
+            {/* Smart Savings */}
+            <div className="l2-bill-savings">
+              <div className="l2-bill-savings-title">{ICONS.bulb} Smart Savings</div>
+              <div className="l2-bill-saving-item">{ICONS.leaf} Using fan instead of AC saves {'\u{20B9}'}{Math.round(((1500 - 70) * 8 * 30 / 1000) * 5)}/month</div>
+              <div className="l2-bill-saving-item">{ICONS.leaf} LED bulb vs old 60W saves {'\u{20B9}'}{Math.round(((60 - 9) * 10 * 30 / 1000) * 5)}/month</div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ═══ CO₂ IMPACT OVERLAY ═══ */}
+      {showCO2Panel && (
+        <div className="l2-learning-overlay" onClick={() => setShowCO2Panel(false)}>
+          <div className="l2-co2-panel" onClick={e => e.stopPropagation()}>
+            <div className="l2-co2-header">
+              <span>{ICONS.globe} CO{'\u{2082}'} Impact Dashboard</span>
+              <button className="l2-graph-close" onClick={() => setShowCO2Panel(false)}>{ICONS.cross}</button>
+            </div>
+            <div className="l2-co2-formula-box">
+              <div className="l2-co2-formula">CO{'\u{2082}'} = kWh {'\u{00D7}'} 0.710 kg</div>
+              <div className="l2-co2-formula-note">India emission factor (CEA FY 2024-25)</div>
+            </div>
+            <div className="l2-co2-results">
+              <div className="l2-co2-result-card">
+                <div className="l2-co2-result-val">{co2Data.kwhMonth}</div>
+                <div className="l2-co2-result-lbl">kWh/month</div>
+              </div>
+              <div className="l2-co2-result-card accent">
+                <div className="l2-co2-result-val">{co2Data.co2Month} kg</div>
+                <div className="l2-co2-result-lbl">CO{'\u{2082}'}/month</div>
+              </div>
+              <div className="l2-co2-result-card warn">
+                <div className="l2-co2-result-val">{co2Data.co2Year} kg</div>
+                <div className="l2-co2-result-lbl">CO{'\u{2082}'}/year</div>
+              </div>
+            </div>
+            <div className="l2-co2-explanation">
+              <div><strong>Watts</strong> = Speed of energy flow</div>
+              <div><strong>kWh</strong> = Total energy consumed</div>
+              <div><strong>CO{'\u{2082}'}</strong> = Environmental impact</div>
+            </div>
+            <div className="l2-co2-facts-title">{ICONS.shock} Real Shock Facts</div>
+            {SHOCK_FACTS.map((f, i) => (
+              <div key={i} className="l2-co2-fact-item">{f.fact}</div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* FLOATING TEXTS */}
       <div className="l2-floating-container">
-        {floatingTexts.map(ft => (
-          <FloatingText key={ft.id} id={ft.id} text={ft.text} type={ft.type} onDone={removeFloatingText} />
-        ))}
+        {floatingTexts.map(ft => <FloatingText key={ft.id} id={ft.id} text={ft.text} type={ft.type} onDone={removeFloatingText} />)}
       </div>
 
-      {/* ─── BOTTOM CONTROLS ─── */}
+      {/* BOTTOM CONTROLS */}
       <div className="l2-controls-hint">
-        <span className="l2-key">W</span>
-        <span className="l2-key">A</span>
-        <span className="l2-key">S</span>
-        <span className="l2-key">D</span> Move
-        &nbsp;{ICONS.mouse}&nbsp; Look
-        &nbsp;{'\u{2022}'}&nbsp;
+        <span className="l2-key">W</span><span className="l2-key">A</span><span className="l2-key">S</span><span className="l2-key">D</span> Move
+        &nbsp;{ICONS.mouse}&nbsp; Look &nbsp;{'\u{2022}'}&nbsp;
         <span className="l2-key">E</span> {phase === 'tasks' ? 'Choose' : 'Toggle'}
         {nearestAppliance && L2_APPLIANCE_IDS.includes(nearestAppliance) && (
-          <span className="l2-hint-nearby">
-            &nbsp;{'\u{2014}'}{' '}
-            <span className="l2-pulse-text">
-              {L2_APPLIANCE_MAP[nearestAppliance]?.icon}{' '}
-              {L2_APPLIANCE_MAP[nearestAppliance]?.name} nearby!
-            </span>
-          </span>
+          <span className="l2-hint-nearby">&nbsp;{'\u{2014}'}{' '}<span className="l2-pulse-text">{L2_APPLIANCE_MAP[nearestAppliance]?.icon}{' '}{L2_APPLIANCE_MAP[nearestAppliance]?.name} nearby!</span></span>
         )}
       </div>
     </div>

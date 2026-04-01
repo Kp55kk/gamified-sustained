@@ -603,6 +603,158 @@ function LEDTubeL2({ isOn }) {
   );
 }
 
+// ─── Table Fan (NEW) ───
+function TableFanL2({ isOn }) {
+  const p = APPLIANCE_POSITIONS.table_fan;
+  const bladeGroupRef = useRef();
+  const headRef = useRef();
+  const speedRef = useRef(0);
+  const oscillateRef = useRef(0);
+
+  useFrame((_, delta) => {
+    // Spin blades
+    const target = isOn ? 12 : 0;
+    speedRef.current = THREE.MathUtils.lerp(speedRef.current, target, delta * 3);
+    if (bladeGroupRef.current) {
+      bladeGroupRef.current.rotation.z += speedRef.current * delta;
+    }
+    // Oscillate head
+    if (headRef.current && isOn) {
+      oscillateRef.current += delta * 0.8;
+      headRef.current.rotation.y = Math.sin(oscillateRef.current) * 0.4;
+    }
+  });
+
+  return (
+    <group position={p.pos} rotation={p.rot}>
+      {/* Base */}
+      <mesh castShadow>
+        <cylinderGeometry args={[0.15, 0.18, 0.04, 16]} />
+        <meshStandardMaterial color="#2a2a3a" roughness={0.4} metalness={0.3} />
+      </mesh>
+      {/* Stem */}
+      <mesh position={[0, 0.15, 0]}>
+        <cylinderGeometry args={[0.02, 0.02, 0.3]} />
+        <meshStandardMaterial color="#444" metalness={0.5} />
+      </mesh>
+      {/* Head group (oscillates) */}
+      <group ref={headRef} position={[0, 0.32, 0]}>
+        {/* Motor housing */}
+        <mesh position={[0, 0, 0.04]}>
+          <cylinderGeometry args={[0.06, 0.06, 0.08, 12]} />
+          <meshStandardMaterial color={isOn ? '#3a3a5a' : '#2a2a3a'} metalness={0.4} roughness={0.3} />
+        </mesh>
+        {/* Guard cage (front ring) */}
+        <mesh position={[0, 0, 0.1]} rotation={[Math.PI / 2, 0, 0]}>
+          <torusGeometry args={[0.14, 0.008, 8, 24]} />
+          <meshStandardMaterial color="#666" metalness={0.6} />
+        </mesh>
+        {/* Guard cage (back ring) */}
+        <mesh position={[0, 0, 0.02]} rotation={[Math.PI / 2, 0, 0]}>
+          <torusGeometry args={[0.14, 0.006, 8, 24]} />
+          <meshStandardMaterial color="#555" metalness={0.5} />
+        </mesh>
+        {/* Spinning blades */}
+        <group ref={bladeGroupRef} position={[0, 0, 0.06]}>
+          {[0, 90, 180, 270].map((deg) => (
+            <mesh key={deg}
+              rotation={[0, 0, (deg * Math.PI) / 180]}
+              position={[Math.cos((deg * Math.PI) / 180) * 0.06, Math.sin((deg * Math.PI) / 180) * 0.06, 0]}>
+              <boxGeometry args={[0.12, 0.04, 0.005]} />
+              <meshStandardMaterial color={isOn ? '#88aacc' : '#667788'} roughness={0.5} />
+            </mesh>
+          ))}
+          {/* Center hub */}
+          <mesh>
+            <sphereGeometry args={[0.02, 8, 8]} />
+            <meshStandardMaterial color="#999" metalness={0.6} />
+          </mesh>
+        </group>
+      </group>
+      {/* Power button */}
+      <mesh position={[0.06, 0.04, 0.12]}>
+        <cylinderGeometry args={[0.015, 0.015, 0.02, 8]} />
+        <meshStandardMaterial
+          color={isOn ? '#22c55e' : '#e74c3c'}
+          emissive={isOn ? '#22c55e' : '#000'}
+          emissiveIntensity={isOn ? 0.5 : 0}
+        />
+      </mesh>
+    </group>
+  );
+}
+
+// ─── LED Bulb (NEW) ───
+function LEDBulbL2({ isOn }) {
+  const p = APPLIANCE_POSITIONS.led_bulb;
+  const bulbRef = useRef();
+  const glowRef = useRef();
+
+  useFrame(() => {
+    if (bulbRef.current) {
+      const target = isOn ? 2.0 : 0;
+      bulbRef.current.material.emissiveIntensity = THREE.MathUtils.lerp(
+        bulbRef.current.material.emissiveIntensity, target, 0.08
+      );
+    }
+    if (glowRef.current) {
+      if (isOn) {
+        const t = performance.now() * 0.002;
+        glowRef.current.material.opacity = 0.08 + Math.sin(t) * 0.03;
+        glowRef.current.visible = true;
+      } else {
+        glowRef.current.visible = false;
+      }
+    }
+  });
+
+  return (
+    <group position={p.pos} rotation={p.rot}>
+      {/* Ceiling mount */}
+      <mesh position={[0, 0.06, 0]}>
+        <cylinderGeometry args={[0.04, 0.04, 0.06, 8]} />
+        <meshStandardMaterial color="#888" metalness={0.5} />
+      </mesh>
+      {/* Wire */}
+      <mesh position={[0, -0.02, 0]}>
+        <cylinderGeometry args={[0.005, 0.005, 0.12]} />
+        <meshStandardMaterial color="#444" />
+      </mesh>
+      {/* Base (screw part) */}
+      <mesh position={[0, -0.1, 0]}>
+        <cylinderGeometry args={[0.03, 0.035, 0.04, 12]} />
+        <meshStandardMaterial color="#c0c0c0" metalness={0.7} roughness={0.2} />
+      </mesh>
+      {/* Bulb body */}
+      <mesh ref={bulbRef} position={[0, -0.17, 0]}>
+        <sphereGeometry args={[0.05, 16, 16]} />
+        <meshStandardMaterial
+          color={isOn ? '#fff8e1' : '#e8e8e0'}
+          emissive={isOn ? '#fff8e1' : '#000000'}
+          emissiveIntensity={0}
+          transparent
+          opacity={isOn ? 0.95 : 0.8}
+        />
+      </mesh>
+      {/* Glow sphere (ambient light effect) */}
+      <mesh ref={glowRef} position={[0, -0.17, 0]} visible={false}>
+        <sphereGeometry args={[0.15, 12, 12]} />
+        <meshStandardMaterial
+          color="#fff8e1"
+          transparent
+          opacity={0.08}
+          side={THREE.DoubleSide}
+          depthWrite={false}
+        />
+      </mesh>
+      {/* Point light when ON */}
+      {isOn && (
+        <pointLight position={[0, -0.17, 0]} intensity={0.8} distance={4} color="#fff8e1" />
+      )}
+    </group>
+  );
+}
+
 // ─── Appliance Labels (HTML overlays showing name + wattage) ───
 function ApplianceLabel({ id, isOn }) {
   const pos = APPLIANCE_POSITIONS[id]?.pos;
@@ -625,6 +777,8 @@ function ApplianceLabel({ id, isOn }) {
     microwave: 0.35,
     mixer_grinder: 0.5,
     led_tube: 0.3,
+    table_fan: 0.55,
+    led_bulb: 0.2,
   };
 
   const yOffset = labelOffsets[id] || 0.5;
@@ -654,6 +808,8 @@ const MODEL_MAP = {
   geyser: GeyserL2,
   washing_machine: WashingMachineL2,
   led_tube: LEDTubeL2,
+  table_fan: TableFanL2,
+  led_bulb: LEDBulbL2,
 };
 
 // ════════════════════════════════════════════════════════════
