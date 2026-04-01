@@ -18,6 +18,7 @@ import {
 import { APPLIANCE_POSITIONS } from '../applianceData';
 import QuizModal from './QuizModal';
 import { useGame } from '../../context/GameContext';
+import { getTranslation } from '../../translations/index';
 import './Level2.css';
 
 // ─── Audio System ───
@@ -180,7 +181,7 @@ function FloatingText({ text, type, id, onDone }) {
   return <div className={`l2-floating-text ${type}`}>{text}</div>;
 }
 
-// ─── SVG Energy Gauge ───
+// ─── SVG Energy Gauge (Fix 4: bright white needle, vivid arcs, tick marks) ───
 function EnergyGauge({ watts, maxWatts = 4000 }) {
   const [animW, setAnimW] = useState(0);
   const aRef = useRef(null);
@@ -192,27 +193,51 @@ function EnergyGauge({ watts, maxWatts = 4000 }) {
   }, [watts]);
   const pct = Math.min(animW / maxWatts, 1), ang = -90 + pct * 180, cx = 110, cy = 100, r = 80;
   const arc = (s, e) => { const sa = (-90 + s * 180) * Math.PI / 180, ea = (-90 + e * 180) * Math.PI / 180; return `M ${cx + r * Math.cos(sa)} ${cy + r * Math.sin(sa)} A ${r} ${r} 0 ${e - s > 0.5 ? 1 : 0} 1 ${cx + r * Math.cos(ea)} ${cy + r * Math.sin(ea)}`; };
-  const nr = ang * Math.PI / 180, nx = cx + 65 * Math.cos(nr), ny = cy + 65 * Math.sin(nr);
+  const nr = ang * Math.PI / 180, nx = cx + 68 * Math.cos(nr), ny = cy + 68 * Math.sin(nr);
+  // Tick marks at 0W, 1000W, 2000W, 3000W, 4000W
+  const ticks = [
+    { pct: 0, label: '0W' }, { pct: 0.25, label: '1000W' },
+    { pct: 0.5, label: '2000W' }, { pct: 0.75, label: '3000W' }, { pct: 1, label: '4000W' },
+  ];
   return (
     <div className="l2-gauge-container">
       <svg viewBox="0 0 220 120" className="l2-gauge-svg">
         <path d={arc(0, 1)} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="18" strokeLinecap="round" />
-        <path d={arc(0, 0.125)} fill="none" stroke="#22c55e" strokeWidth="16" strokeLinecap="round" opacity="0.8" />
-        <path d={arc(0.125, 0.375)} fill="none" stroke="#facc15" strokeWidth="16" opacity="0.8" />
-        <path d={arc(0.375, 0.625)} fill="none" stroke="#f97316" strokeWidth="16" opacity="0.8" />
-        <path d={arc(0.625, 1)} fill="none" stroke="#ef4444" strokeWidth="16" strokeLinecap="round" opacity="0.8" />
-        <text x="22" y="108" fill="#64748b" fontSize="9" textAnchor="middle">0</text>
-        <text x="110" y="18" fill="#64748b" fontSize="9" textAnchor="middle">2k</text>
-        <text x="198" y="108" fill="#64748b" fontSize="9" textAnchor="middle">4k</text>
-        <line x1={cx} y1={cy} x2={nx} y2={ny} stroke="#fff" strokeWidth="2.5" strokeLinecap="round" style={{ filter: 'drop-shadow(0 0 4px rgba(255,255,255,0.5))', transition: 'all 0.3s' }} />
-        <circle cx={cx} cy={cy} r="6" fill="#1e293b" stroke="#f59e0b" strokeWidth="2" />
-        <circle cx={cx} cy={cy} r="3" fill="#f59e0b" />
+        <path d={arc(0, 0.125)} fill="none" stroke="#16e868" strokeWidth="16" strokeLinecap="round" />
+        <path d={arc(0.125, 0.375)} fill="none" stroke="#fde047" strokeWidth="16" />
+        <path d={arc(0.375, 0.625)} fill="none" stroke="#fb923c" strokeWidth="16" />
+        <path d={arc(0.625, 1)} fill="none" stroke="#f43f5e" strokeWidth="16" strokeLinecap="round" />
+        {/* Tick marks with labels */}
+        {ticks.map((t, i) => {
+          const ta = (-90 + t.pct * 180) * Math.PI / 180;
+          const innerR = r - 12, outerR = r + 4, labelR = r + 14;
+          return (
+            <g key={i}>
+              <line x1={cx + innerR * Math.cos(ta)} y1={cy + innerR * Math.sin(ta)}
+                    x2={cx + outerR * Math.cos(ta)} y2={cy + outerR * Math.sin(ta)}
+                    stroke="#fff" strokeWidth="1.5" opacity="0.7" />
+              <text x={cx + labelR * Math.cos(ta)} y={cy + labelR * Math.sin(ta) + 3}
+                    fill="#e2e8f0" fontSize="7" textAnchor="middle" fontWeight="600">{t.label}</text>
+            </g>
+          );
+        })}
+        {/* Needle — bright white, thick, with strong glow */}
+        <line x1={cx} y1={cy} x2={nx} y2={ny} stroke="#ffffff" strokeWidth="3.5" strokeLinecap="round"
+          style={{ filter: 'drop-shadow(0 0 8px rgba(255,255,255,0.9)) drop-shadow(0 0 16px rgba(255,255,255,0.4))', transition: 'all 0.3s' }} />
+        {/* Center hub */}
+        <circle cx={cx} cy={cy} r="7" fill="#1e293b" stroke="#ffffff" strokeWidth="2.5"
+          style={{ filter: 'drop-shadow(0 0 6px rgba(255,255,255,0.6))' }} />
+        <circle cx={cx} cy={cy} r="3.5" fill="#ffffff" />
+        {/* Needle tip dot */}
+        <circle cx={nx} cy={ny} r="4" fill="#ffffff"
+          style={{ filter: 'drop-shadow(0 0 10px white) drop-shadow(0 0 20px rgba(255,255,255,0.5))' }} />
       </svg>
     </div>
   );
 }
 
-function ControlsHelp() {
+function ControlsHelp({ t }) {
+  const l2t = t?.level2 || {};
   const [show, setShow] = useState(false);
   const [auto, setAuto] = useState(false);
   useEffect(() => { if (!auto) { setShow(true); setAuto(true); const t = setTimeout(() => setShow(false), 3000); return () => clearTimeout(t); } }, []);
@@ -223,16 +248,16 @@ function ControlsHelp() {
       {show && (
         <div className="l2-controls-overlay" onClick={() => setShow(false)}>
           <div className="l2-controls-card" onClick={e => e.stopPropagation()}>
-            <div className="l2-controls-title">{ICONS.grad} Controls</div>
+            <div className="l2-controls-title">{ICONS.grad} {l2t.controls || 'Controls'}</div>
             <div className="l2-controls-list">
-              <div className="l2-ctrl-row"><span className="l2-ctrl-keys"><span className="l2-key">W</span> / <span className="l2-key">{'\u2191'}</span></span><span>Move Forward</span></div>
-              <div className="l2-ctrl-row"><span className="l2-ctrl-keys"><span className="l2-key">S</span> / <span className="l2-key">{'\u2193'}</span></span><span>Move Backward</span></div>
-              <div className="l2-ctrl-row"><span className="l2-ctrl-keys"><span className="l2-key">A</span> / <span className="l2-key">{'\u2190'}</span></span><span>Turn Left</span></div>
-              <div className="l2-ctrl-row"><span className="l2-ctrl-keys"><span className="l2-key">D</span> / <span className="l2-key">{'\u2192'}</span></span><span>Turn Right</span></div>
-              <div className="l2-ctrl-row"><span className="l2-ctrl-keys"><span className="l2-key">E</span></span><span>Interact with Appliance</span></div>
-              <div className="l2-ctrl-row"><span className="l2-ctrl-keys"><span className="l2-key">ESC</span></span><span>Exit to Menu</span></div>
+              <div className="l2-ctrl-row"><span className="l2-ctrl-keys"><span className="l2-key">W</span> / <span className="l2-key">{'\u2191'}</span></span><span>{l2t.moveForward || 'Move Forward'}</span></div>
+              <div className="l2-ctrl-row"><span className="l2-ctrl-keys"><span className="l2-key">S</span> / <span className="l2-key">{'\u2193'}</span></span><span>{l2t.moveBackward || 'Move Backward'}</span></div>
+              <div className="l2-ctrl-row"><span className="l2-ctrl-keys"><span className="l2-key">A</span> / <span className="l2-key">{'\u2190'}</span></span><span>{l2t.turnLeft || 'Turn Left'}</span></div>
+              <div className="l2-ctrl-row"><span className="l2-ctrl-keys"><span className="l2-key">D</span> / <span className="l2-key">{'\u2192'}</span></span><span>{l2t.turnRight || 'Turn Right'}</span></div>
+              <div className="l2-ctrl-row"><span className="l2-ctrl-keys"><span className="l2-key">E</span></span><span>{l2t.interactAppliance || 'Interact with Appliance'}</span></div>
+              <div className="l2-ctrl-row"><span className="l2-ctrl-keys"><span className="l2-key">ESC</span></span><span>{l2t.exitMenu || 'Exit to Menu'}</span></div>
             </div>
-            <button className="l2-controls-got-it" onClick={() => setShow(false)}>Got it!</button>
+            <button className="l2-controls-got-it" onClick={() => setShow(false)}>{l2t.gotIt || 'Got it!'}</button>
           </div>
         </div>
       )}
@@ -281,7 +306,10 @@ function ApplianceFace({ id, isOn, dist, popupOpen, px, pz }) {
 
 export default function Level2() {
   const navigate = useNavigate();
-  const { addCarbonCoins, completeLevel, unlockLevel } = useGame();
+  const { addCarbonCoins, completeLevel, unlockLevel, selectedLanguage } = useGame();
+  const langCode = selectedLanguage || 'en';
+  const t = getTranslation(langCode);
+  const l2t = t?.level2 || {};
   const cameraRef = useRef(null);
 
   const [phase, setPhase] = useState('intro');
@@ -629,9 +657,9 @@ export default function Level2() {
 
       {/* HUD TOP BAR */}
       <div className="l2-hud-top">
-        <button className="l2-back-btn" onClick={() => navigate('/hub')}>{'\u{2190}'} Back</button>
-        <div className="l2-hud-title">{ICONS.zap} Energy Meter</div>
-        <div className="l2-hud-room">{ROOM_ICONS[currentRoom] || ICONS.pin} {currentRoom}</div>
+        <button className="l2-back-btn" onClick={() => navigate('/hub')}>{l2t.back || '\u{2190} Back'}</button>
+        <div className="l2-hud-title">{ICONS.zap} {l2t.energyMeter || 'Energy Meter'}</div>
+        <div className="l2-hud-room">{ROOM_ICONS[currentRoom] || ICONS.pin} {t?.rooms?.[currentRoom]?.name?.replace('📍 ', '') || currentRoom}</div>
       </div>
 
       {/* TASK BAR */}
@@ -646,33 +674,33 @@ export default function Level2() {
       {/* EXPLORE → TASKS + Graph/Bill/CO2 buttons */}
       {phase === 'explore' && (
         <div className="l2-action-buttons">
-          {interactionCount >= 2 && <button className="l2-action-btn graph-btn" onClick={() => setShowGraph(true)}>{ICONS.chart} Energy Graph</button>}
-          {interactionCount >= 2 && <button className="l2-action-btn bill-btn" onClick={() => setShowBill(true)}>{ICONS.money} Bill Calc</button>}
-          {interactionCount >= 2 && <button className="l2-action-btn co2-btn" onClick={() => setShowCO2Panel(true)}>{ICONS.globe} CO{'\u{2082}'} Impact</button>}
+          {interactionCount >= 2 && <button className="l2-action-btn graph-btn" onClick={() => setShowGraph(true)}>{ICONS.chart} {l2t.energyGraph || 'Energy Graph'}</button>}
+          {interactionCount >= 2 && <button className="l2-action-btn bill-btn" onClick={() => setShowBill(true)}>{ICONS.money} {l2t.billCalc || 'Bill Calc'}</button>}
+          {interactionCount >= 2 && <button className="l2-action-btn co2-btn" onClick={() => setShowCO2Panel(true)}>{ICONS.globe} {l2t.co2Impact || 'CO₂ Impact'}</button>}
           {canStartTasks && <button className="l2-start-tasks-btn" onClick={() => {
             const reset = {}; L2_APPLIANCE_IDS.forEach(id => { reset[id] = false; });
             setApplianceStates(reset); setTotalWatts(0); setOnCount(0); setPhase('tasks');
-          }}>{ICONS.target} Start Tasks {'\u{2192}'}</button>}
+          }}>{ICONS.target} {l2t.startTasks || 'Start Tasks'} {'\u{2192}'}</button>}
         </div>
       )}
 
       {/* ENERGY GAUGE PANEL */}
       <div className="l2-energy-panel">
         <div className="l2-energy-header">
-          <span className="l2-energy-icon">{ICONS.zap}</span><span className="l2-energy-label">Energy Meter</span>
+          <span className="l2-energy-icon">{ICONS.zap}</span><span className="l2-energy-label">{l2t.energyMeter || 'Energy Meter'}</span>
         </div>
         <EnergyGauge watts={totalWatts} maxWatts={4000} />
         <div className="l2-gauge-digital">
           <AnimatedWattCounter targetValue={totalWatts} />
         </div>
         <div className="l2-gauge-info">
-          <span className="l2-gauge-count">{onCount}/{L2_APPLIANCE_IDS.length} ON</span>
-          <span className="l2-gauge-co2">{ICONS.globe} CO{'\u{2082}'}: {co2Data.co2Month} kg/mo</span>
+          <span className="l2-gauge-count">{onCount}/{L2_APPLIANCE_IDS.length} {l2t.on || 'ON'}</span>
+          <span className="l2-gauge-co2">{ICONS.globe} {l2t.co2Label || 'CO₂'}: {co2Data.co2Month} {l2t.kgMo || 'kg/mo'}</span>
         </div>
       </div>
 
       {/* SESSION TRACKER */}
-      <div className="l2-session-tracker">{ICONS.zap} Session: <strong>{sessionEnergy.toLocaleString()}W</strong></div>
+      <div className="l2-session-tracker">{ICONS.zap} {l2t.session || 'Session'}: <strong>{sessionEnergy.toLocaleString()}W</strong></div>
 
       {/* INTELLIGENT INSIGHT TICKER */}
       {currentInsight && (phase === 'explore' || phase === 'tasks') && (
@@ -685,9 +713,9 @@ export default function Level2() {
       {/* PROGRESS PANEL */}
       {phase === 'explore' && (
         <div className="l2-progress-panel">
-          <div className="l2-progress-header">{ICONS.check} Discovery</div>
+          <div className="l2-progress-header">{ICONS.check} {l2t.discovery || 'Discovery'}</div>
           <div className="l2-progress-bar-outer"><div className="l2-progress-bar-inner" style={{ width: `${(toggledSet.size / L2_APPLIANCE_IDS.length) * 100}%` }} /></div>
-          <div className="l2-progress-text">{toggledSet.size}/{L2_APPLIANCE_IDS.length} tested{canStartTasks && <span className="l2-progress-complete"> {ICONS.party} Ready!</span>}</div>
+          <div className="l2-progress-text">{toggledSet.size}/{L2_APPLIANCE_IDS.length} {l2t.tested || 'tested'}{canStartTasks && <span className="l2-progress-complete"> {ICONS.party} {l2t.ready || 'Ready!'}</span>}</div>
         </div>
       )}
       {phase === 'tasks' && (
@@ -905,7 +933,7 @@ export default function Level2() {
       </div>
 
       {/* HELP BUTTON + APPLIANCE FACES */}
-      <ControlsHelp />
+      <ControlsHelp t={t} />
       {(() => {
         const sorted = L2_APPLIANCE_IDS.map(id => {
           const ap = APPLIANCE_POSITIONS[id];

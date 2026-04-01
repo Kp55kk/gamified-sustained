@@ -623,6 +623,36 @@ function SceneContent({ onApplianceClick, onRoomChange, onNearestChange, onInter
   );
 }
 
+// ─── L1 Controls Help (Fix 6: ? button matching Level 2) ───
+function L1ControlsHelp({ t }) {
+  const [show, setShow] = useState(false);
+  const [auto, setAuto] = useState(false);
+  useEffect(() => { if (!auto) { setShow(true); setAuto(true); const timer = setTimeout(() => setShow(false), 3000); return () => clearTimeout(timer); } }, []);
+  useEffect(() => { if (!show) return; const h = (e) => { if (e.key === 'Escape') setShow(false); }; window.addEventListener('keydown', h); return () => window.removeEventListener('keydown', h); }, [show]);
+  const l2t = t?.level2 || {};
+  return (
+    <>
+      <button className="l1-help-btn" onClick={() => setShow(true)}>?</button>
+      {show && (
+        <div className="l1-controls-overlay" onClick={() => setShow(false)}>
+          <div className="l1-controls-card" onClick={e => e.stopPropagation()}>
+            <div className="l1-controls-title">{ICONS.star} {l2t.controls || 'Controls'}</div>
+            <div className="l1-controls-list">
+              <div className="l1-ctrl-row"><span className="l1-ctrl-keys"><span className="l1-key">W</span> / <span className="l1-key">{"\u2191"}</span></span><span>{l2t.moveForward || 'Move Forward'}</span></div>
+              <div className="l1-ctrl-row"><span className="l1-ctrl-keys"><span className="l1-key">S</span> / <span className="l1-key">{"\u2193"}</span></span><span>{l2t.moveBackward || 'Move Backward'}</span></div>
+              <div className="l1-ctrl-row"><span className="l1-ctrl-keys"><span className="l1-key">A</span> / <span className="l1-key">{"\u2190"}</span></span><span>{l2t.turnLeft || 'Turn Left'}</span></div>
+              <div className="l1-ctrl-row"><span className="l1-ctrl-keys"><span className="l1-key">D</span> / <span className="l1-key">{"\u2192"}</span></span><span>{l2t.turnRight || 'Turn Right'}</span></div>
+              <div className="l1-ctrl-row"><span className="l1-ctrl-keys"><span className="l1-key">E</span></span><span>{l2t.interactAppliance || 'Interact with Appliance'}</span></div>
+              <div className="l1-ctrl-row"><span className="l1-ctrl-keys"><span className="l1-key">ESC</span></span><span>{l2t.exitMenu || 'Exit to Menu'}</span></div>
+            </div>
+            <button className="l1-controls-got-it" onClick={() => setShow(false)}>{l2t.gotIt || 'Got it!'}</button>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
 // ─── Main Level 1 Component ───
 export default function Level1() {
   const navigate = useNavigate();
@@ -946,6 +976,8 @@ export default function Level1() {
           t={t}
         />
       )}
+      {/* Help Button (Fix 6) */}
+      <L1ControlsHelp t={t} />
     </div>
   );
 }

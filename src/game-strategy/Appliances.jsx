@@ -233,7 +233,6 @@ function TV({ onClick, active }) {
         <meshStandardMaterial color="#1a2a4a" emissive="#1a2a4a" emissiveIntensity={0.4} />
       </mesh>
       <AnimatedFace active={active} offset={[0, 0.1, 0.06]} />
-      <Html position={[0, 0.7, 0]} center><div className="appliance-label">{"\u{1F4FA}"} Smart TV</div></Html>
     </group>
   );
 }
@@ -255,7 +254,6 @@ function AC({ onClick, active }) {
         <meshStandardMaterial color="#22c55e" emissive="#22c55e" emissiveIntensity={2} />
       </mesh>
       <AnimatedFace active={active} offset={[0, 0, 0.14]} />
-      <Html position={[0, 0.35, 0]} center><div className="appliance-label">{"\u{2744}\u{FE0F}"} AC 1.5T</div></Html>
     </group>
   );
 }
@@ -329,7 +327,6 @@ function Fridge({ onClick, active }) {
         <meshStandardMaterial color="#aaa" metalness={0.6} roughness={0.3} />
       </mesh>
       <AnimatedFace active={active} offset={[0, 0.6, 0.35]} />
-      <Html position={[0, 1.1, 0]} center><div className="appliance-label">{"\u{1F9CA}"} Fridge</div></Html>
     </group>
   );
 }
@@ -351,7 +348,6 @@ function InductionStove({ onClick, active }) {
         <meshStandardMaterial color="#222" />
       </mesh>
       <AnimatedFace active={active} offset={[0, 0.15, 0]} />
-      <Html position={[0, 0.3, 0]} center><div className="appliance-label">{"\u{1F373}"} Induction</div></Html>
     </group>
   );
 }
@@ -380,7 +376,6 @@ function Microwave({ onClick, active }) {
         <meshStandardMaterial color="#22c55e" emissive="#22c55e" emissiveIntensity={0.5} />
       </mesh>
       <AnimatedFace active={active} offset={[-0.05, 0.05, 0.2]} />
-      <Html position={[0, 0.35, 0]} center><div className="appliance-label">{"\u{1F4E1}"} Microwave</div></Html>
     </group>
   );
 }
@@ -410,7 +405,6 @@ function MixerGrinder({ onClick, active }) {
         <meshStandardMaterial color="#e74c3c" />
       </mesh>
       <AnimatedFace active={active} offset={[0, 0.3, 0.1]} />
-      <Html position={[0, 0.5, 0]} center><div className="appliance-label">{"\u{26A1}"} Mixer</div></Html>
     </group>
   );
 }
@@ -445,7 +439,6 @@ function WifiRouter({ onClick, active }) {
         <meshStandardMaterial color="#22c55e" emissive="#22c55e" emissiveIntensity={1} />
       </mesh>
       <AnimatedFace active={active} offset={[0, 0.1, 0.1]} />
-      <Html position={[0, 0.3, 0]} center><div className="appliance-label">{"\u{1F4F6}"} Router</div></Html>
     </group>
   );
 }
@@ -476,7 +469,6 @@ function SetTopBox({ onClick, active }) {
         <meshStandardMaterial color="#222" />
       </mesh>
       <AnimatedFace active={active} offset={[0, 0.08, 0.1]} />
-      <Html position={[0, 0.2, 0]} center><div className="appliance-label">{"\u{1F4E6}"} Set-Top Box</div></Html>
     </group>
   );
 }
@@ -498,7 +490,6 @@ function Geyser({ onClick, active }) {
         <meshStandardMaterial color="#aaa" metalness={0.7} />
       </mesh>
       <AnimatedFace active={active} offset={[0, 0.15, 0.22]} />
-      <Html position={[0, 0.5, 0]} center><div className="appliance-label">{"\u{1F6BF}"} Geyser</div></Html>
     </group>
   );
 }
@@ -543,7 +534,6 @@ function WashingMachine({ onClick, active }) {
         <meshStandardMaterial color="#444" />
       </mesh>
       <AnimatedFace active={active} offset={[0, 0.15, 0.34]} />
-      <Html position={[0, 0.65, 0]} center><div className="appliance-label">{"\u{1F455}"} Washer</div></Html>
     </group>
   );
 }
@@ -577,7 +567,6 @@ function LEDTubeLight({ onClick, active }) {
       <mesh position={[-0.55, 0, 0]}><boxGeometry args={[0.05, 0.08, 0.08]} /><meshStandardMaterial color="#999" /></mesh>
       <mesh position={[0.55, 0, 0]}><boxGeometry args={[0.05, 0.08, 0.08]} /><meshStandardMaterial color="#999" /></mesh>
       <AnimatedFace active={active} offset={[0, -0.2, 0.1]} />
-      <Html position={[0, 0.2, 0]} center><div className="appliance-label">{"\u{1F4A1}"} LED Tube</div></Html>
     </group>
   );
 }
@@ -618,7 +607,6 @@ function PhoneCharger({ onClick, active }) {
         <meshStandardMaterial color="#22c55e" emissive="#22c55e" emissiveIntensity={0.5} />
       </mesh>
       <AnimatedFace active={active} offset={[0, 0.25, 0.1]} />
-      <Html position={[0, 0.4, 0]} center><div className="appliance-label">{"\u{1F50C}"} Charger</div></Html>
     </group>
   );
 }
@@ -676,7 +664,6 @@ function TableFan({ onClick, active }) {
         </group>
       </group>
       <AnimatedFace active={active} offset={[0, 0.55, 0.15]} />
-      <Html position={[0, 0.7, 0]} center><div className="appliance-label">{"\u{1F32A}\u{FE0F}"} Table Fan</div></Html>
     </group>
   );
 }
@@ -730,6 +717,75 @@ function GuidanceArrow({ interacted }) {
         <coneGeometry args={[0.1, 0.2, 8]} />
         <meshStandardMaterial color="#22c55e" emissive="#22c55e" emissiveIntensity={0.5} transparent opacity={0.7} />
       </mesh>
+    </group>
+  );
+}
+
+// ─── Proximity-Based Label System ───
+const LABEL_OFFSETS = {
+  ceiling_fan: 0.3, tv_smart: 0.7, ac_1_5ton: 0.35, fridge: 1.1,
+  washing_machine: 0.65, geyser: 0.5, wifi_router: 0.3, set_top_box: 0.2,
+  phone_charger: 0.4, induction: 0.3, microwave: 0.35, mixer_grinder: 0.5,
+  led_tube: 0.3, table_fan: 0.55, led_bulb: 0.2,
+};
+
+function getL1ProximityLevels(px, pz) {
+  const distances = [];
+  for (const id of INTERACTABLE_IDS) {
+    const ap = APPLIANCE_POSITIONS[id];
+    if (!ap) continue;
+    const dx = px - ap.pos[0], dz = pz - ap.pos[2];
+    const dist = Math.sqrt(dx * dx + dz * dz);
+    distances.push({ id, dist });
+  }
+  distances.sort((a, b) => a.dist - b.dist);
+  const levels = {};
+  for (const { id, dist } of distances) {
+    if (dist > 3.5) { levels[id] = 'hidden'; continue; }
+    const shown = Object.values(levels).filter(l => l !== 'hidden').length;
+    if (shown >= 2) { levels[id] = 'hidden'; continue; }
+    if (shown === 0 && dist < 2.8) { levels[id] = 'interact'; }
+    else { levels[id] = 'name'; }
+  }
+  return levels;
+}
+
+function ProximityLabel({ id, showLevel, activeId }) {
+  const pos = APPLIANCE_POSITIONS[id]?.pos;
+  if (!pos || !showLevel || showLevel === 'hidden') return null;
+  const data = APPLIANCE_DATA[id];
+  if (!data) return null;
+  const yOffset = LABEL_OFFSETS[id] || 0.5;
+  const isActive = activeId === id;
+
+  return (
+    <Html position={[pos[0], pos[1] + yOffset, pos[2]]} center>
+      <div className={`l1-prox-label ${showLevel}`}>
+        {(showLevel === 'name' || showLevel === 'interact') && (
+          <div className="l1-prox-name">
+            {data.icon} {data.name}
+            <span className="l1-prox-watt" style={{ fontSize: '10px', color: '#94a3b8' }}> {data.wattage}W</span>
+          </div>
+        )}
+        {showLevel === 'interact' && !isActive && (
+          <div className="l1-prox-interact">Press <span className="key-e">E</span> to interact</div>
+        )}
+      </div>
+    </Html>
+  );
+}
+
+function ProximityLabels({ activeId }) {
+  const [levels, setLevels] = useState({});
+  useFrame(() => {
+    const newLevels = getL1ProximityLevels(playerState.x, playerState.z);
+    setLevels(newLevels);
+  });
+  return (
+    <group>
+      {INTERACTABLE_IDS.map(id => (
+        <ProximityLabel key={id} id={id} showLevel={levels[id]} activeId={activeId} />
+      ))}
     </group>
   );
 }
@@ -810,6 +866,9 @@ export default function Appliances({ onApplianceClick, activeApplianceId, intera
 
       {/* Guidance Arrow */}
       <GuidanceArrow interacted={interactedAppliances} />
+
+      {/* Proximity-based labels (Fix 3) */}
+      <ProximityLabels activeId={activeApplianceId} />
     </group>
   );
 }

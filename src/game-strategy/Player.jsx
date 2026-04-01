@@ -35,8 +35,8 @@ const WALL_SEGMENTS = [
   { type: 'v', x: 4, z1: 5.5, z2: 8 },
 ];
 
-// Small collision radius so character fits through doors
-const PLAYER_RADIUS = 0.3;
+// Collision radius — 0.4 triggers collisions earlier so character doesn't clip
+const PLAYER_RADIUS = 0.4;
 const INTERACTION_RADIUS = 2.8;
 
 // ════════════════════════════════════════════════════════════
@@ -90,13 +90,18 @@ function checkCollision(x, z) {
   return false;
 }
 
-// moveWithCollisions equivalent — try full move, then slide
+// moveWithCollisions equivalent — try full move, then slide, then clamp to house bounds
 function moveWithCollisions(x, z, dx, dz) {
-  const nx = x + dx;
-  const nz = z + dz;
+  let nx = x + dx;
+  let nz = z + dz;
+  // Clamp to house boundary as safety net (walls at ±10 x, ±8 z)
+  nx = Math.max(-9.5, Math.min(9.5, nx));
+  nz = Math.max(-7.5, Math.min(7.5, nz));
   if (!checkCollision(nx, nz)) return { x: nx, z: nz };
-  if (!checkCollision(nx, z)) return { x: nx, z: z };
-  if (!checkCollision(x, nz)) return { x: x, z: nz };
+  const cx = Math.max(-9.5, Math.min(9.5, x + dx));
+  if (!checkCollision(cx, z)) return { x: cx, z: z };
+  const cz = Math.max(-9.5, Math.min(9.5, z + dz));
+  if (!checkCollision(x, cz)) return { x: x, z: cz };
   return { x, z };
 }
 
@@ -290,12 +295,12 @@ export default function Player({ onRoomChange, onNearestApplianceChange, onInter
     const speed = 0.15;
     const turnSpeed = 0.05;
 
-    // ─── ROTATE character left/right ───
+    // ─── ROTATE character left/right (swapped signs for camera-relative controls) ───
     if (k['a'] || k['arrowleft']) {
-      rotRef.current -= turnSpeed;
+      rotRef.current += turnSpeed;
     }
     if (k['d'] || k['arrowright']) {
-      rotRef.current += turnSpeed;
+      rotRef.current -= turnSpeed;
     }
 
     // ─── Calculate forward direction based on character rotation ───

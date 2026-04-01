@@ -1709,3 +1709,173 @@ button {
   0%, 100% { transform: scale(1); box-shadow: 0 0 8px rgba(34,197,94,0.3); }
   50% { transform: scale(1.15); box-shadow: 0 0 20px rgba(34,197,94,0.6); }
 }
+
+/* ─── Proximity-Based Labels (Fix 3) ─── */
+.l1-prox-label {
+  pointer-events: none;
+  text-align: center;
+  animation: l1ProxFadeIn 0.3s ease;
+}
+
+.l1-prox-label.hidden { display: none; }
+
+.l1-prox-name {
+  padding: 4px 12px;
+  border-radius: 10px;
+  background: rgba(0,0,0,0.8);
+  color: #e2e8f0;
+  font-family: 'Nunito', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  backdrop-filter: blur(6px);
+  border: 1px solid rgba(255,255,255,0.12);
+}
+
+.l1-prox-watt {
+  font-size: 10px !important;
+  color: #94a3b8 !important;
+  font-weight: 400;
+}
+
+.l1-prox-interact {
+  margin-top: 4px;
+  padding: 3px 10px;
+  border-radius: 8px;
+  background: rgba(34,197,94,0.9);
+  color: #fff;
+  font-family: 'Fredoka', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  animation: bouncePrompt 1s ease-in-out infinite;
+  box-shadow: 0 2px 8px rgba(34,197,94,0.4);
+}
+
+@keyframes l1ProxFadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ─── Help Button (Fix 6) ─── */
+.l1-help-btn {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  z-index: 200;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.2);
+  background: rgba(5,10,21,0.85);
+  color: #22c55e;
+  font-family: 'Fredoka', sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.l1-help-btn:hover {
+  background: rgba(34,197,94,0.2);
+  border-color: rgba(34,197,94,0.5);
+  transform: scale(1.1);
+}
+
+.l1-controls-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(5,10,21,0.85);
+  backdrop-filter: blur(8px);
+  animation: fadeIn 0.2s ease;
+}
+
+.l1-controls-card {
+  max-width: 360px;
+  width: 90%;
+  padding: 24px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, #0f172a, #1e293b);
+  border: 1px solid rgba(34,197,94,0.3);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  animation: bubblePop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.l1-controls-title {
+  font-family: 'Fredoka', sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+.l1-controls-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.l1-ctrl-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.05);
+  color: #e2e8f0;
+  font-family: 'Nunito', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.l1-ctrl-keys {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.l1-key {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 6px;
+  border-radius: 6px;
+  background: rgba(34,197,94,0.15);
+  border: 1px solid rgba(34,197,94,0.3);
+  color: #22c55e;
+  font-family: 'Fredoka', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.l1-controls-got-it {
+  width: 100%;
+  padding: 10px;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  color: #fff;
+  font-family: 'Fredoka', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 4px 12px rgba(34,197,94,0.3);
+}
+
+.l1-controls-got-it:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(34,197,94,0.4);
+}

@@ -43,14 +43,35 @@
   },
   "arjun": {
     "steps": [
-      { "text": "Hey! I'm Arjun! 👋", "pop": "WHOOSH!" },
-      { "text": "I just came from science class and my mind is BLOWN 🤯", "pop": "BOOM!" },
-      { "text": "My teacher said — every time we use electricity, a power plant burns coal..." },
-      { "text": "...and releases 0.710 kg of CO₂ for EVERY single unit!", "pop": "0.710 kg!" },
-      { "text": "Fans spinning. Fridge humming. AC blasting. I saw my house differently." },
-      { "text": "How much CO₂ is MY home producing? 🤔" },
-      { "text": "I'm going to find out. And I'm going to FIX it.", "pop": "POWER UP!" },
-      { "text": "Will you join my mission? 🚀", "pop": "HERO MODE ACTIVATED!" }
+      {
+        "text": "Hey! I'm Arjun! 👋",
+        "pop": "WHOOSH!"
+      },
+      {
+        "text": "I just came from science class and my mind is BLOWN 🤯",
+        "pop": "BOOM!"
+      },
+      {
+        "text": "My teacher said — every time we use electricity, a power plant burns coal..."
+      },
+      {
+        "text": "...and releases 0.710 kg of CO₂ for EVERY single unit!",
+        "pop": "0.710 kg!"
+      },
+      {
+        "text": "Fans spinning. Fridge humming. AC blasting. I saw my house differently."
+      },
+      {
+        "text": "How much CO₂ is MY home producing? 🤔"
+      },
+      {
+        "text": "I'm going to find out. And I'm going to FIX it.",
+        "pop": "POWER UP!"
+      },
+      {
+        "text": "Will you join my mission? 🚀",
+        "pop": "HERO MODE ACTIVATED!"
+      }
     ],
     "voiceProcessing": "Voice processing",
     "nextMission": "NEXT MISSION →",
@@ -60,11 +81,26 @@
     "planetaryHealth": "Planetary Health",
     "carbonCoins": "Carbon Coins",
     "levels": {
-      "1": { "title": "Energy Intro", "desc": "This mission explores how household appliances consume electricity and their carbon footprint." },
-      "2": { "title": "Home Audit", "desc": "Audit your home and discover hidden energy wasters." },
-      "3": { "title": "Vampire Power", "desc": "Hunt down appliances that waste energy in standby mode." },
-      "4": { "title": "Solar Builder", "desc": "Design a solar-powered home." },
-      "5": { "title": "City Grid", "desc": "Manage the energy grid for an entire city." }
+      "1": {
+        "title": "Energy Intro",
+        "desc": "This mission explores how household appliances consume electricity and their carbon footprint."
+      },
+      "2": {
+        "title": "Home Audit",
+        "desc": "Audit your home and discover hidden energy wasters."
+      },
+      "3": {
+        "title": "Vampire Power",
+        "desc": "Hunt down appliances that waste energy in standby mode."
+      },
+      "4": {
+        "title": "Solar Builder",
+        "desc": "Design a solar-powered home."
+      },
+      "5": {
+        "title": "City Grid",
+        "desc": "Manage the energy grid for an entire city."
+      }
     },
     "mission": "Mission",
     "startMission": "START MISSION →",
@@ -78,16 +114,104 @@
     "wrongPrefix": "❌ Wrong! The answer is",
     "explanation": "Explanation",
     "questions": {
-      "q1": { "question": "Which of these is NOT classified as an essential appliance?", "options": ["Ceiling Fan", "Air Conditioner", "Refrigerator", "LED Lights"], "explanation": "ACs are classified as Non-Essential. Fans are the primary essential cooling device in India." },
-      "q2": { "question": "A charger plugged in but not charging still uses electricity. True or False?", "options": ["True", "False"], "explanation": "Idle chargers draw 0.1–0.5W. Confirmed by U.S. DOE LBNL." },
-      "q3": { "question": "Which room typically has the MOST appliances?", "options": ["Bathroom", "Kitchen", "Bedroom", "Balcony"], "explanation": "Kitchen has fridge, induction, microwave, mixer, LED tube = 5+ appliances." },
-      "q4": { "question": "The Wi-Fi router runs how many hours per day?", "options": ["6 hours", "12 hours", "24 hours", "8 hours"], "explanation": "Wi-Fi routers run 24/7/365." },
-      "q5": { "question": "Which appliance is the WORST hidden consumer in standby mode?", "options": ["Microwave Oven", "Wi-Fi Router", "Set-Top Box", "Phone Charger"], "explanation": "Set-Top Box standby (8–15W) nearly equals its active power." },
-      "q6": { "question": "How much energy can you save by switching from a regular ceiling fan (70W) to a BLDC fan (28W)?", "options": ["20%", "40%", "60%", "80%"], "explanation": "A BLDC fan uses just 28W compared to 70W — 60% saving!" },
-      "q7": { "question": "Which appliance uses the MOST watts in your home?", "options": ["Refrigerator (150W)", "Washing Machine (420W)", "Geyser (2000W)", "AC (1300W)"], "explanation": "The Geyser runs at 2,000 watts — the highest." },
-      "q8": { "question": "An induction cooktop is 85% efficient vs a gas stove at what efficiency?", "options": ["60%", "50%", "40%", "30%"], "explanation": "Gas stoves are only ~40% efficient." },
-      "q9": { "question": "How much CO₂ per kWh does India's electricity grid emit?", "options": ["0.500 kg", "0.710 kg", "0.900 kg", "1.200 kg"], "explanation": "India's grid emission factor is 0.710 kg CO₂/kWh." },
-      "q10": { "question": "Setting your AC to 24°C instead of 18°C saves approximately what percentage?", "options": ["10%", "15%", "25%", "35%"], "explanation": "Each degree higher saves ~6% energy. 18→24°C ≈ 25%." }
+      "q1": {
+        "question": "Which of these is NOT classified as an essential appliance?",
+        "options": [
+          "Ceiling Fan",
+          "Air Conditioner",
+          "Refrigerator",
+          "LED Lights"
+        ],
+        "explanation": "ACs are classified as Non-Essential. Fans are the primary essential cooling device in India."
+      },
+      "q2": {
+        "question": "A charger plugged in but not charging still uses electricity. True or False?",
+        "options": [
+          "True",
+          "False"
+        ],
+        "explanation": "Idle chargers draw 0.1–0.5W. Confirmed by U.S. DOE LBNL."
+      },
+      "q3": {
+        "question": "Which room typically has the MOST appliances?",
+        "options": [
+          "Bathroom",
+          "Kitchen",
+          "Bedroom",
+          "Balcony"
+        ],
+        "explanation": "Kitchen has fridge, induction, microwave, mixer, LED tube = 5+ appliances."
+      },
+      "q4": {
+        "question": "The Wi-Fi router runs how many hours per day?",
+        "options": [
+          "6 hours",
+          "12 hours",
+          "24 hours",
+          "8 hours"
+        ],
+        "explanation": "Wi-Fi routers run 24/7/365."
+      },
+      "q5": {
+        "question": "Which appliance is the WORST hidden consumer in standby mode?",
+        "options": [
+          "Microwave Oven",
+          "Wi-Fi Router",
+          "Set-Top Box",
+          "Phone Charger"
+        ],
+        "explanation": "Set-Top Box standby (8–15W) nearly equals its active power."
+      },
+      "q6": {
+        "question": "How much energy can you save by switching from a regular ceiling fan (70W) to a BLDC fan (28W)?",
+        "options": [
+          "20%",
+          "40%",
+          "60%",
+          "80%"
+        ],
+        "explanation": "A BLDC fan uses just 28W compared to 70W — 60% saving!"
+      },
+      "q7": {
+        "question": "Which appliance uses the MOST watts in your home?",
+        "options": [
+          "Refrigerator (150W)",
+          "Washing Machine (420W)",
+          "Geyser (2000W)",
+          "AC (1300W)"
+        ],
+        "explanation": "The Geyser runs at 2,000 watts — the highest."
+      },
+      "q8": {
+        "question": "An induction cooktop is 85% efficient vs a gas stove at what efficiency?",
+        "options": [
+          "60%",
+          "50%",
+          "40%",
+          "30%"
+        ],
+        "explanation": "Gas stoves are only ~40% efficient."
+      },
+      "q9": {
+        "question": "How much CO₂ per kWh does India's electricity grid emit?",
+        "options": [
+          "0.500 kg",
+          "0.710 kg",
+          "0.900 kg",
+          "1.200 kg"
+        ],
+        "explanation": "India's grid emission factor is 0.710 kg CO₂/kWh."
+      },
+      "q10": {
+        "question": "Setting your AC to 24°C instead of 18°C saves approximately what percentage?",
+        "options": [
+          "10%",
+          "15%",
+          "25%",
+          "35%"
+        ],
+        "explanation": "Each degree higher saves ~6% energy. 18→24°C ≈ 25%."
+      }
     }
   },
   "rewards": {
@@ -101,35 +225,194 @@
   },
   "achievements": {
     "unlocked": "Achievement Unlocked!",
-    "first_discovery": { "title": "First Discovery", "description": "Interacted with your first appliance!" },
-    "curious_mind": { "title": "Curious Mind", "description": "Explored 3 different appliances" },
-    "halfway_there": { "title": "Halfway There", "description": "Discovered 6 out of 12 appliances!" },
-    "almost_done": { "title": "Almost Done!", "description": "Only 3 appliances left to find!" },
-    "appliance_master": { "title": "Appliance Master", "description": "Explored all 15 appliances!" },
-    "quiz_whiz": { "title": "Quiz Whiz", "description": "Scored 100% on the final quiz!" },
-    "energy_expert": { "title": "Energy Expert", "description": "Earned 3 stars on the quiz!" }
+    "first_discovery": {
+      "title": "First Discovery",
+      "description": "Interacted with your first appliance!"
+    },
+    "curious_mind": {
+      "title": "Curious Mind",
+      "description": "Explored 3 different appliances"
+    },
+    "halfway_there": {
+      "title": "Halfway There",
+      "description": "Discovered 6 out of 12 appliances!"
+    },
+    "almost_done": {
+      "title": "Almost Done!",
+      "description": "Only 3 appliances left to find!"
+    },
+    "appliance_master": {
+      "title": "Appliance Master",
+      "description": "Explored all 15 appliances!"
+    },
+    "quiz_whiz": {
+      "title": "Quiz Whiz",
+      "description": "Scored 100% on the final quiz!"
+    },
+    "energy_expert": {
+      "title": "Energy Expert",
+      "description": "Earned 3 stars on the quiz!"
+    }
   },
   "rooms": {
-    "Living Room": { "name": "📍 Living Room", "display_text": "This is the living room. The ceiling fan, TV, and AC are the big energy consumers here. 🌀📺❄️", "voice_text": "This is the living room. The ceiling fan, TV, and AC are the big energy consumers here." },
-    "Kitchen": { "name": "📍 Kitchen", "display_text": "Welcome to the kitchen! This is where some of the most energy-hungry appliances live — the refrigerator, microwave, and electric iron. 🍳🧊", "voice_text": "Welcome to the kitchen! This is where some of the most energy-hungry appliances live." },
-    "Bedroom": { "name": "📍 Bedroom", "display_text": "Arjun's bedroom! The charger is plugged in even when not charging — that's called phantom load. 🔌⚡", "voice_text": "Arjun's bedroom! The charger is plugged in even when not charging. That's phantom load." },
-    "Bathroom": { "name": "📍 Bathroom", "display_text": "The bathroom has the water purifier and the geyser. The geyser uses 2000 watts — one of the highest in the house! 🚿🔥", "voice_text": "The bathroom has the water purifier and the geyser. The geyser uses 2000 watts." }
+    "Living Room": {
+      "name": "📍 Living Room",
+      "display_text": "This is the living room. The ceiling fan, TV, and AC are the big energy consumers here. 🌀📺❄️",
+      "voice_text": "This is the living room. The ceiling fan, TV, and AC are the big energy consumers here."
+    },
+    "Kitchen": {
+      "name": "📍 Kitchen",
+      "display_text": "Welcome to the kitchen! This is where some of the most energy-hungry appliances live — the refrigerator, microwave, and electric iron. 🍳🧊",
+      "voice_text": "Welcome to the kitchen! This is where some of the most energy-hungry appliances live."
+    },
+    "Bedroom": {
+      "name": "📍 Bedroom",
+      "display_text": "Arjun's bedroom! The charger is plugged in even when not charging — that's called phantom load. 🔌⚡",
+      "voice_text": "Arjun's bedroom! The charger is plugged in even when not charging. That's phantom load."
+    },
+    "Bathroom": {
+      "name": "📍 Bathroom",
+      "display_text": "The bathroom has the water purifier and the geyser. The geyser uses 2000 watts — one of the highest in the house! 🚿🔥",
+      "voice_text": "The bathroom has the water purifier and the geyser. The geyser uses 2000 watts."
+    }
   },
   "appliances": {
-    "ceiling_fan": { "name": "Ceiling Fan", "display_text": "Hey there! I'm the Ceiling Fan 🌀 — the most-used appliance in Indian homes! I spin at 70 watts, keeping you cool for about ₹100/month. I use up to 20% of your household electricity. Tip: switch to a BLDC fan (28W) and save 60% energy!", "voice_text": "Hey there! I'm the Ceiling Fan, the most-used appliance in Indian homes! I spin at 70 watts, keeping you cool for about 100 rupees per month.", "funFact": "A BLDC fan uses just 28W vs my 70W — that's like replacing a bike with a bicycle in energy terms!", "energyTip": "Switch to a BLDC fan (28W) and save 60% energy compared to a regular ceiling fan." },
-    "led_bulb": { "name": "LED Bulb (9W)", "display_text": "Hello! I'm the LED Bulb! 💡 I replaced the old 60W incandescent bulb and use just 9 watts — saving 80% energy! India's UJALA scheme distributed over 370 million LED bulbs. I cost only ₹16/month to run!", "voice_text": "Hello! I'm the LED Bulb! I replaced the old 60 watt incandescent bulb and use just 9 watts.", "funFact": "370 million LED bulbs distributed under India's UJALA scheme — enough to light a small galaxy!", "energyTip": "Always choose LED over CFL or incandescent. 80% less energy, 25x longer life." },
-    "tv_smart": { "name": "Smart TV (43\" LED)", "display_text": "Hey, eyes over here! 📺 I'm your Smart TV! I use 75 watts when you're binge-watching, but here's the plot twist — my Wi-Fi module stays active even in standby, drawing 1–3W for updates. Modern me uses far less than old CRT TVs!", "voice_text": "I'm your Smart TV! I use 75 watts when you're binge-watching, but my Wi-Fi stays active in standby.", "funFact": "Old CRT TVs used 80-150W. I use just 75W — and I'm three times bigger!", "energyTip": "Turn off at the wall switch when not in use to save standby power." },
-    "ac_1_5ton": { "name": "AC (1.5 Ton Inverter)", "display_text": "Chill... I'm the Air Conditioner. ❄️ I'm the biggest energy consumer in your home at 1,300 watts. Set me to 24°C instead of 18°C to save up to 25% energy!", "voice_text": "I'm the Air Conditioner. I'm the biggest energy consumer at 1300 watts. Set me to 24 degrees.", "funFact": "Setting your AC to 24°C instead of 18°C saves 25% energy!", "energyTip": "Set temperature to 24°C, clean filters monthly, use a fan alongside to circulate air." },
-    "fridge": { "name": "Refrigerator (250L)", "display_text": "I'm the Refrigerator. 🧊 I run 24/7, but my compressor cycles on and off. Don't open my door too often — cold air escapes!", "voice_text": "I'm the Refrigerator. I run 24 hours a day, but my compressor cycles on and off.", "funFact": "Every time you open my door for 30 seconds, I use extra energy to cool back down!", "energyTip": "Don't open the door too often. Keep the fridge 3/4 full for best efficiency." },
-    "washing_machine": { "name": "Washing Machine (7kg FL)", "display_text": "Whoooosh! 🌀 I'm the Washing Machine! I spin at 420 watts. Even when I look 'off', I draw 1-2W in standby!", "voice_text": "I'm the Washing Machine! I spin at 420 watts. Even when off, I draw 1-2 watts in standby.", "funFact": "Washing with cold water saves up to 90% of the energy used for heating!", "energyTip": "Wash with cold water and always run full loads to maximize efficiency." },
-    "geyser": { "name": "Water Heater (Geyser)", "display_text": "I'm the Geyser — the HOTTEST appliance in your home! 🔥 At 2,000 watts, I'm extremely powerful but used briefly. A solar water heater can replace me!", "voice_text": "I'm the Geyser, the hottest appliance in your home! At 2000 watts, extremely powerful.", "funFact": "A solar water heater has zero running cost and saves ₹12,000+ per year!", "energyTip": "Heat water for just 10 minutes before bathing. Consider a solar water heater." },
-    "induction": { "name": "Induction Cooktop", "display_text": "Sizzle sizzle! 🍳 I'm the Induction Cooktop! At 1,500W I sound energy-hungry, but I'm 85% efficient vs gas stoves at only 40%!", "voice_text": "I'm the Induction Cooktop! At 1500 watts, but I'm 85% efficient versus gas at 40%.", "funFact": "I'm over twice as efficient as a gas stove — 85% vs 40%!", "energyTip": "Use flat-bottom vessels for best contact and efficiency on induction." },
-    "microwave": { "name": "Microwave Oven", "display_text": "BEEP BEEP! 📡 I'm the Microwave Oven! My digital clock runs 24/7, drawing 3–5W continuously even when I'm not cooking! I'm a HIDDEN CONSUMER!", "voice_text": "I'm the Microwave Oven! My clock draws 3-5 watts continuously. I'm a hidden consumer!", "funFact": "My clock alone uses more electricity per year than charging your phone!", "energyTip": "Unplug me when not in use. My standby clock wastes 26-44 kWh per year." },
-    "mixer_grinder": { "name": "Mixer Grinder", "display_text": "BRRRRR! ⚡ I'm the Mixer Grinder — fast and ENERGETIC! At 600 watts I only run for 15 minutes a day! My annual consumption is super low!", "voice_text": "I'm the Mixer Grinder! At 600 watts but only 15 minutes a day. Super low annual use.", "funFact": "Despite 600W, I use less electricity per year than a single LED bulb left on 24/7!", "energyTip": "Grind in short bursts to avoid overheating the motor and wasting energy." },
-    "wifi_router": { "name": "Wi-Fi Router", "display_text": "Connect... connect... 📶 I'm the Wi-Fi Router! I run 24/7/365 but everyone forgets about me because I'm only 6–12W. 😄", "voice_text": "I'm the Wi-Fi Router! I run 24/7 but I'm just 6-12 watts. A hidden consumer.", "funFact": "I never sleep. 24 hours a day, 365 days a year. That's dedication!", "energyTip": "Switch me off at night to save energy. You don't need internet while sleeping!" },
-    "set_top_box": { "name": "Set-Top Box (DTH)", "display_text": "Shhhh... 📦 I'm the Set-Top Box, the WORST HIDDEN CONSUMER! My standby power (8–15W) is nearly the same as active! Just turn me off at the plug!", "voice_text": "I'm the Set-Top Box, the worst hidden consumer! My standby uses almost as much as active.", "funFact": "I waste 70–131 kWh/year just in standby — more than a ceiling fan uses!", "energyTip": "Always turn me off at the wall plug. My standby wastes more than your ceiling fan!" },
-    "led_tube": { "name": "LED Tube Light", "display_text": "Hello! I'm the LED Tube Light 💡 — the backbone of room illumination! At 18W, I replace old 40W fluorescent tubes, saving over 50% energy!", "voice_text": "I'm the LED Tube Light! At 18 watts, saving over 50% compared to fluorescent tubes.", "funFact": "One LED tube = same light as a 40W fluorescent but less than half the power!", "energyTip": "Replace all fluorescent tubes with LED tubes for immediate 50%+ energy savings." },
-    "phone_charger": { "name": "Phone Charger", "display_text": "I'm the Phone Charger 🔌 — a tiny hidden consumer! Even when your phone is fully charged, I draw 0.1–0.5W sitting plugged in. That's phantom power!", "voice_text": "I'm the Phone Charger. Even fully charged, I draw 0.1-0.5 watts. That's phantom power!", "funFact": "If every Indian unplugged their charger when done, we'd save enough to power a small city!", "energyTip": "Unplug me when not charging. Every charger left plugged in wastes phantom power." },
-    "table_fan": { "name": "Table Fan", "display_text": "Hey, I'm the Table Fan! 🌪️ I'm the portable cooling companion at 50W. I use 30% less power than a ceiling fan! Use me instead of AC on mild days to save 90% energy!", "voice_text": "I'm the Table Fan! At 50 watts, I use 30% less power than a ceiling fan.", "funFact": "I can reduce 'feels like' temperature by 3-4°C, letting you set AC 3 degrees higher!", "energyTip": "Use instead of AC on mild days to save up to 90% cooling energy." }
+    "ceiling_fan": {
+      "name": "Ceiling Fan",
+      "display_text": "Hey there! I'm the Ceiling Fan 🌀 — the most-used appliance in Indian homes! I spin at 70 watts, keeping you cool for about ₹100/month. I use up to 20% of your household electricity. Tip: switch to a BLDC fan (28W) and save 60% energy!",
+      "voice_text": "Hey there! I'm the Ceiling Fan, the most-used appliance in Indian homes! I spin at 70 watts, keeping you cool for about 100 rupees per month.",
+      "funFact": "A BLDC fan uses just 28W vs my 70W — that's like replacing a bike with a bicycle in energy terms!",
+      "energyTip": "Switch to a BLDC fan (28W) and save 60% energy compared to a regular ceiling fan."
+    },
+    "led_bulb": {
+      "name": "LED Bulb (9W)",
+      "display_text": "Hello! I'm the LED Bulb! 💡 I replaced the old 60W incandescent bulb and use just 9 watts — saving 80% energy! India's UJALA scheme distributed over 370 million LED bulbs. I cost only ₹16/month to run!",
+      "voice_text": "Hello! I'm the LED Bulb! I replaced the old 60 watt incandescent bulb and use just 9 watts.",
+      "funFact": "370 million LED bulbs distributed under India's UJALA scheme — enough to light a small galaxy!",
+      "energyTip": "Always choose LED over CFL or incandescent. 80% less energy, 25x longer life."
+    },
+    "tv_smart": {
+      "name": "Smart TV (43\" LED)",
+      "display_text": "Hey, eyes over here! 📺 I'm your Smart TV! I use 75 watts when you're binge-watching, but here's the plot twist — my Wi-Fi module stays active even in standby, drawing 1–3W for updates. Modern me uses far less than old CRT TVs!",
+      "voice_text": "I'm your Smart TV! I use 75 watts when you're binge-watching, but my Wi-Fi stays active in standby.",
+      "funFact": "Old CRT TVs used 80-150W. I use just 75W — and I'm three times bigger!",
+      "energyTip": "Turn off at the wall switch when not in use to save standby power."
+    },
+    "ac_1_5ton": {
+      "name": "AC (1.5 Ton Inverter)",
+      "display_text": "Chill... I'm the Air Conditioner. ❄️ I'm the biggest energy consumer in your home at 1,300 watts. Set me to 24°C instead of 18°C to save up to 25% energy!",
+      "voice_text": "I'm the Air Conditioner. I'm the biggest energy consumer at 1300 watts. Set me to 24 degrees.",
+      "funFact": "Setting your AC to 24°C instead of 18°C saves 25% energy!",
+      "energyTip": "Set temperature to 24°C, clean filters monthly, use a fan alongside to circulate air."
+    },
+    "fridge": {
+      "name": "Refrigerator (250L)",
+      "display_text": "I'm the Refrigerator. 🧊 I run 24/7, but my compressor cycles on and off. Don't open my door too often — cold air escapes!",
+      "voice_text": "I'm the Refrigerator. I run 24 hours a day, but my compressor cycles on and off.",
+      "funFact": "Every time you open my door for 30 seconds, I use extra energy to cool back down!",
+      "energyTip": "Don't open the door too often. Keep the fridge 3/4 full for best efficiency."
+    },
+    "washing_machine": {
+      "name": "Washing Machine (7kg FL)",
+      "display_text": "Whoooosh! 🌀 I'm the Washing Machine! I spin at 420 watts. Even when I look 'off', I draw 1-2W in standby!",
+      "voice_text": "I'm the Washing Machine! I spin at 420 watts. Even when off, I draw 1-2 watts in standby.",
+      "funFact": "Washing with cold water saves up to 90% of the energy used for heating!",
+      "energyTip": "Wash with cold water and always run full loads to maximize efficiency."
+    },
+    "geyser": {
+      "name": "Water Heater (Geyser)",
+      "display_text": "I'm the Geyser — the HOTTEST appliance in your home! 🔥 At 2,000 watts, I'm extremely powerful but used briefly. A solar water heater can replace me!",
+      "voice_text": "I'm the Geyser, the hottest appliance in your home! At 2000 watts, extremely powerful.",
+      "funFact": "A solar water heater has zero running cost and saves ₹12,000+ per year!",
+      "energyTip": "Heat water for just 10 minutes before bathing. Consider a solar water heater."
+    },
+    "induction": {
+      "name": "Induction Cooktop",
+      "display_text": "Sizzle sizzle! 🍳 I'm the Induction Cooktop! At 1,500W I sound energy-hungry, but I'm 85% efficient vs gas stoves at only 40%!",
+      "voice_text": "I'm the Induction Cooktop! At 1500 watts, but I'm 85% efficient versus gas at 40%.",
+      "funFact": "I'm over twice as efficient as a gas stove — 85% vs 40%!",
+      "energyTip": "Use flat-bottom vessels for best contact and efficiency on induction."
+    },
+    "microwave": {
+      "name": "Microwave Oven",
+      "display_text": "BEEP BEEP! 📡 I'm the Microwave Oven! My digital clock runs 24/7, drawing 3–5W continuously even when I'm not cooking! I'm a HIDDEN CONSUMER!",
+      "voice_text": "I'm the Microwave Oven! My clock draws 3-5 watts continuously. I'm a hidden consumer!",
+      "funFact": "My clock alone uses more electricity per year than charging your phone!",
+      "energyTip": "Unplug me when not in use. My standby clock wastes 26-44 kWh per year."
+    },
+    "mixer_grinder": {
+      "name": "Mixer Grinder",
+      "display_text": "BRRRRR! ⚡ I'm the Mixer Grinder — fast and ENERGETIC! At 600 watts I only run for 15 minutes a day! My annual consumption is super low!",
+      "voice_text": "I'm the Mixer Grinder! At 600 watts but only 15 minutes a day. Super low annual use.",
+      "funFact": "Despite 600W, I use less electricity per year than a single LED bulb left on 24/7!",
+      "energyTip": "Grind in short bursts to avoid overheating the motor and wasting energy."
+    },
+    "wifi_router": {
+      "name": "Wi-Fi Router",
+      "display_text": "Connect... connect... 📶 I'm the Wi-Fi Router! I run 24/7/365 but everyone forgets about me because I'm only 6–12W. 😄",
+      "voice_text": "I'm the Wi-Fi Router! I run 24/7 but I'm just 6-12 watts. A hidden consumer.",
+      "funFact": "I never sleep. 24 hours a day, 365 days a year. That's dedication!",
+      "energyTip": "Switch me off at night to save energy. You don't need internet while sleeping!"
+    },
+    "set_top_box": {
+      "name": "Set-Top Box (DTH)",
+      "display_text": "Shhhh... 📦 I'm the Set-Top Box, the WORST HIDDEN CONSUMER! My standby power (8–15W) is nearly the same as active! Just turn me off at the plug!",
+      "voice_text": "I'm the Set-Top Box, the worst hidden consumer! My standby uses almost as much as active.",
+      "funFact": "I waste 70–131 kWh/year just in standby — more than a ceiling fan uses!",
+      "energyTip": "Always turn me off at the wall plug. My standby wastes more than your ceiling fan!"
+    },
+    "led_tube": {
+      "name": "LED Tube Light",
+      "display_text": "Hello! I'm the LED Tube Light 💡 — the backbone of room illumination! At 18W, I replace old 40W fluorescent tubes, saving over 50% energy!",
+      "voice_text": "I'm the LED Tube Light! At 18 watts, saving over 50% compared to fluorescent tubes.",
+      "funFact": "One LED tube = same light as a 40W fluorescent but less than half the power!",
+      "energyTip": "Replace all fluorescent tubes with LED tubes for immediate 50%+ energy savings."
+    },
+    "phone_charger": {
+      "name": "Phone Charger",
+      "display_text": "I'm the Phone Charger 🔌 — a tiny hidden consumer! Even when your phone is fully charged, I draw 0.1–0.5W sitting plugged in. That's phantom power!",
+      "voice_text": "I'm the Phone Charger. Even fully charged, I draw 0.1-0.5 watts. That's phantom power!",
+      "funFact": "If every Indian unplugged their charger when done, we'd save enough to power a small city!",
+      "energyTip": "Unplug me when not charging. Every charger left plugged in wastes phantom power."
+    },
+    "table_fan": {
+      "name": "Table Fan",
+      "display_text": "Hey, I'm the Table Fan! 🌪️ I'm the portable cooling companion at 50W. I use 30% less power than a ceiling fan! Use me instead of AC on mild days to save 90% energy!",
+      "voice_text": "I'm the Table Fan! At 50 watts, I use 30% less power than a ceiling fan.",
+      "funFact": "I can reduce 'feels like' temperature by 3-4°C, letting you set AC 3 degrees higher!",
+      "energyTip": "Use instead of AC on mild days to save up to 90% cooling energy."
+    }
+  },
+  "level2": {
+    "back": "← ಹಿಂದೆ",
+    "energyMeter": "ಶಕ್ತಿ ಮೀಟರ್",
+    "session": "ಸೆಷನ್",
+    "on": "ಆನ್",
+    "co2Label": "CO₂",
+    "kgMo": "kg/ತಿಂ",
+    "discovery": "ಅನ್ವೇಷಣೆ",
+    "tested": "ಪರೀಕ್ಷಿಸಲಾಗಿದೆ",
+    "ready": "ಸಿದ್ಧ!",
+    "taskProgress": "ಕಾರ್ಯ ಪ್ರಗತಿ",
+    "correct": "ಸರಿ",
+    "efficient": "ಸಮರ್ಥ",
+    "startTasks": "ಕಾರ್ಯಗಳನ್ನು ಪ್ರಾರಂಭಿಸಿ",
+    "energyGraph": "ಶಕ್ತಿ ಗ್ರಾಫ್",
+    "billCalc": "ಬಿಲ್ ಲೆಕ್ಕ",
+    "co2Impact": "CO₂ ಪರಿಣಾಮ",
+    "pressEOn": "ಆನ್ ಮಾಡಲು E ಒತ್ತಿ",
+    "pressEOff": "ಆಫ್ ಮಾಡಲು E ಒತ್ತಿ",
+    "beginLevel2": "ಹಂತ 2 ಪ್ರಾರಂಭಿಸಿ",
+    "newToolUnlocked": "ಹೊಸ ಉಪಕರಣ ಅನ್ ಲಾಕ್!",
+    "introQuote": "ಈ ಉಪಕರಣಗಳು ಎಷ್ಟು ವಿದ್ಯುತ್ ಬಳಸುತ್ತವೆ ನೋಡೋಣ!",
+    "controls": "ನಿಯಂತ್ರಣಗಳು",
+    "moveForward": "ಮುಂದೆ ನಡೆ",
+    "moveBackward": "ಹಿಂದೆ ನಡೆ",
+    "turnLeft": "ಎಡಕ್ಕೆ ತಿರುಗು",
+    "turnRight": "ಬಲಕ್ಕೆ ತಿರುಗು",
+    "interactAppliance": "ಉಪಕರಣದೊಂದಿಗೆ ಸಂವಹನ",
+    "exitMenu": "ಮೆನುಗೆ",
+    "gotIt": "ಅರ್ಥವಾಯಿತು!",
+    "returnToHub": "ಹಬ್ ಗೆ ಹಿಂತಿರುಗಿ"
   }
 }
