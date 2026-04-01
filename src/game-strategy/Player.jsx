@@ -107,10 +107,11 @@ function getCurrentRoom(x, z) {
   return 'Bathroom';
 }
 
-function getNearestAppliance(px, pz) {
+function getNearestAppliance(px, pz, idList) {
   let nearest = null;
   let minDist = INTERACTION_RADIUS;
-  for (const id of INTERACTABLE_IDS) {
+  const ids = idList || INTERACTABLE_IDS;
+  for (const id of ids) {
     const ap = APPLIANCE_POSITIONS[id];
     if (!ap) continue;
     const dx = px - ap.pos[0];
@@ -221,7 +222,7 @@ export const cameraMode = {
 //  - Collisions: WALLS ONLY via moveWithCollisions
 // ════════════════════════════════════════════════════════════
 
-export default function Player({ onRoomChange, onNearestApplianceChange, onInteract }) {
+export default function Player({ onRoomChange, onNearestApplianceChange, onInteract, applianceIdList }) {
   const groupRef = useRef();
   const { camera } = useThree();
 
@@ -230,6 +231,31 @@ export default function Player({ onRoomChange, onNearestApplianceChange, onInter
   const posRef = useRef({ x: -5, z: -6.5 });
   const rotRef = useRef(0); // character rotation.y
   const movingRef = useRef(false);
+
+  // ── Reset all state on mount so character + camera start fresh ──
+  useEffect(() => {
+    // Reset position
+    posRef.current = { x: -5, z: -6.5 };
+    rotRef.current = 0;
+    // Reset shared state
+    playerState.x = -5;
+    playerState.z = -6.5;
+    playerState.nearestAppliance = null;
+    playerState.cameraYaw = 0;
+    // Reset camera mode
+    cameraMode.cinematic = false;
+    cameraMode.targetX = 0;
+    cameraMode.targetY = 1.5;
+    cameraMode.targetZ = 0;
+    // Reset camera position to behind the character
+    camera.position.set(-5 - Math.sin(0) * 8, 6, -6.5 - Math.cos(0) * 8);
+    camera.lookAt(-5, 1.5, -6.5);
+    // Reset character mesh position
+    if (groupRef.current) {
+      groupRef.current.position.set(-5, 0, -6.5);
+      groupRef.current.rotation.y = 0;
+    }
+  }, [camera]);
 
   // ── Keyboard: keydown/keyup with preventDefault to stop page scroll ──
   useEffect(() => {
@@ -306,7 +332,7 @@ export default function Player({ onRoomChange, onNearestApplianceChange, onInter
     playerState.cameraYaw = rotRef.current;
 
     // Nearest appliance
-    const nearest = getNearestAppliance(posRef.current.x, posRef.current.z);
+    const nearest = getNearestAppliance(posRef.current.x, posRef.current.z, applianceIdList);
     if (nearest !== playerState.nearestAppliance) {
       playerState.nearestAppliance = nearest;
       if (onNearestApplianceChange) onNearestApplianceChange(nearest);

@@ -182,6 +182,7 @@ function SceneContent({ applianceStates, nearestAppliance, taskTargetIds, onRoom
         onRoomChange={onRoomChange}
         onNearestApplianceChange={onNearestChange}
         onInteract={onInteract}
+        applianceIdList={L2_APPLIANCE_IDS}
       />
     </>
   );

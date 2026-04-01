@@ -626,7 +626,7 @@ function SceneContent({ onApplianceClick, onRoomChange, onNearestChange, onInter
 // ─── Main Level 1 Component ───
 export default function Level1() {
   const navigate = useNavigate();
-  const { selectedLanguage } = useGame();
+  const { selectedLanguage, completeLevel, unlockLevel, addCarbonCoins } = useGame();
   const langCode = selectedLanguage || 'en';
   const t = getTranslation(langCode);
 
@@ -936,7 +936,13 @@ export default function Level1() {
           score={quizScore}
           total={quizTotal}
           stars={finalStars}
-          onContinue={() => navigate('/hub')}
+          onContinue={() => {
+            // Mark Level 1 complete and unlock Level 2
+            completeLevel(1);
+            unlockLevel(2);
+            addCarbonCoins(finalStars * 20 + quizScore * 5);
+            navigate('/hub');
+          }}
           t={t}
         />
       )}
