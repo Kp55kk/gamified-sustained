@@ -5,11 +5,11 @@ import { GameProvider } from './context/GameContext';
 
 import SplashScreen from './screens/SplashScreen';
 import LanguageScreen from './screens/LanguageScreen';
-import AgeScreen from './screens/AgeScreen';
 import ArjunIntroScreen from './screens/ArjunIntroScreen';
 import VideoScreen from './screens/VideoScreen';
 import HubScreen from './screens/HubScreen';
 import Level1 from './game-strategy/Level1';
+import Level2 from './game-strategy/level2/Level2';
 
 const AnimatedRoutes = () => {
   const location = useLocation();
@@ -19,11 +19,11 @@ const AnimatedRoutes = () => {
       <Routes location={location} key={location.pathname}>
         <Route path="/" element={<SplashScreen />} />
         <Route path="/language" element={<LanguageScreen />} />
-        <Route path="/age" element={<AgeScreen />} />
         <Route path="/intro" element={<ArjunIntroScreen />} />
         <Route path="/video" element={<VideoScreen />} />
         <Route path="/hub" element={<HubScreen />} />
         <Route path="/level1" element={<Level1 />} />
+        <Route path="/level2" element={<Level2 />} />
       </Routes>
     </AnimatePresence>
   );

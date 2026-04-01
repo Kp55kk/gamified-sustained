@@ -1,139 +1,121 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import Particles from '../components/Particles';
-import GlowOrb from '../components/GlowOrb';
-import ArjunCharacter from '../components/ArjunCharacter';
-import ComicBubble from '../components/ComicBubble';
-import EnergyBar from '../components/EnergyBar';
-import GameButton from '../components/GameButton';
-
-const storyData = [
-  { id: 1, text: "Hey! I'm Arjun! 👋", mood: "wave", pop: "WHOOSH!" },
-  { id: 2, text: "I just came from science class and my mind is BLOWN 🤯", mood: "excited", pop: "BOOM!", popColor: "#f59e0b" },
-  { id: 3, text: "My teacher said — every time we use electricity, a power plant burns coal...", mood: "thinking" },
-  { id: 4, text: "...and releases 0.710 kg of CO₂ for EVERY single unit!", mood: "shocked", pop: "0.710 kg!", popColor: "#ef4444" },
-  { id: 5, text: "Fans spinning. Fridge humming. AC blasting. I saw my house differently.", mood: "thinking" },
-  { id: 6, text: "How much CO₂ is MY home producing? 🤔", mood: "thinking" },
-  { id: 7, text: "I'm going to find out. And I'm going to FIX it.", mood: "determined", pop: "POWER UP!", popColor: "#22c55e" },
-  { id: 8, text: "Will you join my mission? 🚀", mood: "hero", pop: "HERO MODE ACTIVATED!", popColor: "#f59e0b" }
-];
+import { useGame } from '../context/GameContext';
+import { getTranslation } from '../translations';
 
 const ArjunIntroScreen = () => {
   const navigate = useNavigate();
-  const [step, setStep] = useState(0);
+  const { selectedLanguage } = useGame();
+  const [currentSlide, setCurrentSlide] = useState(0);
 
-  const currentStory = storyData[step];
-  const isLast = step === storyData.length - 1;
+  const t = getTranslation(selectedLanguage);
+  const steps = t?.arjun?.steps || [];
+
+  const storyData = [
+    { text: steps[0]?.text || "Hey! I'm Arjun! 👋", icon: "👦🏽", pop: steps[0]?.pop || "WHOOSH!" },
+    { text: steps[1]?.text || "I just came from science class and my mind is BLOWN 🤯", icon: "🤯", pop: steps[1]?.pop || "BOOM!" },
+    { text: steps[2]?.text || "My teacher said — every time we use electricity, a power plant burns coal...", icon: "🏭", pop: steps[2]?.pop },
+    { text: steps[3]?.text || "...and releases 0.710 kg of CO₂ for EVERY single unit!", icon: "☁️", pop: steps[3]?.pop || "0.710 kg!" },
+    { text: steps[4]?.text || "Fans spinning. Fridge humming. AC blasting. I saw my house differently.", icon: "🔌", pop: steps[4]?.pop },
+    { text: steps[5]?.text || "How much CO₂ is MY home producing? 🤔", icon: "🏠", pop: steps[5]?.pop },
+    { text: steps[6]?.text || "I'm going to find out. And I'm going to FIX it.", icon: "⚡", pop: steps[6]?.pop || "POWER UP!" },
+    { text: steps[7]?.text || "Will you join my mission? 🚀", icon: "🚀", pop: steps[7]?.pop || "HERO MODE ACTIVATED!" }
+  ].filter(slide => slide.text);
 
   const handleNext = () => {
-    if (isLast) navigate('/video');
-    else setStep(s => s + 1);
-  };
-
-  const getOrbColor = (mood) => {
-    if (mood === 'excited' || mood === 'hero') return '#f59e0b';
-    if (mood === 'shocked') return '#ef4444';
-    if (mood === 'determined') return '#22c55e';
-    return '#3b82f6';
+    if (currentSlide < storyData.length - 1) {
+      setCurrentSlide(prev => prev + 1);
+    } else {
+      navigate('/video');
+    }
   };
 
   return (
-    <motion.div 
-      className="relative w-full h-screen overflow-hidden flex flex-col items-center justify-center bg-[#050a15] z-10 p-2"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0, scale: 1.1 }}
+    <div 
+      className="min-h-screen w-full flex flex-col items-center justify-center p-6"
+      style={{
+        background: 'linear-gradient(135deg, #050a15 0%, #0a1628 100%)',
+        color: 'white'
+      }}
     >
-      <Particles count={30} />
-      <GlowOrb color={getOrbColor(currentStory.mood)} size="50vw" delay={0} opacity={0.3} />
-
-      <AnimatePresence>
-         {currentStory.mood === 'hero' && (
-           <motion.div className="absolute inset-0 mix-blend-screen z-0 pointer-events-none" style={{ backgroundColor: '#f59e0b' }} initial={{ opacity: 0.8 }} animate={{ opacity: 0 }} transition={{ duration: 1 }} />
-         )}
-      </AnimatePresence>
-
-      {/* Comic Pop Layer (Absolute Position Top) */}
-      <div className="absolute top-[10%] left-1/2 -translate-x-1/2 z-50 pointer-events-none w-full flex justify-center">
-        <AnimatePresence mode="wait">
-           {currentStory.pop && (
-              <motion.div
-                key={currentStory.id}
-                initial={{ scale: 0, opacity: 0 }}
-                animate={{ scale: [1.2, 1], opacity: 1 }}
-                exit={{ scale: 0, opacity: 0 }}
-                transition={{ type: 'spring', stiffness: 300, damping: 15 }}
-                className="text-4xl md:text-[48px] italic font-black text-center"
-                style={{ 
-                  fontFamily: 'Fredoka, sans-serif', 
-                  color: currentStory.popColor || '#ffffff', 
-                  WebkitTextStroke: '2px #000',
-                  textShadow: '3px 3px 0 #000'
-                }}
-              >
-                {currentStory.pop}
-              </motion.div>
-           )}
-        </AnimatePresence>
-      </div>
-
-      <div className="z-10 w-full max-w-sm flex flex-col items-center gap-2 mt-4">
-        {/* Thought Bubble - Max 80px */}
-        <div className="h-[80px] flex items-end justify-center w-full relative z-30">
-           <ComicBubble text={currentStory.text} key={`bubble-${currentStory.id}`} />
-        </div>
-
-        {/* Character - Max 140px */}
-        <motion.div className="relative z-20" initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: 'spring' }}>
-           <div 
-             className="relative flex items-center justify-center rounded-full border-4 backdrop-blur-sm transition-colors duration-500"
-             style={{ 
-               backgroundColor: 'rgba(5, 10, 21, 0.5)', 
-               borderColor: getOrbColor(currentStory.mood),
-               boxShadow: `0 0 20px ${getOrbColor(currentStory.mood)}60` 
-             }}
-           >
-             <ArjunCharacter mood={currentStory.mood} size={140} />
-           </div>
-           
-           {/* Name Tag - Small */}
-           <div 
-             className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 border px-3 py-1 rounded-full z-30 bg-[#050a15]"
-             style={{ borderColor: '#22c55e', boxShadow: '0 2px 5px rgba(0,0,0,0.5)' }}
-           >
-             <span className="font-bold tracking-widest uppercase text-xs" style={{ fontFamily: 'Fredoka, sans-serif', color: '#22c55e' }}>Arjun</span>
-           </div>
-        </motion.div>
-
-        {/* Energy Bar - 6px margins */}
-        <div className="w-full my-2 relative z-30">
-           <EnergyBar progress={((step + 1) / storyData.length) * 100} height="6px" showSegments={true} baseColor="#22c55e" />
-        </div>
-
-        {/* Audio Visualizer Placeholder - 16px */}
-        <div className="flex items-center gap-2 opacity-60 mb-2 mt-1 z-30">
-           <div className="flex items-center gap-[2px] h-4">
-              {[2, 4, 8, 12, 6, 10, 3].map((h, i) => (
+      <div className="w-full max-w-2xl text-center flex flex-col items-center">
+        
+        {/* Story Area container */}
+        <div className="w-full min-h-[400px] relative flex flex-col items-center justify-center p-8 bg-white/5 backdrop-blur-sm rounded-3xl border border-white/10 shadow-2xl overflow-hidden">
+          
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={currentSlide}
+              initial={{ opacity: 0, x: 50 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -50 }}
+              transition={{ duration: 0.4, ease: "easeInOut" }}
+              className="absolute inset-0 flex flex-col items-center justify-center p-8"
+            >
+              {storyData[currentSlide]?.icon && (
                 <motion.div 
-                  key={i} 
-                  className="w-[3px] bg-white rounded-full" 
-                  animate={{ height: [`${h}px`, `16px`, `${h}px`] }} 
-                  transition={{ duration: 0.4 + Math.random() * 0.4, repeat: Infinity, ease: "easeInOut" }} 
-                />
-              ))}
-           </div>
-           <span className="text-[10px] tracking-widest uppercase italic font-bold" style={{ color: '#9ca3af', fontFamily: 'Nunito, sans-serif' }}>Voice processing</span>
+                  className="text-7xl mb-8 drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]"
+                  initial={{ scale: 0, rotate: -20 }}
+                  animate={{ scale: 1, rotate: 0 }}
+                  transition={{ type: "spring", bounce: 0.6, delay: 0.2 }}
+                >
+                  {storyData[currentSlide].icon}
+                </motion.div>
+              )}
+              
+              <h2 className="text-2xl md:text-4xl font-bold leading-relaxed text-white drop-shadow-md">
+                {storyData[currentSlide]?.text}
+              </h2>
+
+              {storyData[currentSlide]?.pop && (
+                <motion.div
+                  className="mt-8 text-[#22c55e] font-black text-2xl md:text-3xl tracking-widest uppercase italic drop-shadow-[0_0_10px_rgba(34,197,94,0.6)]"
+                  initial={{ scale: 0, y: 20 }}
+                  animate={{ scale: 1, y: 0 }}
+                  transition={{ type: "spring", bounce: 0.5, delay: 0.4 }}
+                >
+                  {storyData[currentSlide].pop}
+                </motion.div>
+              )}
+            </motion.div>
+          </AnimatePresence>
+
         </div>
 
-        {/* Button */}
-        <motion.div key={`btn-${isLast}`} initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="w-full z-30">
-          <GameButton onClick={handleNext} color={isLast ? 'golden' : '#22c55e'} isHero={isLast}>
-            {isLast ? "ACTIVATE HERO MODE!" : "NEXT MISSION →"}
-          </GameButton>
-        </motion.div>
+        {/* Progress indicators */}
+        <div className="flex justify-center space-x-3 mt-10 mb-8">
+          {storyData.map((_, index) => (
+            <motion.div
+              key={index}
+              className={`h-2 rounded-full transition-colors duration-300 ${
+                index === currentSlide 
+                  ? "bg-[#22c55e]" 
+                  : index < currentSlide
+                    ? "bg-[#22c55e]/50"
+                    : "bg-gray-600"
+              }`}
+              animate={{
+                width: index === currentSlide ? 40 : 12
+              }}
+              transition={{ duration: 0.3 }}
+            />
+          ))}
+        </div>
+
+        {/* Next Button */}
+        <motion.button
+          onClick={handleNext}
+          className="px-10 py-4 bg-[#22c55e] text-black font-black text-xl md:text-2xl rounded-full shadow-[0_0_20px_rgba(34,197,94,0.4)] hover:shadow-[0_0_40px_rgba(34,197,94,0.6)] hover:bg-[#2ae06b] transition-all w-full max-w-sm uppercase tracking-wide"
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+        >
+          {currentSlide === storyData.length - 1 ? (t?.arjun?.nextMission || "NEXT MISSION →") : "Next →"}
+        </motion.button>
+
       </div>
-    </motion.div>
+    </div>
   );
 };
+
 export default ArjunIntroScreen;
