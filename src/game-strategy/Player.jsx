@@ -287,8 +287,8 @@ export default function Player({ onRoomChange, onNearestApplianceChange, onInter
   // ══════════════════════════════════════════════════════════
   useFrame(() => {
     const k = keys.current;
-    const speed = 0.06;   // Slowed down for better control
-    const turnSpeed = 0.025; // Smoother turning
+    const speed = 0.15;
+    const turnSpeed = 0.05;
 
     // ─── ROTATE character left/right ───
     if (k['a'] || k['arrowleft']) {
@@ -370,9 +370,9 @@ export default function Player({ onRoomChange, onNearestApplianceChange, onInter
     const targetCamZ = posRef.current.z - Math.cos(rotRef.current) * 8;
 
     // Smooth lerp — exactly 0.05 as specified
-    camera.position.x += (targetCamX - camera.position.x) * 0.05;
-    camera.position.y += (targetCamY - camera.position.y) * 0.05;
-    camera.position.z += (targetCamZ - camera.position.z) * 0.05;
+    camera.position.x += (targetCamX - camera.position.x) * 0.04;
+    camera.position.y += (targetCamY - camera.position.y) * 0.04;
+    camera.position.z += (targetCamZ - camera.position.z) * 0.04;
 
     // Look at character (position + Vector3(0, 1.5, 0))
     camera.lookAt(posRef.current.x, 1.5, posRef.current.z);

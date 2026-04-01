@@ -755,42 +755,63 @@ function LEDBulbL2({ isOn }) {
   );
 }
 
-// ─── Appliance Labels (HTML overlays showing name + wattage) ───
-function ApplianceLabel({ id, isOn }) {
+// ─── Appliance Labels (proximity-based — only show when near) ───
+function ApplianceLabel({ id, isOn, showLevel }) {
   const pos = APPLIANCE_POSITIONS[id]?.pos;
   if (!pos) return null;
+  if (!showLevel || showLevel === 'hidden') return null;
   const appliance = L2_APPLIANCE_MAP[id];
   if (!appliance) return null;
 
-  // Label height varies by appliance type
   const labelOffsets = {
-    ceiling_fan: 0.3,
-    tv_smart: 0.7,
-    ac_1_5ton: 0.35,
-    fridge: 1.1,
-    washing_machine: 0.65,
-    geyser: 0.5,
-    wifi_router: 0.3,
-    set_top_box: 0.2,
-    phone_charger: 0.4,
-    induction: 0.3,
-    microwave: 0.35,
-    mixer_grinder: 0.5,
-    led_tube: 0.3,
-    table_fan: 0.55,
-    led_bulb: 0.2,
+    ceiling_fan: 0.3, tv_smart: 0.7, ac_1_5ton: 0.35, fridge: 1.1,
+    washing_machine: 0.65, geyser: 0.5, wifi_router: 0.3, set_top_box: 0.2,
+    phone_charger: 0.4, induction: 0.3, microwave: 0.35, mixer_grinder: 0.5,
+    led_tube: 0.3, table_fan: 0.55, led_bulb: 0.2,
   };
-
   const yOffset = labelOffsets[id] || 0.5;
 
   return (
     <Html position={[pos[0], pos[1] + yOffset, pos[2]]} center>
-      <div className={`l2-appliance-label ${isOn ? 'label-on' : 'label-off'}`}>
-        {appliance.icon} {appliance.name}
-        {isOn && <span className="label-watt">{appliance.wattage}W</span>}
+      <div className={`l2-appliance-label-prox ${showLevel}`}>
+        {showLevel === 'arrow' && (
+          <div className="l2-prox-arrow">▼</div>
+        )}
+        {(showLevel === 'name' || showLevel === 'interact') && (
+          <div className={`l2-prox-name ${isOn ? 'label-on' : 'label-off'}`}>
+            {appliance.icon} {appliance.name}
+            {isOn && <span className="label-watt">{appliance.wattage}W</span>}
+          </div>
+        )}
+        {showLevel === 'interact' && (
+          <div className="l2-prox-interact">Press <span className="key-e">E</span> to {isOn ? 'Turn OFF' : 'Turn ON'}</div>
+        )}
       </div>
     </Html>
   );
+}
+
+// ─── Compute proximity levels for all appliances ───
+function getProximityLevels(px, pz) {
+  const distances = [];
+  for (const a of LEVEL2_APPLIANCES) {
+    const ap = APPLIANCE_POSITIONS[a.id];
+    if (!ap) continue;
+    const dx = px - ap.pos[0], dz = pz - ap.pos[2];
+    const dist = Math.sqrt(dx * dx + dz * dz);
+    distances.push({ id: a.id, dist });
+  }
+  distances.sort((a, b) => a.dist - b.dist);
+  const levels = {};
+  let shown = 0;
+  for (const { id, dist } of distances) {
+    if (shown >= 3) { levels[id] = 'hidden'; continue; }
+    if (dist <= 2) { levels[id] = 'interact'; shown++; }
+    else if (dist <= 3) { levels[id] = 'name'; shown++; }
+    else if (dist <= 5) { levels[id] = 'arrow'; shown++; }
+    else { levels[id] = 'hidden'; }
+  }
+  return levels;
 }
 
 // ─── Model mapping ───
@@ -816,7 +837,9 @@ const MODEL_MAP = {
 //  MAIN EXPORT — Level2Appliances
 // ════════════════════════════════════════════════════════════
 
-export default function Level2Appliances({ applianceStates, nearestAppliance, taskTargetIds }) {
+export { getProximityLevels };
+
+export default function Level2Appliances({ applianceStates, nearestAppliance, taskTargetIds, proximityLevels }) {
   return (
     <group>
       {LEVEL2_APPLIANCES.map((appliance) => {
@@ -826,11 +849,12 @@ export default function Level2Appliances({ applianceStates, nearestAppliance, ta
         const isOn = !!applianceStates[appliance.id];
         const isNear = nearestAppliance === appliance.id;
         const isTaskTarget = taskTargetIds && taskTargetIds.includes(appliance.id);
+        const showLevel = proximityLevels ? proximityLevels[appliance.id] : 'hidden';
 
         return (
           <ToggleGlow key={appliance.id} id={appliance.id} isOn={isOn} isNear={isNear} isTaskTarget={isTaskTarget}>
             <Model isOn={isOn} />
-            <ApplianceLabel id={appliance.id} isOn={isOn} />
+            <ApplianceLabel id={appliance.id} isOn={isOn} showLevel={showLevel} />
           </ToggleGlow>
         );
       })}

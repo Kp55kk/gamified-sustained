@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import * as THREE from 'three';
 import House from '../House';
 import Player, { cameraMode, playerState } from '../Player';
-import Level2Appliances from './Level2Appliances';
+import Level2Appliances, { getProximityLevels } from './Level2Appliances';
 import {
   LEVEL2_APPLIANCES, L2_APPLIANCE_IDS, L2_APPLIANCE_MAP,
   getEnergyTier, MAX_POSSIBLE_WATTS, ENERGY_TIPS,
@@ -145,13 +145,13 @@ function CameraRefForwarder({ cameraRef }) {
   return null;
 }
 
-function SceneContent({ applianceStates, nearestAppliance, taskTargetIds, onRoomChange, onNearestChange, onInteract, cameraRef }) {
+function SceneContent({ applianceStates, nearestAppliance, taskTargetIds, onRoomChange, onNearestChange, onInteract, cameraRef, proximityLevels }) {
   return (
     <>
       <WarmLighting />
       <CameraRefForwarder cameraRef={cameraRef} />
       <House />
-      <Level2Appliances applianceStates={applianceStates} nearestAppliance={nearestAppliance} taskTargetIds={taskTargetIds} />
+      <Level2Appliances applianceStates={applianceStates} nearestAppliance={nearestAppliance} taskTargetIds={taskTargetIds} proximityLevels={proximityLevels} />
       <Player onRoomChange={onRoomChange} onNearestApplianceChange={onNearestChange} onInteract={onInteract} applianceIdList={L2_APPLIANCE_IDS} />
     </>
   );
@@ -180,26 +180,98 @@ function FloatingText({ text, type, id, onDone }) {
   return <div className={`l2-floating-text ${type}`}>{text}</div>;
 }
 
-// ─── History Sparkline ───
-function Sparkline({ data, width = 180, height = 40 }) {
-  if (data.length < 2) return null;
-  const maxVal = Math.max(...data.map(d => d.watts), 100);
-  const points = data.map((d, i) => {
-    const x = (i / (data.length - 1)) * width;
-    const y = height - (d.watts / maxVal) * (height - 4);
-    return `${x},${y}`;
-  }).join(' ');
+// ─── SVG Energy Gauge ───
+function EnergyGauge({ watts, maxWatts = 4000 }) {
+  const [animW, setAnimW] = useState(0);
+  const aRef = useRef(null);
+  useEffect(() => {
+    let c = animW;
+    const s = () => { const d = watts - c; if (Math.abs(d) < 1) { setAnimW(watts); return; } c += d * 0.08; setAnimW(Math.round(c)); aRef.current = requestAnimationFrame(s); };
+    aRef.current = requestAnimationFrame(s);
+    return () => { if (aRef.current) cancelAnimationFrame(aRef.current); };
+  }, [watts]);
+  const pct = Math.min(animW / maxWatts, 1), ang = -90 + pct * 180, cx = 110, cy = 100, r = 80;
+  const arc = (s, e) => { const sa = (-90 + s * 180) * Math.PI / 180, ea = (-90 + e * 180) * Math.PI / 180; return `M ${cx + r * Math.cos(sa)} ${cy + r * Math.sin(sa)} A ${r} ${r} 0 ${e - s > 0.5 ? 1 : 0} 1 ${cx + r * Math.cos(ea)} ${cy + r * Math.sin(ea)}`; };
+  const nr = ang * Math.PI / 180, nx = cx + 65 * Math.cos(nr), ny = cy + 65 * Math.sin(nr);
   return (
-    <svg width={width} height={height} className="l2-sparkline-svg">
-      <defs>
-        <linearGradient id="sparkGrad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#f59e0b" stopOpacity="0.4" />
-          <stop offset="100%" stopColor="#f59e0b" stopOpacity="0.05" />
-        </linearGradient>
-      </defs>
-      <polygon points={`0,${height} ${points} ${width},${height}`} fill="url(#sparkGrad)" />
-      <polyline points={points} fill="none" stroke="#f59e0b" strokeWidth="1.5" strokeLinejoin="round" />
-    </svg>
+    <div className="l2-gauge-container">
+      <svg viewBox="0 0 220 120" className="l2-gauge-svg">
+        <path d={arc(0, 1)} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="18" strokeLinecap="round" />
+        <path d={arc(0, 0.125)} fill="none" stroke="#22c55e" strokeWidth="16" strokeLinecap="round" opacity="0.8" />
+        <path d={arc(0.125, 0.375)} fill="none" stroke="#facc15" strokeWidth="16" opacity="0.8" />
+        <path d={arc(0.375, 0.625)} fill="none" stroke="#f97316" strokeWidth="16" opacity="0.8" />
+        <path d={arc(0.625, 1)} fill="none" stroke="#ef4444" strokeWidth="16" strokeLinecap="round" opacity="0.8" />
+        <text x="22" y="108" fill="#64748b" fontSize="9" textAnchor="middle">0</text>
+        <text x="110" y="18" fill="#64748b" fontSize="9" textAnchor="middle">2k</text>
+        <text x="198" y="108" fill="#64748b" fontSize="9" textAnchor="middle">4k</text>
+        <line x1={cx} y1={cy} x2={nx} y2={ny} stroke="#fff" strokeWidth="2.5" strokeLinecap="round" style={{ filter: 'drop-shadow(0 0 4px rgba(255,255,255,0.5))', transition: 'all 0.3s' }} />
+        <circle cx={cx} cy={cy} r="6" fill="#1e293b" stroke="#f59e0b" strokeWidth="2" />
+        <circle cx={cx} cy={cy} r="3" fill="#f59e0b" />
+      </svg>
+    </div>
+  );
+}
+
+function ControlsHelp() {
+  const [show, setShow] = useState(false);
+  const [auto, setAuto] = useState(false);
+  useEffect(() => { if (!auto) { setShow(true); setAuto(true); const t = setTimeout(() => setShow(false), 3000); return () => clearTimeout(t); } }, []);
+  useEffect(() => { if (!show) return; const h = (e) => { if (e.key === 'Escape') setShow(false); }; window.addEventListener('keydown', h); return () => window.removeEventListener('keydown', h); }, [show]);
+  return (
+    <>
+      <button className="l2-help-btn" onClick={() => setShow(true)}>?</button>
+      {show && (
+        <div className="l2-controls-overlay" onClick={() => setShow(false)}>
+          <div className="l2-controls-card" onClick={e => e.stopPropagation()}>
+            <div className="l2-controls-title">{ICONS.grad} Controls</div>
+            <div className="l2-controls-list">
+              <div className="l2-ctrl-row"><span className="l2-ctrl-keys"><span className="l2-key">W</span> / <span className="l2-key">{'\u2191'}</span></span><span>Move Forward</span></div>
+              <div className="l2-ctrl-row"><span className="l2-ctrl-keys"><span className="l2-key">S</span> / <span className="l2-key">{'\u2193'}</span></span><span>Move Backward</span></div>
+              <div className="l2-ctrl-row"><span className="l2-ctrl-keys"><span className="l2-key">A</span> / <span className="l2-key">{'\u2190'}</span></span><span>Turn Left</span></div>
+              <div className="l2-ctrl-row"><span className="l2-ctrl-keys"><span className="l2-key">D</span> / <span className="l2-key">{'\u2192'}</span></span><span>Turn Right</span></div>
+              <div className="l2-ctrl-row"><span className="l2-ctrl-keys"><span className="l2-key">E</span></span><span>Interact with Appliance</span></div>
+              <div className="l2-ctrl-row"><span className="l2-ctrl-keys"><span className="l2-key">ESC</span></span><span>Exit to Menu</span></div>
+            </div>
+            <button className="l2-controls-got-it" onClick={() => setShow(false)}>Got it!</button>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+function ScreenGlow({ totalWatts }) {
+  if (totalWatts > 2000) return <div className="l2-screen-glow l2-glow-red" />;
+  if (totalWatts > 0 && totalWatts < 500) return <div className="l2-screen-glow l2-glow-green" />;
+  return null;
+}
+
+const EYE_STYLES = {
+  fridge: { w: 18, h: 22, p: 7 }, wifi_router: { w: 8, h: 8, p: 4 },
+  ac_1_5ton: { w: 16, h: 10, p: 6 }, tv_smart: { w: 18, h: 12, p: 5, rect: true },
+  table_fan: { w: 10, h: 14, p: 5, dizzy: true }, ceiling_fan: { w: 14, h: 14, p: 5 },
+};
+function ApplianceFace({ id, isOn, dist, popupOpen, px, pz }) {
+  const [blink, setBlink] = useState(false);
+  const pos = APPLIANCE_POSITIONS[id]?.pos;
+  useEffect(() => { const iv = setInterval(() => { setBlink(true); setTimeout(() => setBlink(false), 150); }, 3000 + Math.random() * 1000); return () => clearInterval(iv); }, []);
+  if (!pos || dist > 4) return null;
+  const op = dist > 3.5 ? (4 - dist) * 2 : 1;
+  const e = EYE_STYLES[id] || { w: 14, h: 16, p: 5 };
+  const dx = (px || 0) - pos[0], dz = (pz || 0) - pos[2], len = Math.sqrt(dx * dx + dz * dz) || 1;
+  const ppx = (dx / len) * e.w * 0.2, ppy = (dz / len) * e.h * 0.15;
+  const ex = popupOpen && isOn, eyeH = blink ? 2 : (ex ? e.h * 1.3 : e.h);
+  return (
+    <div className="l2-face-container" style={{ opacity: op, transition: 'opacity 0.3s' }}>
+      <div className="l2-face-eyes">
+        {[0, 1].map(i => (
+          <div key={i} className="l2-face-eye" style={{ width: e.w, height: eyeH, borderRadius: e.rect ? '3px' : '50%', transition: 'height 0.1s' }}>
+            {!e.dizzy ? <div className="l2-face-pupil" style={{ width: e.p, height: blink ? 1 : e.p, borderRadius: '50%', transform: `translate(${ppx}px, ${ppy}px)` }} /> : <span style={{fontSize:6}}>@</span>}
+          </div>
+        ))}
+      </div>
+      <div className={`l2-face-mouth ${ex ? 'excited' : ''}`}>{ex ? 'O' : '\u2323'}</div>
+    </div>
   );
 }
 
@@ -238,6 +310,7 @@ export default function Level2() {
   const [currentRoom, setCurrentRoom] = useState('Living Room');
   const [nearestAppliance, setNearestAppliance] = useState(null);
   const [floatingTexts, setFloatingTexts] = useState([]);
+  const [proximityLevels, setProximityLevels] = useState({});
   const floatingIdRef = useRef(0);
 
   // ─── NEW: 7 Systems State ───
@@ -441,7 +514,10 @@ export default function Level2() {
   }, [stars, correctTasks, efficientChoices, addCarbonCoins, completeLevel, unlockLevel, navigate]);
 
   const handleRoomChange = useCallback((room) => setCurrentRoom(room), []);
-  const handleNearestChange = useCallback((id) => setNearestAppliance(id), []);
+  const handleNearestChange = useCallback((id) => {
+    setNearestAppliance(id);
+    setProximityLevels(getProximityLevels(playerState.x, playerState.z));
+  }, []);
 
   // ═══════════════════════════════════════════════════════
   //  RENDER — INTRO
@@ -544,10 +620,11 @@ export default function Level2() {
           onCreated={({ gl }) => { gl.setClearColor('#f5deb3'); gl.toneMapping = 1; gl.toneMappingExposure = 1.1; gl.setPixelRatio(Math.min(window.devicePixelRatio, 1.5)); }}>
           <Suspense fallback={null}>
             <SceneContent applianceStates={applianceStates} nearestAppliance={nearestAppliance} taskTargetIds={taskTargetIds}
-              onRoomChange={handleRoomChange} onNearestChange={handleNearestChange} onInteract={handleInteract} cameraRef={cameraRef} />
+              onRoomChange={handleRoomChange} onNearestChange={handleNearestChange} onInteract={handleInteract} cameraRef={cameraRef} proximityLevels={proximityLevels} />
           </Suspense>
         </Canvas>
         <div className="l2-vignette" />
+        <ScreenGlow totalWatts={totalWatts} />
       </div>
 
       {/* HUD TOP BAR */}
@@ -579,32 +656,19 @@ export default function Level2() {
         </div>
       )}
 
-      {/* ENERGY METER PANEL */}
+      {/* ENERGY GAUGE PANEL */}
       <div className="l2-energy-panel">
         <div className="l2-energy-header">
-          <span className="l2-energy-icon">{ICONS.zap}</span><span className="l2-energy-label">Total Power Usage</span>
+          <span className="l2-energy-icon">{ICONS.zap}</span><span className="l2-energy-label">Energy Meter</span>
         </div>
-        <div className="l2-watt-display"><AnimatedWattCounter targetValue={totalWatts} /></div>
-        <div className="l2-meter-bar-container">
-          <div className="l2-meter-bar-fill" style={{ width: `${meterPct}%`, backgroundColor: tier.color, boxShadow: `0 0 12px ${tier.color}60, inset 0 1px 0 rgba(255,255,255,0.3)` }} />
-          <div className="l2-meter-ticks"><span>0W</span><span>2kW</span><span>5kW</span><span>7.7kW</span></div>
+        <EnergyGauge watts={totalWatts} maxWatts={4000} />
+        <div className="l2-gauge-digital">
+          <AnimatedWattCounter targetValue={totalWatts} />
         </div>
-        <div className="l2-meter-tier" style={{ color: tier.color }}>{tier.icon} {tier.label}</div>
-        <div className="l2-appliance-count">
-          <span className="l2-count-on">{onCount}</span><span className="l2-count-sep">/</span>
-          <span className="l2-count-total">{L2_APPLIANCE_IDS.length}</span><span className="l2-count-label">ON</span>
+        <div className="l2-gauge-info">
+          <span className="l2-gauge-count">{onCount}/{L2_APPLIANCE_IDS.length} ON</span>
+          <span className="l2-gauge-co2">{ICONS.globe} CO{'\u{2082}'}: {co2Data.co2Month} kg/mo</span>
         </div>
-        {/* CO₂ mini display */}
-        <div className="l2-co2-mini">
-          {ICONS.globe} CO{'\u{2082}'}: <strong>{co2Data.co2Month} kg/mo</strong>
-        </div>
-        {/* Mini Sparkline History */}
-        {energyHistory.length > 1 && (
-          <div className="l2-sparkline-container">
-            <div className="l2-sparkline-label">{ICONS.chart} Usage History</div>
-            <Sparkline data={energyHistory} />
-          </div>
-        )}
       </div>
 
       {/* SESSION TRACKER */}
@@ -840,15 +904,21 @@ export default function Level2() {
         {floatingTexts.map(ft => <FloatingText key={ft.id} id={ft.id} text={ft.text} type={ft.type} onDone={removeFloatingText} />)}
       </div>
 
-      {/* BOTTOM CONTROLS */}
-      <div className="l2-controls-hint">
-        <span className="l2-key">W</span><span className="l2-key">A</span><span className="l2-key">S</span><span className="l2-key">D</span> Move
-        &nbsp;{ICONS.mouse}&nbsp; Look &nbsp;{'\u{2022}'}&nbsp;
-        <span className="l2-key">E</span> {phase === 'tasks' ? 'Choose' : 'Toggle'}
-        {nearestAppliance && L2_APPLIANCE_IDS.includes(nearestAppliance) && (
-          <span className="l2-hint-nearby">&nbsp;{'\u{2014}'}{' '}<span className="l2-pulse-text">{L2_APPLIANCE_MAP[nearestAppliance]?.icon}{' '}{L2_APPLIANCE_MAP[nearestAppliance]?.name} nearby!</span></span>
-        )}
-      </div>
+      {/* HELP BUTTON + APPLIANCE FACES */}
+      <ControlsHelp />
+      {(() => {
+        const sorted = L2_APPLIANCE_IDS.map(id => {
+          const ap = APPLIANCE_POSITIONS[id];
+          if (!ap) return { id, dist: Infinity };
+          const dx = playerState.x - ap.pos[0], dz = playerState.z - ap.pos[2];
+          return { id, dist: Math.sqrt(dx * dx + dz * dz) };
+        }).sort((a, b) => a.dist - b.dist).slice(0, 3).filter(a => a.dist <= 4);
+        return sorted.map(({ id, dist }) => (
+          <div key={`face-${id}`} className="l2-face-wrapper" style={{ position: 'absolute', left: '50%', top: '35%', transform: 'translate(-50%, -50%)', pointerEvents: 'none', zIndex: 20 }}>
+            <ApplianceFace id={id} isOn={!!applianceStates[id]} dist={dist} popupOpen={!!infoPopup && infoPopup.name === L2_APPLIANCE_MAP[id]?.name} px={playerState.x} pz={playerState.z} />
+          </div>
+        ));
+      })()}
     </div>
   );
 }
