@@ -45,11 +45,11 @@
     "steps": [
       {
         "text": "Hey! I'm Arjun! 👋",
-        "pop": "WHOOSH!"
+        "pop": "ਬੱਲੇ!"
       },
       {
         "text": "I just came from science class and my mind is BLOWN 🤯",
-        "pop": "BOOM!"
+        "pop": "ਹੈਂ!"
       },
       {
         "text": "My teacher said — every time we use electricity, a power plant burns coal..."
@@ -66,20 +66,21 @@
       },
       {
         "text": "I'm going to find out. And I'm going to FIX it.",
-        "pop": "POWER UP!"
+        "pop": "ਤਾਕਤ!"
       },
       {
         "text": "Will you join my mission? 🚀",
-        "pop": "HERO MODE ACTIVATED!"
+        "pop": "ਹੀਰੋ ਮੋਡ ਚਾਲੂ!"
       }
     ],
     "voiceProcessing": "Voice processing",
     "nextMission": "NEXT MISSION →",
-    "activateHero": "ACTIVATE HERO MODE!"
+    "activateHero": "ACTIVATE HERO MODE!",
+    "nextButton": "ਅਗਲਾ →"
   },
   "hub": {
     "planetaryHealth": "Planetary Health",
-    "carbonCoins": "Carbon Coins",
+    "carbonCoins": "ਕਾਰਬਨ ਸਿੱਕੇ",
     "levels": {
       "1": {
         "title": "Energy Intro",
@@ -104,7 +105,9 @@
     },
     "mission": "Mission",
     "startMission": "START MISSION →",
-    "locked": "Locked"
+    "locked": "Locked",
+    "chapterTitle": "ਅਧਿਆਇ 1: ਘਰ ਦੀ ਊਰਜਾ",
+    "missionsComplete": "ਮਿਸ਼ਨ ਪੂਰੇ"
   },
   "quiz": {
     "title": "🧠 Energy Knowledge Quiz",
@@ -414,5 +417,13 @@
     "exitMenu": "ਮੀਨੂ",
     "gotIt": "ਸਮਝ ਆਇਆ!",
     "returnToHub": "ਹੱਬ ਤੇ ਵਾਪਸ ਜਾਓ"
+  },
+  "comicPops": {
+    "whoosh": "ਬੱਲੇ!",
+    "boom": "ਹੈਂ!",
+    "powerUp": "ਤਾਕਤ!",
+    "heroMode": "ਹੀਰੋ ਮੋਡ ਚਾਲੂ!",
+    "calculated": "ਸ਼ਾਬਾਸ਼!",
+    "rankEm": "ਤਿਆਰ ਹੋ ਜਾਓ!"
   }
 }

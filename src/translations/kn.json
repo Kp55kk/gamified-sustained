@@ -45,11 +45,11 @@
     "steps": [
       {
         "text": "Hey! I'm Arjun! 👋",
-        "pop": "WHOOSH!"
+        "pop": "ಅಬ್ಬಾ!"
       },
       {
         "text": "I just came from science class and my mind is BLOWN 🤯",
-        "pop": "BOOM!"
+        "pop": "ಅಯ್ಯೋ!"
       },
       {
         "text": "My teacher said — every time we use electricity, a power plant burns coal..."
@@ -66,20 +66,21 @@
       },
       {
         "text": "I'm going to find out. And I'm going to FIX it.",
-        "pop": "POWER UP!"
+        "pop": "ಶಕ್ತಿ!"
       },
       {
         "text": "Will you join my mission? 🚀",
-        "pop": "HERO MODE ACTIVATED!"
+        "pop": "ಹೀರೋ ಮೋಡ್ ಆನ್!"
       }
     ],
     "voiceProcessing": "Voice processing",
     "nextMission": "NEXT MISSION →",
-    "activateHero": "ACTIVATE HERO MODE!"
+    "activateHero": "ACTIVATE HERO MODE!",
+    "nextButton": "ಮುಂದೆ →"
   },
   "hub": {
     "planetaryHealth": "Planetary Health",
-    "carbonCoins": "Carbon Coins",
+    "carbonCoins": "ಕಾರ್ಬನ್ ನಾಣ್ಯಗಳು",
     "levels": {
       "1": {
         "title": "Energy Intro",
@@ -104,7 +105,9 @@
     },
     "mission": "Mission",
     "startMission": "START MISSION →",
-    "locked": "Locked"
+    "locked": "Locked",
+    "chapterTitle": "ಅಧ್ಯಾಯ 1: ಮನೆ ಶಕ್ತಿ",
+    "missionsComplete": "ಮಿಷನ್‌ಗಳು ಪೂರ್ಣ"
   },
   "quiz": {
     "title": "🧠 Energy Knowledge Quiz",
@@ -414,5 +417,13 @@
     "exitMenu": "ಮೆನುಗೆ",
     "gotIt": "ಅರ್ಥವಾಯಿತು!",
     "returnToHub": "ಹಬ್ ಗೆ ಹಿಂತಿರುಗಿ"
+  },
+  "comicPops": {
+    "whoosh": "ಅಬ್ಬಾ!",
+    "boom": "ಅಯ್ಯೋ!",
+    "powerUp": "ಶಕ್ತಿ!",
+    "heroMode": "ಹೀರೋ ಮೋಡ್ ಆನ್!",
+    "calculated": "ಭಲೇ!",
+    "rankEm": "ರೆಡಿಯಾ!"
   }
 }

@@ -12,15 +12,16 @@ const ArjunIntroScreen = () => {
   const t = getTranslation(selectedLanguage);
   const steps = t?.arjun?.steps || [];
 
+  const cp = t?.comicPops || {};
   const storyData = [
-    { text: steps[0]?.text || "Hey! I'm Arjun! 👋", icon: "👦🏽", pop: steps[0]?.pop || "WHOOSH!" },
-    { text: steps[1]?.text || "I just came from science class and my mind is BLOWN 🤯", icon: "🤯", pop: steps[1]?.pop || "BOOM!" },
+    { text: steps[0]?.text || "Hey! I'm Arjun! 👋", icon: "👦🏽", pop: steps[0]?.pop || cp.whoosh || "WHOOSH!" },
+    { text: steps[1]?.text || "I just came from science class and my mind is BLOWN 🤯", icon: "🤯", pop: steps[1]?.pop || cp.boom || "BOOM!" },
     { text: steps[2]?.text || "My teacher said — every time we use electricity, a power plant burns coal...", icon: "🏭", pop: steps[2]?.pop },
     { text: steps[3]?.text || "...and releases 0.710 kg of CO₂ for EVERY single unit!", icon: "☁️", pop: steps[3]?.pop || "0.710 kg!" },
     { text: steps[4]?.text || "Fans spinning. Fridge humming. AC blasting. I saw my house differently.", icon: "🔌", pop: steps[4]?.pop },
     { text: steps[5]?.text || "How much CO₂ is MY home producing? 🤔", icon: "🏠", pop: steps[5]?.pop },
-    { text: steps[6]?.text || "I'm going to find out. And I'm going to FIX it.", icon: "⚡", pop: steps[6]?.pop || "POWER UP!" },
-    { text: steps[7]?.text || "Will you join my mission? 🚀", icon: "🚀", pop: steps[7]?.pop || "HERO MODE ACTIVATED!" }
+    { text: steps[6]?.text || "I'm going to find out. And I'm going to FIX it.", icon: "⚡", pop: steps[6]?.pop || cp.powerUp || "POWER UP!" },
+    { text: steps[7]?.text || "Will you join my mission? 🚀", icon: "🚀", pop: steps[7]?.pop || cp.heroMode || "HERO MODE ACTIVATED!" }
   ].filter(slide => slide.text);
 
   const handleNext = () => {
@@ -110,7 +111,7 @@ const ArjunIntroScreen = () => {
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
         >
-          {currentSlide === storyData.length - 1 ? (t?.arjun?.nextMission || "NEXT MISSION →") : "Next →"}
+          {currentSlide === storyData.length - 1 ? (t?.arjun?.nextMission || "NEXT MISSION →") : (t?.arjun?.nextButton || "NEXT →")}
         </motion.button>
 
       </div>

@@ -45,11 +45,11 @@
     "steps": [
       {
         "text": "Hey! I'm Arjun! 👋",
-        "pop": "WHOOSH!"
+        "pop": "சபாஷ்!"
       },
       {
         "text": "I just came from science class and my mind is BLOWN 🤯",
-        "pop": "BOOM!"
+        "pop": "அடேங்கப்பா!"
       },
       {
         "text": "My teacher said — every time we use electricity, a power plant burns coal..."
@@ -66,20 +66,21 @@
       },
       {
         "text": "I'm going to find out. And I'm going to FIX it.",
-        "pop": "POWER UP!"
+        "pop": "சக்தி!"
       },
       {
         "text": "Will you join my mission? 🚀",
-        "pop": "HERO MODE ACTIVATED!"
+        "pop": "ஹீரோ மோட் ஆன்!"
       }
     ],
     "voiceProcessing": "Voice processing",
     "nextMission": "NEXT MISSION →",
-    "activateHero": "ACTIVATE HERO MODE!"
+    "activateHero": "ACTIVATE HERO MODE!",
+    "nextButton": "அடுத்தது →"
   },
   "hub": {
     "planetaryHealth": "Planetary Health",
-    "carbonCoins": "Carbon Coins",
+    "carbonCoins": "கார்பன் நாணயங்கள்",
     "levels": {
       "1": {
         "title": "Energy Intro",
@@ -104,7 +105,9 @@
     },
     "mission": "Mission",
     "startMission": "START MISSION →",
-    "locked": "Locked"
+    "locked": "Locked",
+    "chapterTitle": "அத்தியாயம் 1: வீட்டு ஆற்றல்",
+    "missionsComplete": "பணிகள் நிறைவு"
   },
   "quiz": {
     "title": "🧠 Energy Knowledge Quiz",
@@ -414,5 +417,13 @@
     "exitMenu": "மெனுவுக்கு",
     "gotIt": "புரிந்தது!",
     "returnToHub": "ஹப்புக்கு திரும்பு"
+  },
+  "comicPops": {
+    "whoosh": "சபாஷ்!",
+    "boom": "அடேங்கப்பா!",
+    "powerUp": "சக்தி!",
+    "heroMode": "ஹீரோ மோட் ஆன்!",
+    "calculated": "கணக்கு சரி!",
+    "rankEm": "ரெடியா!"
   }
 }

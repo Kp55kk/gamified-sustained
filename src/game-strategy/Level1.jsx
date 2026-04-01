@@ -668,7 +668,7 @@ export default function Level1() {
   const [currentRoom, setCurrentRoom] = useState('Living Room');
   const [nearestAppliance, setNearestAppliance] = useState(null);
   const [interacted, setInteracted] = useState(new Set());
-  const [checklistOpen, setChecklistOpen] = useState(true);
+  const [checklistOpen, setChecklistOpen] = useState(false);
   const [isCinematic, setIsCinematic] = useState(false);
 
   // Flash card state
@@ -881,10 +881,7 @@ export default function Level1() {
         <div className="vignette-overlay" />
       </div>
 
-      {/* Cursor/Play instruction (Fix 7) */}
-      <div className="cursor-instruction">
-        {t?.ui?.clickToPlay || 'Click to play | ESC to exit'}
-      </div>
+
 
       {/* HUD - hidden during quiz */}
       {!showFullQuiz && !showLevelComplete && (
@@ -906,18 +903,7 @@ export default function Level1() {
             t={t}
           />
 
-          {/* Bottom hint */}
-          <div className="interaction-hint">
-            <span className="key-icon">W</span><span className="key-icon">A</span>
-            <span className="key-icon">S</span><span className="key-icon">D</span> {t?.ui?.move || 'Move'}
-            &nbsp;{ICONS.mouse}&nbsp; {t?.ui?.lookAround || 'Look Around'}
-            &nbsp;•&nbsp; <span className="key-icon">E</span> {t?.ui?.interact || 'Interact'}
-            {nearestAppliance && !activeAppliance && (
-              <span className="hint-nearby">
-                &nbsp;{String.fromCharCode(8212)} <span className="pulse-text">{APPLIANCE_DATA[nearestAppliance]?.icon} {t?.appliances?.[nearestAppliance]?.name || APPLIANCE_DATA[nearestAppliance]?.name} {t?.ui?.nearby || 'nearby!'}</span>
-              </span>
-            )}
-          </div>
+
         </>
       )}
 

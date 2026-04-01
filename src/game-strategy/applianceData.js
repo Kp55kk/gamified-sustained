@@ -471,7 +471,7 @@ export const APPLIANCE_POSITIONS = {
   led_bulb:       { pos: [-3, 2.9, -6],     rot: [0, 0, 0] },
   tv_smart:       { pos: [-5, 1.0, -7.7],   rot: [0, 0, 0] },
   wifi_router:    { pos: [-9.7, 0.5, -2],    rot: [0, Math.PI / 2, 0] },
-  set_top_box:    { pos: [-5, 0.45, -7.5],   rot: [0, 0, 0] },
+  set_top_box:    { pos: [-7, 0.35, -6.5],   rot: [0, 0, 0] },
   // Bedroom
   ac_1_5ton:      { pos: [9.7, 2.3, -4],    rot: [0, -Math.PI / 2, 0] },
   // Kitchen

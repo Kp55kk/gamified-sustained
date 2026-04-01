@@ -45,11 +45,11 @@
     "steps": [
       {
         "text": "Hey! I'm Arjun! 👋",
-        "pop": "WHOOSH!"
+        "pop": "అబ్బా!"
       },
       {
         "text": "I just came from science class and my mind is BLOWN 🤯",
-        "pop": "BOOM!"
+        "pop": "అమ్మో!"
       },
       {
         "text": "My teacher said — every time we use electricity, a power plant burns coal..."
@@ -66,20 +66,21 @@
       },
       {
         "text": "I'm going to find out. And I'm going to FIX it.",
-        "pop": "POWER UP!"
+        "pop": "శక్తి!"
       },
       {
         "text": "Will you join my mission? 🚀",
-        "pop": "HERO MODE ACTIVATED!"
+        "pop": "హీరో మోడ్ ఆన్!"
       }
     ],
     "voiceProcessing": "Voice processing",
     "nextMission": "NEXT MISSION →",
-    "activateHero": "ACTIVATE HERO MODE!"
+    "activateHero": "ACTIVATE HERO MODE!",
+    "nextButton": "తదుపరి →"
   },
   "hub": {
     "planetaryHealth": "Planetary Health",
-    "carbonCoins": "Carbon Coins",
+    "carbonCoins": "కార్బన్ నాణేలు",
     "levels": {
       "1": {
         "title": "Energy Intro",
@@ -104,7 +105,9 @@
     },
     "mission": "Mission",
     "startMission": "START MISSION →",
-    "locked": "Locked"
+    "locked": "Locked",
+    "chapterTitle": "అధ్యాయం 1: ఇంటి శక్తి",
+    "missionsComplete": "మిషన్లు పూర్తి"
   },
   "quiz": {
     "title": "🧠 Energy Knowledge Quiz",
@@ -414,5 +417,13 @@
     "exitMenu": "మెనూకు",
     "gotIt": "అర్థమైంది!",
     "returnToHub": "హబ్ కు తిరిగి"
+  },
+  "comicPops": {
+    "whoosh": "అబ్బా!",
+    "boom": "అమ్మో!",
+    "powerUp": "శక్తి!",
+    "heroMode": "హీరో మోడ్ ఆన్!",
+    "calculated": "భలే!",
+    "rankEm": "సిద్ధంగా!"
   }
 }

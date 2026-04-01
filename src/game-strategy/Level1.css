@@ -621,8 +621,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(5,10,21,0.92);
-  backdrop-filter: blur(12px);
+  background: #0a0f1a;
   animation: fadeIn 0.3s ease;
 }
 

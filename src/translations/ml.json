@@ -45,11 +45,11 @@
     "steps": [
       {
         "text": "Hey! I'm Arjun! 👋",
-        "pop": "WHOOSH!"
+        "pop": "കിടു!"
       },
       {
         "text": "I just came from science class and my mind is BLOWN 🤯",
-        "pop": "BOOM!"
+        "pop": "അയ്യോ!"
       },
       {
         "text": "My teacher said — every time we use electricity, a power plant burns coal..."
@@ -66,20 +66,21 @@
       },
       {
         "text": "I'm going to find out. And I'm going to FIX it.",
-        "pop": "POWER UP!"
+        "pop": "ശക്തി!"
       },
       {
         "text": "Will you join my mission? 🚀",
-        "pop": "HERO MODE ACTIVATED!"
+        "pop": "ഹീറോ മോഡ് ഓൺ!"
       }
     ],
     "voiceProcessing": "Voice processing",
     "nextMission": "NEXT MISSION →",
-    "activateHero": "ACTIVATE HERO MODE!"
+    "activateHero": "ACTIVATE HERO MODE!",
+    "nextButton": "അടുത്തത് →"
   },
   "hub": {
     "planetaryHealth": "Planetary Health",
-    "carbonCoins": "Carbon Coins",
+    "carbonCoins": "കാർബൺ നാണയങ്ങൾ",
     "levels": {
       "1": {
         "title": "Energy Intro",
@@ -104,7 +105,9 @@
     },
     "mission": "Mission",
     "startMission": "START MISSION →",
-    "locked": "Locked"
+    "locked": "Locked",
+    "chapterTitle": "അധ്യായം 1: വീട്ടു ഊർജം",
+    "missionsComplete": "ദൗത്യങ്ങൾ പൂർത്തി"
   },
   "quiz": {
     "title": "🧠 Energy Knowledge Quiz",
@@ -414,5 +417,13 @@
     "exitMenu": "മെനുവിലേക്ക്",
     "gotIt": "മനസ്സിലായി!",
     "returnToHub": "ഹബ്ബിലേക്ക് മടങ്ങുക"
+  },
+  "comicPops": {
+    "whoosh": "കിടു!",
+    "boom": "അയ്യോ!",
+    "powerUp": "ശക്തി!",
+    "heroMode": "ഹീറോ മോഡ് ഓൺ!",
+    "calculated": "കൊള്ളാം!",
+    "rankEm": "റെഡിയോ!"
   }
 }

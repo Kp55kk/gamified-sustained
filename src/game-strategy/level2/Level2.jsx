@@ -271,31 +271,32 @@ function ScreenGlow({ totalWatts }) {
   return null;
 }
 
-const EYE_STYLES = {
-  fridge: { w: 18, h: 22, p: 7 }, wifi_router: { w: 8, h: 8, p: 4 },
-  ac_1_5ton: { w: 16, h: 10, p: 6 }, tv_smart: { w: 18, h: 12, p: 5, rect: true },
-  table_fan: { w: 10, h: 14, p: 5, dizzy: true }, ceiling_fan: { w: 14, h: 14, p: 5 },
-};
-function ApplianceFace({ id, isOn, dist, popupOpen, px, pz }) {
+// ─── Simple Googly Eyes for Appliances (Fix 6) ───
+function GooglyEyes({ id, isOn, dist, px, pz }) {
   const [blink, setBlink] = useState(false);
+  const [wide, setWide] = useState(false);
   const pos = APPLIANCE_POSITIONS[id]?.pos;
-  useEffect(() => { const iv = setInterval(() => { setBlink(true); setTimeout(() => setBlink(false), 150); }, 3000 + Math.random() * 1000); return () => clearInterval(iv); }, []);
-  if (!pos || dist > 4) return null;
-  const op = dist > 3.5 ? (4 - dist) * 2 : 1;
-  const e = EYE_STYLES[id] || { w: 14, h: 16, p: 5 };
+  const prevOnRef = useRef(isOn);
+  useEffect(() => {
+    const iv = setInterval(() => { setBlink(true); setTimeout(() => setBlink(false), 100); }, 4000 + Math.random() * 1000);
+    return () => clearInterval(iv);
+  }, []);
+  useEffect(() => {
+    if (isOn !== prevOnRef.current) { setWide(true); setTimeout(() => setWide(false), 500); prevOnRef.current = isOn; }
+  }, [isOn]);
+  if (!pos || dist > 3) return null;
+  const op = dist > 2.5 ? (3 - dist) * 2 : 1;
   const dx = (px || 0) - pos[0], dz = (pz || 0) - pos[2], len = Math.sqrt(dx * dx + dz * dz) || 1;
-  const ppx = (dx / len) * e.w * 0.2, ppy = (dz / len) * e.h * 0.15;
-  const ex = popupOpen && isOn, eyeH = blink ? 2 : (ex ? e.h * 1.3 : e.h);
+  const pupilX = (dx / len) * 1.5, pupilY = (dz / len) * 1;
+  const eyeScale = wide ? 1.2 : 1;
+  const eyeH = blink ? 1 : 8;
   return (
-    <div className="l2-face-container" style={{ opacity: op, transition: 'opacity 0.3s' }}>
-      <div className="l2-face-eyes">
-        {[0, 1].map(i => (
-          <div key={i} className="l2-face-eye" style={{ width: e.w, height: eyeH, borderRadius: e.rect ? '3px' : '50%', transition: 'height 0.1s' }}>
-            {!e.dizzy ? <div className="l2-face-pupil" style={{ width: e.p, height: blink ? 1 : e.p, borderRadius: '50%', transform: `translate(${ppx}px, ${ppy}px)` }} /> : <span style={{fontSize:6}}>@</span>}
-          </div>
-        ))}
-      </div>
-      <div className={`l2-face-mouth ${ex ? 'excited' : ''}`}>{ex ? 'O' : '\u2323'}</div>
+    <div style={{ opacity: op, transition: 'opacity 0.3s', display: 'flex', gap: '6px', justifyContent: 'center' }}>
+      {[0, 1].map(i => (
+        <div key={i} style={{ width: 8 * eyeScale, height: eyeH * eyeScale, borderRadius: '50%', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'height 0.1s, transform 0.3s', boxShadow: '0 1px 3px rgba(0,0,0,0.3)' }}>
+          {!blink && <div style={{ width: 4, height: 4, borderRadius: '50%', background: '#111', transform: `translate(${pupilX}px, ${pupilY}px)`, transition: 'transform 0.15s' }} />}
+        </div>
+      ))}
     </div>
   );
 }
@@ -563,19 +564,18 @@ export default function Level2() {
             <div className="l2-intro-badge-icon">{ICONS.zap}</div>
             <div className="l2-intro-badge-glow" />
           </div>
-          <h1 className={`l2-intro-title ${introStep >= 2 ? 'visible' : ''}`}>New Tool Unlocked</h1>
+          <h1 className={`l2-intro-title ${introStep >= 2 ? 'visible' : ''}`}>{l2t.newToolUnlocked || 'New Tool Unlocked'}</h1>
           <div className={`l2-intro-subtitle ${introStep >= 2 ? 'visible' : ''}`}>
             <span className="l2-intro-tool-name">{ICONS.zap} ENERGY METER {ICONS.zap}</span>
           </div>
           <div className={`l2-intro-dialogue ${introStep >= 3 ? 'visible' : ''}`}>
             <div className="l2-intro-avatar">{'\u{1F9D1}\u{200D}\u{1F393}'}</div>
             <p className="l2-intro-quote">
-              "Let's see how much electricity these appliances use!
-              Toggle them ON and OFF to see the energy impact in real-time."
+              "{l2t.introQuote || "Let's see how much electricity these appliances use! Toggle them ON and OFF to see the energy impact in real-time."}"
             </p>
           </div>
           <button className={`l2-intro-start-btn ${introStep >= 3 ? 'visible' : ''}`} onClick={() => setPhase('explore')}>
-            Begin Level 2 {'\u{2192}'}
+            {l2t.beginLevel2 || 'Begin Level 2'} {'\u{2192}'}
           </button>
         </div>
       </div>
@@ -932,7 +932,7 @@ export default function Level2() {
         {floatingTexts.map(ft => <FloatingText key={ft.id} id={ft.id} text={ft.text} type={ft.type} onDone={removeFloatingText} />)}
       </div>
 
-      {/* HELP BUTTON + APPLIANCE FACES */}
+      {/* HELP BUTTON + GOOGLY EYES */}
       <ControlsHelp t={t} />
       {(() => {
         const sorted = L2_APPLIANCE_IDS.map(id => {
@@ -940,10 +940,10 @@ export default function Level2() {
           if (!ap) return { id, dist: Infinity };
           const dx = playerState.x - ap.pos[0], dz = playerState.z - ap.pos[2];
           return { id, dist: Math.sqrt(dx * dx + dz * dz) };
-        }).sort((a, b) => a.dist - b.dist).slice(0, 3).filter(a => a.dist <= 4);
+        }).sort((a, b) => a.dist - b.dist).slice(0, 3).filter(a => a.dist <= 3);
         return sorted.map(({ id, dist }) => (
-          <div key={`face-${id}`} className="l2-face-wrapper" style={{ position: 'absolute', left: '50%', top: '35%', transform: 'translate(-50%, -50%)', pointerEvents: 'none', zIndex: 20 }}>
-            <ApplianceFace id={id} isOn={!!applianceStates[id]} dist={dist} popupOpen={!!infoPopup && infoPopup.name === L2_APPLIANCE_MAP[id]?.name} px={playerState.x} pz={playerState.z} />
+          <div key={`eyes-${id}`} style={{ position: 'absolute', left: '50%', top: '35%', transform: 'translate(-50%, -50%)', pointerEvents: 'none', zIndex: 20 }}>
+            <GooglyEyes id={id} isOn={!!applianceStates[id]} dist={dist} px={playerState.x} pz={playerState.z} />
           </div>
         ));
       })()}

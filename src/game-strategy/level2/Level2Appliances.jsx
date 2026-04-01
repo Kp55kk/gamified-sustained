@@ -15,7 +15,6 @@ function ToggleGlow({ id, isOn, isNear, isTaskTarget, children }) {
   useFrame(() => {
     if (!glowRef.current) return;
     const t = performance.now() * 0.003;
-
     if (isNear || isTaskTarget) {
       glowRef.current.visible = true;
       const pulse = 0.25 + Math.sin(t * 2) * 0.12;
@@ -29,12 +28,10 @@ function ToggleGlow({ id, isOn, isNear, isTaskTarget, children }) {
   });
 
   const pos = APPLIANCE_POSITIONS[id]?.pos || [0, 0, 0];
-  const appliance = L2_APPLIANCE_MAP[id];
 
   return (
     <group>
       {children}
-      {/* Glow sphere */}
       <mesh ref={glowRef} position={pos} visible={false}>
         <sphereGeometry args={[0.6, 16, 16]} />
         <meshStandardMaterial
@@ -42,25 +39,10 @@ function ToggleGlow({ id, isOn, isNear, isTaskTarget, children }) {
           emissive="#22c55e"
           emissiveIntensity={0}
           transparent
-          opacity={0.15}
+          opacity={0.12}
           side={THREE.DoubleSide}
         />
       </mesh>
-      {/* ON/OFF status indicator dot */}
-      <Html position={[pos[0], pos[1] + 0.55, pos[2]]} center>
-        <div className={`l2-status-dot ${isOn ? 'on' : 'off'}`}>
-          {isOn ? '\u{26A1}' : '\u{25CF}'}
-        </div>
-      </Html>
-      {/* "Press E to Toggle" prompt */}
-      {isNear && (
-        <Html position={[pos[0], pos[1] + 0.85, pos[2]]} center>
-          <div className={`l2-toggle-prompt ${isTaskTarget ? 'task-highlight' : ''}`}>
-            Press <span className="key-e">E</span> to {isOn ? 'Turn OFF' : 'Turn ON'}
-            <div className="l2-toggle-watt">{appliance?.wattage}W</div>
-          </div>
-        </Html>
-      )}
     </group>
   );
 }
@@ -773,19 +755,13 @@ function ApplianceLabel({ id, isOn, showLevel }) {
 
   return (
     <Html position={[pos[0], pos[1] + yOffset, pos[2]]} center>
-      <div className={`l2-appliance-label-prox ${showLevel}`}>
-        {showLevel === 'arrow' && (
-          <div className="l2-prox-arrow">▼</div>
-        )}
-        {(showLevel === 'name' || showLevel === 'interact') && (
-          <div className={`l2-prox-name ${isOn ? 'label-on' : 'label-off'}`}>
-            {appliance.icon} {appliance.name}
-            {isOn && <span className="label-watt">{appliance.wattage}W</span>}
-          </div>
-        )}
-        {showLevel === 'interact' && (
-          <div className="l2-prox-interact">Press <span className="key-e">E</span> to {isOn ? 'Turn OFF' : 'Turn ON'}</div>
-        )}
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', pointerEvents: 'none' }}>
+        <div style={{ background: 'rgba(0,0,0,0.7)', color: '#fff', padding: '4px 12px', borderRadius: '8px', fontSize: '12px', fontFamily: 'Nunito, sans-serif', fontWeight: 600, whiteSpace: 'nowrap' }}>
+          {appliance.icon} {appliance.name}
+        </div>
+        <div style={{ background: 'rgba(34,197,94,0.85)', color: '#fff', padding: '3px 10px', borderRadius: '6px', fontSize: '11px', fontFamily: 'Nunito, sans-serif', fontWeight: 600, whiteSpace: 'nowrap' }}>
+          Press <span style={{ background: 'rgba(255,255,255,0.3)', padding: '1px 5px', borderRadius: '3px', fontWeight: 700 }}>E</span> to {isOn ? 'Turn OFF' : 'Turn ON'}
+        </div>
       </div>
     </Html>
   );
@@ -803,12 +779,10 @@ function getProximityLevels(px, pz) {
   }
   distances.sort((a, b) => a.dist - b.dist);
   const levels = {};
-  let shown = 0;
+  // Only show ONE label: the single nearest within 2.5 units
   for (const { id, dist } of distances) {
-    if (shown >= 3) { levels[id] = 'hidden'; continue; }
-    if (dist <= 2) { levels[id] = 'interact'; shown++; }
-    else if (dist <= 3) { levels[id] = 'name'; shown++; }
-    else if (dist <= 5) { levels[id] = 'arrow'; shown++; }
+    if (Object.values(levels).some(l => l !== 'hidden')) { levels[id] = 'hidden'; continue; }
+    if (dist <= 2.5) { levels[id] = 'interact'; }
     else { levels[id] = 'hidden'; }
   }
   return levels;

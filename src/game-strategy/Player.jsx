@@ -36,7 +36,7 @@ const WALL_SEGMENTS = [
 ];
 
 // Collision radius — 0.4 triggers collisions earlier so character doesn't clip
-const PLAYER_RADIUS = 0.4;
+const PLAYER_RADIUS = 0.45;
 const INTERACTION_RADIUS = 2.8;
 
 // ════════════════════════════════════════════════════════════
