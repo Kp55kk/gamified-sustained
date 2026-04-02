@@ -9,9 +9,8 @@ import { APPLIANCE_POSITIONS, INTERACTABLE_IDS } from './applianceData';
 // ════════════════════════════════════════════════════════════
 
 const WALL_SEGMENTS = [
-  // Front wall (z = -8) — door gap at [-6.5,-3.5]
-  { type: 'h', z: -8, x1: -10, x2: -6.5 },
-  { type: 'h', z: -8, x1: -3.5, x2: 10 },
+  // Front wall (z = -8) — fully solid, no door
+  { type: 'h', z: -8, x1: -10, x2: 10 },
 
   // Back wall (z = 8)
   { type: 'h', z: 8, x1: -10, x2: 10 },
@@ -21,8 +20,9 @@ const WALL_SEGMENTS = [
   { type: 'h', z: 0, x1: -3.5, x2: 3.5 },
   { type: 'h', z: 0, x1: 6.5, x2: 10 },
 
-  // Left wall (x = -10)
-  { type: 'v', x: -10, z1: -8, z2: 8 },
+  // Left wall (x = -10) — door gap at z = [-3.5, -0.5] near WiFi router
+  { type: 'v', x: -10, z1: -8, z2: -3.5 },
+  { type: 'v', x: -10, z1: -0.5, z2: 8 },
   // Right wall (x = 10)
   { type: 'v', x: 10, z1: -8, z2: 8 },
 

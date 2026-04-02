@@ -34,13 +34,13 @@ function Scene({appStates,nearest,onRoom,onNearest,onInteract,camRef,proxLevels,
 
 // ═══ TASKS DEFINITION ═══
 const TASKS = [
-  { id: 'discover', title: 'Solar Discovery', icon: '\u{2600}\u{FE0F}', objective: 'Walk outside and explore the environment', desc: 'Leave the house through the front door. Look around to see the world.', hint: 'Use W to walk forward, A/D to turn. Q to look up, Z to look down.' },
+  { id: 'discover', title: 'Solar Discovery', icon: '\u{2600}\u{FE0F}', objective: 'Walk outside and explore the environment', desc: 'Leave the house through the side door (left wall, near the WiFi router). Look around to see the world.', hint: 'Use W to walk forward, A/D to turn. Q to look up, Z to look down.' },
   { id: 'install', title: 'Install Solar Panels', icon: '\u{1F527}', objective: 'Place solar panels on the roof', desc: 'Walk to the front of the house and look up at the roof. Place at least 3 panels.', hint: 'Click the roof grid to place panels. Avoid shadow spots!' },
   { id: 'optimize', title: 'Optimize Panels', icon: '\u{2699}\u{FE0F}', objective: 'Adjust tilt for max efficiency', desc: 'Set the best panel angle. Target: 80%+ efficiency.', hint: '25\u{00B0} is optimal for India!' },
   { id: 'energy', title: 'Energy Management', icon: '\u{26A1}', objective: 'Run the house on solar power', desc: 'Go inside and turn on appliances. Watch solar vs grid split.', hint: 'Solar supplies power first. Keep grid usage low!' },
   { id: 'daynight', title: 'Day-Night Challenge', icon: '\u{1F305}', objective: 'Manage energy across the day', desc: 'Use the time slider to see how solar changes. Use heavy appliances at noon!', hint: 'Slide time to see output change' },
   { id: 'battery', title: 'Battery Storage', icon: '\u{1F50B}', objective: 'Store solar energy for night use', desc: 'At noon, excess solar charges battery. At night, battery powers house.', hint: 'Slide time to charge/discharge' },
-  { id: 'recovery', title: 'See Recovery', icon: '\u{1F333}', objective: 'Walk outside and see the environment', desc: 'Go out through the front door and explore! See how solar power restored the world.', hint: 'Walk outside, look around at the trees and sky!' },
+  { id: 'recovery', title: 'Witness the World Recover', icon: '\u{1F30D}', objective: 'Restore the environment using solar energy', desc: 'Use solar power to reduce CO\u{2082} emissions and grid usage. Watch the environment recover in real-time!', hint: 'Achieve \u{2265}70% solar usage to trigger full environment recovery.' },
   { id: 'challenge', title: 'Final Challenge', icon: '\u{1F3AF}', objective: 'Run house with minimum grid', desc: 'Max solar usage (70%+), minimize grid. Smart timing!', hint: 'Turn on appliances during noon for best solar coverage' },
 ];
 
@@ -85,6 +85,13 @@ export default function Level4() {
   const [discoveryQ, setDiscoveryQ] = useState(null);
   const [reachedRooftop, setReachedRooftop] = useState(false);
 
+  // Recovery task state
+  const [recoveryStep, setRecoveryStep] = useState(0); // 0=observe, 1=activate, 2=meet-condition, 3=env-change, 4=complete
+  const [recoveryStage, setRecoveryStage] = useState(0); // 0-3 visual stages
+  const [recoveryMsg, setRecoveryMsg] = useState('');
+  const [recoveryObserved, setRecoveryObserved] = useState(false);
+  const [showBeforeAfter, setShowBeforeAfter] = useState(false);
+
   // Quiz/Reward
   const [quizResult, setQuizResult] = useState(null);
   const [stars, setStars] = useState(0);
@@ -111,13 +118,18 @@ export default function Level4() {
   const solarPct = houseWatts > 0 ? Math.round((solarUsed / houseWatts) * 100) : (panelCount > 0 ? 100 : 0);
   const gridPct = 100 - solarPct;
 
+  const currentTask = TASKS[taskIdx];
+
   const recoveryLevel = useMemo(() => {
     if (phase === 'entry') return 0;
+    // During recovery task, use stage-driven level
+    if (currentTask?.id === 'recovery' && taskPhase === 'active') {
+      const baseLevel = 0.15 + (taskIdx / TASKS.length) * 0.5;
+      return baseLevel + recoveryStage * 0.25;
+    }
     const base = Math.min(taskIdx / TASKS.length, 1);
     return 0.15 + base * 0.85;
-  }, [phase, taskIdx]);
-
-  const currentTask = TASKS[taskIdx];
+  }, [phase, taskIdx, recoveryStage, taskPhase, currentTask]);
 
   // ─── Intro animation ───
   useEffect(() => {
@@ -163,7 +175,21 @@ export default function Level4() {
     if (t.id === 'energy' && houseWatts > 0 && solarPct > 0) {
       // Keep active, user clicks next
     }
-  }, [phase, taskPhase, hasGoneOutside, discoveryQ, houseWatts, solarPct, currentTask]);
+    // Recovery task auto-stages
+    if (t.id === 'recovery' && recoveryStep >= 1) {
+      if (solarPct >= 30 && solarPct < 50 && recoveryStage < 1) {
+        setRecoveryStage(1);
+        setRecoveryMsg('Solar energy is reducing pollution\u{2026}');
+      } else if (solarPct >= 50 && solarPct < 70 && recoveryStage < 2) {
+        setRecoveryStage(2);
+        setRecoveryMsg('Environment is recovering\u{2026}');
+      } else if (solarPct >= 70 && recoveryStage < 3) {
+        setRecoveryStage(3);
+        setRecoveryMsg('Clean energy is making a difference!');
+        setRecoveryStep(3);
+      }
+    }
+  }, [phase, taskPhase, hasGoneOutside, discoveryQ, houseWatts, solarPct, currentTask, recoveryStep, recoveryStage]);
 
   const completeTask = useCallback(() => {
     playSuccess();
@@ -276,7 +302,7 @@ export default function Level4() {
       energy: ['Solar supplies power first', 'Reduce usage to minimize grid'],
       daynight: ['Solar output peaks at noon', 'Plan heavy usage for peak sunlight'],
       battery: ['Battery stores excess solar', 'Night usage can be solar-powered'],
-      recovery: ['Solar restores the environment', 'Clean energy = blue sky, green trees, fresh air'],
+      recovery: ['Using solar energy reduces CO\u{2082} emissions', 'Cleaner energy helps restore the environment', 'Your choices directly impact the world'],
       challenge: ['Smart usage maximizes solar', 'You can run a home on clean energy!'],
     };
     return (<div className="l4-container"><div className="l4-modal-overlay"><div className="l4-modal-card" style={{borderColor:'rgba(34,197,94,0.3)'}}>
@@ -349,6 +375,172 @@ export default function Level4() {
     </div>);
   }
 
+  // ═══ RENDER: RECOVERY TASK (Witness the World Recover) ═══
+  if (phase === 'play' && taskPhase === 'active' && currentTask?.id === 'recovery') {
+    const RECOVERY_FEEDBACK = [
+      { stage: 0, label: 'Damaged Environment', desc: 'The environment is still recovering\u{2026} your energy choices matter', icon: '\u{1F32A}\u{FE0F}' },
+      { stage: 1, label: 'Partial Recovery', desc: 'Sky becomes brighter, pollution reduces slightly', icon: '\u{1F324}\u{FE0F}' },
+      { stage: 2, label: 'Good Recovery', desc: 'Trees regain green color, clear sky appears, smoke disappears', icon: '\u{1F333}' },
+      { stage: 3, label: 'Full Recovery', desc: 'Fully clean environment! Bright sunlight, birds return', icon: '\u{1F31F}' },
+    ];
+    const currentFB = RECOVERY_FEEDBACK[recoveryStage] || RECOVERY_FEEDBACK[0];
+    const isComplete = recoveryStage >= 3;
+
+    return (<div className="l4-container">
+      <div className="l4-canvas-wrapper">
+        <Canvas camera={{position:[-5,6,1],fov:50}} gl={{antialias:false}}
+          onCreated={({gl})=>{gl.setClearColor('#050a15');gl.toneMapping=1;gl.toneMappingExposure=1.0;gl.setPixelRatio(Math.min(window.devicePixelRatio,1.5))}}>
+          <Suspense fallback={null}>
+            <Scene appStates={appStates} nearest={nearest} onRoom={handleRoomChange}
+              onNearest={id=>{setNearest(id);setProxLevels(getProximityLevels(l4PlayerState.x,l4PlayerState.z))}}
+              onInteract={handleInteract} camRef={camRef} proxLevels={proxLevels}
+              recovery={recoveryLevel} timeOfDay={timePeriod.id} slots={installedSlots} tilt={tiltAngle}
+              showMarkers={false} onRooftopReach={handleRooftopReach}/>
+          </Suspense>
+        </Canvas>
+      </div>
+
+      {/* HUD TOP */}
+      <div className="l4-hud-top">
+        <button className="l4-back-btn" onClick={()=>navigate('/hub')}>{'\u2190'} Back</button>
+        <div className="l4-hud-title">{L4_ICONS.globe} Witness the World Recover</div>
+        <div className="l4-hud-room">{ROOM_ICONS[currentRoom]||L4_ICONS.pin} {currentRoom}</div>
+      </div>
+
+      {/* TASK BAR */}
+      <div style={{position:'absolute',top:'55px',left:'50%',transform:'translateX(-50%)',zIndex:20,background:'rgba(5,10,20,0.95)',border:'1px solid rgba(34,197,94,0.25)',borderRadius:'12px',padding:'10px 18px',maxWidth:'480px',width:'92%',textAlign:'center'}}>
+        <div style={{fontSize:'10px',color:'#888',textTransform:'uppercase',letterSpacing:'1px'}}>Task {taskIdx+1}/{TASKS.length}</div>
+        <div style={{fontSize:'14px',fontWeight:700,color:'#22c55e'}}>{L4_ICONS.globe} Restore the Environment Using Solar Energy</div>
+        <div style={{fontSize:'12px',color:'#aaa',marginTop:'2px'}}>{L4_ICONS.target} {currentFB.desc}</div>
+      </div>
+
+      {/* RECOVERY STAGE INDICATOR */}
+      <div className="l4-recovery-stages">
+        {RECOVERY_FEEDBACK.map((fb, i) => (
+          <div key={i} className={`l4-recovery-stage-dot ${i <= recoveryStage ? 'active' : ''} ${i === recoveryStage ? 'current' : ''}`}>
+            <span className="l4-recovery-stage-icon">{fb.icon}</span>
+            <span className="l4-recovery-stage-label">{fb.label}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Step 1: Initial Observation */}
+      {recoveryStep === 0 && (
+        <div style={{position:'absolute',bottom:'120px',left:'50%',transform:'translateX(-50%)',zIndex:25,background:'rgba(5,10,20,0.95)',border:'1px solid rgba(245,166,35,0.3)',borderRadius:'14px',padding:'16px 24px',maxWidth:'400px',textAlign:'center',boxShadow:'0 0 30px rgba(0,0,0,0.5)'}}>
+          <div style={{fontSize:'28px',marginBottom:'8px'}}>{'\u{1F32A}\u{FE0F}'}</div>
+          <div style={{fontSize:'14px',fontWeight:700,color:'#f5a623',marginBottom:'6px'}}>Look Outside the Window</div>
+          <div style={{fontSize:'13px',color:'#ffeedd',marginBottom:'10px',lineHeight:1.5}}>The environment is still recovering\u{2026} your energy choices matter</div>
+          <div style={{fontSize:'11px',color:'#aaa',marginBottom:'10px'}}>Faded trees \u{2022} Dull sky \u{2022} Light pollution haze</div>
+          <button className="l4-modal-btn" style={{padding:'10px 20px',marginTop:'4px'}} onClick={()=>{setRecoveryStep(1);setRecoveryObserved(true)}}>I understand, let me fix this {'\u{2192}'}</button>
+        </div>
+      )}
+
+      {/* Step 2: Activate Solar - Show solar panel & appliance controls */}
+      {recoveryStep >= 1 && (
+        <div className="l4-solar-panel">
+          <div className="l4-solar-header"><span>{L4_ICONS.sun}</span><span>Solar Output</span></div>
+          <div className="l4-solar-bar-outer"><div className="l4-solar-bar-fill" style={{width:`${Math.min(currentSolarW/(panelCount*PANEL_WATT_PEAK||1)*100,100)}%`,backgroundColor:recoveryStage>=2?'#22c55e':'#f5a623',color:recoveryStage>=2?'#22c55e':'#f5a623'}}/></div>
+          <div className="l4-solar-output">
+            <span className="l4-solar-watts">{currentSolarW}W</span>
+            <span className="l4-solar-eff" style={{backgroundColor:effPct>=80?'rgba(34,197,94,0.15)':'rgba(245,166,35,0.15)',color:effPct>=80?'#22c55e':'#f5a623'}}>{effPct}% eff</span>
+          </div>
+          <div className="l4-solar-details"><span>{panelCount} panels</span><span>{dailyKwh} kWh/day</span></div>
+          {houseWatts > 0 && <div style={{marginTop:'6px'}}>
+            <div style={{fontSize:'10px',color:'#888',marginBottom:'2px'}}>Power Source</div>
+            <div className="l4-split-bar">
+              <div className="l4-split-solar" style={{width:`${solarPct}%`}}>{solarPct>10?`${solarPct}%`:''}</div>
+              <div className="l4-split-grid" style={{width:`${gridPct}%`}}>{gridPct>10?`Grid ${gridPct}%`:''}</div>
+            </div>
+          </div>}
+          {/* Recovery condition target */}
+          <div style={{marginTop:'8px',padding:'6px 10px',background:solarPct>=70?'rgba(34,197,94,0.1)':'rgba(245,166,35,0.06)',border:`1px solid ${solarPct>=70?'rgba(34,197,94,0.3)':'rgba(245,166,35,0.15)'}`,borderRadius:'8px',fontSize:'11px',color:solarPct>=70?'#22c55e':'#f5a623',textAlign:'center'}}>
+            {L4_ICONS.target} Solar Usage: {solarPct}% {solarPct>=70 ? L4_ICONS.check : '(need \u{2265}70%)'}
+          </div>
+        </div>
+      )}
+
+      {/* Step 2 instruction */}
+      {recoveryStep === 1 && (
+        <div style={{position:'absolute',bottom:'20px',left:'50%',transform:'translateX(-50%)',zIndex:25,background:'rgba(5,10,20,0.95)',border:'1px solid rgba(245,166,35,0.3)',borderRadius:'10px',padding:'10px 18px',maxWidth:'360px',textAlign:'center'}}>
+          <div style={{fontSize:'12px',fontWeight:700,color:'#f5a623',marginBottom:'4px'}}>{L4_ICONS.zap} Activate Solar System</div>
+          <div style={{fontSize:'11px',color:'#aaa'}}>Turn on appliances and let solar power do its magic. Achieve \u{2265}70% solar usage!</div>
+        </div>
+      )}
+
+      {/* LIVE FEEDBACK MESSAGE */}
+      {recoveryMsg && recoveryStep >= 1 && (
+        <div className="l4-recovery-live-msg" key={recoveryMsg}>
+          <span>{currentFB.icon}</span> {recoveryMsg}
+        </div>
+      )}
+
+      {/* Step 3 / 4: Environment recovered! */}
+      {isComplete && !showBeforeAfter && (
+        <div style={{position:'absolute',inset:0,zIndex:30,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',background:'rgba(10,40,20,0.4)',backdropFilter:'blur(2px)',gap:'12px',pointerEvents:'all'}}>
+          <div style={{fontSize:'64px',animation:'l4-pulse 2s ease infinite'}}>{L4_ICONS.globe}</div>
+          <div style={{fontFamily:"'Fredoka',sans-serif",fontSize:'28px',fontWeight:700,color:'#22c55e',textShadow:'0 0 20px rgba(34,197,94,0.5)',textAlign:'center'}}>{L4_ICONS.check} Environment Restored!</div>
+          <div style={{fontSize:'14px',color:'#aaddbb',textAlign:'center',maxWidth:'400px',lineHeight:1.6}}>Bright sunlight fills the scene. Green environment fully visible. Clean air returns.</div>
+          {/* Learning Output */}
+          <div style={{background:'rgba(5,10,20,0.9)',border:'1px solid rgba(34,197,94,0.3)',borderRadius:'14px',padding:'16px 20px',maxWidth:'420px',width:'90%',marginTop:'8px'}}>
+            <div style={{fontSize:'12px',fontWeight:700,color:'#f5a623',marginBottom:'8px',textTransform:'uppercase',letterSpacing:'1px'}}>{L4_ICONS.brain} What You Learned</div>
+            {['Using solar energy reduces CO\u{2082} emissions', 'Cleaner energy helps restore the environment', 'Your choices directly impact the world'].map((msg,i)=>(
+              <div key={i} style={{display:'flex',alignItems:'center',gap:'8px',padding:'6px 0',fontSize:'13px',color:'#aaddbb'}}>
+                <span>{L4_ICONS.bulb}</span><span>{msg}</span>
+              </div>
+            ))}
+          </div>
+          <div style={{display:'flex',gap:'10px',marginTop:'6px'}}>
+            <button className="l4-modal-btn" style={{padding:'10px 20px',width:'auto'}} onClick={()=>setShowBeforeAfter(true)}>Compare Before / After {'\u{1F50D}'}</button>
+            <button className="l4-modal-btn green" style={{padding:'10px 20px',width:'auto'}} onClick={completeTask}>Continue {'\u{2192}'}</button>
+          </div>
+        </div>
+      )}
+
+      {/* BEFORE / AFTER COMPARISON */}
+      {showBeforeAfter && (
+        <div className="l4-modal-overlay" onClick={()=>setShowBeforeAfter(false)}>
+          <div className="l4-modal-card" onClick={e=>e.stopPropagation()} style={{maxWidth:'480px'}}>
+            <div className="l4-modal-title">{L4_ICONS.globe} Before vs After</div>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'12px',marginBottom:'14px'}}>
+              <div style={{background:'rgba(239,68,68,0.08)',border:'1px solid rgba(239,68,68,0.2)',borderRadius:'12px',padding:'14px',textAlign:'center'}}>
+                <div style={{fontSize:'11px',fontWeight:700,color:'#ef4444',textTransform:'uppercase',letterSpacing:'1px',marginBottom:'10px'}}>{L4_ICONS.cross} Before</div>
+                <div style={{fontSize:'13px',color:'#ff8888',marginBottom:'4px'}}>{'\u{1F32B}\u{FE0F}'} Polluted sky</div>
+                <div style={{fontSize:'13px',color:'#ff8888',marginBottom:'4px'}}>{'\u{1F3DC}\u{FE0F}'} Dry trees</div>
+                <div style={{fontSize:'13px',color:'#ff8888'}}>{'\u{1F32B}\u{FE0F}'} Smoke</div>
+              </div>
+              <div style={{background:'rgba(34,197,94,0.08)',border:'1px solid rgba(34,197,94,0.2)',borderRadius:'12px',padding:'14px',textAlign:'center'}}>
+                <div style={{fontSize:'11px',fontWeight:700,color:'#22c55e',textTransform:'uppercase',letterSpacing:'1px',marginBottom:'10px'}}>{L4_ICONS.check} After</div>
+                <div style={{fontSize:'13px',color:'#66dd88',marginBottom:'4px'}}>{'\u{2600}\u{FE0F}'} Clear sky</div>
+                <div style={{fontSize:'13px',color:'#66dd88',marginBottom:'4px'}}>{'\u{1F333}'} Green trees</div>
+                <div style={{fontSize:'13px',color:'#66dd88'}}>{'\u{1F32C}\u{FE0F}'} Clean air</div>
+              </div>
+            </div>
+            <div style={{textAlign:'center',padding:'10px',background:'rgba(34,197,94,0.06)',borderRadius:'10px',fontSize:'13px',color:'#22c55e',fontWeight:600}}>
+              {L4_ICONS.sparkle} Solar energy restored the entire environment!
+            </div>
+            <button className="l4-modal-btn green" onClick={()=>{setShowBeforeAfter(false)}}>Got it! {'\u{2192}'}</button>
+          </div>
+        </div>
+      )}
+
+      {/* TIME PANEL */}
+      <div className="l4-time-panel">
+        <div className="l4-time-icon">{timePeriod.icon}</div>
+        <div className="l4-time-label">{timePeriod.label}</div>
+        <div className="l4-time-weather">{weather.icon} {weather.label}</div>
+      </div>
+
+      {/* PROGRESS */}
+      <div className="l4-progress-panel">
+        <div className="l4-progress-header">{L4_ICONS.target} Tasks</div>
+        <div className="l4-progress-bar-outer"><div className="l4-progress-bar-inner" style={{width:`${(taskIdx/TASKS.length)*100}%`}}/></div>
+        <div className="l4-progress-text">{tasksPassed} done / {TASKS.length} total</div>
+      </div>
+
+      <ControlsHelp/>
+    </div>);
+  }
+
   // ═══ RENDER: QUIZ-only phases handled above ═══
   if (phase !== 'play') return null;
 
@@ -386,7 +578,7 @@ export default function Level4() {
       <div style={{fontSize:'10px',color:'#888',textTransform:'uppercase',letterSpacing:'1px'}}>Task {taskIdx+1}/{TASKS.length}</div>
       <div style={{fontSize:'14px',fontWeight:700,color:'#f5a623'}}>{currentTask?.icon} {currentTask?.title}</div>
       <div style={{fontSize:'12px',color:'#aaa',marginTop:'2px'}}>{L4_ICONS.target} {currentTask?.objective}</div>
-      {currentTask?.id === 'discover' && <div style={{fontSize:'11px',color:'#88ccff',marginTop:'4px'}}>{hasGoneOutside ? `${L4_ICONS.check} Outside!` : 'Walk through the front door...'} {' \u2022 '} Q=Look Up, Z=Look Down</div>}
+      {currentTask?.id === 'discover' && <div style={{fontSize:'11px',color:'#88ccff',marginTop:'4px'}}>{hasGoneOutside ? `${L4_ICONS.check} Outside!` : 'Walk through the side door (left wall)...'} {' \u2022 '} Q=Look Up, Z=Look Down</div>}
     </div>
 
     {/* SOLAR METER (after install) */}
@@ -464,7 +656,7 @@ export default function Level4() {
     )}
 
     {/* COMPLETE TASK BUTTON (for tasks that need manual completion) */}
-    {taskPhase === 'active' && currentTask && ['energy','daynight','battery','challenge'].includes(currentTask.id) && (
+    {taskPhase === 'active' && currentTask && ['energy','daynight','battery','challenge'].includes(currentTask.id) && currentTask.id !== 'recovery' && (
       <div style={{position:'absolute',bottom:'20px',left:'50%',transform:'translateX(-50%)',zIndex:20}}>
         <button className="l4-modal-btn" style={{padding:'10px 24px',width:'auto'}} onClick={completeTask}>Complete Task {'\u{2192}'}</button>
       </div>

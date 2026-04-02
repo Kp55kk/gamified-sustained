@@ -10,17 +10,17 @@ import { APPLIANCE_POSITIONS } from '../applianceData';
 const INTERACTION_RADIUS = 3.0;
 const PLAYER_RADIUS = 0.45;
 
-// ═══ SOLID WALLS — Only ONE front door to go in/out ═══
+// ═══ SOLID WALLS — Door on left wall near WiFi router ═══
 const WALL_SEGMENTS = [
-  // Front wall (z = -8) — ONE door gap at x [-6.5, -3.5]
-  { type: 'h', z: -8, x1: -10, x2: -6.5 },
-  { type: 'h', z: -8, x1: -3.5, x2: 10 },
+  // Front wall (z = -8) — fully solid, no door
+  { type: 'h', z: -8, x1: -10, x2: 10 },
 
   // Back wall (z = 8) — fully solid, no exit
   { type: 'h', z: 8, x1: -10, x2: 10 },
 
-  // Left wall (x = -10) — fully solid
-  { type: 'v', x: -10, z1: -8, z2: 8 },
+  // Left wall (x = -10) — door gap at z = [-3.5, -0.5] near WiFi router
+  { type: 'v', x: -10, z1: -8, z2: -3.5 },
+  { type: 'v', x: -10, z1: -0.5, z2: 8 },
   // Right wall (x = 10) — fully solid
   { type: 'v', x: 10, z1: -8, z2: 8 },
 
@@ -124,7 +124,7 @@ function ArjunModel({ isMoving }) {
       if (rightLegRef.current) rightLegRef.current.rotation.x = 0;
     }
   });
-  const skin='#c68642',shirt='#f5a623',pants='#2563eb',hair='#1a1a2e',shoe='#333';
+  const skin='#c68642',shirt='#22c55e',pants='#2563eb',hair='#1a1a2e',shoe='#333';
   return (
     <group ref={bodyRef}>
       <group ref={leftLegRef} position={[-0.12,0.6,0]}><mesh position={[0,-0.13,0]}><cylinderGeometry args={[0.08,0.07,0.25]}/><meshStandardMaterial color={pants}/></mesh><mesh position={[0,-0.35,0]}><cylinderGeometry args={[0.065,0.055,0.25]}/><meshStandardMaterial color={pants}/></mesh><mesh position={[0,-0.5,0.04]}><boxGeometry args={[0.12,0.1,0.2]}/><meshStandardMaterial color={shoe}/></mesh></group>
@@ -225,8 +225,8 @@ export default function Level4Player({ onRoomChange, onNearestApplianceChange, o
 
     // Check if near rooftop area (outside + near house front)
     if (onRooftopReach) {
-      const isNearRoof = (posRef.current.x > -12 && posRef.current.x < 12 &&
-                          posRef.current.z < -8 && posRef.current.z > -14);
+      const isNearRoof = (posRef.current.x < -10 || posRef.current.x > 10 ||
+                          posRef.current.z < -8 || posRef.current.z > 8);
       if (isNearRoof) onRooftopReach();
     }
 

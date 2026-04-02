@@ -423,18 +423,18 @@ export default function House() {
       </mesh>
 
       {/* ─── OUTER WALLS ─── */}
-      {/* Front wall (z = -8) - with door gap at x = [-6, -4] */}
-      <WallBox position={[-8, WALL_HEIGHT / 2, -8]} size={[4, WALL_HEIGHT, WALL_THICKNESS]} />
-      <WallBox position={[3, WALL_HEIGHT / 2, -8]} size={[14, WALL_HEIGHT, WALL_THICKNESS]} />
-      {/* Above front door */}
-      <WallBox position={[-5, 2.7, -8]} size={[2, 0.6, WALL_THICKNESS]} />
-      <DoorFrame position={[-5, 0, -8]} />
+      {/* Front wall (z = -8) - fully solid, no door */}
+      <WallBox position={[0, WALL_HEIGHT / 2, -8]} size={[20, WALL_HEIGHT, WALL_THICKNESS]} />
 
       {/* Back wall (z = 8) */}
       <WallBox position={[0, WALL_HEIGHT / 2, 8]} size={[20, WALL_HEIGHT, WALL_THICKNESS]} />
 
-      {/* Left wall (x = -10) */}
-      <WallBox position={[-10, WALL_HEIGHT / 2, 0]} size={[WALL_THICKNESS, WALL_HEIGHT, 16]} />
+      {/* Left wall (x = -10) — door gap at z = [-3.5, -0.5] near WiFi router */}
+      <WallBox position={[-10, WALL_HEIGHT / 2, -5.75]} size={[WALL_THICKNESS, WALL_HEIGHT, 4.5]} />
+      <WallBox position={[-10, WALL_HEIGHT / 2, 4.25]} size={[WALL_THICKNESS, WALL_HEIGHT, 7.5]} />
+      {/* Above left wall door */}
+      <WallBox position={[-10, 2.7, -2]} size={[WALL_THICKNESS, 0.6, 3]} />
+      <DoorFrame position={[-10, 0, -2]} rotation={[0, Math.PI / 2, 0]} />
 
       {/* Right wall (x = 10) */}
       <WallBox position={[10, WALL_HEIGHT / 2, 0]} size={[WALL_THICKNESS, WALL_HEIGHT, 16]} />
