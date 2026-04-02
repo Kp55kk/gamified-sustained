@@ -10,7 +10,7 @@ import Particles from '../components/Particles';
 const levelData = [
   { id: 1, title: 'Energy Intro', icon: '\u{1F50B}', type: 'info', x: 20, y: 75, color: 'blue' },
   { id: 2, title: 'Energy Meter', icon: '\u{26A1}', type: 'activity', x: 50, y: 60, color: 'green' },
-  { id: 3, title: 'Vampire Power', icon: '\u{1F987}', type: 'challenge', x: 80, y: 45, color: 'purple' },
+  { id: 3, title: 'Carbon Crisis', icon: '\u{1F525}', type: 'challenge', x: 80, y: 45, color: 'red' },
   { id: 4, title: 'Solar Builder', icon: '\u{2600}\u{FE0F}', type: 'activity', x: 50, y: 30, color: 'amber' },
   { id: 5, title: 'City Grid', icon: '\u{1F3D9}\u{FE0F}', type: 'boss', x: 20, y: 15, color: 'red' }
 ];
