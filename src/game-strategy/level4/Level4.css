@@ -1,0 +1,194 @@
+/* ═══════════════════════════════════════════════════════════
+   LEVEL 4: SOLAR REVOLUTION — Styles
+   Theme: Hope, solar golden, blue sky, green recovery
+═══════════════════════════════════════════════════════════ */
+
+.l4-container { width:100vw; height:100vh; position:relative; overflow:hidden; background:#050a15; font-family:'Nunito',sans-serif; }
+.l4-canvas-wrapper { position:absolute; inset:0; z-index:1; }
+
+/* ─── Intro ─── */
+.l4-intro-overlay { position:absolute; inset:0; z-index:50; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px; }
+.l4-intro-bg { position:absolute; inset:0; transition: background 3s ease; }
+.l4-intro-bg.dark { background: radial-gradient(ellipse at center, #1a0a00 0%, #050505 70%); }
+.l4-intro-bg.dawn { background: radial-gradient(ellipse at center, #2a1500 0%, #0a0a15 70%); }
+.l4-intro-bg.bright { background: radial-gradient(ellipse at center, #1a3a5a 0%, #0a1025 70%); }
+.l4-intro-bg.solar { background: radial-gradient(ellipse at center, #1a4a6a 10%, #0a1530 70%); }
+.l4-intro-icon { font-size:72px; z-index:2; opacity:0; transform:scale(0.5); transition:all 0.8s cubic-bezier(0.34,1.56,0.64,1); filter:drop-shadow(0 0 30px rgba(255,200,0,0.5)); }
+.l4-intro-icon.visible { opacity:1; transform:scale(1); }
+.l4-intro-title { font-family:'Fredoka',sans-serif; font-size:36px; font-weight:700; color:#f5a623; text-shadow:0 0 20px rgba(245,166,35,0.5),0 0 60px rgba(245,166,35,0.2); z-index:2; opacity:0; transform:translateY(20px); transition:all 0.8s ease; text-align:center; }
+.l4-intro-title.visible { opacity:1; transform:translateY(0); }
+.l4-intro-subtitle { font-size:16px; color:#88ccff; z-index:2; opacity:0; transition:all 0.8s ease 0.2s; letter-spacing:3px; text-transform:uppercase; }
+.l4-intro-subtitle.visible { opacity:1; }
+.l4-intro-dialogue { display:flex; align-items:center; gap:14px; background:rgba(245,166,35,0.08); border:1px solid rgba(245,166,35,0.25); border-radius:16px; padding:16px 24px; max-width:500px; z-index:2; opacity:0; transform:translateY(16px); transition:all 0.8s ease 0.3s; }
+.l4-intro-dialogue.visible { opacity:1; transform:translateY(0); }
+.l4-intro-avatar { font-size:40px; flex-shrink:0; }
+.l4-intro-quote { color:#ffeedd; font-size:15px; font-style:italic; line-height:1.5; }
+.l4-intro-start-btn { background:linear-gradient(135deg,#d4830a,#f5a623); color:#fff; border:none; padding:14px 40px; border-radius:12px; font-size:16px; font-weight:700; font-family:'Fredoka',sans-serif; cursor:pointer; z-index:2; opacity:0; transform:translateY(16px); transition:all 0.8s ease 0.4s; box-shadow:0 0 20px rgba(245,166,35,0.4); }
+.l4-intro-start-btn.visible { opacity:1; transform:translateY(0); }
+.l4-intro-start-btn:hover { transform:scale(1.05); box-shadow:0 0 30px rgba(245,166,35,0.6); }
+
+/* ─── HUD Top ─── */
+.l4-hud-top { position:absolute; top:0; left:0; right:0; height:46px; display:flex; align-items:center; justify-content:space-between; padding:0 12px; background:linear-gradient(180deg,rgba(5,10,20,0.9) 0%,rgba(5,10,20,0.6) 80%,transparent 100%); z-index:20; }
+.l4-back-btn { background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15); color:#ccc; padding:5px 14px; border-radius:8px; font-size:12px; font-weight:600; cursor:pointer; transition:all 0.2s; }
+.l4-back-btn:hover { background:rgba(255,255,255,0.15); color:#fff; }
+.l4-hud-title { font-family:'Fredoka',sans-serif; font-size:15px; font-weight:700; color:#f5a623; text-shadow:0 0 8px rgba(245,166,35,0.4); }
+.l4-hud-room { font-size:12px; color:#aaa; background:rgba(255,255,255,0.05); padding:4px 10px; border-radius:6px; }
+
+/* ─── Solar Meter ─── */
+.l4-solar-panel { position:absolute; bottom:16px; left:16px; width:240px; background:rgba(5,10,20,0.92); border:1px solid rgba(245,166,35,0.25); border-radius:14px; padding:12px; z-index:20; backdrop-filter:blur(8px); }
+.l4-solar-header { display:flex; align-items:center; gap:6px; font-size:12px; font-weight:700; color:#f5a623; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px; }
+.l4-solar-bar-outer { width:100%; height:16px; background:rgba(255,255,255,0.08); border-radius:8px; overflow:hidden; position:relative; }
+.l4-solar-bar-fill { height:100%; border-radius:8px; transition:width 0.5s ease,background-color 0.5s ease; box-shadow:0 0 12px currentColor; }
+.l4-solar-output { display:flex; justify-content:space-between; align-items:center; margin-top:6px; font-size:11px; color:#ccc; }
+.l4-solar-watts { font-size:18px; font-weight:800; font-family:'Fredoka',sans-serif; color:#f5a623; }
+.l4-solar-eff { font-size:10px; font-weight:700; padding:2px 8px; border-radius:4px; text-transform:uppercase; letter-spacing:1px; }
+.l4-solar-details { display:flex; justify-content:space-between; margin-top:6px; font-size:11px; color:#888; }
+
+/* ─── Battery ─── */
+.l4-battery-panel { position:absolute; bottom:150px; left:16px; width:240px; background:rgba(5,10,20,0.92); border:1px solid rgba(34,197,94,0.2); border-radius:14px; padding:10px 12px; z-index:20; }
+.l4-battery-header { display:flex; align-items:center; gap:6px; font-size:11px; font-weight:700; color:#22c55e; text-transform:uppercase; letter-spacing:1px; margin-bottom:6px; }
+.l4-battery-bar-outer { width:100%; height:14px; background:rgba(255,255,255,0.06); border-radius:7px; overflow:hidden; }
+.l4-battery-bar-fill { height:100%; border-radius:7px; transition:width 0.5s ease; background:linear-gradient(90deg,#22c55e,#4ade80); box-shadow:0 0 8px rgba(34,197,94,0.4); }
+.l4-battery-info { display:flex; justify-content:space-between; font-size:11px; color:#888; margin-top:4px; }
+
+/* ─── Time/Weather ─── */
+.l4-time-panel { position:absolute; bottom:16px; right:16px; background:rgba(5,10,20,0.92); border:1px solid rgba(136,204,255,0.2); border-radius:14px; padding:12px 16px; z-index:20; text-align:center; min-width:150px; }
+.l4-time-icon { font-size:32px; margin-bottom:4px; }
+.l4-time-label { font-size:13px; font-weight:600; color:#88ccff; }
+.l4-time-weather { font-size:11px; color:#aaa; margin-top:2px; }
+
+/* ─── Modals ─── */
+.l4-modal-overlay { position:absolute; inset:0; z-index:35; display:flex; align-items:center; justify-content:center; background:rgba(5,5,15,0.85); backdrop-filter:blur(6px); padding:16px; }
+.l4-modal-card { background:linear-gradient(145deg,#0e1a2a,#081220); border:1px solid rgba(245,166,35,0.2); border-radius:18px; padding:24px; max-width:500px; width:100%; max-height:85vh; overflow-y:auto; box-shadow:0 0 40px rgba(245,166,35,0.1); }
+.l4-modal-title { font-family:'Fredoka',sans-serif; font-size:22px; font-weight:700; color:#f5a623; margin-bottom:16px; display:flex; align-items:center; gap:8px; }
+.l4-modal-btn { width:100%; background:linear-gradient(135deg,#d4830a,#f5a623); border:none; color:#fff; padding:12px; border-radius:10px; font-size:15px; font-weight:700; font-family:'Fredoka',sans-serif; cursor:pointer; margin-top:16px; box-shadow:0 0 16px rgba(245,166,35,0.3); transition:all 0.2s; }
+.l4-modal-btn:hover { transform:scale(1.02); box-shadow:0 0 24px rgba(245,166,35,0.5); }
+.l4-modal-btn:disabled { opacity:0.4; pointer-events:none; }
+.l4-modal-btn.green { background:linear-gradient(135deg,#16a34a,#22c55e); box-shadow:0 0 16px rgba(34,197,94,0.3); }
+
+/* ─── Panel Placement Grid ─── */
+.l4-grid-slots { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin:14px 0; }
+.l4-grid-slot { background:rgba(255,255,255,0.04); border:2px dashed rgba(245,166,35,0.2); border-radius:12px; padding:16px 10px; text-align:center; cursor:pointer; transition:all 0.2s; }
+.l4-grid-slot:hover { background:rgba(245,166,35,0.08); border-color:rgba(245,166,35,0.4); transform:translateY(-2px); }
+.l4-grid-slot.placed { background:rgba(34,197,94,0.1); border:2px solid rgba(34,197,94,0.4); border-style:solid; }
+.l4-grid-slot.shadow-warn { border-color:rgba(245,158,11,0.4); }
+.l4-grid-slot-icon { font-size:28px; margin-bottom:4px; }
+.l4-grid-slot-label { font-size:10px; color:#aaa; }
+.l4-grid-slot-shadow { font-size:9px; color:#f59e0b; margin-top:2px; }
+
+/* ─── Tilt Selector ─── */
+.l4-tilt-options { display:flex; gap:6px; flex-wrap:wrap; margin:12px 0; }
+.l4-tilt-option { flex:1; min-width:70px; background:rgba(255,255,255,0.04); border:2px solid rgba(255,255,255,0.08); border-radius:10px; padding:10px 6px; text-align:center; cursor:pointer; transition:all 0.2s; }
+.l4-tilt-option:hover { background:rgba(245,166,35,0.08); border-color:rgba(245,166,35,0.3); }
+.l4-tilt-option.selected { background:rgba(245,166,35,0.15); border-color:#f5a623; }
+.l4-tilt-option.best { border-color:#22c55e; }
+.l4-tilt-label { font-size:11px; font-weight:600; color:#ddd; }
+.l4-tilt-eff { font-size:10px; color:#f5a623; margin-top:2px; }
+
+/* ─── Efficiency Gauge ─── */
+.l4-eff-gauge { text-align:center; margin:14px 0; padding:14px; background:rgba(255,255,255,0.03); border-radius:12px; }
+.l4-eff-value { font-family:'Fredoka',sans-serif; font-size:48px; font-weight:800; }
+.l4-eff-label { font-size:12px; color:#888; }
+
+/* ─── Day/Night Slider ─── */
+.l4-time-slider-wrap { margin:14px 0; }
+.l4-time-slider { width:100%; accent-color:#f5a623; cursor:pointer; }
+.l4-time-periods { display:flex; justify-content:space-between; margin-top:4px; }
+.l4-time-period { text-align:center; font-size:16px; opacity:0.4; transition:all 0.3s; cursor:pointer; }
+.l4-time-period.active { opacity:1; transform:scale(1.3); }
+
+/* ─── Comparison Grid ─── */
+.l4-compare-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin:14px 0; }
+.l4-compare-col { border-radius:12px; padding:14px; text-align:center; }
+.l4-compare-col.before { background:rgba(239,68,68,0.08); border:1px solid rgba(239,68,68,0.2); }
+.l4-compare-col.after { background:rgba(34,197,94,0.08); border:1px solid rgba(34,197,94,0.2); }
+.l4-compare-label { font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:1px; margin-bottom:10px; }
+.l4-compare-col.before .l4-compare-label { color:#ef4444; }
+.l4-compare-col.after .l4-compare-label { color:#22c55e; }
+.l4-compare-stat { margin-bottom:8px; }
+.l4-compare-stat-val { font-family:'Fredoka',sans-serif; font-size:22px; font-weight:700; }
+.l4-compare-col.before .l4-compare-stat-val { color:#ff8888; }
+.l4-compare-col.after .l4-compare-stat-val { color:#66dd88; }
+.l4-compare-stat-lbl { font-size:10px; color:#888; }
+.l4-compare-savings { text-align:center; margin-top:12px; padding:12px; background:rgba(34,197,94,0.1); border:1px solid rgba(34,197,94,0.2); border-radius:10px; font-size:16px; font-weight:700; color:#22c55e; }
+
+/* ─── Recovery Scene ─── */
+.l4-recovery-overlay { position:absolute; inset:0; z-index:35; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; }
+.l4-recovery-bg { position:absolute; inset:0; transition:background 2s ease; }
+.l4-recovery-bg.start { background:rgba(5,5,5,0.7); }
+.l4-recovery-bg.done { background:rgba(10,40,20,0.3); }
+.l4-recovery-icon { font-size:64px; z-index:2; animation:l4-pulse 2s ease infinite; }
+@keyframes l4-pulse { 0%,100% { transform:scale(1); } 50% { transform:scale(1.1); } }
+.l4-recovery-text { font-family:'Fredoka',sans-serif; font-size:24px; font-weight:700; color:#22c55e; z-index:2; text-shadow:0 0 20px rgba(34,197,94,0.4); text-align:center; }
+.l4-recovery-sub { font-size:14px; color:#aaddbb; z-index:2; text-align:center; }
+
+/* ─── Progress Panel ─── */
+.l4-progress-panel { position:absolute; top:55px; right:12px; width:180px; background:rgba(5,10,20,0.88); border:1px solid rgba(245,166,35,0.2); border-radius:10px; padding:8px 10px; z-index:20; }
+.l4-progress-header { font-size:11px; font-weight:700; color:#f5a623; margin-bottom:4px; }
+.l4-progress-bar-outer { width:100%; height:6px; background:rgba(255,255,255,0.08); border-radius:3px; overflow:hidden; }
+.l4-progress-bar-inner { height:100%; background:linear-gradient(90deg,#d4830a,#f5a623); border-radius:3px; transition:width 0.5s ease; }
+.l4-progress-text { font-size:10px; color:#999; margin-top:3px; }
+
+/* ─── Fact Cards ─── */
+.l4-fact-list { display:flex; flex-direction:column; gap:8px; margin:12px 0; }
+.l4-fact-item { display:flex; align-items:center; gap:10px; background:rgba(245,166,35,0.05); border:1px solid rgba(245,166,35,0.12); border-radius:10px; padding:10px 12px; font-size:13px; color:#ffeedd; animation:l4-fact-in 0.4s ease forwards; opacity:0; }
+@keyframes l4-fact-in { to { opacity:1; } }
+.l4-fact-icon { font-size:22px; flex-shrink:0; }
+
+/* ─── Grid vs Solar Split ─── */
+.l4-split-bar { display:flex; height:24px; border-radius:12px; overflow:hidden; margin:10px 0; }
+.l4-split-solar { background:linear-gradient(90deg,#d4830a,#f5a623); display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:700; color:#fff; transition:width 0.5s ease; }
+.l4-split-grid { background:linear-gradient(90deg,#555,#888); display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:700; color:#fff; transition:width 0.5s ease; }
+
+/* ─── Challenge ─── */
+.l4-challenge-targets { display:flex; flex-direction:column; gap:8px; margin:12px 0; }
+.l4-challenge-target { display:flex; align-items:center; justify-content:space-between; padding:8px 12px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); border-radius:8px; }
+.l4-challenge-target.met { border-color:rgba(34,197,94,0.3); background:rgba(34,197,94,0.06); }
+.l4-challenge-target-label { font-size:12px; color:#ccc; }
+.l4-challenge-target-value { font-size:13px; font-weight:700; }
+
+/* ─── Quiz ─── */
+.l4-quiz-container { position:absolute; inset:0; z-index:35; display:flex; align-items:center; justify-content:center; background:rgba(5,5,15,0.88); backdrop-filter:blur(6px); }
+.l4-quiz-card { background:linear-gradient(145deg,#0e1a2a,#081220); border:1px solid rgba(245,166,35,0.2); border-radius:18px; padding:24px; max-width:480px; width:90%; }
+.l4-quiz-progress { font-size:12px; color:#f5a623; font-weight:700; margin-bottom:12px; }
+.l4-quiz-question { font-size:16px; font-weight:700; color:#fff; margin-bottom:16px; line-height:1.5; }
+.l4-quiz-options { display:flex; flex-direction:column; gap:8px; }
+.l4-quiz-option { background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:#ddd; padding:12px 14px; border-radius:10px; font-size:14px; font-weight:600; cursor:pointer; text-align:left; transition:all 0.2s; }
+.l4-quiz-option:hover { background:rgba(245,166,35,0.1); border-color:rgba(245,166,35,0.3); }
+.l4-quiz-option.correct { background:rgba(34,197,94,0.15); border-color:#22c55e; color:#22c55e; }
+.l4-quiz-option.wrong { background:rgba(239,68,68,0.15); border-color:#ef4444; color:#ef4444; }
+.l4-quiz-explanation { margin-top:12px; padding:10px 14px; border-radius:10px; background:rgba(245,166,35,0.06); border:1px solid rgba(245,166,35,0.15); font-size:13px; color:#ffeedd; line-height:1.5; }
+.l4-quiz-next-btn { width:100%; margin-top:12px; background:linear-gradient(135deg,#d4830a,#f5a623); border:none; color:#fff; padding:10px; border-radius:8px; font-weight:700; cursor:pointer; }
+
+/* ─── Reward ─── */
+.l4-reward-overlay { position:absolute; inset:0; z-index:45; display:flex; align-items:center; justify-content:center; background:rgba(5,15,25,0.92); }
+.l4-reward-card { background:linear-gradient(145deg,#0a1a30,#051020); border:2px solid rgba(245,166,35,0.3); border-radius:20px; padding:28px; max-width:440px; width:90%; text-align:center; }
+.l4-reward-badge { font-size:72px; margin-bottom:8px; filter:drop-shadow(0 0 20px rgba(245,166,35,0.5)); }
+.l4-reward-title { font-family:'Fredoka',sans-serif; font-size:26px; font-weight:700; color:#f5a623; }
+.l4-reward-subtitle { font-size:13px; color:#88ccff; margin:4px 0 14px; }
+.l4-reward-stars { display:flex; justify-content:center; gap:12px; margin-bottom:14px; }
+.l4-reward-star { font-size:36px; opacity:0; animation:l4-star-pop 0.5s ease forwards; }
+.l4-reward-star.earned { filter:drop-shadow(0 0 8px rgba(255,200,0,0.6)); }
+.l4-reward-star.empty { filter:grayscale(1) opacity(0.3); }
+@keyframes l4-star-pop { to { opacity:1; transform:scale(1); } from { opacity:0; transform:scale(0.3); } }
+.l4-reward-stats { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:14px; }
+.l4-reward-stat { background:rgba(255,255,255,0.04); border-radius:10px; padding:10px 6px; }
+.l4-reward-stat-label { font-size:10px; color:#888; margin-bottom:2px; }
+.l4-reward-stat-value { font-size:16px; font-weight:700; color:#f5a623; font-family:'Fredoka',sans-serif; }
+.l4-reward-final-msg { margin:12px 0; padding:12px; background:rgba(34,197,94,0.06); border:1px solid rgba(34,197,94,0.15); border-radius:10px; }
+.l4-reward-final-line { font-size:13px; color:#aaddbb; padding:3px 0; font-style:italic; }
+.l4-reward-coins { display:flex; align-items:center; justify-content:center; gap:8px; font-size:16px; font-weight:700; color:#f5a623; margin:8px 0; }
+.l4-reward-btn { width:100%; background:linear-gradient(135deg,#d4830a,#f5a623); border:none; color:#fff; padding:12px; border-radius:10px; font-size:15px; font-weight:700; font-family:'Fredoka',sans-serif; cursor:pointer; margin-top:8px; }
+
+/* ─── Controls ─── */
+.l4-help-btn { position:absolute; bottom:16px; left:50%; transform:translateX(-50%); z-index:20; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15); color:#aaa; width:32px; height:32px; border-radius:50%; font-size:14px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+.l4-controls-overlay { position:absolute; inset:0; z-index:40; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.6); }
+.l4-controls-card { background:linear-gradient(145deg,#0e1a2a,#081220); border:1px solid rgba(245,166,35,0.2); border-radius:16px; padding:20px; max-width:300px; width:90%; }
+.l4-controls-title { font-family:'Fredoka',sans-serif; font-size:16px; font-weight:700; color:#f5a623; margin-bottom:12px; }
+.l4-ctrl-row { display:flex; justify-content:space-between; align-items:center; padding:4px 0; font-size:12px; color:#ccc; }
+.l4-key { display:inline-block; background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); border-radius:4px; padding:2px 6px; font-size:11px; font-weight:700; color:#fff; min-width:20px; text-align:center; }
+.l4-controls-got-it { width:100%; margin-top:10px; background:linear-gradient(135deg,#d4830a,#f5a623); border:none; color:#fff; padding:8px; border-radius:8px; font-weight:700; cursor:pointer; }
+
+/* ─── Scrollbar ─── */
+.l4-modal-card::-webkit-scrollbar { width:4px; }
+.l4-modal-card::-webkit-scrollbar-thumb { background:rgba(245,166,35,0.3); border-radius:2px; }
