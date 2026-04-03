@@ -1733,3 +1733,351 @@
   color: #22c55e;
   margin-top: 2px;
 }
+
+/* ═══════════════════════════════════════════════════════════
+   POST-QUIZ STORY ENDING SEQUENCE
+═══════════════════════════════════════════════════════════ */
+
+/* ─── Shared Story Container ─── */
+.l3-story-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 55;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  transition: background-color 2s ease;
+}
+.l3-story-bg-normal {
+  background-color: #0a0f1a;
+}
+.l3-story-bg-dark {
+  background-color: #020408;
+}
+
+/* ─── Fade transition layer ─── */
+.l3-story-step {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  position: absolute;
+  inset: 0;
+}
+.l3-story-step.visible {
+  opacity: 1;
+}
+
+/* ─── Step 1: The Realization — Cards ─── */
+.l3-story-cards-row {
+  display: flex;
+  gap: 20px;
+  align-items: stretch;
+  justify-content: center;
+  max-width: 700px;
+  width: 100%;
+  margin-bottom: 24px;
+}
+@media (max-width: 640px) {
+  .l3-story-cards-row {
+    flex-direction: column;
+    gap: 14px;
+    max-width: 340px;
+  }
+}
+
+.l3-story-card {
+  flex: 1;
+  border-radius: 16px;
+  padding: 16px;
+  min-width: 0;
+}
+.l3-story-card.energy {
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+}
+.l3-story-card.co2 {
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.l3-story-card-header {
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+.l3-story-card.energy .l3-story-card-header { color: #f59e0b; }
+.l3-story-card.co2 .l3-story-card-header { color: #ef4444; }
+
+.l3-story-card-item {
+  font-size: 13px;
+  color: #ccc;
+  padding: 4px 0;
+  text-align: left;
+}
+
+/* Card slide-in animations */
+.l3-story-card.energy {
+  opacity: 0;
+  transform: translateX(-40px);
+  animation: l3-story-slide-left 0.5s ease forwards;
+}
+.l3-story-card.co2 {
+  opacity: 0;
+  transform: translateX(40px);
+  animation: l3-story-slide-right 0.5s ease 0.2s forwards;
+}
+@keyframes l3-story-slide-left {
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes l3-story-slide-right {
+  to { opacity: 1; transform: translateX(0); }
+}
+
+/* Total CO₂ text */
+.l3-story-total {
+  font-size: 22px;
+  font-weight: 700;
+  color: #ef4444;
+  text-align: center;
+  margin-bottom: 16px;
+  opacity: 0;
+  animation: l3-story-total-in 0.6s ease 0.5s forwards;
+}
+@keyframes l3-story-total-in {
+  to { opacity: 1; }
+}
+@keyframes l3-story-total-pulse {
+  0%, 100% { text-shadow: 0 0 10px rgba(239, 68, 68, 0.3); }
+  50% { text-shadow: 0 0 25px rgba(239, 68, 68, 0.6), 0 0 45px rgba(239, 68, 68, 0.3); }
+}
+.l3-story-total-pulse {
+  animation: l3-story-total-pulse 2s ease-in-out infinite, l3-story-total-in 0.6s ease 0.5s forwards;
+  opacity: 0;
+}
+
+/* ─── Step 2 & 3: Thought Bubble Style ─── */
+.l3-story-thought-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+}
+
+.l3-story-thought-bubble {
+  position: relative;
+  background: #fff;
+  color: #1a1a2e;
+  border: 2px solid #222;
+  border-radius: 20px;
+  padding: 20px 24px;
+  max-width: 380px;
+  font-size: 15px;
+  font-family: 'Fredoka', sans-serif;
+  line-height: 1.6;
+  text-align: center;
+  box-shadow: 2px 2px 0 rgba(0,0,0,0.5);
+  opacity: 0;
+  transform: scale(0);
+  transform-origin: bottom center;
+}
+.l3-story-thought-bubble.visible {
+  animation: l3-story-bubble-spring 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+@keyframes l3-story-bubble-spring {
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* Thought bubble pointer */
+.l3-story-thought-bubble::after {
+  content: '';
+  position: absolute;
+  bottom: -14px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 12px solid transparent;
+  border-right: 12px solid transparent;
+  border-top: 16px solid #fff;
+}
+.l3-story-thought-bubble::before {
+  content: '';
+  position: absolute;
+  bottom: -18px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 14px solid transparent;
+  border-right: 14px solid transparent;
+  border-top: 18px solid #222;
+  z-index: -1;
+}
+
+/* ─── Step 3: Comic Pop HMMMM ─── */
+.l3-story-comic-pop {
+  position: absolute;
+  top: 12%;
+  left: 50%;
+  transform: translateX(-50%) scale(0.5);
+  font-size: 42px;
+  font-weight: 900;
+  font-style: italic;
+  font-family: 'Fredoka', sans-serif;
+  color: #22c55e;
+  text-shadow: 0 0 20px rgba(34, 197, 94, 0.6), 2px 2px 0 rgba(0,0,0,0.5);
+  letter-spacing: 4px;
+  opacity: 0;
+  z-index: 10;
+  pointer-events: none;
+}
+.l3-story-comic-pop.visible {
+  animation: l3-comic-pop-in 0.4s ease forwards;
+}
+.l3-story-comic-pop.fade-out {
+  animation: l3-comic-pop-out 0.4s ease forwards;
+}
+@keyframes l3-comic-pop-in {
+  from { opacity: 0; transform: translateX(-50%) scale(0.5); }
+  to { opacity: 1; transform: translateX(-50%) scale(1); }
+}
+@keyframes l3-comic-pop-out {
+  from { opacity: 1; transform: translateX(-50%) scale(1); }
+  to { opacity: 0; transform: translateX(-50%) scale(1.2); }
+}
+
+/* ─── Step 4: Falling Asleep ─── */
+.l3-story-sleep-character {
+  transition: opacity 2s ease;
+}
+.l3-story-sleep-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 18px;
+  color: #fff;
+  font-style: italic;
+  text-align: center;
+  max-width: 400px;
+  line-height: 1.6;
+  opacity: 0;
+  transition: opacity 1.5s ease;
+}
+.l3-story-sleep-text.visible {
+  opacity: 0.7;
+}
+.l3-story-sleep-text.fade-out {
+  opacity: 0;
+  transition: opacity 1s ease;
+}
+
+/* Tiny star dots */
+.l3-story-star {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  background: #fff;
+  border-radius: 50%;
+  opacity: 0;
+  transition: opacity 1.5s ease;
+}
+.l3-story-star.visible {
+  opacity: 0.4;
+}
+
+/* ─── Step 5: Level Complete ─── */
+.l3-story-complete-title {
+  font-family: 'Fredoka', sans-serif;
+  font-size: 28px;
+  font-weight: 700;
+  color: #22c55e;
+  text-shadow: 0 0 20px rgba(34, 197, 94, 0.5);
+  opacity: 0;
+  transform: scale(0.8);
+  animation: l3-story-complete-pop 0.3s ease forwards;
+}
+@keyframes l3-story-complete-pop {
+  to { opacity: 1; transform: scale(1); }
+}
+
+.l3-story-complete-badge {
+  font-size: 60px;
+  margin: 16px 0;
+  opacity: 0;
+  animation: l3-story-fade-in 0.5s ease 0.3s forwards;
+}
+
+.l3-story-complete-coins {
+  font-family: 'Fredoka', sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: #f59e0b;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  opacity: 0;
+  animation: l3-story-fade-in 0.5s ease 0.5s forwards;
+}
+
+.l3-story-complete-hint {
+  font-size: 14px;
+  font-style: italic;
+  color: #64748b;
+  margin-top: 12px;
+  opacity: 0;
+  animation: l3-story-fade-in 0.5s ease 0.8s forwards;
+}
+
+.l3-story-complete-btn {
+  margin-top: 20px;
+  opacity: 0;
+  animation: l3-story-fade-in 0.5s ease 1s forwards;
+}
+
+@keyframes l3-story-fade-in {
+  to { opacity: 1; }
+}
+
+/* ─── Green Game Button (shared for story steps) ─── */
+.l3-story-btn {
+  background: linear-gradient(135deg, #16a34a, #22c55e);
+  border: none;
+  color: #fff;
+  padding: 14px 40px;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 700;
+  font-family: 'Fredoka', sans-serif;
+  cursor: pointer;
+  box-shadow: 0 0 20px rgba(34, 197, 94, 0.4);
+  transition: all 0.2s;
+}
+.l3-story-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 30px rgba(34, 197, 94, 0.6);
+}
+
+/* ─── Particles in step 5 ─── */
+.l3-story-particle {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  opacity: 0;
+  pointer-events: none;
+}
+@keyframes l3-story-particle-float {
+  0% { opacity: 0; transform: translateY(0); }
+  20% { opacity: 0.6; }
+  100% { opacity: 0; transform: translateY(-120px); }
+}

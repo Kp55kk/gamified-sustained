@@ -8,6 +8,8 @@ import Level2Appliances, { getProximityLevels } from '../level2/Level2Appliances
 import Level3Environment from './Level3Environment';
 import { APPLIANCE_POSITIONS } from '../applianceData';
 import { useGame } from '../../context/GameContext';
+import { getTranslation } from '../../translations';
+import ArjunCharacter from '../../components/ArjunCharacter';
 import {
   L2_APPLIANCE_IDS, L2_APPLIANCE_MAP, USAGE_HOURS,
   calculateBill, calculateCO2, MAX_POSSIBLE_WATTS,
@@ -78,7 +80,8 @@ function ControlsHelp() {
 // ═══════════════════════════════════════════════════════════
 export default function Level3() {
   const navigate = useNavigate();
-  const { addCarbonCoins, completeLevel, unlockLevel } = useGame();
+  const { addCarbonCoins, completeLevel, unlockLevel, selectedLanguage, carbonCoins } = useGame();
+  const t = getTranslation(selectedLanguage);
   const cameraRef = useRef(null);
 
   // ─── Phases ───
@@ -120,6 +123,13 @@ export default function Level3() {
   // ─── Quiz & Reward ───
   const [quizResult, setQuizResult] = useState(null);
   const [stars, setStars] = useState(0);
+
+  // ─── Story sequence ───
+  const [storyStep, setStoryStep] = useState(0);
+  const [storyVisible, setStoryVisible] = useState(true);
+  const [sleepPhase, setSleepPhase] = useState(0);
+  const [comicPopState, setComicPopState] = useState('hidden'); // hidden | visible | fade-out
+  const [storyBgDark, setStoryBgDark] = useState(false);
 
   // ─── UI ───
   const [currentRoom, setCurrentRoom] = useState('Living Room');
@@ -305,8 +315,49 @@ export default function Level3() {
 
   const handleContinue = useCallback(() => {
     addCarbonCoins(LEVEL3_BADGE.coins + stars * 15 + tasksPassed * 10);
-    completeLevel(3); unlockLevel(4); setPhase('hook');
+    completeLevel(3); unlockLevel(4);
+    setStoryStep(1); setStoryVisible(true); setPhase('story');
   }, [stars, tasksPassed, addCarbonCoins, completeLevel, unlockLevel]);
+
+  // ─── Story step advance ───
+  const advanceStory = useCallback(() => {
+    setStoryVisible(false);
+    setTimeout(() => {
+      setStoryStep(prev => prev + 1);
+      setStoryVisible(true);
+      setComicPopState('hidden');
+      setSleepPhase(0);
+      setStoryBgDark(false);
+    }, 400);
+  }, []);
+
+  // ─── Step 3: Comic pop timing ───
+  useEffect(() => {
+    if (phase !== 'story' || storyStep !== 3 || !storyVisible) return;
+    const t1 = setTimeout(() => setComicPopState('visible'), 500);
+    const t2 = setTimeout(() => setComicPopState('fade-out'), 2000);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  }, [phase, storyStep, storyVisible]);
+
+  // ─── Step 4: Falling Asleep auto-advance ───
+  useEffect(() => {
+    if (phase !== 'story' || storyStep !== 4 || !storyVisible) return;
+    const timers = [
+      setTimeout(() => setSleepPhase(1), 1000),   // start fading character
+      setTimeout(() => setStoryBgDark(true), 2000), // darken background
+      setTimeout(() => setSleepPhase(2), 3000),    // show text
+      setTimeout(() => setSleepPhase(3), 5000),    // fade out text
+      setTimeout(() => {
+        setStoryVisible(false);
+        setTimeout(() => {
+          setStoryStep(5);
+          setStoryVisible(true);
+          setStoryBgDark(false);
+        }, 400);
+      }, 6000),
+    ];
+    return () => timers.forEach(clearTimeout);
+  }, [phase, storyStep, storyVisible]);
 
   const handleRoomChange = useCallback(r => setCurrentRoom(r), []);
   const handleNearestChange = useCallback(id => { setNearestAppliance(id); setProximityLevels(getProximityLevels(playerState.x, playerState.z)); }, []);
@@ -349,17 +400,162 @@ export default function Level3() {
         {L3_ICONS.bulb} "Your choices directly affect the environment. Smart usage reduces damage."
       </div>
       <div className="l3-reward-coins"><span>{L3_ICONS.coin}</span><span>+{coins} Carbon Coins</span></div>
-      <button className="l3-reward-btn" onClick={handleContinue}>Continue {'\u{2192}'}</button>
+      <button className="l3-reward-btn" onClick={handleContinue}>{t?.level3Story?.returnToBase || 'Return to Base →'}</button>
     </div></div></div>);
   }
 
-  // ═══ RENDER: HOOK ═══
+  // ═══ RENDER: HOOK (L4 preview — now reached from story step 5) ═══
   if (phase === 'hook') return (<div className="l3-container"><div className="l3-hook-overlay">
     <div className="l3-hook-icon">{L3_ICONS.sun}</div>
     <div className="l3-hook-title">LEVEL 4</div>
     <div className="l3-hook-subtitle">THE SOLUTION {'\u{2014}'} SOLAR ENERGY {L3_ICONS.sun}</div>
     <button className="l3-hook-btn" onClick={() => navigate('/hub')}>Return to Hub {'\u{2192}'}</button>
   </div></div>);
+
+  // ═══ RENDER: POST-QUIZ STORY SEQUENCE ═══
+  if (phase === 'story') {
+    const s = t?.level3Story || {};
+    const ap = s.appliances || {};
+    const applianceList = ['ac', 'fans', 'heater', 'fridge', 'lights'];
+    const coins = LEVEL3_BADGE.coins + stars * 15 + tasksPassed * 10;
+    const starPositions = [
+      { top: '15%', left: '20%' }, { top: '25%', left: '75%' },
+      { top: '60%', left: '10%' }, { top: '70%', left: '85%' },
+    ];
+
+    return (
+      <div className={`l3-container l3-story-overlay ${storyBgDark ? 'l3-story-bg-dark' : 'l3-story-bg-normal'}`}>
+
+        {/* ─── STEP 1: The Realization ─── */}
+        {storyStep === 1 && (
+          <div className={`l3-story-step ${storyVisible ? 'visible' : ''}`}>
+            <div className="l3-story-cards-row">
+              {/* Energy Card */}
+              <div className="l3-story-card energy">
+                <div className="l3-story-card-header">{s.energyUsed || '⚡ Energy Used'}</div>
+                {applianceList.map(key => (
+                  <div key={key} className="l3-story-card-item">
+                    {ap[key]?.name || key} — {ap[key]?.kwh || ''}
+                  </div>
+                ))}
+              </div>
+              {/* CO₂ Card */}
+              <div className="l3-story-card co2">
+                <div className="l3-story-card-header">{s.co2Produced || '🌍 CO₂ Produced'}</div>
+                {applianceList.map(key => (
+                  <div key={key} className="l3-story-card-item">
+                    {ap[key]?.name || key} — {ap[key]?.co2 || ''}
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="l3-story-total l3-story-total-pulse">
+              {s.totalCo2 || 'Total: 4,088 kg CO₂ per year'}
+            </div>
+            <div style={{ marginBottom: '16px' }}>
+              <ArjunCharacter mood="shocked" size={80} />
+            </div>
+            <button className="l3-story-btn" onClick={advanceStory}>
+              {s.next || 'Next →'}
+            </button>
+          </div>
+        )}
+
+        {/* ─── STEP 2: The Weight of It ─── */}
+        {storyStep === 2 && (
+          <div className={`l3-story-step ${storyVisible ? 'visible' : ''}`}>
+            <div className="l3-story-thought-container">
+              <div className={`l3-story-thought-bubble ${storyVisible ? 'visible' : ''}`}>
+                {s.thought1 || "I know the problem now. My home produces 4.1 tonnes of CO₂ every year. That's the weight of a small car... just from electricity."}
+              </div>
+              <ArjunCharacter mood="shocked" size={120} />
+            </div>
+            <button className="l3-story-btn" style={{ marginTop: '24px' }} onClick={advanceStory}>
+              {s.next || 'Next →'}
+            </button>
+          </div>
+        )}
+
+        {/* ─── STEP 3: The Big Question ─── */}
+        {storyStep === 3 && (
+          <div className={`l3-story-step ${storyVisible ? 'visible' : ''}`}>
+            {/* Comic pop */}
+            <div className={`l3-story-comic-pop ${comicPopState}`}>
+              {s.comicPop || 'HMMMM...'}
+            </div>
+            <div className="l3-story-thought-container">
+              <div className={`l3-story-thought-bubble ${storyVisible ? 'visible' : ''}`}>
+                {s.thought2 || "I can switch off appliances. I can buy efficient ones. But is that enough? There has to be a BIGGER solution..."}
+              </div>
+              <ArjunCharacter mood="thinking" size={120} />
+            </div>
+            <button className="l3-story-btn" style={{ marginTop: '24px' }} onClick={advanceStory}>
+              {s.next || 'Next →'}
+            </button>
+          </div>
+        )}
+
+        {/* ─── STEP 4: Falling Asleep (auto-advance) ─── */}
+        {storyStep === 4 && (
+          <div className={`l3-story-step ${storyVisible ? 'visible' : ''}`}>
+            {/* Stars */}
+            {starPositions.map((pos, i) => (
+              <div
+                key={i}
+                className={`l3-story-star ${sleepPhase >= 1 ? 'visible' : ''}`}
+                style={{ top: pos.top, left: pos.left }}
+              />
+            ))}
+            {/* Character fading */}
+            <div className="l3-story-sleep-character" style={{ opacity: sleepPhase >= 1 ? 0 : 1 }}>
+              <ArjunCharacter mood="thinking" size={120} />
+            </div>
+            {/* Sleep text */}
+            <div className={`l3-story-sleep-text ${sleepPhase >= 2 ? (sleepPhase >= 3 ? 'fade-out' : 'visible') : ''}`}>
+              {s.sleepText || "That night, Arjun couldn't stop thinking..."}
+            </div>
+          </div>
+        )}
+
+        {/* ─── STEP 5: Level Complete ─── */}
+        {storyStep === 5 && (
+          <div className={`l3-story-step ${storyVisible ? 'visible' : ''}`}>
+            {/* Subtle particles */}
+            {Array.from({ length: 12 }).map((_, i) => (
+              <div
+                key={i}
+                className="l3-story-particle"
+                style={{
+                  left: `${10 + Math.random() * 80}%`,
+                  top: `${60 + Math.random() * 30}%`,
+                  backgroundColor: i % 2 === 0 ? '#22c55e' : '#f59e0b',
+                  animation: `l3-story-particle-float ${4 + Math.random() * 4}s ease-in-out ${Math.random() * 3}s infinite`,
+                }}
+              />
+            ))}
+            <div className="l3-story-complete-title">
+              {s.levelComplete || 'Level 3 Complete'}
+            </div>
+            <div className="l3-story-complete-badge">
+              {LEVEL3_BADGE.icon}
+            </div>
+            <div className="l3-story-complete-coins">
+              <span>{L3_ICONS.coin}</span>
+              <span>Carbon Coins: {carbonCoins}</span>
+            </div>
+            <div className="l3-story-complete-hint">
+              {s.dreamHint || 'Something awaits in your dreams...'}
+            </div>
+            <div className="l3-story-complete-btn">
+              <button className="l3-story-btn" onClick={() => navigate('/hub')}>
+                {s.returnToBase || 'Return to Base →'}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   // ═══ RENDER: DAMAGE GRAPH ═══
   if (phase === 'damage-graph') {

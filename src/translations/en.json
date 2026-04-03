@@ -418,6 +418,26 @@
       "energyTip": "Use instead of AC on mild days to save up to 90% cooling energy."
     }
   },
+  "level3Story": {
+    "energyUsed": "⚡ Energy Used",
+    "co2Produced": "🌍 CO₂ Produced",
+    "totalCo2": "Total: 4,088 kg CO₂ per year",
+    "appliances": {
+      "ac": { "name": "AC (1.5T)", "kwh": "1,800 kWh/yr", "co2": "1,278 kg CO₂" },
+      "fans": { "name": "Ceiling Fans (×3)", "kwh": "810 kWh/yr", "co2": "575 kg CO₂" },
+      "heater": { "name": "Room Heater", "kwh": "600 kWh/yr", "co2": "426 kg CO₂" },
+      "fridge": { "name": "Refrigerator", "kwh": "400 kWh/yr", "co2": "284 kg CO₂" },
+      "lights": { "name": "LED Lights", "kwh": "175 kWh/yr", "co2": "124 kg CO₂" }
+    },
+    "thought1": "I know the problem now. My home produces 4.1 tonnes of CO₂ every year. That's the weight of a small car... just from electricity.",
+    "thought2": "I can switch off appliances. I can buy efficient ones. But is that enough? There has to be a BIGGER solution...",
+    "comicPop": "HMMMM...",
+    "sleepText": "That night, Arjun couldn't stop thinking...",
+    "levelComplete": "Level 3 Complete",
+    "dreamHint": "Something awaits in your dreams...",
+    "returnToBase": "Return to Base →",
+    "next": "Next →"
+  },
   "comicPops": {
     "whoosh": "WHOOSH!",
     "boom": "BOOM!",
