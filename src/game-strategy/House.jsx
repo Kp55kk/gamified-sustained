@@ -28,26 +28,43 @@ function WallBox({ position, size, color = WALL_COLOR }) {
   );
 }
 
-// Door frame
-function DoorFrame({ position, rotation = [0, 0, 0] }) {
+// Door frame (open doorway - no door panel)
+function DoorFrame({ position, rotation = [0, 0, 0], isEntrance = false }) {
+  const frameColor = isEntrance ? '#6b4520' : '#8B6914';
+  const frameW = 0.1;
   return (
     <group position={position} rotation={rotation}>
       {/* Left post */}
-      <mesh position={[-0.85, 1.2, 0]}>
-        <boxGeometry args={[0.08, 2.4, WALL_THICKNESS + 0.04]} />
-        <meshStandardMaterial color="#8B6914" roughness={0.6} />
+      <mesh position={[-0.85, 1.2, 0]} castShadow>
+        <boxGeometry args={[frameW, 2.4, WALL_THICKNESS + 0.06]} />
+        <meshStandardMaterial color={frameColor} roughness={0.5} />
       </mesh>
       {/* Right post */}
-      <mesh position={[0.85, 1.2, 0]}>
-        <boxGeometry args={[0.08, 2.4, WALL_THICKNESS + 0.04]} />
-        <meshStandardMaterial color="#8B6914" roughness={0.6} />
+      <mesh position={[0.85, 1.2, 0]} castShadow>
+        <boxGeometry args={[frameW, 2.4, WALL_THICKNESS + 0.06]} />
+        <meshStandardMaterial color={frameColor} roughness={0.5} />
       </mesh>
       {/* Top beam */}
-      <mesh position={[0, 2.42, 0]}>
-        <boxGeometry args={[1.78, 0.08, WALL_THICKNESS + 0.04]} />
-        <meshStandardMaterial color="#8B6914" roughness={0.6} />
+      <mesh position={[0, 2.42, 0]} castShadow>
+        <boxGeometry args={[1.8, 0.1, WALL_THICKNESS + 0.06]} />
+        <meshStandardMaterial color={frameColor} roughness={0.5} />
+      </mesh>
+      {/* Threshold */}
+      <mesh position={[0, 0.01, 0]}>
+        <boxGeometry args={[1.7, 0.02, WALL_THICKNESS + 0.08]} />
+        <meshStandardMaterial color="#5a3a15" roughness={0.6} />
       </mesh>
     </group>
+  );
+}
+
+// Baseboard trim along wall base
+function Baseboard({ position, size }) {
+  return (
+    <mesh position={position} castShadow>
+      <boxGeometry args={size} />
+      <meshStandardMaterial color="#3a2a18" roughness={0.6} />
+    </mesh>
   );
 }
 
@@ -112,7 +129,7 @@ function Roof() {
 // Kitchen Stove with Oven and Chimney Hood
 function KitchenStoveOven() {
   return (
-    <group position={[-8.5, 0, 7.2]}>
+    <group position={[-7.5, 0, 6.5]}>
       {/* Oven body */}
       <mesh position={[0, 0.45, 0]} castShadow>
         <boxGeometry args={[1.0, 0.9, 0.7]} />
@@ -179,7 +196,7 @@ function KitchenStoveOven() {
 // Kitchen Sink with Faucet integrated into counter
 function KitchenSink() {
   return (
-    <group position={[-5, 0, 7.2]}>
+    <group position={[-5, 0, 6.5]}>
       {/* Sink basin recessed into counter */}
       <mesh position={[0, 0.88, 0]}>
         <boxGeometry args={[0.7, 0.12, 0.5]} />
@@ -207,7 +224,7 @@ function KitchenSink() {
 // Dishwasher
 function Dishwasher() {
   return (
-    <group position={[-3.5, 0, 7.2]}>
+    <group position={[-3.5, 0, 6.5]}>
       {/* Body */}
       <mesh position={[0, 0.42, 0]} castShadow>
         <boxGeometry args={[0.7, 0.84, 0.65]} />
@@ -235,7 +252,7 @@ function Dishwasher() {
 // Large Double-Door Refrigerator  
 function LargeFridge() {
   return (
-    <group position={[-1.5, 0, 7.2]}>
+    <group position={[-1.5, 0, 6.5]}>
       {/* Main body */}
       <mesh position={[0, 0.95, 0]} castShadow>
         <boxGeometry args={[1.0, 1.9, 0.7]} />
@@ -370,7 +387,7 @@ function DiningTable() {
 // Kitchen Window
 function KitchenWindow() {
   return (
-    <group position={[-5, 1.8, 7.95]}>
+    <group position={[-5, 1.8, 7.9]}>
       {/* Window frame */}
       <mesh>
         <boxGeometry args={[1.6, 1.2, 0.1]} />
@@ -434,10 +451,17 @@ export default function House() {
       <WallBox position={[-10, WALL_HEIGHT / 2, 4.25]} size={[WALL_THICKNESS, WALL_HEIGHT, 7.5]} />
       {/* Above left wall door */}
       <WallBox position={[-10, 2.7, -2]} size={[WALL_THICKNESS, 0.6, 3]} />
-      <DoorFrame position={[-10, 0, -2]} rotation={[0, Math.PI / 2, 0]} />
+      <DoorFrame position={[-10, 0, -2]} rotation={[0, Math.PI / 2, 0]} isEntrance={true} />
 
       {/* Right wall (x = 10) */}
       <WallBox position={[10, WALL_HEIGHT / 2, 0]} size={[WALL_THICKNESS, WALL_HEIGHT, 16]} />
+
+      {/* ─── BASEBOARDS (outer walls) ─── */}
+      <Baseboard position={[0, 0.06, -7.9]} size={[20, 0.12, 0.05]} />
+      <Baseboard position={[0, 0.06, 7.9]} size={[20, 0.12, 0.05]} />
+      <Baseboard position={[-9.9, 0.06, -5.75]} size={[0.05, 0.12, 4.5]} />
+      <Baseboard position={[-9.9, 0.06, 4.25]} size={[0.05, 0.12, 7.5]} />
+      <Baseboard position={[9.9, 0.06, 0]} size={[0.05, 0.12, 16]} />
 
       {/* ─── INNER WALLS ─── */}
       {/* Horizontal middle wall (z = 0) */}
@@ -510,7 +534,7 @@ export default function House() {
       {/* ─── KITCHEN APPLIANCES (upgraded) ─── */}
       {/* L-shaped counter along back wall and right side */}
       {/* Back counter (z=7.2, from x=-7.5 to x=-2) */}
-      <group position={[-5, 0, 7.2]}>
+      <group position={[-5, 0, 6.5]}>
         {/* Counter base - wooden cabinets */}
         <mesh position={[0, 0.42, 0]} castShadow>
           <boxGeometry args={[6, 0.84, 0.7]} />
@@ -557,7 +581,7 @@ export default function House() {
       </group>
 
       {/* Bathroom - Sink (repositioned for smaller bathroom) */}
-      <group position={[5.5, 0, 7.5]}>
+      <group position={[5.5, 0, 6.8]}>
         <mesh position={[0, 0.8, 0]} castShadow>
           <boxGeometry args={[0.8, 0.08, 0.5]} />
           <meshStandardMaterial color="#e8e8e8" roughness={0.2} metalness={0.3} />

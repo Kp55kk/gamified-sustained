@@ -17,6 +17,8 @@ import {
   getDamageAttribution, getApplianceCO2Monthly, getApplianceCO2Annual,
   BILL_MILESTONES, TREES_PER_CO2, L3_ICONS, ROOM_ICONS,
   APPLIANCE_LESSONS, REAL_LIFE_ACTIONS,
+  REALIZATION_LINES, TEACHER_DIALOGUE, TEACHER_DIALOGUE_2,
+  SOLAR_HOOK_DATA, GUIDANCE_CONFIG,
 } from './level3Data';
 import Level3Quiz from './Level3Quiz';
 import './Level3.css';
@@ -37,12 +39,12 @@ function playFailSound() { playSound(200, 'sawtooth', 0.6, 0.1); }
 // ═══ 3D HELPERS ═══
 function CameraRef({ cameraRef }) { const { camera } = useThree(); useEffect(() => { cameraRef.current = camera; }, [camera, cameraRef]); return null; }
 
-function SceneContent({ applianceStates, nearestAppliance, onRoomChange, onNearestChange, onInteract, cameraRef, proximityLevels, damageLevel }) {
+function SceneContent({ applianceStates, nearestAppliance, onRoomChange, onNearestChange, onInteract, cameraRef, proximityLevels, damageLevel, highlightAppliances }) {
   return (<>
     <CameraRef cameraRef={cameraRef} />
     <Level3Environment damageLevel={damageLevel} />
     <House />
-    <Level2Appliances applianceStates={applianceStates} nearestAppliance={nearestAppliance} taskTargetIds={null} proximityLevels={proximityLevels} />
+    <Level2Appliances applianceStates={applianceStates} nearestAppliance={nearestAppliance} taskTargetIds={null} proximityLevels={proximityLevels} highlightAppliances={highlightAppliances} />
     <Player onRoomChange={onRoomChange} onNearestApplianceChange={onNearestChange} onInteract={onInteract} applianceIdList={L2_APPLIANCE_IDS} />
   </>);
 }
@@ -120,6 +122,17 @@ export default function Level3() {
   // ─── Quiz & Reward ───
   const [quizResult, setQuizResult] = useState(null);
   const [stars, setStars] = useState(0);
+
+  // ─── Guided Learning System ───
+  const [guidanceState, setGuidanceState] = useState(null); // { step, wrongAppliance, correctAppliance, taskKey }
+  const [highlightAppliances, setHighlightAppliances] = useState({ blinkRed: [], glowGreen: [] });
+  const [guidanceMsg, setGuidanceMsg] = useState(null);
+
+  // ─── Post-quiz Emotional Flow ───
+  const [realizationStep, setRealizationStep] = useState(0);
+  const [teacherStep, setTeacherStep] = useState(0);
+  const [teacherPhase2, setTeacherPhase2] = useState(false);
+  const [fixWorldDeclined, setFixWorldDeclined] = useState(false);
 
   // ─── UI ───
   const [currentRoom, setCurrentRoom] = useState('Living Room');
@@ -210,10 +223,24 @@ export default function Level3() {
     learningTimerRef.current = setTimeout(() => setLearningPopup(null), 6000);
   }, [addLesson]);
 
+  // ─── Get guidance config for current task ───
+  const getTaskGuidanceKey = useCallback(() => {
+    const task = LEARNING_TASKS[currentTaskIdx];
+    if (!task) return null;
+    const title = (task.title || '').toLowerCase();
+    if (title.includes('cool')) return 'smart_cooling';
+    if (title.includes('waste')) return 'stop_waste';
+    if (title.includes('balance')) return 'balance_usage';
+    if (title.includes('reduce') || title.includes('carbon')) return 'reduce_fast';
+    return null;
+  }, [currentTaskIdx]);
+
   // ─── Toggle appliance ───
   const handleInteract = useCallback((applianceId) => {
     if (!L2_APPLIANCE_IDS.includes(applianceId) || isCritical) return;
     const task = phase === 'tasks' ? LEARNING_TASKS[currentTaskIdx] : null;
+    const guidanceKey = phase === 'tasks' ? getTaskGuidanceKey() : null;
+    const gConfig = guidanceKey ? GUIDANCE_CONFIG[guidanceKey] : null;
 
     setApplianceStates(prev => {
       const newState = !prev[applianceId];
@@ -222,25 +249,61 @@ export default function Level3() {
       if (newState) {
         playToggleOnSound();
         addFloating(`+${a.wattage}W \u{2191} CO\u{2082}`, 'damage');
-        // Check for task fail condition (e.g., turning on AC in smart cooling task)
-        if (task && task.failCheck && task.failCheck({ ...prev, [applianceId]: true })) {
+
+        // ─── GUIDED LEARNING: Wrong choice detection ───
+        if (gConfig && gConfig.wrongAppliances.includes(applianceId) && taskPhase === 'active') {
+          const fb = gConfig.wrongFeedback;
+          // Step 1: Show immediate feedback
+          if (fb.immediate) addFloating(fb.immediate, 'damage');
+          if (fb.co2) setTimeout(() => addFloating(fb.co2, 'warn'), 500);
+          // Step 2: Show guidance dialogue
+          setGuidanceState({ step: 'explain', wrongAppliance: applianceId, correctAppliances: gConfig.correctAppliances, taskKey: guidanceKey });
+          setGuidanceMsg(fb.dialogue);
+          // Step 3: Highlight appliances
+          setHighlightAppliances({ blinkRed: [applianceId], glowGreen: gConfig.correctAppliances });
+          // Step 4: After 2s, show fix instruction
+          setTimeout(() => {
+            setGuidanceState(prev => prev ? { ...prev, step: 'fix' } : null);
+            setGuidanceMsg(fb.instruction);
+          }, 2500);
+        } else if (task && task.failCheck && task.failCheck({ ...prev, [applianceId]: true })) {
           setTaskWarning(task.failWarning || 'Wrong choice!');
           setTimeout(() => setTaskWarning(null), 2500);
         }
       } else {
         playToggleOffSound();
         addFloating(`-${a.wattage}W saved`, 'save');
+
+        // ─── GUIDED LEARNING: Player turned off wrong appliance ───
+        if (guidanceState && guidanceState.wrongAppliance === applianceId) {
+          setGuidanceState(prev => prev ? { ...prev, step: 'correct_now' } : null);
+          setGuidanceMsg(gConfig?.wrongFeedback?.correctStep || 'Now try the correct option!');
+          // Keep green highlights, remove red
+          setHighlightAppliances(prev => ({ blinkRed: [], glowGreen: prev.glowGreen }));
+        }
+      }
+
+      // ─── GUIDED LEARNING: Player chose correct appliance ───
+      if (newState && guidanceState && gConfig && gConfig.correctAppliances.includes(applianceId)) {
+        setGuidanceMsg(gConfig.successFeedback);
+        setGuidanceState(prev => prev ? { ...prev, step: 'complete' } : null);
+        setHighlightAppliances({ blinkRed: [], glowGreen: [] });
+        addFloating('\u{2714}\u{FE0F} ' + gConfig.successFeedback, 'save');
+        setTimeout(() => {
+          setGuidanceState(null);
+          setGuidanceMsg(null);
+        }, 2000);
       }
 
       // Show learning popup when turning ON (during explore or tasks)
-      if (newState && (phase === 'explore' || phase === 'tasks')) {
+      if (newState && (phase === 'explore' || phase === 'tasks') && !guidanceState) {
         showLearningForAppliance(applianceId);
       }
 
       return { ...prev, [applianceId]: newState };
     });
     setToggledSet(prev => { const n = new Set(prev); n.add(applianceId); return n; });
-  }, [addFloating, isCritical, phase, currentTaskIdx, showLearningForAppliance]);
+  }, [addFloating, isCritical, phase, currentTaskIdx, showLearningForAppliance, getTaskGuidanceKey, guidanceState, taskPhase]);
 
   // ─── Task handlers ───
   const handleTaskSuccess = useCallback(() => {
@@ -300,13 +363,13 @@ export default function Level3() {
   const handleQuizComplete = useCallback((result) => {
     setQuizResult(result);
     const s = calculateL3Stars(tasksPassed, LEARNING_TASKS.length, result.score, result.total);
-    setStars(s); setPhase('reward');
+    setStars(s); setPhase('realization');
   }, [tasksPassed]);
 
-  const handleContinue = useCallback(() => {
+  const handleContinueToTeacher = useCallback(() => {
     addCarbonCoins(LEVEL3_BADGE.coins + stars * 15 + tasksPassed * 10);
-    completeLevel(3); unlockLevel(4); setPhase('hook');
-  }, [stars, tasksPassed, addCarbonCoins, completeLevel, unlockLevel]);
+    completeLevel(3); unlockLevel(4); navigate('/hub');
+  }, [stars, tasksPassed, addCarbonCoins, completeLevel, unlockLevel, navigate]);
 
   const handleRoomChange = useCallback(r => setCurrentRoom(r), []);
   const handleNearestChange = useCallback(id => { setNearestAppliance(id); setProximityLevels(getProximityLevels(playerState.x, playerState.z)); }, []);
@@ -332,6 +395,26 @@ export default function Level3() {
   // ═══ RENDER: QUIZ ═══
   if (phase === 'quiz') return <div className="l3-container"><Level3Quiz onComplete={handleQuizComplete} /></div>;
 
+  // ═══ RENDER: REALIZATION (post-quiz emotional moment) ═══
+  if (phase === 'realization') {
+    return (<div className="l3-container"><div className="l3-realization-overlay">
+      <div className="l3-realization-stats">
+        <div className="l3-realization-stat"><div className="l3-realization-stat-val" style={{color:'#ef4444'}}>{co2Data.co2Month} kg</div><div className="l3-realization-stat-lbl">CO{"\u{2082}"} Still High</div></div>
+        <div className="l3-realization-stat"><div className="l3-realization-stat-val" style={{color:'#f59e0b'}}>{"\u{20B9}"}{billData.totalCost}</div><div className="l3-realization-stat-lbl">Bill Still High</div></div>
+      </div>
+      <div className="l3-realization-dialogue">
+        {REALIZATION_LINES.slice(0, realizationStep + 1).map((line, i) => (
+          <div key={i} className="l3-realization-line" style={{animationDelay:`${i * 0.3}s`}}>{line}</div>
+        ))}
+      </div>
+      {realizationStep < REALIZATION_LINES.length - 1 ? (
+        <button className="l3-realization-continue" onClick={() => setRealizationStep(s => s + 1)}>...</button>
+      ) : (
+        <button className="l3-realization-continue glow" onClick={() => setPhase('reward')}>Continue {"\u{2192}"}</button>
+      )}
+    </div></div>);
+  }
+
   // ═══ RENDER: REWARD ═══
   if (phase === 'reward' && quizResult) {
     const coins = LEVEL3_BADGE.coins + stars * 15 + tasksPassed * 10;
@@ -349,17 +432,68 @@ export default function Level3() {
         {L3_ICONS.bulb} "Your choices directly affect the environment. Smart usage reduces damage."
       </div>
       <div className="l3-reward-coins"><span>{L3_ICONS.coin}</span><span>+{coins} Carbon Coins</span></div>
-      <button className="l3-reward-btn" onClick={handleContinue}>Continue {'\u{2192}'}</button>
+      <button className="l3-reward-btn" onClick={handleContinueToTeacher}>Continue {"\u{2192}"}</button>
     </div></div></div>);
   }
 
-  // ═══ RENDER: HOOK ═══
-  if (phase === 'hook') return (<div className="l3-container"><div className="l3-hook-overlay">
-    <div className="l3-hook-icon">{L3_ICONS.sun}</div>
-    <div className="l3-hook-title">LEVEL 4</div>
-    <div className="l3-hook-subtitle">THE SOLUTION {'\u{2014}'} SOLAR ENERGY {L3_ICONS.sun}</div>
-    <button className="l3-hook-btn" onClick={() => navigate('/hub')}>Return to Hub {'\u{2192}'}</button>
-  </div></div>);
+  // ═══ RENDER: TEACHER INTRO ═══
+  if (phase === 'teacher-intro') {
+    const lines = teacherPhase2 ? TEACHER_DIALOGUE_2 : TEACHER_DIALOGUE;
+    return (<div className="l3-container"><div className="l3-teacher-overlay">
+      <div className="l3-teacher-sun-bg" />
+      <div className="l3-teacher-avatar">{'\u{1F9D1}\u{200D}\u{1F3EB}'}</div>
+      <div className="l3-teacher-dialogue-box">
+        {lines.slice(0, teacherStep + 1).map((line, i) => (
+          <div key={i} className={`l3-teacher-line ${i === teacherStep ? 'active' : ''}`} style={{animationDelay:`${i * 0.2}s`}}>{line}</div>
+        ))}
+      </div>
+      {teacherStep < lines.length - 1 ? (
+        <button className="l3-teacher-next" onClick={() => setTeacherStep(s => s + 1)}>...</button>
+      ) : !teacherPhase2 ? (
+        <button className="l3-teacher-next glow" onClick={() => { setTeacherPhase2(true); setTeacherStep(0); }}>
+          {"\u{2600}\u{FE0F}"} What is this energy? {"\u{2192}"}
+        </button>
+      ) : (
+        <button className="l3-teacher-next glow" onClick={() => setPhase('solar-unlock')}>
+          Continue {"\u{2192}"}
+        </button>
+      )}
+      {teacherPhase2 && <div className="l3-teacher-visuals">
+        <span className="l3-teacher-icon-sun">{"\u{2600}\u{FE0F}"}</span>
+        <span className="l3-teacher-icon-panel">{"\u{1F3E0}"}</span>
+        <span className="l3-teacher-icon-leaf">{"\u{1F33F}"}</span>
+      </div>}
+    </div></div>);
+  }
+
+  // ═══ RENDER: SOLAR UNLOCK ═══
+  if (phase === 'solar-unlock') {
+    return (<div className="l3-container"><div className="l3-solar-unlock-overlay">
+      <div className="l3-solar-gift">{"\u{1F381}"}</div>
+      <div className="l3-solar-unlock-text">{SOLAR_HOOK_DATA.giftText}</div>
+      <div className="l3-solar-level-title">{SOLAR_HOOK_DATA.levelTitle}</div>
+      <div className="l3-solar-level-subtitle">{SOLAR_HOOK_DATA.levelSubtitle}</div>
+      <div className="l3-solar-final-line">{SOLAR_HOOK_DATA.finalLine}</div>
+      <button className="l3-solar-continue" onClick={() => setPhase('fix-world')}>
+        Continue {"\u{2192}"}
+      </button>
+    </div></div>);
+  }
+
+  // ═══ RENDER: FIX THE WORLD ═══
+  if (phase === 'fix-world') {
+    return (<div className="l3-container"><div className="l3-fixworld-overlay">
+      <div className="l3-fixworld-globe">{"\u{1F30D}"}</div>
+      <div className="l3-fixworld-question">{SOLAR_HOOK_DATA.fixWorldQuestion}</div>
+      {fixWorldDeclined && <div className="l3-fixworld-decline">{SOLAR_HOOK_DATA.fixWorldDecline}</div>}
+      <button className="l3-fixworld-yes" onClick={() => navigate('/level4')}>
+        {"\u{2714}\u{FE0F}"} YES {"\u{2192}"}
+      </button>
+      {!fixWorldDeclined && <button className="l3-fixworld-no" onClick={() => setFixWorldDeclined(true)}>
+        Not now...
+      </button>}
+    </div></div>);
+  }
 
   // ═══ RENDER: DAMAGE GRAPH ═══
   if (phase === 'damage-graph') {
@@ -554,7 +688,8 @@ export default function Level3() {
           <SceneContent applianceStates={applianceStates} nearestAppliance={nearestAppliance}
             onRoomChange={handleRoomChange} onNearestChange={handleNearestChange}
             onInteract={handleInteract} cameraRef={cameraRef}
-            proximityLevels={proximityLevels} damageLevel={damageLevel} />
+            proximityLevels={proximityLevels} damageLevel={damageLevel}
+            highlightAppliances={highlightAppliances} />
         </Suspense>
       </Canvas>
       <div className={`l3-vignette ${vignetteClass}`} />
@@ -624,6 +759,17 @@ export default function Level3() {
 
     {/* TASK WARNING */}
     {taskWarning && <div className="l3-task-warning">{L3_ICONS.warn} {taskWarning}</div>}
+
+    {/* GUIDANCE OVERLAY (guided learning) */}
+    {guidanceMsg && guidanceState && (<div className="l3-guidance-overlay">
+      <div className="l3-guidance-avatar">{'\u{1F9D1}\u{200D}\u{1F393}'}</div>
+      <div className="l3-guidance-bubble">
+        <div className="l3-guidance-msg">{guidanceMsg}</div>
+        {guidanceState.step === 'fix' && <div className="l3-guidance-hint">{"\u{1F449}"} {GUIDANCE_CONFIG[guidanceState.taskKey]?.wrongFeedback?.fixStep}</div>}
+        {guidanceState.step === 'correct_now' && <div className="l3-guidance-hint success">{"\u{1F449}"} {GUIDANCE_CONFIG[guidanceState.taskKey]?.wrongFeedback?.correctStep}</div>}
+        {guidanceState.step === 'complete' && <div className="l3-guidance-hint success">{"\u{2714}\u{FE0F}"} {GUIDANCE_CONFIG[guidanceState.taskKey]?.lessonPopup}</div>}
+      </div>
+    </div>)}
 
     {/* EXPLORE ACTIONS */}
     {phase === 'explore' && canContinueExplore && (

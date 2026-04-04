@@ -38,16 +38,16 @@ const WALL_SEGMENTS = [
   { type: 'v', x: 4, z1: 5.5, z2: 8 },
 ];
 
-// Furniture collision boxes
+// Furniture collision boxes — updated to match inward-moved positions
 const FURNITURE_BOXES = [
-  { minX: -2.2, maxX: -0.8, minZ: 6.5, maxZ: 7.8 },
-  { minX: 4.8, maxX: 6.2, minZ: 6.5, maxZ: 7.8 },
-  { minX: -9.5, maxX: -3.5, minZ: 6.8, maxZ: 7.8 },
+  { minX: -2.2, maxX: -0.8, minZ: 5.8, maxZ: 7.2 },
+  { minX: 4.8, maxX: 6.2, minZ: 5.8, maxZ: 7.2 },
+  { minX: -9.0, maxX: -3.5, minZ: 6.0, maxZ: 7.2 },
   { minX: -9.5, maxX: -6.5, minZ: -7.5, maxZ: -5.5 },
-  { minX: -6.0, maxX: -4.0, minZ: -7.7, maxZ: -7.2 },
+  { minX: -6.0, maxX: -4.0, minZ: -7.5, maxZ: -7.0 },
   { minX: 5.0, maxX: 9.5, minZ: -7.5, maxZ: -4.5 },
-  { minX: 1.5, maxX: 3.5, minZ: -7.7, maxZ: -7.0 },
-  { minX: 8.5, maxX: 9.8, minZ: 1.0, maxZ: 3.0 },
+  { minX: 1.5, maxX: 3.5, minZ: -7.5, maxZ: -7.0 },
+  { minX: 8.2, maxX: 9.5, minZ: 1.0, maxZ: 3.0 },
 ];
 
 function checkCollision(x, z) {
@@ -145,27 +145,27 @@ function ArjunModel({ isMoving }) {
   );
 }
 
-// ═══ SHARED STATE ═══
-export const l4PlayerState = { x: -5, z: -6.5, nearestAppliance: null, cameraYaw: 0, cameraPitch: 0.3 };
+// ═══ SHARED STATE — Start OUTSIDE the house ═══
+export const l4PlayerState = { x: -12, z: -2, nearestAppliance: null, cameraYaw: -Math.PI / 2, cameraPitch: 0.3 };
 
 // ═══ PLAYER ═══
 export default function Level4Player({ onRoomChange, onNearestApplianceChange, onInteract, applianceIdList, onRooftopReach }) {
   const groupRef = useRef();
   const { camera } = useThree();
   const keys = useRef({});
-  const posRef = useRef({ x: -5, z: -6.5 });
-  const rotRef = useRef(0);
+  const posRef = useRef({ x: -12, z: -2 });
+  const rotRef = useRef(-Math.PI / 2); // facing toward the house (+x direction)
   const pitchRef = useRef(0.3); // camera pitch (up/down)
   const movingRef = useRef(false);
 
   useEffect(() => {
-    posRef.current = { x: -5, z: -6.5 };
-    rotRef.current = 0;
+    posRef.current = { x: -12, z: -2 };
+    rotRef.current = -Math.PI / 2;
     pitchRef.current = 0.3;
-    l4PlayerState.x = -5; l4PlayerState.z = -6.5;
-    camera.position.set(-5, 6, -6.5 - 8);
-    camera.lookAt(-5, 1.5, -6.5);
-    if (groupRef.current) { groupRef.current.position.set(-5, 0, -6.5); groupRef.current.rotation.y = 0; }
+    l4PlayerState.x = -12; l4PlayerState.z = -2;
+    camera.position.set(-12, 6, -2 - 8);
+    camera.lookAt(-12, 1.5, -2);
+    if (groupRef.current) { groupRef.current.position.set(-12, 0, -2); groupRef.current.rotation.y = -Math.PI / 2; }
   }, [camera]);
 
   useEffect(() => {
@@ -251,7 +251,7 @@ export default function Level4Player({ onRoomChange, onNearestApplianceChange, o
   });
 
   return (
-    <group ref={groupRef} position={[-5, 0, -6.5]}>
+    <group ref={groupRef} position={[-12, 0, -2]}>
       <ArjunModel isMoving={movingRef.current} />
       <mesh position={[0, 0.01, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <circleGeometry args={[0.3, 16]} />

@@ -34,7 +34,7 @@ function Scene({appStates,nearest,onRoom,onNearest,onInteract,camRef,proxLevels,
 
 // ═══ TASKS DEFINITION ═══
 const TASKS = [
-  { id: 'discover', title: 'Solar Discovery', icon: '\u{2600}\u{FE0F}', objective: 'Walk outside and explore the environment', desc: 'Leave the house through the side door (left wall, near the WiFi router). Look around to see the world.', hint: 'Use W to walk forward, A/D to turn. Q to look up, Z to look down.' },
+  { id: 'discover', title: 'Solar Discovery', icon: '\u{2600}\u{FE0F}', objective: 'Walk outside and explore the environment', desc: 'Look at the house and the surrounding environment. Explore the area, check out the roof.', hint: 'Use W to walk forward, A/D to turn. Q to look up, Z to look down.' },
   { id: 'install', title: 'Install Solar Panels', icon: '\u{1F527}', objective: 'Place solar panels on the roof', desc: 'Walk to the front of the house and look up at the roof. Place at least 3 panels.', hint: 'Click the roof grid to place panels. Avoid shadow spots!' },
   { id: 'optimize', title: 'Optimize Panels', icon: '\u{2699}\u{FE0F}', objective: 'Adjust tilt for max efficiency', desc: 'Set the best panel angle. Target: 80%+ efficiency.', hint: '25\u{00B0} is optimal for India!' },
   { id: 'energy', title: 'Energy Management', icon: '\u{26A1}', objective: 'Run the house on solar power', desc: 'Go inside and turn on appliances. Watch solar vs grid split.', hint: 'Solar supplies power first. Keep grid usage low!' },
@@ -80,8 +80,8 @@ export default function Level4() {
   const [nearest, setNearest] = useState(null);
   const [proxLevels, setProxLevels] = useState({});
 
-  // Discovery
-  const [hasGoneOutside, setHasGoneOutside] = useState(false);
+  // Discovery - starts outside already
+  const [hasGoneOutside, setHasGoneOutside] = useState(true);
   const [discoveryQ, setDiscoveryQ] = useState(null);
   const [reachedRooftop, setReachedRooftop] = useState(false);
 
@@ -122,13 +122,16 @@ export default function Level4() {
 
   const recoveryLevel = useMemo(() => {
     if (phase === 'entry') return 0;
-    // During recovery task, use stage-driven level
-    if (currentTask?.id === 'recovery' && taskPhase === 'active') {
-      const baseLevel = 0.15 + (taskIdx / TASKS.length) * 0.5;
-      return baseLevel + recoveryStage * 0.25;
+    // During recovery task: START from damaged, dramatic visual improvement per stage
+    if (currentTask?.id === 'recovery') {
+      if (taskPhase === 'objective') return 0.05; // Show damaged world in briefing
+      // Stage 0 = damaged (0.05), Stage 1 = partial (0.3), Stage 2 = good (0.6), Stage 3 = full (1.0)
+      const stageLevels = [0.05, 0.3, 0.6, 1.0];
+      return stageLevels[Math.min(recoveryStage, 3)];
     }
+    // Other tasks: gradual improvement but cap at 0.5 so recovery task has room
     const base = Math.min(taskIdx / TASKS.length, 1);
-    return 0.15 + base * 0.85;
+    return 0.1 + base * 0.4;
   }, [phase, taskIdx, recoveryStage, taskPhase, currentTask]);
 
   // ─── Intro animation ───
@@ -578,7 +581,7 @@ export default function Level4() {
       <div style={{fontSize:'10px',color:'#888',textTransform:'uppercase',letterSpacing:'1px'}}>Task {taskIdx+1}/{TASKS.length}</div>
       <div style={{fontSize:'14px',fontWeight:700,color:'#f5a623'}}>{currentTask?.icon} {currentTask?.title}</div>
       <div style={{fontSize:'12px',color:'#aaa',marginTop:'2px'}}>{L4_ICONS.target} {currentTask?.objective}</div>
-      {currentTask?.id === 'discover' && <div style={{fontSize:'11px',color:'#88ccff',marginTop:'4px'}}>{hasGoneOutside ? `${L4_ICONS.check} Outside!` : 'Walk through the side door (left wall)...'} {' \u2022 '} Q=Look Up, Z=Look Down</div>}
+      {currentTask?.id === 'discover' && <div style={{fontSize:'11px',color:'#88ccff',marginTop:'4px'}}>{L4_ICONS.check} Outside! {' \u2022 '} Q=Look Up, Z=Look Down</div>}
     </div>
 
     {/* SOLAR METER (after install) */}

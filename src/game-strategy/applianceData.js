@@ -465,26 +465,27 @@ export const APPLIANCE_DATA = {
 };
 
 // ─── 3D Positions for all appliances ───
+// All positions pulled inward from walls to prevent clipping when scaled
 export const APPLIANCE_POSITIONS = {
   // Living Room
   ceiling_fan:    { pos: [-5, 2.85, -4],    rot: [0, 0, 0] },
   led_bulb:       { pos: [-3, 2.9, -6],     rot: [0, 0, 0] },
-  tv_smart:       { pos: [-5, 1.0, -7.7],   rot: [0, 0, 0] },
-  wifi_router:    { pos: [-9.7, 0.5, -2],    rot: [0, Math.PI / 2, 0] },
-  set_top_box:    { pos: [-7, 0.35, -6.5],   rot: [0, 0, 0] },
+  tv_smart:       { pos: [-5, 1.0, -7.0],   rot: [0, 0, 0] },
+  wifi_router:    { pos: [-8.5, 0.5, -2],   rot: [0, Math.PI / 2, 0] },
+  set_top_box:    { pos: [-7, 0.35, -6.5],  rot: [0, 0, 0] },
   // Bedroom
-  ac_1_5ton:      { pos: [9.7, 2.3, -4],    rot: [0, -Math.PI / 2, 0] },
-  // Kitchen
-  fridge:         { pos: [-1.5, 0.9, 7.2],  rot: [0, Math.PI, 0] },
-  induction:      { pos: [-8.5, 0.95, 7.3], rot: [0, Math.PI, 0] },
-  microwave:      { pos: [-6.5, 1.15, 7.3], rot: [0, Math.PI, 0] },
-  mixer_grinder:  { pos: [-4.0, 0.95, 7.3], rot: [0, Math.PI, 0] },
-  // Bathroom
-  geyser:         { pos: [9.7, 2.0, 2],     rot: [0, -Math.PI / 2, 0] },
-  washing_machine:{ pos: [5.5, 0.42, 7.2],  rot: [0, Math.PI, 0] },
-  // New appliances
+  ac_1_5ton:      { pos: [9.0, 2.3, -4],    rot: [0, -Math.PI / 2, 0] },
+  // Kitchen (moved z from 7.2-7.3 to 6.5 to stay inside back wall)
+  fridge:         { pos: [-1.5, 0.9, 6.5],  rot: [0, Math.PI, 0] },
+  induction:      { pos: [-7.5, 0.95, 6.5], rot: [0, Math.PI, 0] },
+  microwave:      { pos: [-6.0, 1.15, 6.5], rot: [0, Math.PI, 0] },
+  mixer_grinder:  { pos: [-4.0, 0.95, 6.5], rot: [0, Math.PI, 0] },
+  // Bathroom (moved x from 9.7 to 9.0 to stay inside right wall)
+  geyser:         { pos: [9.0, 2.0, 2],     rot: [0, -Math.PI / 2, 0] },
+  washing_machine:{ pos: [5.5, 0.42, 6.5],  rot: [0, Math.PI, 0] },
+  // Other appliances
   led_tube:       { pos: [-7, 2.85, 4],     rot: [0, 0, 0] },           // Kitchen ceiling
-  phone_charger:  { pos: [5, 0.55, -7.5],   rot: [0, 0, 0] },           // Bedroom desk
+  phone_charger:  { pos: [5, 0.55, -7.0],   rot: [0, 0, 0] },           // Bedroom desk
   table_fan:      { pos: [3, 0.55, -5],     rot: [0, Math.PI / 4, 0] }, // Bedroom table
 };
 

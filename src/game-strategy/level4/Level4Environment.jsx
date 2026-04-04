@@ -119,9 +119,9 @@ function WalkPath() {
   );
 }
 
-// ═══ TREES (nearby + visible) ═══
+// ═══ TREES (nearby + visible) — animated foliage color ═══
 function Trees({ recoveryLevel }) {
-  const trees = useMemo(() => {
+  const treeData = useMemo(() => {
     const positions = [
       // Close to house (very visible)
       [-14, 0, -6], [-14, 0, 0], [-14, 0, 6],
@@ -138,51 +138,88 @@ function Trees({ recoveryLevel }) {
     return positions.map((p, i) => ({ pos: p, id: i, scale: 0.7 + Math.random() * 0.6 }));
   }, []);
 
-  return trees.map(t => {
-    const trunkH = 2.0 * t.scale;
-    const canopyScale = (0.3 + recoveryLevel * 0.8) * t.scale;
-    const green = recoveryLevel;
-    const r = 0.4 - green * 0.3;
-    const g = 0.15 + green * 0.6;
-    const b = 0.05 + green * 0.1;
-    return (
-      <group key={t.id} position={t.pos}>
-        <mesh position={[0, trunkH / 2, 0]}>
-          <cylinderGeometry args={[0.18, 0.25, trunkH, 6]} />
-          <meshStandardMaterial color="#5a3a1a" />
-        </mesh>
-        <mesh position={[0, trunkH + canopyScale * 0.5, 0]}>
-          <sphereGeometry args={[canopyScale * 1.4, 8, 6]} />
-          <meshStandardMaterial color={new THREE.Color(r, g, b)} />
-        </mesh>
-        {/* Second layer of leaves */}
-        <mesh position={[0, trunkH + canopyScale * 1.2, 0]}>
-          <sphereGeometry args={[canopyScale * 0.9, 8, 6]} />
-          <meshStandardMaterial color={new THREE.Color(r * 0.9, g * 1.1, b)} />
-        </mesh>
-      </group>
-    );
-  });
+  return treeData.map(t => <AnimatedTree key={t.id} treeData={t} recoveryLevel={recoveryLevel} />);
 }
 
-// ═══ FLOWERS/BUSHES (garden) ═══
+function AnimatedTree({ treeData, recoveryLevel }) {
+  const canopy1Ref = useRef();
+  const canopy2Ref = useRef();
+  const trunkH = 2.0 * treeData.scale;
+
+  useFrame(() => {
+    const green = recoveryLevel;
+    const canopyScale = (0.3 + green * 0.8) * treeData.scale;
+    // Dead = brown/orange, Alive = rich green
+    const deadColor = new THREE.Color(0.4, 0.15, 0.05);
+    const aliveColor = new THREE.Color(0.1, 0.75, 0.15);
+    const targetColor = deadColor.clone().lerp(aliveColor, green);
+
+    if (canopy1Ref.current) {
+      canopy1Ref.current.material.color.lerp(targetColor, 0.04);
+      canopy1Ref.current.scale.setScalar(canopyScale * 1.4);
+      canopy1Ref.current.position.y = trunkH + canopyScale * 0.5;
+    }
+    if (canopy2Ref.current) {
+      const darkerTarget = targetColor.clone().multiplyScalar(0.9);
+      canopy2Ref.current.material.color.lerp(darkerTarget, 0.04);
+      canopy2Ref.current.scale.setScalar(canopyScale * 0.9);
+      canopy2Ref.current.position.y = trunkH + canopyScale * 1.2;
+    }
+  });
+
+  const initScale = (0.3 + recoveryLevel * 0.8) * treeData.scale;
+  return (
+    <group position={treeData.pos}>
+      <mesh position={[0, trunkH / 2, 0]}>
+        <cylinderGeometry args={[0.18, 0.25, trunkH, 6]} />
+        <meshStandardMaterial color="#5a3a1a" />
+      </mesh>
+      <mesh ref={canopy1Ref} position={[0, trunkH + initScale * 0.5, 0]}>
+        <sphereGeometry args={[1, 8, 6]} />
+        <meshStandardMaterial color={new THREE.Color(0.4, 0.15, 0.05)} />
+      </mesh>
+      <mesh ref={canopy2Ref} position={[0, trunkH + initScale * 1.2, 0]}>
+        <sphereGeometry args={[1, 8, 6]} />
+        <meshStandardMaterial color={new THREE.Color(0.35, 0.15, 0.05)} />
+      </mesh>
+    </group>
+  );
+}
+
+// ═══ FLOWERS/BUSHES (garden) — animated ═══
 function Garden({ recoveryLevel }) {
-  const bushes = useMemo(() => [
+  const bushPositions = useMemo(() => [
     [-12, 0, -4], [-12, 0, 4], [12, 0, -4], [12, 0, 4],
     [-6, 0, -10], [6, 0, -10],
     [-4, 0, 10], [4, 0, 10],
   ], []);
 
-  if (recoveryLevel < 0.3) return null;
-  return bushes.map((p, i) => (
-    <mesh key={i} position={[p[0], 0.3, p[2]]}>
-      <sphereGeometry args={[0.5 + recoveryLevel * 0.3, 8, 6]} />
-      <meshStandardMaterial color={new THREE.Color(0.1, 0.4 + recoveryLevel * 0.3, 0.1)} />
-    </mesh>
-  ));
+  return bushPositions.map((p, i) => <AnimatedBush key={i} position={p} recoveryLevel={recoveryLevel} />);
 }
 
-// ═══ NEIGHBOR HOUSES ═══
+function AnimatedBush({ position, recoveryLevel }) {
+  const ref = useRef();
+  useFrame(() => {
+    if (!ref.current) return;
+    ref.current.visible = recoveryLevel >= 0.25;
+    if (recoveryLevel >= 0.25) {
+      const dead = new THREE.Color(0.3, 0.15, 0.05);
+      const alive = new THREE.Color(0.1, 0.55, 0.1);
+      const target = dead.clone().lerp(alive, recoveryLevel);
+      ref.current.material.color.lerp(target, 0.04);
+      const s = 0.3 + recoveryLevel * 0.5;
+      ref.current.scale.setScalar(s);
+    }
+  });
+  return (
+    <mesh ref={ref} position={[position[0], 0.3, position[2]]} visible={false}>
+      <sphereGeometry args={[1, 8, 6]} />
+      <meshStandardMaterial color={new THREE.Color(0.3, 0.15, 0.05)} />
+    </mesh>
+  );
+}
+
+// ═══ NEIGHBOR HOUSES — animated ═══
 function NeighborHouses({ recoveryLevel }) {
   const houses = useMemo(() => [
     { pos: [-22, 0, -15], rot: 0.3 },
@@ -191,19 +228,36 @@ function NeighborHouses({ recoveryLevel }) {
     { pos: [25, 0, 10], rot: -0.5 },
   ], []);
 
-  return houses.map((h, i) => (
-    <group key={i} position={h.pos} rotation={[0, h.rot, 0]}>
-      <mesh position={[0, 1.5, 0]}>
+  return houses.map((h, i) => <AnimatedNeighborHouse key={i} house={h} recoveryLevel={recoveryLevel} />);
+}
+
+function AnimatedNeighborHouse({ house, recoveryLevel }) {
+  const wallRef = useRef();
+  const roofRef = useRef();
+  useFrame(() => {
+    if (wallRef.current) {
+      const deadWall = new THREE.Color(0.25, 0.2, 0.15);
+      const aliveWall = new THREE.Color(0.7, 0.55, 0.4);
+      wallRef.current.material.color.lerp(deadWall.clone().lerp(aliveWall, recoveryLevel), 0.03);
+    }
+    if (roofRef.current) {
+      const deadRoof = new THREE.Color(0.3, 0.15, 0.05);
+      const aliveRoof = new THREE.Color(0.6, 0.35, 0.15);
+      roofRef.current.material.color.lerp(deadRoof.clone().lerp(aliveRoof, recoveryLevel), 0.03);
+    }
+  });
+  return (
+    <group position={house.pos} rotation={[0, house.rot, 0]}>
+      <mesh ref={wallRef} position={[0, 1.5, 0]}>
         <boxGeometry args={[4, 3, 5]} />
-        <meshStandardMaterial color={new THREE.Color(0.4 + recoveryLevel * 0.3, 0.35 + recoveryLevel * 0.2, 0.3)} />
+        <meshStandardMaterial color={new THREE.Color(0.25, 0.2, 0.15)} />
       </mesh>
-      {/* Roof */}
-      <mesh position={[0, 3.3, 0]} rotation={[0, 0, 0]}>
+      <mesh ref={roofRef} position={[0, 3.3, 0]} rotation={[0, 0, 0]}>
         <coneGeometry args={[3.5, 1.5, 4]} />
-        <meshStandardMaterial color={new THREE.Color(0.5, 0.25 + recoveryLevel * 0.1, 0.1)} />
+        <meshStandardMaterial color={new THREE.Color(0.3, 0.15, 0.05)} />
       </mesh>
     </group>
-  ));
+  );
 }
 
 // ═══ SOLAR PANELS ON ROOF ═══

@@ -8,20 +8,107 @@ import * as THREE from 'three';
 
 const GLOW_RADIUS = 2.8;
 
-// ─── Glow + Proximity Prompt Wrapper ───
-function ToggleGlow({ id, isOn, isNear, isTaskTarget, children }) {
+// ─── Scale factors per appliance (make them bigger) ───
+const APPLIANCE_SCALE = {
+  ceiling_fan: 1.3,
+  tv_smart: 1.25,
+  ac_1_5ton: 1.3,
+  wifi_router: 1.8,
+  set_top_box: 1.8,
+  phone_charger: 1.8,
+  fridge: 1.2,
+  induction: 1.4,
+  microwave: 1.3,
+  mixer_grinder: 1.4,
+  geyser: 1.3,
+  washing_machine: 1.2,
+  led_tube: 1.3,
+  table_fan: 1.4,
+  led_bulb: 1.3,
+};
+
+// High-watt appliances (>500W) — show orange/red when ON
+const HIGH_WATT_IDS = ['ac_1_5ton', 'geyser', 'induction', 'microwave', 'mixer_grinder', 'washing_machine'];
+
+// ─── ON/OFF Status Indicator (always visible) ───
+function OnOffIndicator({ id, isOn }) {
+  const pos = APPLIANCE_POSITIONS[id]?.pos;
+  if (!pos) return null;
+  const appliance = L2_APPLIANCE_MAP[id];
+  if (!appliance) return null;
+
+  const labelOffsets = {
+    ceiling_fan: -0.2, tv_smart: 0.7, ac_1_5ton: 0.35, fridge: 1.1,
+    washing_machine: 0.6, geyser: 0.45, wifi_router: 0.25, set_top_box: 0.15,
+    phone_charger: 0.2, induction: 0.2, microwave: 0.3, mixer_grinder: 0.5,
+    led_tube: -0.15, table_fan: 0.55, led_bulb: -0.35,
+  };
+  const yOffset = labelOffsets[id] || 0.4;
+
+  return (
+    <Html position={[pos[0], pos[1] + yOffset, pos[2]]} center>
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: '4px', pointerEvents: 'none',
+        background: isOn ? 'rgba(34,197,94,0.85)' : 'rgba(100,100,100,0.7)',
+        color: '#fff', padding: '2px 8px', borderRadius: '10px',
+        fontSize: '9px', fontFamily: 'Nunito, sans-serif', fontWeight: 700,
+        whiteSpace: 'nowrap', boxShadow: isOn ? '0 0 8px rgba(34,197,94,0.5)' : 'none',
+        border: isOn ? '1px solid rgba(34,197,94,0.6)' : '1px solid rgba(150,150,150,0.3)',
+      }}>
+        <span style={{
+          width: '6px', height: '6px', borderRadius: '50%',
+          background: isOn ? '#4ade80' : '#888',
+          boxShadow: isOn ? '0 0 4px #4ade80' : 'none',
+          display: 'inline-block',
+        }} />
+        {isOn ? 'ON' : 'OFF'}
+      </div>
+    </Html>
+  );
+}
+
+// ─── Glow + Proximity Prompt + Highlight Wrapper ───
+function ToggleGlow({ id, isOn, isNear, isTaskTarget, highlightRed, highlightGreen, children }) {
   const glowRef = useRef();
+  const highlightRef = useRef();
 
   useFrame(() => {
     if (!glowRef.current) return;
     const t = performance.now() * 0.003;
-    if (isNear || isTaskTarget) {
+
+    // Highlight mode (guided learning)
+    if (highlightRed || highlightGreen) {
+      glowRef.current.visible = true;
+      if (highlightRed) {
+        const blink = Math.sin(t * 8) > 0 ? 0.4 : 0.1;
+        glowRef.current.material.emissiveIntensity = blink;
+        glowRef.current.material.color.set('#ef4444');
+        glowRef.current.material.emissive.set('#ef4444');
+        glowRef.current.material.opacity = 0.2;
+      } else {
+        const pulse = 0.2 + Math.sin(t * 3) * 0.15;
+        glowRef.current.material.emissiveIntensity = pulse;
+        glowRef.current.material.color.set('#22c55e');
+        glowRef.current.material.emissive.set('#22c55e');
+        glowRef.current.material.opacity = 0.18;
+      }
+    } else if (isNear || isTaskTarget) {
       glowRef.current.visible = true;
       const pulse = 0.25 + Math.sin(t * 2) * 0.12;
       glowRef.current.material.emissiveIntensity = pulse;
       const glowColor = isTaskTarget ? '#3b82f6' : (isOn ? '#f59e0b' : '#22c55e');
       glowRef.current.material.color.set(glowColor);
       glowRef.current.material.emissive.set(glowColor);
+      glowRef.current.material.opacity = 0.12;
+    } else if (isOn) {
+      // Subtle always-on glow for active appliances
+      glowRef.current.visible = true;
+      const isHighWatt = HIGH_WATT_IDS.includes(id);
+      const col = isHighWatt ? '#f59e0b' : '#22c55e';
+      glowRef.current.material.emissiveIntensity = 0.12;
+      glowRef.current.material.color.set(col);
+      glowRef.current.material.emissive.set(col);
+      glowRef.current.material.opacity = 0.08;
     } else {
       glowRef.current.visible = false;
     }
@@ -33,7 +120,7 @@ function ToggleGlow({ id, isOn, isNear, isTaskTarget, children }) {
     <group>
       {children}
       <mesh ref={glowRef} position={pos} visible={false}>
-        <sphereGeometry args={[0.6, 16, 16]} />
+        <sphereGeometry args={[0.8, 16, 16]} />
         <meshStandardMaterial
           color="#22c55e"
           emissive="#22c55e"
@@ -813,7 +900,10 @@ const MODEL_MAP = {
 
 export { getProximityLevels };
 
-export default function Level2Appliances({ applianceStates, nearestAppliance, taskTargetIds, proximityLevels }) {
+export default function Level2Appliances({ applianceStates, nearestAppliance, taskTargetIds, proximityLevels, highlightAppliances }) {
+  const blinkRed = highlightAppliances?.blinkRed || [];
+  const glowGreen = highlightAppliances?.glowGreen || [];
+
   return (
     <group>
       {LEVEL2_APPLIANCES.map((appliance) => {
@@ -824,11 +914,15 @@ export default function Level2Appliances({ applianceStates, nearestAppliance, ta
         const isNear = nearestAppliance === appliance.id;
         const isTaskTarget = taskTargetIds && taskTargetIds.includes(appliance.id);
         const showLevel = proximityLevels ? proximityLevels[appliance.id] : 'hidden';
+        const isHighlightRed = blinkRed.includes(appliance.id);
+        const isHighlightGreen = glowGreen.includes(appliance.id);
 
         return (
-          <ToggleGlow key={appliance.id} id={appliance.id} isOn={isOn} isNear={isNear} isTaskTarget={isTaskTarget}>
+          <ToggleGlow key={appliance.id} id={appliance.id} isOn={isOn} isNear={isNear} isTaskTarget={isTaskTarget}
+            highlightRed={isHighlightRed} highlightGreen={isHighlightGreen}>
             <Model isOn={isOn} />
             <ApplianceLabel id={appliance.id} isOn={isOn} showLevel={showLevel} />
+            <OnOffIndicator id={appliance.id} isOn={isOn} />
           </ToggleGlow>
         );
       })}

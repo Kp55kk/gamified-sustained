@@ -408,3 +408,92 @@ export const ROOM_ICONS = {
   'Kitchen': '\u{1F373}',
   'Bathroom': '\u{1F6BF}',
 };
+
+// ═══════════════════════════════════════════════════════════
+//  REALIZATION LINES (post-quiz emotional moment)
+// ═══════════════════════════════════════════════════════════
+export const REALIZATION_LINES = [
+  'Even after making better choices\u{2026}',
+  'The problem still exists\u{2026}',
+  '\u{2026}',
+  'Is there\u{2026} something more we can do?',
+];
+
+// ═══════════════════════════════════════════════════════════
+//  TEACHER DIALOGUE (solar hook intro)
+// ═══════════════════════════════════════════════════════════
+export const TEACHER_DIALOGUE = [
+  "You've done well reducing energy usage\u{2026}",
+  "But to truly protect the environment\u{2026}",
+  "We need a different kind of energy\u{2026}",
+  "Clean energy.",
+];
+
+export const TEACHER_DIALOGUE_2 = [
+  "Solar energy produces electricity without pollution.",
+  "It can power your home and protect the planet.",
+];
+
+export const SOLAR_HOOK_DATA = {
+  giftText: 'SOLAR SYSTEM UNLOCKED \u{2600}\u{FE0F}',
+  levelTitle: 'LEVEL 4: THE SOLUTION',
+  levelSubtitle: 'SOLAR REVOLUTION',
+  finalLine: "Now\u{2026} let's build a better future",
+  teacherGift: "I have something for you\u{2026}",
+  fixWorldQuestion: "Do you want to fix the world?",
+  fixWorldDecline: "The world still needs you\u{2026}",
+};
+
+// ═══════════════════════════════════════════════════════════
+//  GUIDANCE CONFIG (per-task guided learning data)
+// ═══════════════════════════════════════════════════════════
+export const GUIDANCE_CONFIG = {
+  smart_cooling: {
+    wrongAppliances: ['ac_1_5ton'],
+    correctAppliances: ['ceiling_fan', 'table_fan'],
+    wrongFeedback: {
+      immediate: '+1500W added!',
+      co2: 'CO\u{2082} increasing rapidly!',
+      dialogue: 'This cools the room\u{2026} but at a very high energy cost \u{26A0}\u{FE0F}',
+      instruction: 'Turn OFF the AC and try a more efficient option',
+      fixStep: 'Press E near AC to turn it OFF',
+      correctStep: 'Now try using the Fan instead',
+    },
+    successFeedback: 'Good choice! Fan uses much less energy',
+    lessonPopup: 'Efficient choices reduce CO\u{2082} and electricity usage',
+  },
+  stop_waste: {
+    wrongAppliances: [],
+    correctAppliances: [],
+    wrongFeedback: {
+      dialogue: 'Some devices are still running unnecessarily!',
+      instruction: 'Look for devices that are ON but not being used',
+      fixStep: 'Find standby devices and turn them OFF',
+    },
+    successFeedback: 'Great! You stopped energy waste',
+    lessonPopup: 'Standby power is a silent energy drain',
+  },
+  balance_usage: {
+    wrongAppliances: ['ac_1_5ton', 'geyser', 'induction'],
+    correctAppliances: ['ceiling_fan', 'led_bulb'],
+    wrongFeedback: {
+      dialogue: 'Too many high-power appliances are running!',
+      instruction: 'Turn OFF appliances you don\'t truly need right now',
+      fixStep: 'Start with the highest-watt appliances',
+    },
+    successFeedback: 'Smart! Running only what you need',
+    lessonPopup: 'More appliances ON = more CO\u{2082} + higher bill',
+  },
+  reduce_fast: {
+    wrongAppliances: [],
+    correctAppliances: [],
+    wrongFeedback: {
+      dialogue: 'CO\u{2082} is still critical! Target high-watt appliances!',
+      instruction: 'Turn OFF the highest-watt appliances first',
+      fixStep: 'AC (1500W), Geyser (2000W), Induction (1800W)',
+    },
+    successFeedback: 'Fast action saved the environment!',
+    lessonPopup: 'Always prioritize high-watt appliances first',
+  },
+};
+

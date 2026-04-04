@@ -47,22 +47,22 @@ const INTERACTION_RADIUS = 2.8;
 // ════════════════════════════════════════════════════════════
 
 const FURNITURE_BOXES = [
-  // Fridge (Kitchen)
-  { minX: -2.2, maxX: -0.8, minZ: 6.5, maxZ: 7.8 },
-  // Washing Machine (Bathroom)
-  { minX: 4.8, maxX: 6.2, minZ: 6.5, maxZ: 7.8 },
-  // Kitchen counter back wall
-  { minX: -9.5, maxX: -3.5, minZ: 6.8, maxZ: 7.8 },
+  // Fridge (Kitchen) - moved inward
+  { minX: -2.2, maxX: -0.8, minZ: 5.8, maxZ: 7.2 },
+  // Washing Machine (Bathroom) - moved inward
+  { minX: 4.8, maxX: 6.2, minZ: 5.8, maxZ: 7.2 },
+  // Kitchen counter back wall - moved inward
+  { minX: -9.0, maxX: -3.5, minZ: 6.0, maxZ: 7.2 },
   // Living room sofa (L-shaped)
   { minX: -9.5, maxX: -6.5, minZ: -7.5, maxZ: -5.5 },
-  // Living room TV stand
-  { minX: -6.0, maxX: -4.0, minZ: -7.7, maxZ: -7.2 },
+  // Living room TV stand - tight around TV at z=-7.0
+  { minX: -6.0, maxX: -4.0, minZ: -7.5, maxZ: -7.0 },
   // Bedroom bed
   { minX: 5.0, maxX: 9.5, minZ: -7.5, maxZ: -4.5 },
-  // Bedroom desk
-  { minX: 1.5, maxX: 3.5, minZ: -7.7, maxZ: -7.0 },
-  // Bathroom fixtures area
-  { minX: 8.5, maxX: 9.8, minZ: 1.0, maxZ: 3.0 },
+  // Bedroom desk - tight around desk at z=-7.0
+  { minX: 1.5, maxX: 3.5, minZ: -7.5, maxZ: -7.0 },
+  // Bathroom fixtures area (geyser) - moved inward
+  { minX: 8.2, maxX: 9.5, minZ: 1.0, maxZ: 3.0 },
 ];
 
 // ════════════════════════════════════════════════════════════
