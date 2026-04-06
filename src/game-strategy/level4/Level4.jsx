@@ -262,8 +262,12 @@ export default function Level4() {
     </div></div></div>);
   }
 
-  // ═══ RENDER: COMPARE ═══
+  // ═══ RENDER: COMPARE (Enhanced Before vs After) ═══
   if (phase === 'compare') {
+    const co2Reduction = LEVEL3_BEFORE.co2Month > 0 ? Math.round((co2Saved / LEVEL3_BEFORE.co2Month) * 100) : 0;
+    const billReduction = savings.pctSaved;
+    const afterCO2 = Math.max(LEVEL3_BEFORE.co2Month - co2Saved, 0);
+    const treesEquiv = Math.ceil(co2Saved * 12 / 22);
     return (<div className="l4-container"><div className="l4-modal-overlay"><div className="l4-modal-card">
       <div className="l4-modal-title">{L4_ICONS.chart} Before vs After Solar</div>
       <div className="l4-compare-grid">
@@ -271,15 +275,25 @@ export default function Level4() {
           <div className="l4-compare-label">{L4_ICONS.cross} Before</div>
           <div className="l4-compare-stat"><div className="l4-compare-stat-val">{LEVEL3_BEFORE.co2Month} kg</div><div className="l4-compare-stat-lbl">CO{'\u2082'}/month</div></div>
           <div className="l4-compare-stat"><div className="l4-compare-stat-val">{'\u20B9'}{LEVEL3_BEFORE.billMonth}</div><div className="l4-compare-stat-lbl">Bill/month</div></div>
+          <div className="l4-compare-stat"><div className="l4-compare-stat-val">0%</div><div className="l4-compare-stat-lbl">Solar Usage</div></div>
         </div>
         <div className="l4-compare-col after">
           <div className="l4-compare-label">{L4_ICONS.check} After Solar</div>
-          <div className="l4-compare-stat"><div className="l4-compare-stat-val">{Math.max(LEVEL3_BEFORE.co2Month - co2Saved, 0)} kg</div><div className="l4-compare-stat-lbl">CO{'\u2082'}/month</div></div>
+          <div className="l4-compare-stat"><div className="l4-compare-stat-val">{afterCO2} kg</div><div className="l4-compare-stat-lbl">CO{'\u2082'}/month</div></div>
           <div className="l4-compare-stat"><div className="l4-compare-stat-val">{'\u20B9'}{savings.after}</div><div className="l4-compare-stat-lbl">Bill/month</div></div>
+          <div className="l4-compare-stat"><div className="l4-compare-stat-val">{solarPct}%</div><div className="l4-compare-stat-lbl">Solar Usage</div></div>
         </div>
       </div>
-      <div className="l4-compare-savings">{L4_ICONS.sparkle} Saved {'\u20B9'}{savings.saved}/month ({savings.pctSaved}%)</div>
-      <div style={{marginTop:'8px',padding:'8px',background:'rgba(34,197,94,0.06)',borderRadius:'8px',fontSize:'12px',color:'#aaddbb',textAlign:'center'}}>{L4_ICONS.leaf} Solar reduced emissions and cost significantly!</div>
+      <div className="l4-compare-savings">{L4_ICONS.sparkle} Saved {'\u20B9'}{savings.saved}/month ({billReduction}%)</div>
+      {/* Solar Impact Summary */}
+      <div className="l4-compare-impact">
+        <div className="l4-compare-impact-row"><span>{L4_ICONS.sun}</span><span>Solar Output: <strong>{monthlyKwh} kWh/month</strong></span></div>
+        <div className="l4-compare-impact-row"><span>{L4_ICONS.leaf}</span><span>CO{'\u2082'} Saved: <strong>{co2Saved} kg/month</strong> ({co2Reduction}% reduction)</span></div>
+        <div className="l4-compare-impact-row"><span>{L4_ICONS.money}</span><span>Bill Saved: <strong>{'\u20B9'}{savings.saved}/month</strong></span></div>
+        <div className="l4-compare-impact-row"><span>{L4_ICONS.zap}</span><span>Efficiency: <strong>{effPct}%</strong></span></div>
+        <div className="l4-compare-impact-row"><span>{'\u{1F333}'}</span><span>Equivalent to planting <strong>{treesEquiv} trees</strong>/year</span></div>
+      </div>
+      <div style={{marginTop:'8px',padding:'10px',background:'rgba(34,197,94,0.06)',border:'1px solid rgba(34,197,94,0.15)',borderRadius:'10px',fontSize:'13px',color:'#aaddbb',textAlign:'center',fontWeight:600}}>{L4_ICONS.leaf} Solar energy is the solution! Clean, free, and sustainable.</div>
       <button className="l4-modal-btn" onClick={()=>setPhase('quiz')}>Take Final Quiz {'\u{2192}'}</button>
     </div></div></div>);
   }
@@ -591,7 +605,7 @@ export default function Level4() {
         <div className="l4-solar-bar-outer"><div className="l4-solar-bar-fill" style={{width:`${Math.min(currentSolarW/(panelCount*PANEL_WATT_PEAK||1)*100,100)}%`,backgroundColor:'#f5a623',color:'#f5a623'}}/></div>
         <div className="l4-solar-output">
           <span className="l4-solar-watts">{currentSolarW}W</span>
-          <span className="l4-solar-eff" style={{backgroundColor:effPct>=80?'rgba(34,197,94,0.15)':'rgba(245,166,35,0.15)',color:effPct>=80?'#22c55e':'#f5a623'}}>{effPct}% eff</span>
+          <span className="l4-solar-eff" style={{backgroundColor:effPct>=80?'rgba(34,197,94,0.15)':'rgba(245,166,35,0.15)',color:effPct>=80?'#22c55e':'#f5a623'}}>{L4_ICONS.zap} {effPct}%</span>
         </div>
         <div className="l4-solar-details"><span>{panelCount} panels</span><span>{dailyKwh} kWh/day</span></div>
         {houseWatts > 0 && <div style={{marginTop:'6px'}}>
@@ -601,6 +615,53 @@ export default function Level4() {
             <div className="l4-split-grid" style={{width:`${gridPct}%`}}>{gridPct>10?`Grid ${gridPct}%`:''}</div>
           </div>
         </div>}
+      </div>
+    )}
+
+    {/* ☀️ SOLAR IMPACT PANEL (LIVE) */}
+    {panelCount > 0 && (['energy','daynight','battery','challenge','recovery'].includes(currentTask?.id)) && (
+      <div className="l4-impact-panel">
+        <div className="l4-impact-header">{L4_ICONS.sparkle} Solar Impact (Live)</div>
+        <div className="l4-impact-row">
+          <div className="l4-impact-item">
+            <div className="l4-impact-val solar">{monthlyKwh}</div>
+            <div className="l4-impact-lbl">kWh/month</div>
+          </div>
+          <div className="l4-impact-item">
+            <div className="l4-impact-val co2">{co2Saved} kg</div>
+            <div className="l4-impact-lbl">{L4_ICONS.leaf} CO{'\u2082'} Saved</div>
+          </div>
+          <div className="l4-impact-item">
+            <div className="l4-impact-val bill">{'\u20B9'}{savings.saved}</div>
+            <div className="l4-impact-lbl">{L4_ICONS.money} Bill Saved</div>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* ⚡ EFFICIENCY SYSTEM */}
+    {panelCount > 0 && (['energy','daynight','battery','challenge','recovery'].includes(currentTask?.id)) && (
+      <div className="l4-efficiency-badge">
+        <span className="l4-eff-badge-icon">{L4_ICONS.zap}</span>
+        <span className="l4-eff-badge-text">Efficiency:</span>
+        <span className={`l4-eff-badge-val ${effPct >= 80 ? 'high' : effPct >= 50 ? 'med' : 'low'}`}>{effPct}%</span>
+      </div>
+    )}
+
+    {/* 💡 MINI INSIGHT SYSTEM */}
+    {panelCount > 0 && taskPhase === 'active' && (
+      <div className="l4-insight-ticker" key={`${solarPct}-${currentSolarW}-${timePeriod.id}`}>
+        <span className="l4-insight-icon">{L4_ICONS.bulb}</span>
+        <span className="l4-insight-text">
+          {solarPct >= 80 ? `You are using ${solarPct}% solar energy! Almost fully solar-powered!`
+            : solarPct >= 50 ? `${solarPct}% solar energy — Grid usage reduced significantly!`
+            : solarPct > 0 ? `Solar supplying ${solarPct}% — Turn on more during peak sunlight!`
+            : currentSolarW > 0 && houseWatts === 0 ? 'Solar panels active! Turn on appliances to use clean energy.'
+            : timePeriod.sunlight === 0 ? 'No sunlight — Battery or grid powers the house at night.'
+            : gridWatts > 500 ? `Grid usage high (${gridWatts}W) — Reduce or shift to peak hours!`
+            : panelCount < 4 ? 'Add more panels for better coverage!'
+            : 'Solar is powering your home cleanly!'}
+        </span>
       </div>
     )}
 
