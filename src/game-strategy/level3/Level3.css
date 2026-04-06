@@ -1749,9 +1749,49 @@
   gap: 24px;
   padding: 20px;
 }
+
+/* Damaged environment 3D backdrop */
+.l3-realization-env-backdrop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 40%;
+  z-index: 0;
+  overflow: hidden;
+  border-radius: 0 0 20px 20px;
+}
+.l3-realization-env-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 20%, rgba(5,5,5,0.6) 60%, rgba(5,5,5,0.95) 100%);
+  pointer-events: none;
+  z-index: 1;
+}
+.l3-realization-damage-icon {
+  font-size: 56px;
+  z-index: 2;
+  filter: drop-shadow(0 0 20px rgba(239, 68, 68, 0.5)) saturate(0.5);
+  animation: l3-damage-icon-pulse 2s ease-in-out infinite;
+}
+@keyframes l3-damage-icon-pulse {
+  0%, 100% { transform: scale(1); filter: drop-shadow(0 0 15px rgba(239, 68, 68, 0.4)) saturate(0.5); }
+  50% { transform: scale(1.06); filter: drop-shadow(0 0 30px rgba(239, 68, 68, 0.7)) saturate(0.7); }
+}
+.l3-realization-env-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: #ff8855;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  z-index: 2;
+  opacity: 0;
+  animation: l3-realize-fade 1s ease 0.3s forwards;
+}
 .l3-realization-stats {
   display: flex;
   gap: 32px;
+  z-index: 2;
 }
 .l3-realization-stat {
   text-align: center;
@@ -1775,6 +1815,7 @@
 .l3-realization-dialogue {
   max-width: 400px;
   text-align: center;
+  z-index: 2;
 }
 .l3-realization-line {
   font-size: 20px;
@@ -1800,6 +1841,7 @@
   cursor: pointer;
   transition: all 0.3s;
   font-family: 'Fredoka', sans-serif;
+  z-index: 2;
 }
 .l3-realization-continue:hover {
   background: rgba(255,255,255,0.12);
@@ -2009,6 +2051,36 @@
 .l3-solar-continue:hover {
   transform: scale(1.05);
   box-shadow: 0 0 30px rgba(245, 158, 11, 0.7);
+}
+
+/* Teacher gift intro line */
+.l3-solar-teacher-gift-line {
+  font-size: 20px;
+  color: #ccd;
+  font-style: italic;
+  font-family: 'Fredoka', sans-serif;
+  opacity: 0;
+  animation: l3-solar-text-in 0.8s ease 0.2s both;
+  text-align: center;
+  filter: drop-shadow(0 0 10px rgba(245, 158, 11, 0.3));
+}
+
+/* Solar visual icons */
+.l3-solar-visuals {
+  display: flex;
+  gap: 32px;
+  font-size: 40px;
+  z-index: 2;
+  animation: l3-solar-text-in 0.8s ease 1.1s both;
+}
+.l3-solar-vis-sun {
+  animation: l3-teacher-sun-glow 2s ease-in-out infinite;
+}
+.l3-solar-vis-panel {
+  animation: l3-teacher-panel-float 3s ease-in-out infinite;
+}
+.l3-solar-vis-leaf {
+  animation: l3-teacher-leaf-sway 2.5s ease-in-out infinite;
 }
 
 /* ═══════════════════════════════════════════════════════════

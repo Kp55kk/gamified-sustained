@@ -367,8 +367,16 @@ export default function Level3() {
   }, [tasksPassed]);
 
   const handleContinueToTeacher = useCallback(() => {
+    setPhase('teacher-intro');
+    setTeacherStep(0);
+    setTeacherPhase2(false);
+  }, []);
+
+  const handleFixWorldYes = useCallback(() => {
     addCarbonCoins(LEVEL3_BADGE.coins + stars * 15 + tasksPassed * 10);
-    completeLevel(3); unlockLevel(4); navigate('/hub');
+    completeLevel(3);
+    unlockLevel(4);
+    navigate('/hub');
   }, [stars, tasksPassed, addCarbonCoins, completeLevel, unlockLevel, navigate]);
 
   const handleRoomChange = useCallback(r => setCurrentRoom(r), []);
@@ -398,10 +406,28 @@ export default function Level3() {
   // ═══ RENDER: REALIZATION (post-quiz emotional moment) ═══
   if (phase === 'realization') {
     return (<div className="l3-container"><div className="l3-realization-overlay">
+      {/* Damaged environment backdrop */}
+      <div className="l3-realization-env-backdrop">
+        <Canvas camera={{position:[0,8,20],fov:55}} gl={{antialias:false}}
+          onCreated={({gl}) => { gl.setClearColor('#0a0505'); }}>
+          <Suspense fallback={null}>
+            <Level3Environment damageLevel={0.65} />
+          </Suspense>
+        </Canvas>
+        <div className="l3-realization-env-overlay" />
+      </div>
+
+      {/* Damage icon */}
+      <div className="l3-realization-damage-icon">{L3_ICONS.globe}</div>
+      <div className="l3-realization-env-label">{L3_ICONS.warn} Environment still damaged</div>
+
+      {/* Stats */}
       <div className="l3-realization-stats">
         <div className="l3-realization-stat"><div className="l3-realization-stat-val" style={{color:'#ef4444'}}>{co2Data.co2Month} kg</div><div className="l3-realization-stat-lbl">CO{"\u{2082}"} Still High</div></div>
         <div className="l3-realization-stat"><div className="l3-realization-stat-val" style={{color:'#f59e0b'}}>{"\u{20B9}"}{billData.totalCost}</div><div className="l3-realization-stat-lbl">Bill Still High</div></div>
       </div>
+
+      {/* Dialogue */}
       <div className="l3-realization-dialogue">
         {REALIZATION_LINES.slice(0, realizationStep + 1).map((line, i) => (
           <div key={i} className="l3-realization-line" style={{animationDelay:`${i * 0.3}s`}}>{line}</div>
@@ -469,8 +495,14 @@ export default function Level3() {
   // ═══ RENDER: SOLAR UNLOCK ═══
   if (phase === 'solar-unlock') {
     return (<div className="l3-container"><div className="l3-solar-unlock-overlay">
+      <div className="l3-solar-teacher-gift-line">{SOLAR_HOOK_DATA.teacherGift}</div>
       <div className="l3-solar-gift">{"\u{1F381}"}</div>
       <div className="l3-solar-unlock-text">{SOLAR_HOOK_DATA.giftText}</div>
+      <div className="l3-solar-visuals">
+        <span className="l3-solar-vis-sun">{"\u{2600}\u{FE0F}"}</span>
+        <span className="l3-solar-vis-panel">{"\u{1F3E0}"}</span>
+        <span className="l3-solar-vis-leaf">{"\u{1F33F}"}</span>
+      </div>
       <div className="l3-solar-level-title">{SOLAR_HOOK_DATA.levelTitle}</div>
       <div className="l3-solar-level-subtitle">{SOLAR_HOOK_DATA.levelSubtitle}</div>
       <div className="l3-solar-final-line">{SOLAR_HOOK_DATA.finalLine}</div>
@@ -486,7 +518,7 @@ export default function Level3() {
       <div className="l3-fixworld-globe">{"\u{1F30D}"}</div>
       <div className="l3-fixworld-question">{SOLAR_HOOK_DATA.fixWorldQuestion}</div>
       {fixWorldDeclined && <div className="l3-fixworld-decline">{SOLAR_HOOK_DATA.fixWorldDecline}</div>}
-      <button className="l3-fixworld-yes" onClick={() => navigate('/level4')}>
+      <button className="l3-fixworld-yes" onClick={handleFixWorldYes}>
         {"\u{2714}\u{FE0F}"} YES {"\u{2192}"}
       </button>
       {!fixWorldDeclined && <button className="l3-fixworld-no" onClick={() => setFixWorldDeclined(true)}>
