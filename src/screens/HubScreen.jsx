@@ -64,23 +64,25 @@ const HubScreen = () => {
 
       {/* Map Area (Flex 1 to fill remaining space) */}
       <div className="flex-1 w-full relative overflow-hidden">
-         <svg className="absolute inset-0 w-full h-full z-0 pointer-events-none" preserveAspectRatio="none">
+         <svg className="absolute inset-0 w-full h-full z-0 pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none">
             {/* Background dashed path */}
             <motion.path
-               d="M 20% 75% L 50% 60% L 80% 45% L 50% 30% L 20% 15%"
+               d="M 20 75 L 50 60 L 80 45 L 50 30 L 20 15"
                fill="none"
                stroke="rgba(255,255,255,0.05)"
-               strokeWidth="6"
-               strokeDasharray="10, 10"
+               strokeWidth="1"
+               strokeDasharray="2, 2"
+               vectorEffect="non-scaling-stroke"
             />
             {/* Active filled path */}
             <motion.path
-               d="M 20% 75% L 50% 60% L 80% 45% L 50% 30% L 20% 15%"
+               d="M 20 75 L 50 60 L 80 45 L 50 30 L 20 15"
                fill="none"
                stroke="#22c55e"
-               strokeWidth="3"
+               strokeWidth="0.6"
                strokeLinecap="round"
                strokeLinejoin="round"
+               vectorEffect="non-scaling-stroke"
                initial={{ pathLength: 0 }}
                animate={{ pathLength: currentLevel / levelData.length }}
                transition={{ duration: 1.5, ease: "easeInOut" }}

@@ -91,6 +91,9 @@ export default function Level4() {
   const [recoveryMsg, setRecoveryMsg] = useState('');
   const [recoveryObserved, setRecoveryObserved] = useState(false);
   const [showBeforeAfter, setShowBeforeAfter] = useState(false);
+  const [showInlineCompare, setShowInlineCompare] = useState(false);
+  const [hasSeenCompare, setHasSeenCompare] = useState(false);
+  const [impactPulse, setImpactPulse] = useState(false);
 
   // Quiz/Reward
   const [quizResult, setQuizResult] = useState(null);
@@ -118,7 +121,34 @@ export default function Level4() {
   const solarPct = houseWatts > 0 ? Math.round((solarUsed / houseWatts) * 100) : (panelCount > 0 ? 100 : 0);
   const gridPct = 100 - solarPct;
 
+  // Live solar energy in kWh (current instantaneous → projected)
+  const liveKwh = useMemo(() => (currentSolarW / 1000).toFixed(1), [currentSolarW]);
+  const liveCO2Saved = useMemo(() => (parseFloat(liveKwh) * 0.71).toFixed(1), [liveKwh]);
+  const liveBillSaved = useMemo(() => Math.round(parseFloat(liveKwh) * 8), [liveKwh]);
+
+  // Efficiency formula breakdown
+  const usefulEnergy = solarUsed;
+  const totalEnergy = houseWatts || 1;
+  const liveEfficiency = houseWatts > 0 ? Math.round((usefulEnergy / totalEnergy) * 100) : effPct;
+
   const currentTask = TASKS[taskIdx];
+
+  // Trigger inline compare the first time solar is supplying > 30% in energy/recovery tasks
+  useEffect(() => {
+    if (!hasSeenCompare && solarPct >= 30 && panelCount > 0 && houseWatts > 0 && ['energy','recovery','challenge'].includes(currentTask?.id)) {
+      setShowInlineCompare(true);
+      setHasSeenCompare(true);
+    }
+  }, [solarPct, panelCount, houseWatts, currentTask, hasSeenCompare]);
+
+  // Impact pulse animation when values change significantly
+  useEffect(() => {
+    if (currentSolarW > 0) {
+      setImpactPulse(true);
+      const t = setTimeout(() => setImpactPulse(false), 600);
+      return () => clearTimeout(t);
+    }
+  }, [Math.round(currentSolarW / 100)]);
 
   const recoveryLevel = useMemo(() => {
     if (phase === 'entry') return 0;
@@ -618,49 +648,135 @@ export default function Level4() {
       </div>
     )}
 
-    {/* ☀️ SOLAR IMPACT PANEL (LIVE) */}
+    {/* ☀️ SOLAR IMPACT SYSTEM (MAIN FEATURE — LIVE TICKER) */}
     {panelCount > 0 && (['energy','daynight','battery','challenge','recovery'].includes(currentTask?.id)) && (
-      <div className="l4-impact-panel">
-        <div className="l4-impact-header">{L4_ICONS.sparkle} Solar Impact (Live)</div>
-        <div className="l4-impact-row">
-          <div className="l4-impact-item">
-            <div className="l4-impact-val solar">{monthlyKwh}</div>
-            <div className="l4-impact-lbl">kWh/month</div>
+      <>
+        {/* Live Solar Ticker Strip */}
+        <div className={`l4-solar-ticker ${impactPulse ? 'pulse' : ''}`}>
+          <span className="l4-solar-ticker-item">
+            <span className="l4-ticker-icon">{L4_ICONS.sun}</span>
+            <span className="l4-ticker-label">Solar:</span>
+            <span className="l4-ticker-val solar">{liveKwh} kWh</span>
+          </span>
+          <span className="l4-ticker-sep">|</span>
+          <span className="l4-solar-ticker-item">
+            <span className="l4-ticker-icon">{L4_ICONS.leaf}</span>
+            <span className="l4-ticker-label">CO{'\u2082'} Saved:</span>
+            <span className="l4-ticker-val co2">{liveCO2Saved} kg</span>
+          </span>
+          <span className="l4-ticker-sep">|</span>
+          <span className="l4-solar-ticker-item">
+            <span className="l4-ticker-icon">{L4_ICONS.money}</span>
+            <span className="l4-ticker-label">Saved:</span>
+            <span className="l4-ticker-val bill">{'\u20B9'}{liveBillSaved}/hr</span>
+          </span>
+        </div>
+
+        {/* Detailed Impact Panel */}
+        <div className="l4-impact-panel">
+          <div className="l4-impact-header">{L4_ICONS.sparkle} Solar Impact (Live)</div>
+          <div className="l4-impact-row">
+            <div className="l4-impact-item">
+              <div className={`l4-impact-val solar ${impactPulse ? 'animate' : ''}`}>{monthlyKwh}</div>
+              <div className="l4-impact-lbl">kWh/month</div>
+            </div>
+            <div className="l4-impact-item">
+              <div className={`l4-impact-val co2 ${impactPulse ? 'animate' : ''}`}>{co2Saved} kg</div>
+              <div className="l4-impact-lbl">{L4_ICONS.leaf} CO{'\u2082'} Saved</div>
+            </div>
+            <div className="l4-impact-item">
+              <div className={`l4-impact-val bill ${impactPulse ? 'animate' : ''}`}>{'\u20B9'}{savings.saved}</div>
+              <div className="l4-impact-lbl">{L4_ICONS.money} Bill Saved</div>
+            </div>
           </div>
-          <div className="l4-impact-item">
-            <div className="l4-impact-val co2">{co2Saved} kg</div>
-            <div className="l4-impact-lbl">{L4_ICONS.leaf} CO{'\u2082'} Saved</div>
-          </div>
-          <div className="l4-impact-item">
-            <div className="l4-impact-val bill">{'\u20B9'}{savings.saved}</div>
-            <div className="l4-impact-lbl">{L4_ICONS.money} Bill Saved</div>
+          {/* Monthly summary line */}
+          <div className="l4-impact-summary">
+            {L4_ICONS.chart} Monthly: {monthlyKwh} kWh · {'\u20B9'}{savings.saved} saved · {co2Saved}kg CO{'\u2082'} reduced
           </div>
         </div>
-      </div>
+      </>
     )}
 
-    {/* ⚡ EFFICIENCY SYSTEM */}
+    {/* ⚡ EFFICIENCY SYSTEM (VISUAL FORMULA) */}
     {panelCount > 0 && (['energy','daynight','battery','challenge','recovery'].includes(currentTask?.id)) && (
       <div className="l4-efficiency-badge">
         <span className="l4-eff-badge-icon">{L4_ICONS.zap}</span>
         <span className="l4-eff-badge-text">Efficiency:</span>
-        <span className={`l4-eff-badge-val ${effPct >= 80 ? 'high' : effPct >= 50 ? 'med' : 'low'}`}>{effPct}%</span>
+        <span className={`l4-eff-badge-val ${liveEfficiency >= 80 ? 'high' : liveEfficiency >= 50 ? 'med' : 'low'}`}>{liveEfficiency}%</span>
+        {houseWatts > 0 && (
+          <span className="l4-eff-formula">
+            ({solarUsed}W / {houseWatts}W) × 100
+          </span>
+        )}
       </div>
     )}
 
-    {/* 💡 MINI INSIGHT SYSTEM */}
+    {/* 📊 BEFORE vs AFTER (INLINE — FIRST TIME COMPARISON) */}
+    {showInlineCompare && (
+      <div className="l4-inline-compare-overlay" onClick={() => setShowInlineCompare(false)}>
+        <div className="l4-inline-compare-card" onClick={e => e.stopPropagation()}>
+          <div className="l4-inline-compare-title">{L4_ICONS.chart} Before vs After Solar</div>
+          <div className="l4-inline-compare-grid">
+            <div className="l4-inline-col before">
+              <div className="l4-inline-col-label">{L4_ICONS.cross} Before</div>
+              <div className="l4-inline-stat">
+                <div className="l4-inline-stat-val">{'\u{1F32B}\u{FE0F}'} {LEVEL3_BEFORE.co2Month} kg</div>
+                <div className="l4-inline-stat-lbl">CO{'\u2082'}/month</div>
+              </div>
+              <div className="l4-inline-stat">
+                <div className="l4-inline-stat-val">{'\u{1F4B8}'} {'\u20B9'}{LEVEL3_BEFORE.billMonth}</div>
+                <div className="l4-inline-stat-lbl">Bill/month</div>
+              </div>
+              <div className="l4-inline-stat">
+                <div className="l4-inline-stat-val">{'\u{1F525}'} 0%</div>
+                <div className="l4-inline-stat-lbl">Solar Usage</div>
+              </div>
+            </div>
+            <div className="l4-inline-divider">
+              <span className="l4-inline-arrow">{'\u{2192}'}</span>
+            </div>
+            <div className="l4-inline-col after">
+              <div className="l4-inline-col-label">{L4_ICONS.check} After Solar</div>
+              <div className="l4-inline-stat">
+                <div className="l4-inline-stat-val">{'\u{1F33F}'} {Math.max(LEVEL3_BEFORE.co2Month - co2Saved, 0)} kg</div>
+                <div className="l4-inline-stat-lbl">CO{'\u2082'}/month</div>
+              </div>
+              <div className="l4-inline-stat">
+                <div className="l4-inline-stat-val">{'\u{1F4B0}'} {'\u20B9'}{savings.after}</div>
+                <div className="l4-inline-stat-lbl">Bill/month</div>
+              </div>
+              <div className="l4-inline-stat">
+                <div className="l4-inline-stat-val">{'\u{2600}\u{FE0F}'} {solarPct}%</div>
+                <div className="l4-inline-stat-lbl">Solar Usage</div>
+              </div>
+            </div>
+          </div>
+          <div className="l4-inline-savings">
+            {L4_ICONS.sparkle} You save {'\u20B9'}{savings.saved}/month ({savings.pctSaved}% reduction)
+          </div>
+          <div className="l4-inline-lesson">
+            {L4_ICONS.bulb} Solar energy is the solution — clean, renewable, and saves money!
+          </div>
+          <button className="l4-modal-btn green" style={{marginTop:'10px',padding:'10px 20px'}} onClick={() => setShowInlineCompare(false)}>Got it! {L4_ICONS.check}</button>
+        </div>
+      </div>
+    )}
+
+    {/* 💡 MINI INSIGHT SYSTEM (ENHANCED) */}
     {panelCount > 0 && taskPhase === 'active' && (
-      <div className="l4-insight-ticker" key={`${solarPct}-${currentSolarW}-${timePeriod.id}`}>
+      <div className="l4-insight-ticker" key={`${solarPct}-${currentSolarW}-${timePeriod.id}-${gridWatts}`}>
         <span className="l4-insight-icon">{L4_ICONS.bulb}</span>
         <span className="l4-insight-text">
-          {solarPct >= 80 ? `You are using ${solarPct}% solar energy! Almost fully solar-powered!`
-            : solarPct >= 50 ? `${solarPct}% solar energy — Grid usage reduced significantly!`
-            : solarPct > 0 ? `Solar supplying ${solarPct}% — Turn on more during peak sunlight!`
-            : currentSolarW > 0 && houseWatts === 0 ? 'Solar panels active! Turn on appliances to use clean energy.'
-            : timePeriod.sunlight === 0 ? 'No sunlight — Battery or grid powers the house at night.'
-            : gridWatts > 500 ? `Grid usage high (${gridWatts}W) — Reduce or shift to peak hours!`
-            : panelCount < 4 ? 'Add more panels for better coverage!'
-            : 'Solar is powering your home cleanly!'}
+          {solarPct >= 90 ? `🌟 You are using ${solarPct}% solar energy — Almost 100% clean power!`
+            : solarPct >= 70 ? `☀️ You are using ${solarPct}% solar energy — Excellent green usage!`
+            : solarPct >= 50 ? `⚡ Grid usage reduced! Solar at ${solarPct}% — Keep going!`
+            : solarPct >= 30 ? `🔋 Solar supplying ${solarPct}% power. Grid usage dropping!`
+            : solarPct > 0 ? `☀️ Solar active at ${solarPct}%. Use peak sunlight for more!`
+            : currentSolarW > 0 && houseWatts === 0 ? '🔌 Solar panels generating! Turn on appliances to use clean energy.'
+            : timePeriod.sunlight === 0 ? '🌙 No sunlight — Battery or grid powers the house at night.'
+            : gridWatts > 500 ? `⚠️ Grid usage high (${gridWatts}W). Shift heavy use to noon!`
+            : panelCount < 4 ? '📈 Add more panels for better solar coverage!'
+            : '☀️ Solar is powering your home cleanly!'}
         </span>
       </div>
     )}
