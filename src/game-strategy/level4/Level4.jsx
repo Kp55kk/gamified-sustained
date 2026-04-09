@@ -52,7 +52,7 @@ function ControlsHelp(){const[s,setS]=useState(false);
 // ═══ MAIN ═══
 export default function Level4() {
   const navigate = useNavigate();
-  const { addCarbonCoins, completeLevel } = useGame();
+  const { addCarbonCoins, completeLevel, unlockLevel } = useGame();
   const camRef = useRef(null);
 
   const [phase, setPhase] = useState('entry');
@@ -248,7 +248,7 @@ export default function Level4() {
 
   const handleFinish = useCallback(() => {
     addCarbonCoins(LEVEL4_BADGE.coins + stars * 20);
-    completeLevel(4); navigate('/hub');
+    completeLevel(4); unlockLevel(5); navigate('/hub');
   }, [stars, addCarbonCoins, completeLevel, navigate]);
 
   const handleRooftopReach = useCallback(() => {

@@ -1,6 +1,6 @@
 // ═══════════════════════════════════════════════════════════
-//  LEVEL 5: SMART SUSTAINABLE HOME — Data & Constants
-//  Final Master Simulation — Chief Sustainability Engineer
+//  LEVEL 5: SMART SUSTAINABLE HOME — BUILD YOUR FUTURE
+//  Progressive Appliance Unlock System
 // ═══════════════════════════════════════════════════════════
 import {
   LEVEL2_APPLIANCES, L2_APPLIANCE_IDS, L2_APPLIANCE_MAP,
@@ -11,214 +11,6 @@ export {
   L2_APPLIANCE_IDS, L2_APPLIANCE_MAP, USAGE_HOURS,
   calculateBill, calculateCO2, CO2_FACTOR,
 };
-
-// ═══ EV CHARGER (new appliance for L5) ═══
-export const EV_CHARGER = {
-  id: 'ev_charger', name: 'EV Charger', icon: '\u{1F50C}', wattage: 3000,
-  room: 'Utility', animationType: 'glow', category: 'Heavy Load',
-};
-
-// ═══ ALL L5 APPLIANCES (L2 + EV) ═══
-export const L5_APPLIANCES = [...LEVEL2_APPLIANCES, EV_CHARGER];
-export const L5_APPLIANCE_IDS = L5_APPLIANCES.map(a => a.id);
-export const L5_APPLIANCE_MAP = {};
-L5_APPLIANCES.forEach(a => { L5_APPLIANCE_MAP[a.id] = a; });
-
-// ═══ APPLIANCE DISCOVERY DATA ═══
-export const APPLIANCE_INSIGHTS = {
-  ceiling_fan:     { category: 'Efficient', insight: 'Low energy cooling option — runs for hours affordably', loadClass: 'low' },
-  tv_smart:        { category: 'Moderate', insight: 'Smart TVs consume standby power even when "off"', loadClass: 'low' },
-  wifi_router:     { category: 'Always On', insight: 'Runs 24/7 silently — 105 kWh/year', loadClass: 'low' },
-  set_top_box:     { category: 'Standby Drain', insight: 'Turn off at plug when not watching!', loadClass: 'low' },
-  ac_1_5ton:       { category: 'High Load', insight: 'Consumes high energy continuously — biggest bill driver', loadClass: 'high' },
-  phone_charger:   { category: 'Low Load', insight: 'Unplug when done — phantom power adds up!', loadClass: 'low' },
-  table_fan:       { category: 'Efficient', insight: 'Uses 30% less power than ceiling fan', loadClass: 'low' },
-  fridge:          { category: 'Always On', insight: 'Compressor cycles — don\'t open door frequently', loadClass: 'medium' },
-  induction:       { category: 'High Load', insight: '1500W cooking — use during solar peak hours', loadClass: 'high' },
-  microwave:       { category: 'High Load', insight: 'Short bursts — efficient for reheating', loadClass: 'high' },
-  mixer_grinder:   { category: 'Burst Load', insight: 'High watts but very short usage keeps annual cost low', loadClass: 'medium' },
-  led_tube:        { category: 'Efficient', insight: 'LED tubes use 80% less than old fluorescent', loadClass: 'low' },
-  geyser:          { category: 'Very High', insight: '2000W — highest home appliance! Limit to 10 min', loadClass: 'high' },
-  washing_machine: { category: 'Medium Load', insight: 'Full loads maximize efficiency — schedule for noon', loadClass: 'medium' },
-  led_bulb:        { category: 'Ultra Efficient', insight: 'Only 9W — replaced 60W incandescent bulbs', loadClass: 'low' },
-  ev_charger:      { category: 'Heavy Load', insight: '3000W — best used during solar peak for free charging', loadClass: 'high' },
-};
-
-// ═══ SCHEDULING SYSTEM ═══
-export const SCHEDULE_SLOTS = [
-  { id: 'dawn',      label: 'Dawn (6 AM)',      hour: 6,  icon: '\u{1F305}', sunlight: 0.2 },
-  { id: 'morning',   label: 'Morning (9 AM)',   hour: 9,  icon: '\u{1F304}', sunlight: 0.6 },
-  { id: 'noon',      label: 'Noon (12 PM)',     hour: 12, icon: '\u{2600}\u{FE0F}', sunlight: 1.0 },
-  { id: 'afternoon', label: 'Afternoon (3 PM)', hour: 15, icon: '\u{1F31E}', sunlight: 0.8 },
-  { id: 'evening',   label: 'Evening (6 PM)',   hour: 18, icon: '\u{1F307}', sunlight: 0.15 },
-  { id: 'night',     label: 'Night (9 PM)',     hour: 21, icon: '\u{1F303}', sunlight: 0.0 },
-];
-
-export const OPTIMAL_SCHEDULE = {
-  washing_machine: 'noon', ev_charger: 'noon', induction: 'morning',
-  ac_1_5ton: 'afternoon', geyser: 'morning', microwave: 'noon',
-  led_bulb: 'night', led_tube: 'evening', ceiling_fan: 'afternoon',
-  tv_smart: 'evening', fridge: 'dawn', // always on but mark dawn
-};
-
-export function scoreSchedule(playerSchedule) {
-  let correct = 0, total = 0;
-  for (const [appId, slot] of Object.entries(playerSchedule)) {
-    if (OPTIMAL_SCHEDULE[appId]) {
-      total++;
-      if (slot === OPTIMAL_SCHEDULE[appId]) correct++;
-    }
-  }
-  return { correct, total, pct: total > 0 ? Math.round((correct / total) * 100) : 0 };
-}
-
-// ═══ SOLAR SYSTEM ═══
-export const PANEL_WATT_PEAK = 330;
-export const PANEL_COUNT = 6; // pre-installed in L5
-export const TILT_EFF = 1.0; // optimal tilt pre-set
-export const AVG_SHADOW = 0.03;
-
-export function calcSolarW(sunlight, weather = 1.0) {
-  return Math.round(PANEL_COUNT * PANEL_WATT_PEAK * TILT_EFF * sunlight * weather * (1 - AVG_SHADOW));
-}
-
-export function calcDailySolarKwh(weather = 1.0) {
-  let wh = 0;
-  SCHEDULE_SLOTS.forEach(s => { wh += calcSolarW(s.sunlight, weather) * 3; });
-  return Math.round(wh / 1000 * 100) / 100;
-}
-
-// ═══ BATTERY ═══
-export const BATTERY_CAPACITY = 10.0; // 10 kWh
-export const BATTERY_CHARGE_RATE = 1.5;
-export const BATTERY_DISCHARGE_RATE = 2.0;
-
-// ═══ WEATHER / DYNAMIC EVENTS ═══
-export const WEATHER_TYPES = [
-  { id: 'clear',   label: 'Clear Sky',    factor: 1.0,  icon: '\u{2600}\u{FE0F}' },
-  { id: 'partial', label: 'Partly Cloudy', factor: 0.7,  icon: '\u{26C5}' },
-  { id: 'cloudy',  label: 'Overcast',     factor: 0.35, icon: '\u{2601}\u{FE0F}' },
-  { id: 'storm',   label: 'Stormy',       factor: 0.15, icon: '\u{26C8}\u{FE0F}' },
-];
-
-export const DYNAMIC_EVENTS = [
-  { id: 'cloudy_noon', trigger: 'noon', weather: 'cloudy', label: '\u{2601}\u{FE0F} Clouds roll in at noon!', hint: 'Solar drops — shift heavy loads or use battery' },
-  { id: 'night_demand', trigger: 'night', weather: 'clear', label: '\u{1F303} Night falls — no solar!', hint: 'Battery and grid only. Reduce load!' },
-  { id: 'peak_demand', trigger: 'afternoon', weather: 'partial', label: '\u{26A1} Peak demand spike!', hint: 'Everyone uses AC — grid stressed. Use solar+battery' },
-];
-
-// ═══ CRISIS SCENARIOS ═══
-export const CRISIS_SCENARIO = {
-  title: '\u{1F6A8} Energy Crisis!',
-  desc: 'Battery at 15%, solar dropping, heavy load ON. Prevent CO\u{2082} and bill spikes!',
-  conditions: { batteryPct: 15, solarFactor: 0.3, mandatoryLoads: ['fridge', 'wifi_router', 'led_bulb'] },
-  targets: { maxGridW: 800, maxCO2Rate: 0.5 },
-  success: 'Crisis averted! Smart load management saved the day.',
-  failure: 'Grid overload! CO\u{2082} spiked. Try shedding non-essential loads.',
-};
-
-// ═══ COST PER UNIT ═══
-export const COST_PER_KWH = 7; // ₹7 avg
-
-// ═══ BEFORE VALUES (from Level 3) ═══
-export const BEFORE_STATS = { co2Month: 223, billMonth: 2500 };
-
-// ═══ PHASE DEFINITIONS ═══
-export const PHASES = [
-  { id: 'dashboard',   title: 'Global Dashboard',     icon: '\u{1F4CA}', objective: 'Familiarize yourself with the sustainability dashboard', desc: 'Your command center — all metrics live. Walk around and observe.', hint: 'Dashboard is always visible. Move with WASD.' },
-  { id: 'appliance',   title: 'Appliance Discovery',   icon: '\u{1F50D}', objective: 'Discover all appliances and learn their energy profiles', desc: 'Walk to each appliance and interact (E key). First contact reveals energy details.', hint: 'Visit each room — Living, Bedroom, Kitchen, Bathroom, and Utility zone.' },
-  { id: 'control',     title: 'Smart Control',         icon: '\u{1F39B}\u{FE0F}', objective: 'Manage appliances efficiently with solar priority', desc: 'Turn appliances ON/OFF. Solar supplies first, then battery, then grid.', hint: 'Keep grid usage below 500W for best efficiency.' },
-  { id: 'schedule',    title: 'Smart Scheduling',      icon: '\u{1F4C5}', objective: 'Schedule heavy appliances to optimal times', desc: 'Assign each heavy appliance to the best time of day. Solar peak = noon!', hint: 'Washing machine + EV at noon. Lights at night.' },
-  { id: 'solar',       title: 'Solar + Battery',       icon: '\u{2600}\u{FE0F}', objective: 'Maximize solar usage and battery storage', desc: 'Solar supplies first. Excess charges battery. Grid is last resort.', hint: 'Watch the energy flow animation. Charge battery at noon!' },
-  { id: 'events',      title: 'Dynamic Events',        icon: '\u{1F326}\u{FE0F}', objective: 'Adapt to changing weather conditions', desc: 'Weather changes affect solar output. Adjust your strategy in real-time!', hint: 'Clouds reduce solar — switch to battery or reduce load.' },
-  { id: 'crisis',      title: 'Crisis Mode',           icon: '\u{1F6A8}', objective: 'Handle an energy emergency', desc: 'Battery low, solar dropping, heavy load on. Keep grid under control!', hint: 'Turn off non-essential appliances. Prioritize critical loads.' },
-  { id: 'graphs',      title: 'Energy Analytics',      icon: '\u{1F4CA}', objective: 'Analyze your energy usage patterns', desc: 'View bar charts of appliance consumption and time-based usage.', hint: 'AC is the biggest consumer. LED lights are most efficient!' },
-  { id: 'dayrun',      title: 'Full Day Simulation',   icon: '\u{23F1}\u{FE0F}', objective: 'Run the house through a complete 24-hour cycle', desc: 'Manage morning→noon→evening→night. Optimize every time period!', hint: 'Heavy loads at noon, essentials only at night.' },
-  { id: 'impact',      title: 'Final Impact Report',   icon: '\u{1F30D}', objective: 'See your total sustainability impact', desc: 'Compare your performance against baseline. How much did you save?', hint: 'Check CO₂ reduction, bill savings, and efficiency score.' },
-];
-
-// ═══ QUIZ — SCENARIO-BASED ═══
-export const L5_QUIZ = [
-  {
-    question: 'Best time to charge the EV using solar power?',
-    options: ['Night (cheap grid)', 'Dawn (early start)', 'Noon (peak solar)', 'Evening (after work)'],
-    correctIndex: 2,
-    explanation: 'Noon has maximum solar output — free, clean charging!',
-  },
-  {
-    question: 'Solar drops due to clouds. Battery at 40%. What should you do?',
-    options: ['Turn on AC', 'Reduce load to essentials', 'Switch everything to grid', 'Charge battery from grid'],
-    correctIndex: 1,
-    explanation: 'Reduce load to stretch battery life and minimize grid dependency.',
-  },
-  {
-    question: 'Which appliance scheduling saves the most money?',
-    options: ['Lights at noon', 'Washing machine at noon', 'AC at midnight', 'Geyser all day'],
-    correctIndex: 1,
-    explanation: 'Washing machine at noon uses free solar power instead of paid grid!',
-  },
-  {
-    question: 'efficiency = (usefulEnergy / totalEnergy) × 100. If solar provides 1200W and house uses 1500W, what\'s the solar efficiency?',
-    options: ['60%', '75%', '80%', '100%'],
-    correctIndex: 2,
-    explanation: '(1200 / 1500) × 100 = 80%. Solar covers 80% of demand!',
-  },
-  {
-    question: 'Your battery is full at noon with excess solar. What happens to the surplus?',
-    options: ['Wasted', 'Exported to grid', 'Stored for night use', 'Battery overcharges'],
-    correctIndex: 1,
-    explanation: 'Excess solar with full battery gets exported to the grid (net metering).',
-  },
-  {
-    question: 'Which uses MORE energy per year: AC for 8h/day or LED bulbs for 24h?',
-    options: ['LED bulbs', 'Both equal', 'AC by far', 'Depends on season'],
-    correctIndex: 2,
-    explanation: 'AC: 1500W × 8h = 12kWh/day. LED: 9W × 24h = 0.22kWh/day. AC uses 55× more!',
-  },
-  {
-    question: 'What is the CO₂ factor for Indian electricity grid?',
-    options: ['0.3 kg/kWh', '0.5 kg/kWh', '0.71 kg/kWh', '1.0 kg/kWh'],
-    correctIndex: 2,
-    explanation: 'India\'s grid emission factor is 0.710 kg CO₂/kWh (CEA 2024-25).',
-  },
-  {
-    question: 'You achieved 80% solar usage. What does this mean?',
-    options: ['80% of panels active', '80% of energy from sun', '80% bill reduction', '80% battery charge'],
-    correctIndex: 1,
-    explanation: '80% solar usage means 80% of your home\'s energy came from solar panels!',
-  },
-];
-
-// ═══ STAR SYSTEM ═══
-export function calculateL5Stars(effPct, solarPct, schedPct, crisisPassed, quizPct) {
-  const overall = effPct * 0.2 + solarPct * 0.2 + schedPct * 0.15 + (crisisPassed ? 15 : 0) + quizPct * 0.3;
-  if (overall >= 75) return 3;
-  if (overall >= 50) return 2;
-  return 1;
-}
-
-// ═══ BADGE ═══
-export const LEVEL5_BADGE = {
-  id: 'sustainability_chief',
-  title: 'Chief Sustainability Engineer',
-  description: 'Mastered the Smart Sustainable Home — ultimate energy manager!',
-  icon: '\u{1F3C6}',
-  coins: 200,
-};
-
-// ═══ DIALOGUE ═══
-export const ENTRY_DIALOGUE = [
-  "You've learned the problem\u{2026}",
-  "You've discovered the solution\u{2026}",
-  "Now\u{2026} can you manage everything?",
-];
-
-export const FINAL_DIALOGUE = [
-  "The future is not fixed\u{2026}",
-  "It is shaped by your choices.",
-  "You are now a Chief Sustainability Engineer!",
-  "Go make a difference. \u{1F30D}\u{2728}",
-];
 
 // ═══ ICONS ═══
 export const L5 = {
@@ -232,6 +24,9 @@ export const L5 = {
   cloud: '\u{2601}\u{FE0F}', search: '\u{1F50D}', cal: '\u{1F4C5}',
   slider: '\u{1F39B}\u{FE0F}', storm: '\u{26C8}\u{FE0F}', alert: '\u{1F6A8}',
   graph: '\u{1F4C8}', night: '\u{1F303}', sunrise: '\u{1F305}',
+  store: '\u{1F3EA}', lock: '\u{1F512}', unlock: '\u{1F513}',
+  plug: '\u{1F50C}', drop: '\u{1F4A7}', snow: '\u{2744}\u{FE0F}',
+  light: '\u{1F4A1}', strip: '\u{1F50C}', heater: '\u{2615}',
 };
 
 export const ROOM_ICONS = {
@@ -240,16 +35,265 @@ export const ROOM_ICONS = {
   'Outside': '\u{1F333}', 'Utility': '\u{26A1}',
 };
 
-// ═══ LEARNINGS PER PHASE ═══
-export const PHASE_LEARNINGS = {
-  dashboard: ['The dashboard shows your real-time sustainability metrics', 'Monitor CO₂, bill, efficiency, solar, and battery together'],
-  appliance: ['Every appliance has a different energy profile', 'High-load appliances drive most of your bill and CO₂'],
-  control:   ['Solar-first priority reduces grid dependency', 'Smart ON/OFF timing is key to efficiency'],
-  schedule:  ['Heavy appliances at noon = free solar power', 'Good scheduling increases efficiency by 30%+'],
-  solar:     ['Solar → Battery → Grid is the optimal priority', 'Battery stores excess noon solar for night use'],
-  events:    ['Weather directly impacts solar generation', 'Adaptability is key to sustainable energy management'],
-  crisis:    ['Emergency load shedding prevents CO₂ spikes', 'Critical loads (fridge, router) must stay on'],
-  graphs:    ['AC consumes more than all LED lights combined for a year', 'Data-driven decisions lead to better efficiency'],
-  dayrun:    ['A well-managed day balances all energy sources', 'Every hour requires different strategies'],
-  impact:    ['Your choices directly reduced CO₂ and bills', 'Solar energy is the solution — clean, free, sustainable'],
+// ═══ GOVERNMENT SUBSIDY BONUS ═══
+export const STARTING_BONUS = 100;
+export const STARTING_BONUS_MSG = 'Government Smart Home Subsidy: +100 Carbon Coins!';
+
+// ═══ 5 PROGRESSIVE SUSTAINABLE APPLIANCES ═══
+export const STORE_APPLIANCES = [
+  {
+    id: 'air_cooler',
+    name: 'Air Cooler',
+    icon: '\u{1F4A8}',
+    wattage: 200,
+    cost: 50,
+    loadType: 'Medium',
+    loadClass: 'medium',
+    correctRoom: 'Living Room',
+    description: 'An energy-efficient alternative to AC that uses evaporative cooling.',
+    insight: 'Uses only 200W compared to AC\'s 1500W — that\'s 86% less energy!',
+    bestTime: 'afternoon',
+    replaces: 'AC (1500W)',
+    savingPct: 86,
+    co2SavedKg: 8.5,
+    usageTask: {
+      title: 'Cool the Room Efficiently',
+      instruction: 'Choose the best way to cool the room',
+      correct: { label: 'Use Air Cooler (200W)', time: 'afternoon', feedback: 'Air Cooler uses 86% less energy than AC! Smart sustainable choice.' },
+      wrong: { label: 'Use AC (1500W)', feedback: 'AC consumes 1500W — that\'s 7.5× more energy and higher CO₂ emissions!' },
+    },
+    learningMsg: 'Air cooler reduced energy by 86% compared to AC. In a year, this saves ~950 kWh and ~675 kg CO₂!',
+  },
+  {
+    id: 'smart_power_strip',
+    name: 'Smart Power Strip',
+    icon: '\u{1F50C}',
+    wattage: 15,
+    cost: 60,
+    loadType: 'Ultra Low',
+    loadClass: 'low',
+    correctRoom: 'Living Room',
+    description: 'Automatically cuts power to devices in standby mode, eliminating phantom load.',
+    insight: 'Standby devices waste 5-10% of home energy. Smart strip eliminates this waste!',
+    bestTime: 'night',
+    replaces: 'Standby Waste (~100W phantom)',
+    savingPct: 95,
+    co2SavedKg: 4.2,
+    usageTask: {
+      title: 'Eliminate Standby Waste',
+      instruction: 'How do you reduce phantom power drain at night?',
+      correct: { label: 'Smart Strip auto-cuts standby', time: 'night', feedback: 'Smart strip detected TV, STB, charger in standby → Cut phantom power automatically!' },
+      wrong: { label: 'Leave devices on standby', feedback: 'Standby devices silently drain ~100W continuously — that\'s 876 kWh/year wasted!' },
+    },
+    learningMsg: 'Smart power strip saves ~876 kWh/year by eliminating phantom loads. That\'s ₹6,100 and 622 kg CO₂ saved annually!',
+  },
+  {
+    id: 'led_smart_system',
+    name: 'LED Smart Lighting',
+    icon: '\u{1F4A1}',
+    wattage: 10,
+    cost: 70,
+    loadType: 'Ultra Efficient',
+    loadClass: 'low',
+    correctRoom: 'Bedroom',
+    description: 'Smart LED system with dimming, scheduling, and motion detection — replaces all traditional lighting.',
+    insight: 'Uses 80% less energy than incandescent and auto-dims when not needed!',
+    bestTime: 'evening',
+    replaces: 'Traditional Lighting (~200W)',
+    savingPct: 90,
+    co2SavedKg: 3.8,
+    usageTask: {
+      title: 'Smart Lighting Control',
+      instruction: 'How do you manage lighting efficiently in the evening?',
+      correct: { label: 'Smart LED with auto-dim + scheduling', time: 'evening', feedback: 'Smart LEDs dim automatically and turn off on schedule — 90% energy saved!' },
+      wrong: { label: 'Keep all lights at full brightness', feedback: 'Full brightness wastes energy. Smart dimming saves 40% even when lights are on!' },
+    },
+    learningMsg: 'Smart LED system uses 90% less energy than traditional bulbs. Motion sensors prevent lights being left on in empty rooms!',
+  },
+  {
+    id: 'solar_water_heater',
+    name: 'Solar Water Heater',
+    icon: '\u{2615}',
+    wattage: 0,
+    cost: 100,
+    loadType: 'Zero Electric',
+    loadClass: 'low',
+    correctRoom: 'Bathroom',
+    description: 'Uses solar thermal energy to heat water — completely replaces the 2000W electric geyser!',
+    insight: 'Zero electricity! Heats water using sunlight. Replaces the biggest energy hog in your home.',
+    bestTime: 'morning',
+    replaces: 'Electric Geyser (2000W)',
+    savingPct: 100,
+    co2SavedKg: 12.5,
+    usageTask: {
+      title: 'Heat Water Without Electricity',
+      instruction: 'How do you get hot water for a bath?',
+      correct: { label: 'Solar Water Heater (0W)', time: 'morning', feedback: 'Solar heater uses FREE sunlight! Zero electricity, zero CO₂, zero cost!' },
+      wrong: { label: 'Electric Geyser (2000W)', feedback: 'Geyser uses 2000W — the highest single appliance load! That\'s ~128 kg CO₂/year!' },
+    },
+    learningMsg: 'Solar water heater eliminated 2000W load completely! Saves ~365 kWh/year and 259 kg CO₂. The geyser was your home\'s biggest energy consumer!',
+  },
+  {
+    id: 'ev_charger',
+    name: 'EV Charger',
+    icon: '\u{26A1}',
+    wattage: 3000,
+    cost: 120,
+    loadType: 'Heavy',
+    loadClass: 'high',
+    correctRoom: 'Outside',
+    description: 'Electric Vehicle charger — charges your car using solar energy instead of petrol!',
+    insight: '3000W load but if charged during solar peak, it\'s essentially FREE and zero-emission!',
+    bestTime: 'noon',
+    replaces: 'Petrol Vehicle (~₹8,000/month fuel)',
+    savingPct: 70,
+    co2SavedKg: 150,
+    usageTask: {
+      title: 'Charge Vehicle Using Solar',
+      instruction: 'When is the best time to charge your EV?',
+      correct: { label: 'Charge at noon (solar peak)', time: 'noon', feedback: 'Noon charging uses free solar energy! Zero fuel cost, zero emissions!' },
+      wrong: { label: 'Charge at night (no solar)', feedback: 'Night charging uses grid power — higher bills and 0.71 kg CO₂ per kWh consumed!' },
+    },
+    learningMsg: 'EV + Solar charging replaces ₹8,000/month petrol cost with near-zero energy cost. Annual CO₂ savings: ~1,800 kg compared to petrol car!',
+  },
+];
+
+export const STORE_APPLIANCE_MAP = {};
+STORE_APPLIANCES.forEach(a => { STORE_APPLIANCE_MAP[a.id] = a; });
+export const STORE_IDS = STORE_APPLIANCES.map(a => a.id);
+
+// ═══ TIME SYSTEM ═══
+export const SCHEDULE_SLOTS = [
+  { id: 'dawn',      label: 'Dawn (6 AM)',      hour: 6,  icon: '\u{1F305}', sunlight: 0.2 },
+  { id: 'morning',   label: 'Morning (9 AM)',   hour: 9,  icon: '\u{1F304}', sunlight: 0.6 },
+  { id: 'noon',      label: 'Noon (12 PM)',     hour: 12, icon: '\u{2600}\u{FE0F}', sunlight: 1.0 },
+  { id: 'afternoon', label: 'Afternoon (3 PM)', hour: 15, icon: '\u{1F31E}', sunlight: 0.8 },
+  { id: 'evening',   label: 'Evening (6 PM)',   hour: 18, icon: '\u{1F307}', sunlight: 0.15 },
+  { id: 'night',     label: 'Night (9 PM)',     hour: 21, icon: '\u{1F303}', sunlight: 0.0 },
+];
+
+// ═══ SOLAR SYSTEM ═══
+export const PANEL_WATT_PEAK = 330;
+export const PANEL_COUNT = 6;
+export const BATTERY_CAPACITY = 10.0;
+export const BATTERY_CHARGE_RATE = 1.5;
+export const BATTERY_DISCHARGE_RATE = 2.0;
+
+export function calcSolarW(sunlight, weather = 1.0) {
+  return Math.round(PANEL_COUNT * PANEL_WATT_PEAK * sunlight * weather * 0.97);
+}
+
+// ═══ WEATHER ═══
+export const WEATHER_TYPES = [
+  { id: 'clear',   label: 'Clear Sky',    factor: 1.0,  icon: '\u{2600}\u{FE0F}' },
+  { id: 'partial', label: 'Partly Cloudy', factor: 0.7,  icon: '\u{26C5}' },
+  { id: 'cloudy',  label: 'Overcast',     factor: 0.35, icon: '\u{2601}\u{FE0F}' },
+];
+
+// ═══ COST ═══
+export const COST_PER_KWH = 7;
+export const BEFORE_STATS = { co2Month: 223, billMonth: 2500 };
+
+// ═══ PHASE DEFINITIONS (10 phases) ═══
+export const PHASES = [
+  { id: 'entry',       title: 'Welcome',               icon: '\u{1F3E0}' },
+  { id: 'store',       title: 'Smart Store',            icon: '\u{1F3EA}' },
+  { id: 'appliance',   title: 'Upgrade Home',           icon: '\u{1F527}' }, // cycles per appliance
+  { id: 'integration', title: 'Integration Mode',       icon: '\u{1F504}' },
+  { id: 'simulation',  title: 'Full Day Simulation',    icon: '\u{23F1}\u{FE0F}' },
+  { id: 'dashboard',   title: 'Final Impact Dashboard', icon: '\u{1F4CA}' },
+  { id: 'quiz',        title: 'Final Quiz',             icon: '\u{1F9E0}' },
+  { id: 'reward',      title: 'Reward',                 icon: '\u{1F3C6}' },
+];
+
+// ═══ QUIZ — UPDATED FOR 5 SUSTAINABLE APPLIANCES ═══
+export const L5_QUIZ = [
+  {
+    question: 'Air Cooler uses how much less energy than AC?',
+    options: ['50% less', '70% less', '86% less', '95% less'],
+    correctIndex: 2,
+    explanation: 'Air Cooler uses 200W vs AC\'s 1500W — that\'s 86% less energy!',
+  },
+  {
+    question: 'What does a Smart Power Strip eliminate?',
+    options: ['Wi-Fi signal', 'Phantom/standby power drain', 'Solar panel output', 'Battery charge'],
+    correctIndex: 1,
+    explanation: 'Smart strips cut phantom power from devices left in standby — saving ~876 kWh/year!',
+  },
+  {
+    question: 'Best time to charge an EV using solar?',
+    options: ['Night (cheap grid)', 'Dawn (early start)', 'Noon (peak solar)', 'Evening (after work)'],
+    correctIndex: 2,
+    explanation: 'Noon has maximum solar output — free, clean charging with zero grid dependency!',
+  },
+  {
+    question: 'Solar Water Heater replaces which high-load appliance?',
+    options: ['AC (1500W)', 'Microwave (1000W)', 'Electric Geyser (2000W)', 'Induction (1500W)'],
+    correctIndex: 2,
+    explanation: 'Solar water heater uses sunlight to heat water, replacing the 2000W geyser completely!',
+  },
+  {
+    question: 'Smart LED lighting saves how much energy compared to incandescent?',
+    options: ['30%', '50%', '70%', '90%'],
+    correctIndex: 3,
+    explanation: 'Smart LEDs use 10W vs incandescent\'s 100W — 90% energy savings with better light quality!',
+  },
+  {
+    question: 'Which combination saves the most CO₂ annually?',
+    options: ['Air Cooler + Smart Strip', 'Solar Heater + EV Charger', 'LED + Cooler', 'Strip + LED'],
+    correctIndex: 1,
+    explanation: 'Solar heater (259 kg) + EV solar charging (1800 kg) = 2,059 kg CO₂ saved — massive impact!',
+  },
+];
+
+// ═══ STAR SYSTEM ═══
+export function calculateL5Stars(appliancesCompleted, quizPct, integrationPct, simulationPct) {
+  const appPct = (appliancesCompleted / STORE_APPLIANCES.length) * 100;
+  const overall = appPct * 0.3 + quizPct * 0.3 + integrationPct * 0.2 + simulationPct * 0.2;
+  if (overall >= 75) return 3;
+  if (overall >= 50) return 2;
+  return 1;
+}
+
+// ═══ BADGE ═══
+export const LEVEL5_BADGE = {
+  id: 'sustainability_master',
+  title: 'Sustainability Master',
+  description: 'Built a fully smart and sustainable home from the ground up!',
+  icon: '\u{1F3C6}',
+  coins: 200,
 };
+
+// ═══ DIALOGUE ═══
+export const ENTRY_DIALOGUE = [
+  "You've started using solar energy\u{2026}",
+  "But a truly sustainable home needs smart upgrades.",
+  "Now let's upgrade your home step-by-step!",
+  "Each upgrade teaches you a sustainable solution.",
+];
+
+export const FINAL_DIALOGUE = [
+  "You built a fully sustainable home!",
+  "Every upgrade made your home smarter and greener.",
+  "You are now a Sustainability Master!",
+  "Go make a difference in the real world. \u{1F30D}\u{2728}",
+];
+
+// ═══ TOTAL SAVINGS (computed from all 5 appliances) ═══
+export function computeTotalSavings(completedIds) {
+  let totalCo2 = 0;
+  let totalBillSaved = 0;
+  completedIds.forEach(id => {
+    const app = STORE_APPLIANCE_MAP[id];
+    if (app) {
+      totalCo2 += app.co2SavedKg;
+      totalBillSaved += Math.round(app.co2SavedKg * 10); // rough ₹ estimate
+    }
+  });
+  return {
+    co2Saved: Math.round(totalCo2),
+    billSaved: totalBillSaved,
+    efficiencyPct: Math.round((completedIds.length / STORE_APPLIANCES.length) * 100),
+    solarPct: completedIds.includes('solar_water_heater') && completedIds.includes('ev_charger') ? 85 : completedIds.length * 15,
+  };
+}
