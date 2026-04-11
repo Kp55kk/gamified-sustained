@@ -15,6 +15,8 @@ import {
   computeTotalSavings, L5_QUIZ, STAGES,
   MULTI_USE_TASKS, COMBO_TASKS, PROGRESSIVE_GOALS,
   DYNAMIC_EVENTS, MASTER_CYCLE_GOALS, ANALYSIS_QUESTIONS,
+  HOME_EVOLUTION, ENVIRONMENT_FEEDBACK, getEnvironmentGrade,
+  PROBLEM_HINTS, CONFIDENCE_MESSAGES,
 } from './level5Data';
 import Level5Quiz from './Level5Quiz';
 import './Level5.css';
@@ -29,6 +31,7 @@ function playError() { try { const c=getAC(),o=c.createOscillator(),g=c.createGa
 function playPlace() { [600,800,1000].forEach((f,i) => { try { const c=getAC(),o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.type='sine';o.frequency.setValueAtTime(f,c.currentTime+i*0.08);g.gain.setValueAtTime(0.06,c.currentTime+i*0.08);g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+i*0.08+0.15);o.start(c.currentTime+i*0.08);o.stop(c.currentTime+i*0.08+0.15);} catch(e){} }); }
 function playAlert() { [800,600,800].forEach((f,i) => { try { const c=getAC(),o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.type='square';o.frequency.setValueAtTime(f,c.currentTime+i*0.15);g.gain.setValueAtTime(0.04,c.currentTime+i*0.15);g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+i*0.15+0.12);o.start(c.currentTime+i*0.15);o.stop(c.currentTime+i*0.15+0.12);} catch(e){} }); }
 function playCombo() { [523,659,784,880,1047].forEach((f,i) => { try { const c=getAC(),o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.type='triangle';o.frequency.setValueAtTime(f,c.currentTime+i*0.08);g.gain.setValueAtTime(0.06,c.currentTime+i*0.08);g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+i*0.08+0.2);o.start(c.currentTime+i*0.08);o.stop(c.currentTime+i*0.08+0.2);} catch(e){} }); }
+function playThink() { try { const c=getAC(),o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.type='sine';o.frequency.setValueAtTime(440,c.currentTime);o.frequency.linearRampToValueAtTime(660,c.currentTime+0.3);g.gain.setValueAtTime(0.04,c.currentTime);g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+0.4);o.start(c.currentTime);o.stop(c.currentTime+0.4);} catch(e){} }
 
 // ═══ 3D ═══
 function CamRef({r}){const{camera}=useThree();useEffect(()=>{r.current=camera},[camera,r]);return null;}
@@ -46,6 +49,34 @@ function StageBar({ currentStage }) {
           <div className="l5-stage-name">{s.name}</div>
         </div>
       ))}
+    </div>
+  );
+}
+
+// ═══ HOME EVOLUTION STRIP ═══
+function HomeEvoStrip({ stage }) {
+  return (
+    <div className="l5-home-evo-strip">
+      {HOME_EVOLUTION.map(h => (
+        <div key={h.stage} className={`l5-home-evo-stage ${h.stage <= stage ? 'active' : ''} ${h.stage === stage ? 'current' : ''}`}>
+          <div className="l5-home-evo-icon" style={{ color: h.stage <= stage ? h.color : '#555' }}>{h.icon}</div>
+          <div className="l5-home-evo-label">{h.label}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ═══ ENERGY METER COMPONENT (used in simulations) ═══
+function EnergyMeter({ label, value, max, unit, color, icon, animate }) {
+  const pct = Math.min((value / max) * 100, 100);
+  return (
+    <div className="l5-sim-meter">
+      <div className="l5-sim-meter-label">{icon} {label}</div>
+      <div className="l5-sim-meter-track">
+        <div className={`l5-sim-meter-fill ${animate ? 'animate' : ''}`} style={{ width: `${pct}%`, background: color }}></div>
+      </div>
+      <div className="l5-sim-meter-value" style={{ color }}>{value}{unit}</div>
     </div>
   );
 }
@@ -98,31 +129,38 @@ export default function Level5() {
   const [batteryKwh, setBatteryKwh] = useState(5.0);
   const timeSlot = useMemo(() => SCHEDULE_SLOTS.find(s => s.id === timeOfDay) || SCHEDULE_SLOTS[2], [timeOfDay]);
 
-  // ─── Stage 2: Multi-Use Tasks ───
+  // ─── Stage 2: Interactive Simulation Tasks ───
   const [multiUseAppIdx, setMultiUseAppIdx] = useState(0);
   const [multiUseTaskIdx, setMultiUseTaskIdx] = useState(0);
-  const [multiUseChoice, setMultiUseChoice] = useState(null);
-  const [multiUseFeedback, setMultiUseFeedback] = useState(false);
   const [multiUseCompleted, setMultiUseCompleted] = useState({});
   const [totalMultiUseScore, setTotalMultiUseScore] = useState(0);
+  // Simulation sub-phases: 'task' → 'result' → 'think' → 'quiz' → 'feedback'
+  const [simPhase, setSimPhase] = useState('task');
+  const [simSelectedOption, setSimSelectedOption] = useState(null);
+  const [quizAnswer, setQuizAnswer] = useState(null);
+  const [showRetry, setShowRetry] = useState(false);
+  const [confidenceMsg, setConfidenceMsg] = useState(null);
 
-  // ─── Stage 3: Combo Tasks & Progressive Goals ───
+  // ─── Stage 3: Combo Tasks ───
   const [comboIdx, setComboIdx] = useState(0);
-  const [comboChoice, setComboChoice] = useState(null);
-  const [comboFeedback, setComboFeedback] = useState(false);
   const [comboScore, setComboScore] = useState(0);
+  const [comboPhase, setComboPhase] = useState('task');
+  const [comboSimOption, setComboSimOption] = useState(null);
+  const [comboQuizAnswer, setComboQuizAnswer] = useState(null);
+  const [comboRetry, setComboRetry] = useState(false);
   const [progressGoalIdx, setProgressGoalIdx] = useState(0);
   const [accumulatedCO2, setAccumulatedCO2] = useState(0);
   const [goalMet, setGoalMet] = useState(false);
 
   // ─── Stage 4: Dynamic Events ───
   const [eventIdx, setEventIdx] = useState(0);
-  const [eventChoice, setEventChoice] = useState(null);
-  const [eventFeedback, setEventFeedback] = useState(false);
   const [eventTimer, setEventTimer] = useState(0);
   const [totalConsequences, setTotalConsequences] = useState({ co2: 0, bill: 0 });
-  const [showConsequence, setShowConsequence] = useState(false);
   const [crisisScore, setCrisisScore] = useState(0);
+  const [crisisPhase, setCrisisPhase] = useState('event');
+  const [crisisSimOption, setCrisisSimOption] = useState(null);
+  const [crisisQuizAnswer, setCrisisQuizAnswer] = useState(null);
+  const [crisisRetry, setCrisisRetry] = useState(false);
 
   // ─── Stage 5: Master Simulation ───
   const [masterCycle, setMasterCycle] = useState(0);
@@ -131,7 +169,7 @@ export default function Level5() {
   const [simRunning, setSimRunning] = useState(false);
   const [allCycleResults, setAllCycleResults] = useState([]);
   const [analysisIdx, setAnalysisIdx] = useState(0);
-  const [analysisChoice, setAnalysisChoice] = useState(null);
+  const [analysisAnswer, setAnalysisAnswer] = useState(null);
   const [analysisFeedback, setAnalysisFeedback] = useState(false);
   const [analysisScore, setAnalysisScore] = useState(0);
 
@@ -187,6 +225,11 @@ export default function Level5() {
   // Master cycle target
   const currentCycleGoal = MASTER_CYCLE_GOALS[masterCycle] || null;
 
+  // Random confidence message
+  const getConfidenceMsg = useCallback(() => {
+    return CONFIDENCE_MESSAGES[Math.floor(Math.random() * CONFIDENCE_MESSAGES.length)];
+  }, []);
+
   // ═══ EFFECTS ═══
 
   // Intro animation
@@ -223,7 +266,7 @@ export default function Level5() {
 
   // Event timer countdown (Stage 4)
   useEffect(() => {
-    if (screen !== 'crisis' || eventChoice !== null) return;
+    if (screen !== 'crisis' || crisisPhase !== 'event') return;
     if (eventTimer <= 0) return;
     const t = setInterval(() => {
       setEventTimer(prev => {
@@ -232,7 +275,7 @@ export default function Level5() {
       });
     }, 1000);
     return () => clearInterval(t);
-  }, [screen, eventChoice, eventTimer]);
+  }, [screen, crisisPhase, eventTimer]);
 
   // Simulation runner (Stage 5)
   useEffect(() => {
@@ -303,7 +346,7 @@ export default function Level5() {
   const handleUsageChoice = useCallback((choice) => {
     setUsageChoice(choice);
     setShowUsageFeedback(true);
-    if (choice === 'correct') playSuccess(); else playError();
+    playClick();
   }, []);
 
   const handleConfirmLearning = useCallback(() => {
@@ -318,27 +361,54 @@ export default function Level5() {
       setAppPhase('buy');
       setScreen('store');
     } else {
-      // All Stage 1 done → advance to Stage 2
       setStage(2);
       setScreen('stage_transition');
     }
   }, [currentApp, purchased, completed]);
 
-  // ─── Stage 2: Multi-Use Task Handlers ───
-  const handleMultiUseChoice = useCallback((choice) => {
-    setMultiUseChoice(choice);
-    setMultiUseFeedback(true);
-    if (choice === 'correct') {
-      playSuccess();
-      const task = currentMultiTask;
-      if (task) {
+  // ─── Stage 2: Interactive Simulation Handlers ───
+  const handleSimOptionSelect = useCallback((option) => {
+    setSimSelectedOption(option);
+    playClick();
+    // Show result for 1.5s, then transition to think prompt
+    setTimeout(() => setSimPhase('result'), 300);
+  }, []);
+
+  const handleSimResult = useCallback(() => {
+    setSimPhase('think');
+    playThink();
+    // Show "Think about what happened" for 1.5s, then show quiz
+    setTimeout(() => setSimPhase('quiz'), 1500);
+  }, []);
+
+  const handleQuizAnswer = useCallback((idx) => {
+    setQuizAnswer(idx);
+    playClick();
+    const task = currentMultiTask;
+    if (!task) return;
+    const isCorrect = idx === task.hiddenQuiz.correctIndex;
+    setTimeout(() => {
+      setSimPhase('feedback');
+      if (isCorrect) {
         setTotalMultiUseScore(s => s + task.reward);
         addCarbonCoins(task.reward);
+        setConfidenceMsg(getConfidenceMsg());
+        setShowRetry(false);
+      } else {
+        setShowRetry(true);
+        setConfidenceMsg(null);
       }
-    } else {
-      playError();
-    }
-  }, [currentMultiTask, addCarbonCoins]);
+    }, 500);
+  }, [currentMultiTask, addCarbonCoins, getConfidenceMsg]);
+
+  const handleMultiUseRetry = useCallback(() => {
+    setSimPhase('task');
+    setSimSelectedOption(null);
+    setQuizAnswer(null);
+    setShowRetry(false);
+    setConfidenceMsg(null);
+    playClick();
+  }, []);
 
   const handleMultiUseNext = useCallback(() => {
     const appId = STORE_APPLIANCES[multiUseAppIdx]?.id;
@@ -347,103 +417,155 @@ export default function Level5() {
     if (multiUseTaskIdx + 1 < tasks.length) {
       setMultiUseTaskIdx(t => t + 1);
     } else {
-      // Mark this appliance's multi-use tasks as done
       setMultiUseCompleted(prev => ({ ...prev, [appId]: true }));
       if (multiUseAppIdx + 1 < STORE_APPLIANCES.length) {
         setMultiUseAppIdx(a => a + 1);
         setMultiUseTaskIdx(0);
       } else {
-        // All multi-use done → Stage 3
         setStage(3);
         setScreen('stage_transition');
       }
     }
-    setMultiUseChoice(null);
-    setMultiUseFeedback(false);
+    // Reset simulation state
+    setSimPhase('task');
+    setSimSelectedOption(null);
+    setQuizAnswer(null);
+    setShowRetry(false);
+    setConfidenceMsg(null);
   }, [multiUseAppIdx, multiUseTaskIdx]);
 
   // ─── Stage 3: Combo Task Handlers ───
-  const handleComboChoice = useCallback((choice) => {
-    setComboChoice(choice);
-    setComboFeedback(true);
-    if (choice === 'correct') {
-      playCombo();
-      const combo = currentCombo;
-      if (combo) {
+  const handleComboSimSelect = useCallback((option) => {
+    setComboSimOption(option);
+    playClick();
+    setTimeout(() => setComboPhase('result'), 300);
+  }, []);
+
+  const handleComboResult = useCallback(() => {
+    setComboPhase('think');
+    playThink();
+    setTimeout(() => setComboPhase('quiz'), 1500);
+  }, []);
+
+  const handleComboQuizAnswer = useCallback((idx) => {
+    setComboQuizAnswer(idx);
+    playClick();
+    const combo = currentCombo;
+    if (!combo) return;
+    const isCorrect = idx === combo.hiddenQuiz.correctIndex;
+    setTimeout(() => {
+      setComboPhase('feedback');
+      if (isCorrect) {
+        playCombo();
         setComboScore(s => s + combo.reward);
         addCarbonCoins(combo.reward);
         setAccumulatedCO2(prev => Math.max(0, prev + combo.co2Impact));
+        setComboRetry(false);
+        setConfidenceMsg(getConfidenceMsg());
+      } else {
+        setAccumulatedCO2(prev => prev + Math.abs(combo.co2Impact));
+        setComboRetry(true);
+        setConfidenceMsg(null);
       }
-    } else {
-      playError();
-      if (currentCombo) {
-        setAccumulatedCO2(prev => prev + Math.abs(currentCombo.co2Impact));
-      }
-    }
-  }, [currentCombo, addCarbonCoins]);
+    }, 500);
+  }, [currentCombo, addCarbonCoins, getConfidenceMsg]);
+
+  const handleComboRetry = useCallback(() => {
+    setComboPhase('task');
+    setComboSimOption(null);
+    setComboQuizAnswer(null);
+    setComboRetry(false);
+    setConfidenceMsg(null);
+    playClick();
+  }, []);
 
   const handleComboNext = useCallback(() => {
     if (comboIdx + 1 < COMBO_TASKS.length) {
       setComboIdx(c => c + 1);
     } else {
-      // Check progressive goal
       const goal = PROGRESSIVE_GOALS[progressGoalIdx];
       if (goal && accumulatedCO2 <= goal.target) {
         setGoalMet(true);
         if (progressGoalIdx + 1 < PROGRESSIVE_GOALS.length) {
           setProgressGoalIdx(p => p + 1);
-          // Reset combos for next round
           setComboIdx(0);
           setGoalMet(false);
         } else {
-          // All goals met → Stage 4
           setStage(4);
           setScreen('stage_transition');
         }
       } else {
-        // Goal not met → retry combos
         setComboIdx(0);
       }
     }
-    setComboChoice(null);
-    setComboFeedback(false);
+    setComboPhase('task');
+    setComboSimOption(null);
+    setComboQuizAnswer(null);
+    setComboRetry(false);
+    setConfidenceMsg(null);
   }, [comboIdx, progressGoalIdx, accumulatedCO2]);
 
   // ─── Stage 4: Event Handlers ───
-  const handleEventChoice = useCallback((choice) => {
-    setEventChoice(choice);
-    setEventFeedback(true);
-    if (choice === 'correct') {
-      playSuccess();
-      const evt = currentEvent;
-      if (evt) {
+  const handleCrisisSimSelect = useCallback((option) => {
+    setCrisisSimOption(option);
+    playClick();
+    setTimeout(() => setCrisisPhase('result'), 300);
+  }, []);
+
+  const handleCrisisResult = useCallback(() => {
+    setCrisisPhase('think');
+    playThink();
+    setTimeout(() => setCrisisPhase('quiz'), 1500);
+  }, []);
+
+  const handleCrisisQuizAnswer = useCallback((idx) => {
+    setCrisisQuizAnswer(idx);
+    playClick();
+    const evt = currentEvent;
+    if (!evt) return;
+    const isCorrect = idx === evt.hiddenQuiz.correctIndex;
+    setTimeout(() => {
+      setCrisisPhase('feedback');
+      if (isCorrect) {
+        playSuccess();
         setCrisisScore(s => s + evt.reward);
         addCarbonCoins(evt.reward);
-      }
-    } else {
-      playError();
-      if (currentEvent) {
+        setCrisisRetry(false);
+        setConfidenceMsg(getConfidenceMsg());
+      } else {
         setTotalConsequences(prev => ({
-          co2: prev.co2 + currentEvent.consequence.co2Spike,
-          bill: prev.bill + currentEvent.consequence.billSpike,
+          co2: prev.co2 + evt.consequence.co2Spike,
+          bill: prev.bill + evt.consequence.billSpike,
         }));
-        setShowConsequence(true);
+        setCrisisRetry(true);
+        setConfidenceMsg(null);
       }
-    }
-  }, [currentEvent, addCarbonCoins]);
+    }, 500);
+  }, [currentEvent, addCarbonCoins, getConfidenceMsg]);
+
+  const handleCrisisRetry = useCallback(() => {
+    setCrisisPhase('event');
+    setCrisisSimOption(null);
+    setCrisisQuizAnswer(null);
+    setCrisisRetry(false);
+    setConfidenceMsg(null);
+    setEventTimer(12);
+    playClick();
+  }, []);
 
   const handleEventNext = useCallback(() => {
-    setShowConsequence(false);
     if (eventIdx + 1 < DYNAMIC_EVENTS.length) {
       setEventIdx(e => e + 1);
       setEventTimer(12);
     } else {
-      // All events handled → Stage 5
       setStage(5);
       setScreen('stage_transition');
     }
-    setEventChoice(null);
-    setEventFeedback(false);
+    setCrisisPhase('event');
+    setCrisisSimOption(null);
+    setCrisisQuizAnswer(null);
+    setCrisisRetry(false);
+    setConfidenceMsg(null);
   }, [eventIdx]);
 
   // ─── Stage 5: Master Simulation ───
@@ -467,20 +589,17 @@ export default function Level5() {
       setSimTimeIdx(0);
       setSimResults([]);
     } else {
-      // All cycles done → Analysis
       setScreen('analysis');
     }
   }, [masterCycle, simResults]);
 
   // Analysis
-  const handleAnalysisChoice = useCallback((idx) => {
-    setAnalysisChoice(idx);
+  const handleAnalysisAnswer = useCallback((idx) => {
+    setAnalysisAnswer(idx);
     setAnalysisFeedback(true);
+    playClick();
     if (idx === ANALYSIS_QUESTIONS[analysisIdx]?.correctIndex) {
-      playSuccess();
       setAnalysisScore(s => s + 1);
-    } else {
-      playError();
     }
   }, [analysisIdx]);
 
@@ -490,7 +609,7 @@ export default function Level5() {
     } else {
       setScreen('dashboard');
     }
-    setAnalysisChoice(null);
+    setAnalysisAnswer(null);
     setAnalysisFeedback(false);
   }, [analysisIdx]);
 
@@ -526,11 +645,15 @@ export default function Level5() {
     );
   }, [quizResult, completed, integrationScore, comboScore, allCycleResults]);
 
+  // Environment grade for dashboard
+  const envGrade = useMemo(() => getEnvironmentGrade(totalSavings.solarPct, totalSavings.co2Saved), [totalSavings]);
+  const envData = ENVIRONMENT_FEEDBACK[envGrade];
+
   // ═══ RENDER ═══
   return (
     <div className="l5-container">
 
-      {/* ══ STAGE PROGRESS BAR (shown in all gameplay screens) ══ */}
+      {/* ══ STAGE PROGRESS BAR ══ */}
       {!['entry', 'reward'].includes(screen) && <StageBar currentStage={stage} />}
 
       {/* ══ ENTRY SCREEN ══ */}
@@ -565,10 +688,11 @@ export default function Level5() {
             <div className="l5-stage-transition-name">{STAGES[stage - 1]?.name}</div>
             <div className="l5-stage-transition-desc">{STAGES[stage - 1]?.desc}</div>
             <div className="l5-stage-transition-time">{L5.clock} {STAGES[stage - 1]?.time}</div>
+            <HomeEvoStrip stage={stage} />
             <button className="l5-stage-transition-btn" onClick={() => {
-              if (stage === 2) setScreen('multiuse');
-              else if (stage === 3) { setScreen('combo'); setAccumulatedCO2(20); }
-              else if (stage === 4) { setScreen('crisis'); setEventTimer(12); playAlert(); }
+              if (stage === 2) { setScreen('multiuse'); setSimPhase('task'); }
+              else if (stage === 3) { setScreen('combo'); setAccumulatedCO2(20); setComboPhase('task'); }
+              else if (stage === 4) { setScreen('crisis'); setEventTimer(12); setCrisisPhase('event'); playAlert(); }
               else if (stage === 5) setScreen('master_sim');
             }}>
               Begin Stage {stage} {'\u{2192}'}
@@ -607,9 +731,18 @@ export default function Level5() {
               const isLocked = !isAvailable && !isBought && !isDone;
               const canBuy = isAvailable && !isBought && carbonCoins >= app.cost;
               const cantAfford = isAvailable && !isBought && carbonCoins < app.cost;
+              const hint = PROBLEM_HINTS[app.id];
 
               return (
                 <div key={app.id} className={`l5-store-card ${isDone ? 'done' : isBought ? 'bought' : isLocked ? 'locked' : canBuy ? 'available' : 'unavailable'}`}>
+                  {/* Problem banner (shown for available/unlocked cards) */}
+                  {!isLocked && !isDone && hint && (
+                    <div className="l5-store-problem">
+                      <div className="l5-store-problem-issue">{L5.warn} {hint.problem}</div>
+                      <div className="l5-store-problem-hint">{L5.bulb} {hint.hint}</div>
+                    </div>
+                  )}
+
                   <div className="l5-store-card-icon">{isDone ? L5.check : isLocked ? L5.lock : app.icon}</div>
                   <div className="l5-store-card-name">{isLocked ? '???' : app.name}</div>
                   <div className="l5-store-card-watts">{isLocked ? '---' : `${app.wattage}W • ${app.loadType}`}</div>
@@ -710,7 +843,7 @@ export default function Level5() {
             {zone === currentApp.correctRoom ? (
               <>{L5.check} Correct room! Press <span className="l5-key">E</span> to place</>
             ) : (
-              <>{L5.cross} Go to <strong>{currentApp.correctRoom}</strong></>
+              <>{L5.pin} Go to <strong>{currentApp.correctRoom}</strong></>
             )}
           </div>
 
@@ -718,7 +851,6 @@ export default function Level5() {
             <div className="l5-error-toast">{L5.warn} {placementError}</div>
           )}
 
-          {/* Home appliances indicator */}
           {homeAppliances.length > 0 && (
             <div className="l5-home-appliances-indicator">
               <div className="l5-home-app-title">{L5.house} Your Home</div>
@@ -744,18 +876,18 @@ export default function Level5() {
 
             {!showUsageFeedback ? (
               <div className="l5-usage-choices">
-                <button className="l5-usage-choice correct-choice" onClick={() => handleUsageChoice('correct')}>
-                  {L5.check} {currentApp.usageTask.correct.label}
+                <button className="l5-sim-option" onClick={() => handleUsageChoice('correct')}>
+                  {L5.play} {currentApp.usageTask.correct.label}
                 </button>
-                <button className="l5-usage-choice wrong-choice" onClick={() => handleUsageChoice('wrong')}>
-                  {L5.cross} {currentApp.usageTask.wrong.label}
+                <button className="l5-sim-option" onClick={() => handleUsageChoice('wrong')}>
+                  {L5.play} {currentApp.usageTask.wrong.label}
                 </button>
               </div>
             ) : (
               <div className="l5-usage-feedback">
-                <div className={`l5-feedback-box ${usageChoice}`}>
-                  <div className="l5-feedback-icon">{usageChoice === 'correct' ? L5.check : L5.warn}</div>
-                  <div className="l5-feedback-text">
+                <div className="l5-narrative-feedback">
+                  <div className="l5-narrative-icon">{L5.speech}</div>
+                  <div className="l5-narrative-text">
                     {usageChoice === 'correct'
                       ? currentApp.usageTask.correct.feedback
                       : currentApp.usageTask.wrong.feedback
@@ -810,20 +942,19 @@ export default function Level5() {
             </div>
 
             <div className="l5-confirm-comparison">
-              <div className="l5-confirm-before"><span>{L5.cross}</span> Before: {currentApp.replaces}</div>
+              <div className="l5-confirm-before"><span>{L5.warn}</span> Before: {currentApp.replaces}</div>
               <div className="l5-confirm-arrow">{'\u{2192}'}</div>
-              <div className="l5-confirm-after"><span>{L5.check}</span> After: {currentApp.name} ({currentApp.wattage}W)</div>
+              <div className="l5-confirm-after"><span>{L5.leaf}</span> After: {currentApp.name} ({currentApp.wattage}W)</div>
             </div>
 
-            {/* Home evolving message */}
             <div className="l5-home-evolving">
               {L5.house} Your home now has {homeAppliances.length} upgrade{homeAppliances.length !== 1 ? 's' : ''} installed!
             </div>
 
             <button className="l5-confirm-btn" onClick={handleConfirmLearning}>
               {completed.length + 1 >= STORE_APPLIANCES.length
-                ? `${L5.check} All Done — Next Stage ${'\u{2192}'}`
-                : `${L5.check} Got it! Next Upgrade ${'\u{2192}'}`
+                ? `${L5.sparkle} All Done — Next Stage ${'\u{2192}'}`
+                : `${L5.sparkle} Got it! Next Upgrade ${'\u{2192}'}`
               }
             </button>
           </div>
@@ -831,7 +962,7 @@ export default function Level5() {
       )}
 
       {/* ══════════════════════════════════════════════════════ */}
-      {/* ══ STAGE 2: MULTI-USE TASKS ══ */}
+      {/* ══ STAGE 2: INTERACTIVE SIMULATION TASKS ══ */}
       {/* ══════════════════════════════════════════════════════ */}
       {screen === 'multiuse' && currentMultiApp && currentMultiTask && (
         <div className="l5-multiuse-overlay">
@@ -851,40 +982,129 @@ export default function Level5() {
               </div>
             </div>
 
-            <div className="l5-multiuse-badge">{L5.target} SMART USAGE TASK</div>
-            <div className="l5-multiuse-title">{currentMultiTask.title}</div>
-            <div className="l5-multiuse-instruction">{currentMultiTask.instruction}</div>
+            {/* PHASE: TASK — Interactive Simulation */}
+            {simPhase === 'task' && (
+              <>
+                <div className="l5-multiuse-badge">{L5.play} INTERACTIVE TASK</div>
+                <div className="l5-multiuse-title">{currentMultiTask.title}</div>
+                <div className="l5-multiuse-instruction">{currentMultiTask.simulation.scenario}</div>
+                <div className="l5-sim-options">
+                  {currentMultiTask.simulation.options.map(opt => (
+                    <button key={opt.id} className="l5-sim-option" onClick={() => handleSimOptionSelect(opt)}>
+                      <span className="l5-sim-option-icon">{opt.icon}</span>
+                      <span className="l5-sim-option-label">{opt.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
 
-            {!multiUseFeedback ? (
-              <div className="l5-usage-choices">
-                <button className="l5-usage-choice correct-choice" onClick={() => handleMultiUseChoice('correct')}>
-                  {L5.check} {currentMultiTask.correct.label}
+            {/* PHASE: RESULT — Show simulation meters */}
+            {simPhase === 'result' && simSelectedOption && (
+              <>
+                <div className="l5-multiuse-badge">{L5.chart} SIMULATION RESULT</div>
+                <div className="l5-result-header">
+                  <span className="l5-result-chosen-icon">{simSelectedOption.icon}</span>
+                  <span className="l5-result-chosen-label">{simSelectedOption.label}</span>
+                </div>
+                <div className="l5-sim-meters">
+                  <EnergyMeter label="Power Usage" value={simSelectedOption.watts} max={2000} unit="W" color={simSelectedOption.watts > 500 ? '#ef4444' : simSelectedOption.watts > 200 ? '#f5a623' : '#22c55e'} icon={L5.zap} animate />
+                  <EnergyMeter label="CO₂ Emissions" value={simSelectedOption.co2} max={2} unit=" kg/hr" color={simSelectedOption.co2 > 0.5 ? '#ef4444' : simSelectedOption.co2 > 0.1 ? '#f5a623' : '#22c55e'} icon={L5.globe} animate />
+                  {simSelectedOption.cost !== undefined && (
+                    <EnergyMeter label="Hourly Cost" value={simSelectedOption.cost} max={15} unit=" ₹/hr" color={simSelectedOption.cost > 5 ? '#ef4444' : simSelectedOption.cost > 1 ? '#f5a623' : '#22c55e'} icon={L5.money} animate />
+                  )}
+                  {simSelectedOption.cooling !== undefined && (
+                    <EnergyMeter label="Cooling Effect" value={simSelectedOption.cooling} max={100} unit="%" color="#3b82f6" icon={L5.wind} animate />
+                  )}
+                  {simSelectedOption.saving !== undefined && (
+                    <EnergyMeter label="Annual Saving" value={simSelectedOption.saving} max={1500} unit=" kWh" color="#22c55e" icon={L5.leaf} animate />
+                  )}
+                  {simSelectedOption.comfort !== undefined && (
+                    <EnergyMeter label="Comfort" value={simSelectedOption.comfort} max={100} unit="%" color="#a855f7" icon={L5.star} animate />
+                  )}
+                </div>
+                <button className="l5-usage-next-btn" onClick={handleSimResult}>
+                  {L5.think} Reflect on Results {'\u{2192}'}
                 </button>
-                <button className="l5-usage-choice wrong-choice" onClick={() => handleMultiUseChoice('wrong')}>
-                  {L5.cross} {currentMultiTask.wrong.label}
-                </button>
+              </>
+            )}
+
+            {/* PHASE: THINK — Thinking prompt */}
+            {simPhase === 'think' && (
+              <div className="l5-think-phase">
+                <div className="l5-think-icon">{L5.think}</div>
+                <div className="l5-think-text">{currentMultiTask.hiddenQuiz.thinkPrompt}</div>
+                <div className="l5-think-dots">
+                  <span className="l5-dot-1">.</span>
+                  <span className="l5-dot-2">.</span>
+                  <span className="l5-dot-3">.</span>
+                </div>
               </div>
-            ) : (
+            )}
+
+            {/* PHASE: QUIZ — Hidden quiz (3 neutral options) */}
+            {simPhase === 'quiz' && (
+              <>
+                <div className="l5-multiuse-badge">{L5.brain} REFLECTION</div>
+                <div className="l5-quiz-question">{currentMultiTask.hiddenQuiz.question}</div>
+                <div className="l5-sim-options">
+                  {currentMultiTask.hiddenQuiz.options.map((opt, i) => (
+                    <button key={i}
+                      className={`l5-sim-option ${quizAnswer === i ? 'selected' : ''}`}
+                      onClick={() => quizAnswer === null && handleQuizAnswer(i)}
+                      disabled={quizAnswer !== null}
+                    >
+                      <span className="l5-sim-option-icon">{L5.play}</span>
+                      <span className="l5-sim-option-label">{opt}</span>
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+
+            {/* PHASE: FEEDBACK — Narrative feedback */}
+            {simPhase === 'feedback' && (
               <div className="l5-usage-feedback">
-                <div className={`l5-feedback-box ${multiUseChoice}`}>
-                  <div className="l5-feedback-icon">{multiUseChoice === 'correct' ? L5.check : L5.warn}</div>
-                  <div className="l5-feedback-text">
-                    {multiUseChoice === 'correct' ? currentMultiTask.correct.feedback : currentMultiTask.wrong.feedback}
+                <div className="l5-narrative-feedback">
+                  <div className="l5-narrative-icon">{L5.speech}</div>
+                  <div className="l5-narrative-text">
+                    {quizAnswer === currentMultiTask.hiddenQuiz.correctIndex
+                      ? currentMultiTask.feedback.correct
+                      : currentMultiTask.feedback.wrong
+                    }
                   </div>
                 </div>
-                {multiUseChoice === 'correct' && (
+
+                {confidenceMsg && (
+                  <div className="l5-confidence-boost">{L5.sparkle} {confidenceMsg}</div>
+                )}
+
+                {quizAnswer === currentMultiTask.hiddenQuiz.correctIndex && (
                   <div className="l5-multiuse-reward">
                     {L5.coin} +{currentMultiTask.reward} coins • {L5.globe} {currentMultiTask.co2Impact} kg CO₂
                   </div>
                 )}
-                <button className="l5-usage-next-btn" onClick={handleMultiUseNext}>
-                  {multiUseTaskIdx + 1 >= currentMultiTasks.length && multiUseAppIdx + 1 >= STORE_APPLIANCES.length
-                    ? `Complete Stage 2 ${'\u{2192}'}`
-                    : multiUseTaskIdx + 1 >= currentMultiTasks.length
-                      ? `Next Appliance ${'\u{2192}'}`
-                      : `Next Task ${'\u{2192}'}`
-                  }
-                </button>
+
+                {showRetry ? (
+                  <div className="l5-retry-section">
+                    <div className="l5-retry-text">{L5.speech} {currentMultiTask.feedback.retry}</div>
+                    <button className="l5-retry-btn" onClick={handleMultiUseRetry}>
+                      {L5.cycle} Try Again with Better Strategy
+                    </button>
+                    <button className="l5-skip-btn" onClick={handleMultiUseNext}>
+                      Continue Anyway {'\u{2192}'}
+                    </button>
+                  </div>
+                ) : (
+                  <button className="l5-usage-next-btn" onClick={handleMultiUseNext}>
+                    {multiUseTaskIdx + 1 >= currentMultiTasks.length && multiUseAppIdx + 1 >= STORE_APPLIANCES.length
+                      ? `Complete Stage 2 ${'\u{2192}'}`
+                      : multiUseTaskIdx + 1 >= currentMultiTasks.length
+                        ? `Next Appliance ${'\u{2192}'}`
+                        : `Next Task ${'\u{2192}'}`
+                    }
+                  </button>
+                )}
               </div>
             )}
 
@@ -928,33 +1148,95 @@ export default function Level5() {
             </div>
 
             <div className="l5-combo-time">{L5.clock} Time: {SCHEDULE_SLOTS.find(s => s.id === currentCombo.timeOfDay)?.label}</div>
-            <div className="l5-combo-instruction">{currentCombo.instruction}</div>
 
-            {!comboFeedback ? (
-              <div className="l5-usage-choices">
-                <button className="l5-usage-choice correct-choice" onClick={() => handleComboChoice('correct')}>
-                  {L5.check} {currentCombo.correct.label}
+            {/* PHASE: TASK */}
+            {comboPhase === 'task' && (
+              <>
+                <div className="l5-combo-instruction">{currentCombo.simulation.scenario}</div>
+                <div className="l5-sim-options">
+                  {currentCombo.simulation.options.map(opt => (
+                    <button key={opt.id} className="l5-sim-option" onClick={() => handleComboSimSelect(opt)}>
+                      <span className="l5-sim-option-icon">{opt.icon}</span>
+                      <span className="l5-sim-option-label">{opt.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+
+            {/* PHASE: RESULT */}
+            {comboPhase === 'result' && comboSimOption && (
+              <>
+                <div className="l5-result-header">
+                  <span className="l5-result-chosen-icon">{comboSimOption.icon}</span>
+                  <span className="l5-result-chosen-label">{comboSimOption.label}</span>
+                </div>
+                <div className="l5-sim-meters">
+                  <EnergyMeter label="Total Power" value={comboSimOption.totalW} max={2000} unit="W" color={comboSimOption.totalW > 500 ? '#ef4444' : '#22c55e'} icon={L5.zap} animate />
+                  <EnergyMeter label="CO₂/hr" value={comboSimOption.co2} max={2} unit=" kg" color={comboSimOption.co2 > 0.5 ? '#ef4444' : '#22c55e'} icon={L5.globe} animate />
+                  {comboSimOption.solarUsed !== undefined && (
+                    <EnergyMeter label="Solar Used" value={comboSimOption.solarUsed} max={1920} unit="W" color="#f5a623" icon={L5.sun} animate />
+                  )}
+                  {comboSimOption.gridW !== undefined && (
+                    <EnergyMeter label="Grid Power" value={comboSimOption.gridW} max={5000} unit="W" color={comboSimOption.gridW > 1000 ? '#ef4444' : '#22c55e'} icon={L5.plug} animate />
+                  )}
+                </div>
+                <button className="l5-usage-next-btn" onClick={handleComboResult}>
+                  {L5.think} Reflect on Results {'\u{2192}'}
                 </button>
-                <button className="l5-usage-choice wrong-choice" onClick={() => handleComboChoice('wrong')}>
-                  {L5.cross} {currentCombo.wrong.label}
-                </button>
+              </>
+            )}
+
+            {/* PHASE: THINK */}
+            {comboPhase === 'think' && (
+              <div className="l5-think-phase">
+                <div className="l5-think-icon">{L5.think}</div>
+                <div className="l5-think-text">{currentCombo.hiddenQuiz.thinkPrompt}</div>
+                <div className="l5-think-dots"><span className="l5-dot-1">.</span><span className="l5-dot-2">.</span><span className="l5-dot-3">.</span></div>
               </div>
-            ) : (
+            )}
+
+            {/* PHASE: QUIZ */}
+            {comboPhase === 'quiz' && (
+              <>
+                <div className="l5-multiuse-badge">{L5.brain} REFLECTION</div>
+                <div className="l5-quiz-question">{currentCombo.hiddenQuiz.question}</div>
+                <div className="l5-sim-options">
+                  {currentCombo.hiddenQuiz.options.map((opt, i) => (
+                    <button key={i} className={`l5-sim-option ${comboQuizAnswer === i ? 'selected' : ''}`}
+                      onClick={() => comboQuizAnswer === null && handleComboQuizAnswer(i)} disabled={comboQuizAnswer !== null}>
+                      <span className="l5-sim-option-icon">{L5.play}</span>
+                      <span className="l5-sim-option-label">{opt}</span>
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+
+            {/* PHASE: FEEDBACK */}
+            {comboPhase === 'feedback' && (
               <div className="l5-usage-feedback">
-                <div className={`l5-feedback-box ${comboChoice}`}>
-                  <div className="l5-feedback-icon">{comboChoice === 'correct' ? L5.check : L5.warn}</div>
-                  <div className="l5-feedback-text">
-                    {comboChoice === 'correct' ? currentCombo.correct.feedback : currentCombo.wrong.feedback}
+                <div className="l5-narrative-feedback">
+                  <div className="l5-narrative-icon">{L5.speech}</div>
+                  <div className="l5-narrative-text">
+                    {comboQuizAnswer === currentCombo.hiddenQuiz.correctIndex ? currentCombo.feedback.correct : currentCombo.feedback.wrong}
                   </div>
                 </div>
-                {comboChoice === 'correct' && (
-                  <div className="l5-multiuse-reward">
-                    {L5.coin} +{currentCombo.reward} coins • {L5.globe} {currentCombo.co2Impact} kg CO₂
-                  </div>
+                {confidenceMsg && <div className="l5-confidence-boost">{L5.sparkle} {confidenceMsg}</div>}
+                {comboQuizAnswer === currentCombo.hiddenQuiz.correctIndex && (
+                  <div className="l5-multiuse-reward">{L5.coin} +{currentCombo.reward} coins • {L5.globe} {currentCombo.co2Impact} kg CO₂</div>
                 )}
-                <button className="l5-usage-next-btn" onClick={handleComboNext}>
-                  {comboIdx + 1 >= COMBO_TASKS.length ? `Check Goal ${'\u{2192}'}` : `Next Combo ${'\u{2192}'}`}
-                </button>
+                {comboRetry ? (
+                  <div className="l5-retry-section">
+                    <div className="l5-retry-text">{L5.speech} {currentCombo.feedback.retry}</div>
+                    <button className="l5-retry-btn" onClick={handleComboRetry}>{L5.cycle} Try Again</button>
+                    <button className="l5-skip-btn" onClick={handleComboNext}>Continue {'\u{2192}'}</button>
+                  </div>
+                ) : (
+                  <button className="l5-usage-next-btn" onClick={handleComboNext}>
+                    {comboIdx + 1 >= COMBO_TASKS.length ? `Check Goal ${'\u{2192}'}` : `Next Combo ${'\u{2192}'}`}
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -967,11 +1249,11 @@ export default function Level5() {
       {screen === 'crisis' && currentEvent && (
         <div className="l5-crisis-overlay">
           <div className="l5-crisis-card">
-            {/* Event header with timer */}
+            {/* Event header */}
             <div className="l5-crisis-header">
               <div className="l5-crisis-event-icon">{currentEvent.icon}</div>
               <div className="l5-crisis-event-title">{currentEvent.title}</div>
-              {eventChoice === null && (
+              {crisisPhase === 'event' && (
                 <div className={`l5-crisis-timer ${eventTimer <= 3 ? 'urgent' : ''}`}>
                   {L5.clock} {eventTimer}s
                 </div>
@@ -980,53 +1262,111 @@ export default function Level5() {
 
             <div className="l5-crisis-event-num">Event {eventIdx + 1} / {DYNAMIC_EVENTS.length}</div>
             <div className="l5-crisis-desc">{currentEvent.description}</div>
-            <div className="l5-crisis-question">{currentEvent.question}</div>
 
-            {!eventFeedback ? (
-              <div className="l5-usage-choices">
-                <button className="l5-usage-choice correct-choice" onClick={() => handleEventChoice('correct')}>
-                  {L5.check} {currentEvent.correct.label}
+            {/* PHASE: EVENT — Live simulation task */}
+            {crisisPhase === 'event' && (
+              <>
+                <div className="l5-crisis-question">{currentEvent.simulation.scenario}</div>
+                <div className="l5-sim-options">
+                  {currentEvent.simulation.options.map(opt => (
+                    <button key={opt.id} className="l5-sim-option" onClick={() => handleCrisisSimSelect(opt)}>
+                      <span className="l5-sim-option-icon">{opt.icon}</span>
+                      <span className="l5-sim-option-label">{opt.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+
+            {/* PHASE: RESULT */}
+            {crisisPhase === 'result' && crisisSimOption && (
+              <>
+                <div className="l5-result-header">
+                  <span className="l5-result-chosen-icon">{crisisSimOption.icon}</span>
+                  <span className="l5-result-chosen-label">{crisisSimOption.label}</span>
+                </div>
+                <div className="l5-sim-meters">
+                  {crisisSimOption.gridW !== undefined && (
+                    <EnergyMeter label="Grid Power" value={crisisSimOption.gridW} max={4000} unit="W" color={crisisSimOption.gridW > 1000 ? '#ef4444' : '#22c55e'} icon={L5.zap} animate />
+                  )}
+                  {crisisSimOption.co2 !== undefined && (
+                    <EnergyMeter label="CO₂ Impact" value={crisisSimOption.co2} max={3} unit=" kg/hr" color={crisisSimOption.co2 > 1 ? '#ef4444' : '#22c55e'} icon={L5.globe} animate />
+                  )}
+                  {crisisSimOption.watts !== undefined && (
+                    <EnergyMeter label="Energy Used" value={crisisSimOption.watts} max={2000} unit="W" color={crisisSimOption.watts > 500 ? '#ef4444' : '#22c55e'} icon={L5.bolt} animate />
+                  )}
+                  {crisisSimOption.avgW !== undefined && (
+                    <EnergyMeter label="Avg Load" value={crisisSimOption.avgW} max={500} unit="W" color={crisisSimOption.avgW > 200 ? '#ef4444' : '#22c55e'} icon={L5.meter} animate />
+                  )}
+                </div>
+                <button className="l5-usage-next-btn" onClick={handleCrisisResult}>
+                  {L5.think} Reflect on Decision {'\u{2192}'}
                 </button>
-                <button className="l5-usage-choice wrong-choice" onClick={() => handleEventChoice('wrong')}>
-                  {L5.cross} {currentEvent.wrong.label}
-                </button>
+              </>
+            )}
+
+            {/* PHASE: THINK */}
+            {crisisPhase === 'think' && (
+              <div className="l5-think-phase">
+                <div className="l5-think-icon">{L5.think}</div>
+                <div className="l5-think-text">{currentEvent.hiddenQuiz.thinkPrompt}</div>
+                <div className="l5-think-dots"><span className="l5-dot-1">.</span><span className="l5-dot-2">.</span><span className="l5-dot-3">.</span></div>
               </div>
-            ) : (
+            )}
+
+            {/* PHASE: QUIZ */}
+            {crisisPhase === 'quiz' && (
+              <>
+                <div className="l5-multiuse-badge">{L5.brain} CRISIS REFLECTION</div>
+                <div className="l5-quiz-question">{currentEvent.hiddenQuiz.question}</div>
+                <div className="l5-sim-options">
+                  {currentEvent.hiddenQuiz.options.map((opt, i) => (
+                    <button key={i} className={`l5-sim-option ${crisisQuizAnswer === i ? 'selected' : ''}`}
+                      onClick={() => crisisQuizAnswer === null && handleCrisisQuizAnswer(i)} disabled={crisisQuizAnswer !== null}>
+                      <span className="l5-sim-option-icon">{L5.play}</span>
+                      <span className="l5-sim-option-label">{opt}</span>
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+
+            {/* PHASE: FEEDBACK */}
+            {crisisPhase === 'feedback' && (
               <div className="l5-usage-feedback">
-                <div className={`l5-feedback-box ${eventChoice}`}>
-                  <div className="l5-feedback-icon">{eventChoice === 'correct' ? L5.check : L5.warn}</div>
-                  <div className="l5-feedback-text">
-                    {eventChoice === 'correct' ? currentEvent.correct.feedback : currentEvent.wrong.feedback}
+                <div className="l5-narrative-feedback">
+                  <div className="l5-narrative-icon">{L5.speech}</div>
+                  <div className="l5-narrative-text">
+                    {crisisQuizAnswer === currentEvent.hiddenQuiz.correctIndex ? currentEvent.feedback.correct : currentEvent.feedback.wrong}
                   </div>
                 </div>
-
-                {/* Consequence display */}
-                {eventChoice === 'wrong' && showConsequence && (
-                  <div className="l5-consequence-flash">
-                    <div className="l5-consequence-title">{L5.alert} CONSEQUENCE</div>
-                    <div className="l5-consequence-item">
-                      {L5.globe} CO₂ Spike: +{currentEvent.consequence.co2Spike} kg
-                    </div>
-                    <div className="l5-consequence-item">
-                      {L5.money} Bill Spike: +₹{currentEvent.consequence.billSpike}
-                    </div>
-                  </div>
-                )}
-
-                {eventChoice === 'correct' && (
+                {confidenceMsg && <div className="l5-confidence-boost">{L5.sparkle} {confidenceMsg}</div>}
+                {crisisQuizAnswer === currentEvent.hiddenQuiz.correctIndex && (
                   <div className="l5-multiuse-reward">{L5.coin} +{currentEvent.reward} coins earned!</div>
                 )}
-
-                <button className="l5-usage-next-btn" onClick={handleEventNext}>
-                  {eventIdx + 1 >= DYNAMIC_EVENTS.length ? `Complete Stage 4 ${'\u{2192}'}` : `Next Event ${'\u{2192}'}`}
-                </button>
+                {crisisRetry ? (
+                  <div className="l5-retry-section">
+                    <div className="l5-consequence-flash">
+                      <div className="l5-consequence-title">{L5.warn} Impact of this decision:</div>
+                      <div className="l5-consequence-item">{L5.globe} CO₂ Spike: +{currentEvent.consequence.co2Spike} kg</div>
+                      <div className="l5-consequence-item">{L5.money} Bill Impact: +₹{currentEvent.consequence.billSpike}</div>
+                    </div>
+                    <div className="l5-retry-text">{L5.speech} {currentEvent.feedback.retry}</div>
+                    <button className="l5-retry-btn" onClick={handleCrisisRetry}>{L5.cycle} Try Again</button>
+                    <button className="l5-skip-btn" onClick={handleEventNext}>Continue {'\u{2192}'}</button>
+                  </div>
+                ) : (
+                  <button className="l5-usage-next-btn" onClick={handleEventNext}>
+                    {eventIdx + 1 >= DYNAMIC_EVENTS.length ? `Complete Stage 4 ${'\u{2192}'}` : `Next Event ${'\u{2192}'}`}
+                  </button>
+                )}
               </div>
             )}
 
             {/* Running consequences total */}
             {(totalConsequences.co2 > 0 || totalConsequences.bill > 0) && (
               <div className="l5-crisis-totals">
-                {L5.warn} Total Damage: {totalConsequences.co2.toFixed(1)} kg CO₂ • ₹{totalConsequences.bill} extra
+                {L5.warn} Total Impact: {totalConsequences.co2.toFixed(1)} kg CO₂ • ₹{totalConsequences.bill} extra
               </div>
             )}
           </div>
@@ -1055,6 +1395,11 @@ export default function Level5() {
             <div className="l5-master-goal">{currentCycleGoal?.goal}</div>
             <div className="l5-master-target-co2">
               {L5.target} Target: CO₂ below {currentCycleGoal?.targetCO2 || 5} kg
+            </div>
+
+            {/* Home appliances bar */}
+            <div className="l5-master-home-bar">
+              {L5.house} Your Home: {homeAppliances.map(id => STORE_APPLIANCE_MAP[id]?.icon || '').join(' ')}
             </div>
 
             {!simRunning && simResults.length === 0 && (
@@ -1135,7 +1480,7 @@ export default function Level5() {
         <div className="l5-analysis-overlay">
           <div className="l5-analysis-card">
             <div className="l5-analysis-title">{L5.graph} Energy Analysis</div>
-            <div className="l5-analysis-sub">Analyze your performance across all cycles</div>
+            <div className="l5-analysis-sub">Reflect on your simulation performance</div>
 
             {/* Cycle comparison */}
             <div className="l5-analysis-cycles">
@@ -1148,23 +1493,31 @@ export default function Level5() {
               ))}
             </div>
 
-            {/* Analysis question */}
+            {/* Analysis question (narrative feedback, no correct/wrong indicators) */}
             {analysisIdx < ANALYSIS_QUESTIONS.length && (
               <div className="l5-analysis-question-box">
-                <div className="l5-analysis-q-badge">{L5.search} Question {analysisIdx + 1}/{ANALYSIS_QUESTIONS.length}</div>
+                <div className="l5-analysis-q-badge">{L5.brain} Reflection {analysisIdx + 1}/{ANALYSIS_QUESTIONS.length}</div>
                 <div className="l5-analysis-q-text">{ANALYSIS_QUESTIONS[analysisIdx].question}</div>
 
                 {!analysisFeedback ? (
-                  <div className="l5-quiz-options">
+                  <div className="l5-sim-options">
                     {ANALYSIS_QUESTIONS[analysisIdx].options.map((opt, i) => (
-                      <button key={i} className="l5-quiz-option" onClick={() => handleAnalysisChoice(i)}>{opt}</button>
+                      <button key={i} className="l5-sim-option" onClick={() => handleAnalysisAnswer(i)}>
+                        <span className="l5-sim-option-icon">{L5.play}</span>
+                        <span className="l5-sim-option-label">{opt}</span>
+                      </button>
                     ))}
                   </div>
                 ) : (
                   <div className="l5-usage-feedback">
-                    <div className={`l5-feedback-box ${analysisChoice === ANALYSIS_QUESTIONS[analysisIdx].correctIndex ? 'correct' : 'wrong'}`}>
-                      <div className="l5-feedback-icon">{analysisChoice === ANALYSIS_QUESTIONS[analysisIdx].correctIndex ? L5.check : L5.warn}</div>
-                      <div className="l5-feedback-text">{ANALYSIS_QUESTIONS[analysisIdx].explanation}</div>
+                    <div className="l5-narrative-feedback">
+                      <div className="l5-narrative-icon">{L5.speech}</div>
+                      <div className="l5-narrative-text">
+                        {analysisAnswer === ANALYSIS_QUESTIONS[analysisIdx].correctIndex
+                          ? ANALYSIS_QUESTIONS[analysisIdx].feedback.correct
+                          : ANALYSIS_QUESTIONS[analysisIdx].feedback.wrong
+                        }
+                      </div>
                     </div>
                     <button className="l5-usage-next-btn" onClick={handleAnalysisNext}>
                       {analysisIdx + 1 >= ANALYSIS_QUESTIONS.length ? `View Dashboard ${'\u{2192}'}` : `Next ${'\u{2192}'}`}
@@ -1177,21 +1530,43 @@ export default function Level5() {
         </div>
       )}
 
-      {/* ══ FINAL DASHBOARD ══ */}
+      {/* ══ FINAL DASHBOARD (UPGRADED) ══ */}
       {screen === 'dashboard' && (
         <div className="l5-dash-overlay">
           <div className="l5-dash-card">
             <div className="l5-dash-title">{L5.chart} Final Impact Dashboard</div>
 
+            {/* Home Evolution */}
+            <HomeEvoStrip stage={5} />
+
+            {/* Environment Feedback */}
+            <div className="l5-env-feedback" style={{ borderColor: envData.color + '40' }}>
+              <div className="l5-env-icon">{envData.icon}</div>
+              <div className="l5-env-label" style={{ color: envData.color }}>{envData.label}</div>
+              <div className="l5-env-desc">{envData.desc}</div>
+            </div>
+
+            {/* Key Solar & Emissions Callouts */}
+            <div className="l5-dash-callouts">
+              <div className="l5-dash-callout solar">
+                <div className="l5-callout-icon">{L5.sun}</div>
+                <div className="l5-callout-text">You powered your home using <strong>{totalSavings.solarPct}%</strong> solar energy</div>
+              </div>
+              <div className="l5-dash-callout emission">
+                <div className="l5-callout-icon">{L5.leaf}</div>
+                <div className="l5-callout-text">You reduced emissions by <strong>{totalSavings.efficiencyPct}%</strong> overall</div>
+              </div>
+            </div>
+
             <div className="l5-dash-compare">
               <div className="l5-dash-col before">
-                <div className="l5-dash-col-label">{L5.cross} Before Upgrades</div>
+                <div className="l5-dash-col-label">{L5.warn} Before Upgrades</div>
                 <div className="l5-dash-col-stat"><span>{BEFORE_STATS.co2Month} kg</span><span>CO₂/month</span></div>
                 <div className="l5-dash-col-stat"><span>₹{BEFORE_STATS.billMonth}</span><span>Bill/month</span></div>
                 <div className="l5-dash-col-stat"><span>0%</span><span>Efficiency</span></div>
               </div>
               <div className="l5-dash-col after">
-                <div className="l5-dash-col-label">{L5.check} After Upgrades</div>
+                <div className="l5-dash-col-label">{L5.leaf} After Upgrades</div>
                 <div className="l5-dash-col-stat"><span>{Math.max(BEFORE_STATS.co2Month - totalSavings.co2Saved, 0)} kg</span><span>CO₂/month</span></div>
                 <div className="l5-dash-col-stat"><span>₹{Math.max(BEFORE_STATS.billMonth - totalSavings.billSaved, 0)}</span><span>Bill/month</span></div>
                 <div className="l5-dash-col-stat"><span>{totalSavings.efficiencyPct}%</span><span>Efficiency</span></div>
@@ -1231,12 +1606,12 @@ export default function Level5() {
             {/* Crisis consequences (if any) */}
             {totalConsequences.co2 > 0 && (
               <div className="l5-dash-consequences">
-                {L5.warn} Crisis Damage: +{totalConsequences.co2.toFixed(1)} kg CO₂, +₹{totalConsequences.bill} (from wrong decisions)
+                {L5.warn} Crisis Impact: +{totalConsequences.co2.toFixed(1)} kg CO₂, +₹{totalConsequences.bill} (from suboptimal decisions)
               </div>
             )}
 
             <button className="l5-dash-quiz-btn" onClick={() => setScreen('quiz')}>
-              Take Final Quiz {'\u{2192}'}
+              Take Final Reflection Quiz {'\u{2192}'}
             </button>
           </div>
         </div>
@@ -1256,6 +1631,16 @@ export default function Level5() {
               {[1, 2, 3].map(s => (
                 <span key={s} className={`l5-reward-star ${s <= stars ? 'earned' : 'empty'}`} style={{ animationDelay: `${s * 0.25}s` }}>{L5.star}</span>
               ))}
+            </div>
+
+            {/* Home Evolution Final */}
+            <HomeEvoStrip stage={5} />
+
+            {/* Environment Feedback */}
+            <div className="l5-env-feedback" style={{ borderColor: envData.color + '40' }}>
+              <div className="l5-env-icon">{envData.icon}</div>
+              <div className="l5-env-label" style={{ color: envData.color }}>{envData.label}</div>
+              <div className="l5-env-desc">{envData.desc}</div>
             </div>
 
             {/* Stages completed */}
@@ -1280,7 +1665,7 @@ export default function Level5() {
               {FINAL_DIALOGUE.map((d, i) => <div key={i} className="l5-reward-final-line">{d}</div>)}
             </div>
 
-            {quizResult && <div style={{ color: '#aaa', fontSize: 12, margin: '8px 0' }}>Quiz: {quizResult.score}/{quizResult.total} correct</div>}
+            {quizResult && <div style={{ color: '#aaa', fontSize: 12, margin: '8px 0' }}>Reflection Quiz: {quizResult.score}/{quizResult.total}</div>}
             <button className="l5-reward-btn" onClick={() => navigate('/hub')}>Return to Mission Hub {L5.sparkle}</button>
           </div>
         </div>

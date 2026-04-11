@@ -1,7 +1,8 @@
 /* ═══════════════════════════════════════════════════════════
-   LEVEL 5: SMART SUSTAINABLE HOME — FULL SIMULATION SYSTEM
+   LEVEL 5: SMART SUSTAINABLE HOME — INTERACTIVE SIMULATION
    Theme: Premium green, solar gold, deep blue
    5-Stage Progressive System
+   PLAY → EXPERIENCE → THINK → ANSWER → CONFIRM
 ═══════════════════════════════════════════════════════════ */
 .l5-container { width:100vw; height:100vh; position:relative; overflow:hidden; background:#050a15; font-family:'Nunito',sans-serif; }
 .l5-canvas-wrapper { position:absolute; inset:0; z-index:1; }
@@ -31,8 +32,8 @@
 @keyframes l5-float { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-12px); } }
 .l5-stage-transition-name { font-family:'Fredoka',sans-serif; font-size:36px; font-weight:700; color:#22c55e; text-shadow:0 0 30px rgba(34,197,94,0.5); margin-bottom:8px; }
 .l5-stage-transition-desc { font-size:16px; color:#88ccbb; margin-bottom:8px; }
-.l5-stage-transition-time { font-size:13px; color:#888; margin-bottom:24px; }
-.l5-stage-transition-btn { background:linear-gradient(135deg,#16a34a,#22c55e); color:#fff; border:none; padding:16px 48px; border-radius:14px; font-size:18px; font-weight:700; font-family:'Fredoka',sans-serif; cursor:pointer; box-shadow:0 0 30px rgba(34,197,94,0.4); transition:all 0.2s; }
+.l5-stage-transition-time { font-size:13px; color:#888; margin-bottom:16px; }
+.l5-stage-transition-btn { background:linear-gradient(135deg,#16a34a,#22c55e); color:#fff; border:none; padding:16px 48px; border-radius:14px; font-size:18px; font-weight:700; font-family:'Fredoka',sans-serif; cursor:pointer; box-shadow:0 0 30px rgba(34,197,94,0.4); transition:all 0.2s; margin-top:16px; }
 .l5-stage-transition-btn:hover { transform:scale(1.05); box-shadow:0 0 40px rgba(34,197,94,0.6); }
 
 /* ─── Intro / Entry ─── */
@@ -100,6 +101,11 @@
 
 .l5-store-card-replace { font-size:11px; color:#88ccbb; margin-top:4px; background:rgba(34,197,94,0.06); padding:4px 10px; border-radius:6px; }
 
+/* ─── Problem Banner (NEW — shown before buying) ─── */
+.l5-store-problem { width:100%; padding:10px 14px; background:rgba(239,68,68,0.06); border:1px solid rgba(239,68,68,0.15); border-radius:10px; margin-bottom:8px; text-align:left; }
+.l5-store-problem-issue { font-size:12px; font-weight:700; color:#ff8888; margin-bottom:4px; }
+.l5-store-problem-hint { font-size:11px; color:#88ccbb; }
+
 .l5-store-complete-btn { display:block; margin:20px auto 0; background:linear-gradient(135deg,#16a34a,#22c55e); border:none; color:#fff; padding:16px 40px; border-radius:14px; font-size:16px; font-weight:700; font-family:'Fredoka',sans-serif; cursor:pointer; box-shadow:0 0 24px rgba(34,197,94,0.4); animation:l5-glow-pulse 2s ease infinite; }
 
 /* ═══ APPLIANCE INTRO POPUP ═══ */
@@ -147,6 +153,85 @@
 /* Home Evolving Message */
 .l5-home-evolving { text-align:center; padding:10px; background:rgba(34,197,94,0.08); border:1px solid rgba(34,197,94,0.2); border-radius:10px; font-size:13px; font-weight:600; color:#88ccbb; margin-bottom:12px; animation:l5-glow-pulse 2s ease infinite; }
 
+/* ═══════════════════════════════════════════════════════════
+   INTERACTIVE SIMULATION OPTIONS (NEUTRAL — NO CORRECT/WRONG)
+═══════════════════════════════════════════════════════════ */
+.l5-sim-options { display:flex; flex-direction:column; gap:8px; }
+.l5-sim-option { display:flex; align-items:center; gap:10px; padding:14px 16px; border-radius:12px; border:2px solid rgba(255,255,255,0.1); background:rgba(255,255,255,0.04); color:#ddd; font-size:14px; font-weight:600; cursor:pointer; transition:all 0.25s ease; text-align:left; }
+.l5-sim-option:hover { border-color:rgba(136,204,255,0.3); background:rgba(136,204,255,0.06); transform:translateX(4px); }
+.l5-sim-option.selected { border-color:rgba(136,204,255,0.5); background:rgba(136,204,255,0.1); box-shadow:0 0 12px rgba(136,204,255,0.15); }
+.l5-sim-option:disabled { cursor:default; opacity:0.7; }
+.l5-sim-option:disabled:hover { transform:none; }
+.l5-sim-option-icon { font-size:18px; flex-shrink:0; }
+.l5-sim-option-label { flex:1; line-height:1.4; }
+
+/* ═══════════════════════════════════════════════════════════
+   SIMULATION ENERGY METERS (animated bars)
+═══════════════════════════════════════════════════════════ */
+.l5-sim-meters { display:flex; flex-direction:column; gap:10px; margin:16px 0; }
+.l5-sim-meter { background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:10px 14px; }
+.l5-sim-meter-label { font-size:11px; font-weight:700; color:#aaa; margin-bottom:6px; display:flex; align-items:center; gap:4px; }
+.l5-sim-meter-track { width:100%; height:12px; background:rgba(255,255,255,0.06); border-radius:6px; overflow:hidden; }
+.l5-sim-meter-fill { height:100%; border-radius:6px; transition:width 0.8s cubic-bezier(0.25,0.46,0.45,0.94); min-width:2px; }
+.l5-sim-meter-fill.animate { animation:l5-meter-grow 0.8s cubic-bezier(0.25,0.46,0.45,0.94); }
+@keyframes l5-meter-grow { from { width:0 !important; } }
+.l5-sim-meter-value { font-family:'Fredoka',sans-serif; font-size:16px; font-weight:700; margin-top:4px; }
+
+/* ─── Result Header ─── */
+.l5-result-header { display:flex; align-items:center; gap:10px; padding:12px 16px; background:rgba(136,204,255,0.06); border:1px solid rgba(136,204,255,0.15); border-radius:12px; margin-bottom:12px; }
+.l5-result-chosen-icon { font-size:28px; }
+.l5-result-chosen-label { font-size:15px; font-weight:700; color:#88ccff; }
+
+/* ═══════════════════════════════════════════════════════════
+   THINKING PHASE (pause before quiz)
+═══════════════════════════════════════════════════════════ */
+.l5-think-phase { text-align:center; padding:40px 20px; animation:l5-fade-in 0.5s ease; }
+.l5-think-icon { font-size:64px; margin-bottom:12px; animation:l5-float 2s ease-in-out infinite; }
+.l5-think-text { font-size:16px; font-weight:600; color:#88ccff; font-style:italic; line-height:1.6; }
+.l5-think-dots { font-size:28px; color:#88ccff; margin-top:12px; }
+.l5-dot-1 { animation:l5-dot-blink 1.5s ease infinite 0s; }
+.l5-dot-2 { animation:l5-dot-blink 1.5s ease infinite 0.3s; }
+.l5-dot-3 { animation:l5-dot-blink 1.5s ease infinite 0.6s; }
+@keyframes l5-dot-blink { 0%,50% { opacity:0.2; } 25% { opacity:1; } }
+
+/* ═══════════════════════════════════════════════════════════
+   NARRATIVE FEEDBACK (replaces correct/wrong indicators)
+═══════════════════════════════════════════════════════════ */
+.l5-narrative-feedback { padding:16px; border-radius:14px; background:rgba(136,204,255,0.06); border:1px solid rgba(136,204,255,0.2); display:flex; align-items:flex-start; gap:10px; text-align:left; margin-bottom:14px; animation:l5-fade-in 0.5s ease; }
+.l5-narrative-icon { font-size:24px; flex-shrink:0; }
+.l5-narrative-text { font-size:13px; line-height:1.6; color:#cce8ff; }
+
+/* ─── Confidence Boost ─── */
+.l5-confidence-boost { text-align:center; padding:10px; background:rgba(34,197,94,0.08); border:1px solid rgba(34,197,94,0.2); border-radius:10px; font-size:14px; font-weight:700; color:#22c55e; margin-bottom:12px; animation:l5-confidence-enter 0.5s cubic-bezier(0.34,1.56,0.64,1); }
+@keyframes l5-confidence-enter { from { opacity:0; transform:scale(0.8); } to { opacity:1; transform:scale(1); } }
+
+/* ─── Retry Section ─── */
+.l5-retry-section { animation:l5-fade-in 0.5s ease; }
+.l5-retry-text { font-size:13px; color:#88ccff; font-style:italic; padding:10px; background:rgba(59,130,246,0.06); border:1px solid rgba(59,130,246,0.15); border-radius:10px; margin-bottom:10px; }
+.l5-retry-btn { width:100%; background:linear-gradient(135deg,#2563eb,#3b82f6); border:none; color:#fff; padding:12px; border-radius:10px; font-size:14px; font-weight:700; font-family:'Fredoka',sans-serif; cursor:pointer; box-shadow:0 0 16px rgba(59,130,246,0.3); margin-bottom:8px; transition:all 0.2s; }
+.l5-retry-btn:hover { transform:scale(1.02); box-shadow:0 0 24px rgba(59,130,246,0.5); }
+.l5-skip-btn { width:100%; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.15); color:#aaa; padding:10px; border-radius:10px; font-size:13px; font-weight:600; cursor:pointer; transition:all 0.2s; }
+.l5-skip-btn:hover { background:rgba(255,255,255,0.1); color:#ccc; }
+
+/* ═══════════════════════════════════════════════════════════
+   HOME EVOLUTION STRIP
+═══════════════════════════════════════════════════════════ */
+.l5-home-evo-strip { display:flex; justify-content:center; gap:4px; padding:12px 8px; margin:12px 0; }
+.l5-home-evo-stage { display:flex; flex-direction:column; align-items:center; gap:3px; padding:6px 10px; border-radius:10px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); transition:all 0.3s; min-width:56px; opacity:0.4; }
+.l5-home-evo-stage.active { opacity:1; background:rgba(34,197,94,0.06); border-color:rgba(34,197,94,0.2); }
+.l5-home-evo-stage.current { animation:l5-glow-pulse 2s ease infinite; box-shadow:0 0 12px rgba(34,197,94,0.2); }
+.l5-home-evo-icon { font-size:20px; }
+.l5-home-evo-label { font-size:7px; font-weight:700; color:#aaa; text-transform:uppercase; letter-spacing:0.3px; text-align:center; white-space:nowrap; }
+.l5-home-evo-stage.active .l5-home-evo-label { color:#cce8cc; }
+
+/* ═══════════════════════════════════════════════════════════
+   ENVIRONMENT FEEDBACK
+═══════════════════════════════════════════════════════════ */
+.l5-env-feedback { display:flex; align-items:center; gap:12px; padding:12px 16px; border-radius:12px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); margin:12px 0; }
+.l5-env-icon { font-size:32px; flex-shrink:0; }
+.l5-env-label { font-size:14px; font-weight:700; font-family:'Fredoka',sans-serif; }
+.l5-env-desc { font-size:12px; color:#aaa; line-height:1.4; }
+
 /* ═══ USAGE TASK ═══ */
 .l5-usage-overlay { position:absolute; inset:0; z-index:50; display:flex; align-items:center; justify-content:center; background:radial-gradient(ellipse at center,#0a1a28 0%,#050a15 70%); }
 .l5-usage-card { background:linear-gradient(145deg,#0a1a2a,#061018); border:2px solid rgba(245,166,35,0.25); border-radius:20px; padding:28px; max-width:440px; width:92%; text-align:center; }
@@ -155,22 +240,8 @@
 .l5-usage-title { font-family:'Fredoka',sans-serif; font-size:22px; font-weight:700; color:#fff; margin-bottom:6px; }
 .l5-usage-instruction { font-size:14px; color:#aaa; margin-bottom:18px; }
 
-.l5-usage-choices { display:flex; flex-direction:column; gap:10px; }
-.l5-usage-choice { padding:14px 18px; border-radius:12px; font-size:14px; font-weight:700; cursor:pointer; text-align:left; transition:all 0.2s; border:2px solid transparent; background:rgba(255,255,255,0.05); color:#ddd; }
-.l5-usage-choice:hover { transform:translateX(4px); }
-.l5-usage-choice.correct-choice:hover { border-color:rgba(34,197,94,0.4); background:rgba(34,197,94,0.08); }
-.l5-usage-choice.wrong-choice:hover { border-color:rgba(239,68,68,0.3); background:rgba(239,68,68,0.05); }
-
 .l5-usage-feedback { animation:l5-fade-in 0.5s ease; }
 @keyframes l5-fade-in { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
-
-.l5-feedback-box { padding:16px; border-radius:14px; margin-bottom:14px; display:flex; align-items:flex-start; gap:10px; text-align:left; }
-.l5-feedback-box.correct { background:rgba(34,197,94,0.1); border:1px solid rgba(34,197,94,0.3); }
-.l5-feedback-box.wrong { background:rgba(239,68,68,0.08); border:1px solid rgba(239,68,68,0.25); }
-.l5-feedback-icon { font-size:24px; flex-shrink:0; }
-.l5-feedback-text { font-size:13px; line-height:1.6; }
-.l5-feedback-box.correct .l5-feedback-text { color:#aaddbb; }
-.l5-feedback-box.wrong .l5-feedback-text { color:#ffaaaa; }
 
 .l5-feedback-metrics { display:flex; gap:12px; margin-bottom:14px; }
 .l5-feedback-metric { flex:1; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:10px; text-align:center; }
@@ -263,9 +334,9 @@
 .l5-crisis-question { font-size:15px; font-weight:700; color:#fff; margin-bottom:16px; line-height:1.5; }
 
 /* Consequence Flash */
-.l5-consequence-flash { padding:14px; background:rgba(239,68,68,0.12); border:2px solid rgba(239,68,68,0.4); border-radius:12px; margin-bottom:12px; animation:l5-consequence-enter 0.5s ease; }
+.l5-consequence-flash { padding:14px; background:rgba(239,68,68,0.08); border:1px solid rgba(239,68,68,0.25); border-radius:12px; margin-bottom:12px; animation:l5-consequence-enter 0.5s ease; }
 @keyframes l5-consequence-enter { from { opacity:0; transform:scale(0.9); } to { opacity:1; transform:scale(1); } }
-.l5-consequence-title { font-family:'Fredoka',sans-serif; font-size:14px; font-weight:700; color:#ef4444; margin-bottom:6px; }
+.l5-consequence-title { font-family:'Fredoka',sans-serif; font-size:14px; font-weight:700; color:#ff8888; margin-bottom:6px; }
 .l5-consequence-item { font-size:13px; color:#ffaaaa; padding:3px 0; }
 
 /* Crisis Totals */
@@ -288,7 +359,8 @@
 
 .l5-master-title { font-family:'Fredoka',sans-serif; font-size:22px; font-weight:700; color:#88ccff; margin-bottom:6px; text-align:center; }
 .l5-master-goal { font-size:14px; color:#aaa; text-align:center; margin-bottom:6px; }
-.l5-master-target-co2 { font-size:13px; color:#f5a623; text-align:center; margin-bottom:16px; background:rgba(245,166,35,0.06); padding:6px; border-radius:8px; }
+.l5-master-target-co2 { font-size:13px; color:#f5a623; text-align:center; margin-bottom:10px; background:rgba(245,166,35,0.06); padding:6px; border-radius:8px; }
+.l5-master-home-bar { text-align:center; font-size:13px; color:#88ccbb; background:rgba(34,197,94,0.06); border:1px solid rgba(34,197,94,0.15); border-radius:8px; padding:6px 10px; margin-bottom:16px; }
 
 /* Energy Bar Graph */
 .l5-energy-graph { margin:16px 0; padding:14px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:12px; }
@@ -345,17 +417,28 @@
 .l5-analysis-q-badge { font-size:11px; font-weight:700; color:#3b82f6; margin-bottom:8px; }
 .l5-analysis-q-text { font-size:15px; font-weight:700; color:#fff; margin-bottom:14px; line-height:1.5; }
 
-/* ═══ FINAL DASHBOARD ═══ */
+/* ═══════════════════════════════════════════════════════════
+   FINAL DASHBOARD (UPGRADED with callouts)
+═══════════════════════════════════════════════════════════ */
 .l5-dash-overlay { position:absolute; inset:0; z-index:50; display:flex; align-items:center; justify-content:center; background:radial-gradient(ellipse at center,#0a2a1a 0%,#050a15 70%); overflow-y:auto; padding:50px 16px 20px; }
 .l5-dash-card { background:linear-gradient(145deg,#0a1a2a,#061018); border:2px solid rgba(34,197,94,0.25); border-radius:20px; padding:28px; max-width:520px; width:100%; }
-.l5-dash-title { font-family:'Fredoka',sans-serif; font-size:22px; font-weight:700; color:#22c55e; margin-bottom:16px; text-align:center; }
+.l5-dash-title { font-family:'Fredoka',sans-serif; font-size:22px; font-weight:700; color:#22c55e; margin-bottom:12px; text-align:center; }
+
+/* Dashboard Callouts */
+.l5-dash-callouts { display:flex; gap:10px; margin-bottom:14px; }
+.l5-dash-callout { flex:1; padding:12px 14px; border-radius:12px; display:flex; align-items:center; gap:8px; }
+.l5-dash-callout.solar { background:rgba(245,166,35,0.08); border:1px solid rgba(245,166,35,0.2); }
+.l5-dash-callout.emission { background:rgba(34,197,94,0.08); border:1px solid rgba(34,197,94,0.2); }
+.l5-callout-icon { font-size:24px; flex-shrink:0; }
+.l5-callout-text { font-size:12px; color:#cce8cc; line-height:1.4; }
+.l5-callout-text strong { color:#22c55e; font-size:16px; font-family:'Fredoka',sans-serif; }
 
 .l5-dash-compare { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:16px; }
 .l5-dash-col { border-radius:14px; padding:16px; text-align:center; }
 .l5-dash-col.before { background:rgba(239,68,68,0.08); border:1px solid rgba(239,68,68,0.2); }
 .l5-dash-col.after { background:rgba(34,197,94,0.08); border:1px solid rgba(34,197,94,0.2); }
 .l5-dash-col-label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:1px; margin-bottom:10px; }
-.l5-dash-col.before .l5-dash-col-label { color:#ef4444; }
+.l5-dash-col.before .l5-dash-col-label { color:#ff8888; }
 .l5-dash-col.after .l5-dash-col-label { color:#22c55e; }
 .l5-dash-col-stat { margin-bottom:6px; }
 .l5-dash-col-stat span:first-child { display:block; font-family:'Fredoka',sans-serif; font-size:20px; font-weight:700; }
@@ -382,12 +465,6 @@
 .l5-quiz-card { background:linear-gradient(145deg,#0a1a2a,#061018); border:1px solid rgba(34,197,94,0.2); border-radius:18px; padding:24px; max-width:480px; width:90%; }
 .l5-quiz-progress { font-size:12px; color:#22c55e; font-weight:700; margin-bottom:12px; }
 .l5-quiz-question { font-size:16px; font-weight:700; color:#fff; margin-bottom:16px; line-height:1.5; }
-.l5-quiz-options { display:flex; flex-direction:column; gap:8px; }
-.l5-quiz-option { background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:#ddd; padding:12px 14px; border-radius:10px; font-size:14px; font-weight:600; cursor:pointer; text-align:left; transition:all 0.2s; }
-.l5-quiz-option:hover { background:rgba(34,197,94,0.1); border-color:rgba(34,197,94,0.3); }
-.l5-quiz-option.correct { background:rgba(34,197,94,0.15); border-color:#22c55e; color:#22c55e; }
-.l5-quiz-option.wrong { background:rgba(239,68,68,0.15); border-color:#ef4444; color:#ef4444; }
-.l5-quiz-explanation { margin-top:12px; padding:10px 14px; border-radius:10px; background:rgba(34,197,94,0.06); border:1px solid rgba(34,197,94,0.15); font-size:13px; color:#cce8cc; line-height:1.5; }
 .l5-quiz-next-btn { width:100%; margin-top:12px; background:linear-gradient(135deg,#16a34a,#22c55e); border:none; color:#fff; padding:10px; border-radius:8px; font-weight:700; cursor:pointer; }
 
 /* ═══ REWARD ═══ */

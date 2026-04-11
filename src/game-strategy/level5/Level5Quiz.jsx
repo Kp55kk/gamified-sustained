@@ -1,5 +1,6 @@
 // ═══════════════════════════════════════════════════════════
-//  LEVEL 5 — Extended Quiz (10 Questions, Scenario-Based)
+//  LEVEL 5 — Reflection Quiz (Hidden Style — No ✅/❌)
+//  Narrative feedback only, experience-based questions
 // ═══════════════════════════════════════════════════════════
 import React, { useState, useCallback } from 'react';
 import { L5_QUIZ, L5 } from './level5Data';
@@ -8,23 +9,23 @@ export default function Level5Quiz({ onComplete }) {
   const [idx, setIdx] = useState(0);
   const [sel, setSel] = useState(null);
   const [score, setScore] = useState(0);
-  const [showExp, setShowExp] = useState(false);
+  const [showFeedback, setShowFeedback] = useState(false);
 
   const q = L5_QUIZ[idx];
   const total = L5_QUIZ.length;
-  const isCorrect = sel === q?.correctIndex;
+  const isCorrect = sel !== null && sel === q?.correctIndex;
   const progress = ((idx + 1) / total) * 100;
 
   const handleSelect = useCallback(i => {
     if (sel !== null) return;
     setSel(i);
-    setShowExp(true);
+    setShowFeedback(true);
     if (i === q.correctIndex) setScore(s => s + 1);
   }, [sel, q]);
 
   const handleNext = useCallback(() => {
     if (idx + 1 >= total) { onComplete({ score, total }); return; }
-    setIdx(c => c + 1); setSel(null); setShowExp(false);
+    setIdx(c => c + 1); setSel(null); setShowFeedback(false);
   }, [idx, total, score, onComplete]);
 
   if (!q) return null;
@@ -33,7 +34,7 @@ export default function Level5Quiz({ onComplete }) {
     <div className="l5-quiz-container">
       <div className="l5-quiz-card">
         <div className="l5-quiz-progress">
-          {L5.brain} Question {idx + 1} of {total}
+          {L5.brain} Reflection {idx + 1} of {total}
         </div>
 
         {/* Progress bar */}
@@ -49,26 +50,34 @@ export default function Level5Quiz({ onComplete }) {
         </div>
 
         <div className="l5-quiz-question">{q.question}</div>
-        <div className="l5-quiz-options">
-          {q.options.map((opt, i) => {
-            let cls = 'l5-quiz-option';
-            if (sel !== null) { if (i === q.correctIndex) cls += ' correct'; else if (i === sel) cls += ' wrong'; }
-            return <button key={i} className={cls} onClick={() => handleSelect(i)} disabled={sel !== null}>{opt}</button>;
-          })}
+
+        {/* Options — NO correct/wrong coloring */}
+        <div className="l5-sim-options">
+          {q.options.map((opt, i) => (
+            <button
+              key={i}
+              className={`l5-sim-option ${sel === i ? 'selected' : ''}`}
+              onClick={() => handleSelect(i)}
+              disabled={sel !== null}
+            >
+              <span className="l5-sim-option-icon">{L5.play}</span>
+              <span className="l5-sim-option-label">{opt}</span>
+            </button>
+          ))}
         </div>
-        {showExp && (<>
-          <div className="l5-quiz-explanation">
-            {isCorrect ? <><strong>{L5.check} Excellent!</strong> {q.explanation}</> : <><strong>{L5.cross} Not quite.</strong> {q.explanation}</>}
+
+        {/* Narrative feedback — no ✅/❌ */}
+        {showFeedback && (<>
+          <div className="l5-narrative-feedback" style={{ marginTop: 12 }}>
+            <div className="l5-narrative-icon">{L5.speech}</div>
+            <div className="l5-narrative-text">
+              {isCorrect ? q.feedback.correct : q.feedback.wrong}
+            </div>
           </div>
 
-          {/* Score tracker */}
-          <div style={{
-            textAlign: 'center', fontSize: 12, color: '#888', margin: '8px 0',
-          }}>
-            Score: {score + (isCorrect ? 0 : 0)}/{idx + 1} correct
-          </div>
-
-          <button className="l5-quiz-next-btn" onClick={handleNext}>{idx + 1 >= total ? 'Finish Quiz' : 'Next'} {'\u{2192}'}</button>
+          <button className="l5-quiz-next-btn" onClick={handleNext}>
+            {idx + 1 >= total ? 'Finish Reflection' : 'Next'} {'\u{2192}'}
+          </button>
         </>)}
       </div>
     </div>
