@@ -8,6 +8,7 @@ import Player, { cameraMode, playerState } from './Player';
 import { APPLIANCE_DATA, APPLIANCE_POSITIONS, INTERACTABLE_IDS, QUIZ_QUESTIONS, ACHIEVEMENTS } from './applianceData';
 import { useGame } from '../context/GameContext';
 import { getTranslation, getVoiceLocale } from '../translations/index';
+import LevelIntro from './LevelIntro';
 import './Level1.css';
 
 // ─── Speech Engine (ENGLISH ONLY — FIX 3) ───
@@ -664,6 +665,7 @@ export default function Level1() {
   const cameraRef = useRef(null);
   const canvasRef = useRef(null);
 
+  const [showLevelIntro, setShowLevelIntro] = useState(true);
   const [activeAppliance, setActiveAppliance] = useState(null);
   const [currentRoom, setCurrentRoom] = useState('Living Room');
   const [nearestAppliance, setNearestAppliance] = useState(null);
@@ -849,6 +851,25 @@ export default function Level1() {
   const handleNearestChange = useCallback((id) => {
     setNearestAppliance(id);
   }, []);
+
+  // ─── LEVEL INTRO ───
+  if (showLevelIntro) {
+    return (
+      <LevelIntro
+        levelNumber={1}
+        levelTitle="Home Energy Audit"
+        levelIcon="\u{1F3E0}"
+        objective="Walk through your virtual home and discover the appliances that power your daily life. Learn how each device works, what it does, and how much electricity it uses."
+        learningOutcome="By the end of this level, you will understand what household appliances are, how to interact with them, and why knowing about them matters for energy awareness."
+        terms={[
+          { icon: '\u{1F9E9}', name: 'Appliance', definition: 'A device in your home that uses electricity to perform a task — like a fan, TV, or fridge.', example: 'A ceiling fan is an appliance that cools the room' },
+          { icon: '\u{1F3AE}', name: 'Interaction', definition: 'When you do something with an object in the game — like walking up to it and pressing a button to learn about it.', example: 'Press E near an appliance to interact' },
+          { icon: '\u{1F7E2}', name: 'Activation', definition: 'Turning something ON so it starts working and begins using electricity.', example: 'When you turn ON the AC, it starts consuming 1500W' },
+        ]}
+        onComplete={() => setShowLevelIntro(false)}
+      />
+    );
+  }
 
   return (
     <div className="level1-container">

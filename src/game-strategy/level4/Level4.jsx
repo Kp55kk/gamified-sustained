@@ -16,6 +16,7 @@ import {
   SOLAR_FACTS, ENTRY_DIALOGUE, FINAL_MESSAGE, L4_ICONS, ROOM_ICONS,
 } from './level4Data';
 import Level4Quiz from './Level4Quiz';
+import LevelIntro from '../LevelIntro';
 import './Level4.css';
 
 // ═══ AUDIO ═══
@@ -55,6 +56,7 @@ export default function Level4() {
   const { addCarbonCoins, completeLevel, unlockLevel } = useGame();
   const camRef = useRef(null);
 
+  const [showLevelIntro, setShowLevelIntro] = useState(true);
   const [phase, setPhase] = useState('entry');
   const [introStep, setIntroStep] = useState(0);
   const [introBg, setIntroBg] = useState('dark');
@@ -254,6 +256,25 @@ export default function Level4() {
   const handleRooftopReach = useCallback(() => {
     if (!reachedRooftop) setReachedRooftop(true);
   }, [reachedRooftop]);
+
+  // ═══ RENDER: LEVEL INTRO (Learn Before Play) ═══
+  if (showLevelIntro) {
+    return (
+      <LevelIntro
+        levelNumber={4}
+        levelTitle="Solar Revolution"
+        levelIcon="\u{2600}\u{FE0F}"
+        objective="Install solar panels on your home's roof, optimize their angle for maximum sunlight, and discover how renewable energy can power your entire house while reducing pollution and electricity bills."
+        learningOutcome="By the end of this level, you will understand how solar energy works, how to store it in batteries for night use, and how clean energy can restore the environment and save money."
+        terms={[
+          { icon: '\u{2600}\u{FE0F}', name: 'Solar Energy', definition: 'Energy captured from sunlight using solar panels. It is clean, free, and does not create any pollution or CO\u{2082} emissions.', example: '6 solar panels can generate enough power for most homes' },
+          { icon: '\u{1F50B}', name: 'Energy Storage', definition: 'Saving excess solar energy in batteries during the day so you can use it at night when there is no sunlight.', example: 'A battery charged at noon can power lights all night' },
+          { icon: '\u{26A1}', name: 'Clean Energy', definition: 'Energy that comes from natural sources like sunlight, wind, or water. It does not pollute the air or harm the environment.', example: 'Solar and wind are clean; coal and gas are not' },
+        ]}
+        onComplete={() => setShowLevelIntro(false)}
+      />
+    );
+  }
 
   // ═══ RENDER: ENTRY ═══
   if (phase === 'entry') {

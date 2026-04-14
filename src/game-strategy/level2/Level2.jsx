@@ -9,7 +9,7 @@ import {
   LEVEL2_APPLIANCES, L2_APPLIANCE_IDS, L2_APPLIANCE_MAP,
   getEnergyTier, MAX_POSSIBLE_WATTS, ENERGY_TIPS,
   QUIZ_QUESTIONS, LEVEL2_BADGE, TASKS, LEARNING_INSERTS,
-  MICRO_QUESTIONS, getSmartMessage, calculateStars,
+  MICRO_QUESTIONS, getSmartMessage, calculateStars, getWattagePriority,
   getBarColor, getBarTierLabel, CO2_FACTOR,
   calculateBill, calculateCO2, calculateAnnualEnergy,
   USAGE_HOURS, BILL_SLABS, SHOCK_FACTS,
@@ -19,6 +19,7 @@ import { APPLIANCE_POSITIONS } from '../applianceData';
 import QuizModal from './QuizModal';
 import { useGame } from '../../context/GameContext';
 import { getTranslation } from '../../translations/index';
+import LevelIntro from '../LevelIntro';
 import './Level2.css';
 
 // ─── Audio System ───
@@ -313,6 +314,7 @@ export default function Level2() {
   const l2t = t?.level2 || {};
   const cameraRef = useRef(null);
 
+  const [showLevelIntro, setShowLevelIntro] = useState(true);
   const [phase, setPhase] = useState('intro');
   const [introStep, setIntroStep] = useState(0);
   const [applianceStates, setApplianceStates] = useState(() => {
@@ -331,6 +333,8 @@ export default function Level2() {
   const [correctTasks, setCorrectTasks] = useState(0);
   const [efficientChoices, setEfficientChoices] = useState(0);
   const [taskHint, setTaskHint] = useState(null);
+  const [turnOffTracker, setTurnOffTracker] = useState([]);  // IDs turned off for task_family_room
+  const [turnOffSummary, setTurnOffSummary] = useState(null);  // summary popup
   const [learningInsert, setLearningInsert] = useState(null);
   const [microQuestion, setMicroQuestion] = useState(null);
   const [microAnswer, setMicroAnswer] = useState(null);
@@ -419,7 +423,9 @@ export default function Level2() {
 
   const canStartTasks = toggledSet.size >= 4;
   const currentTask = TASKS[currentTaskIdx] || null;
-  const taskTargetIds = (phase === 'tasks' && currentTask) ? currentTask.correctIds : null;
+  const taskTargetIds = (phase === 'tasks' && currentTask)
+    ? (currentTask.type === 'turn_off' ? currentTask.turnOffIds : currentTask.correctIds)
+    : null;
 
   const addFloating = useCallback((text, type) => {
     const id = floatingIdRef.current++;
@@ -467,6 +473,70 @@ export default function Level2() {
     if (!L2_APPLIANCE_IDS.includes(applianceId)) return;
     if (!currentTask || taskFeedback) return;
     const appliance = L2_APPLIANCE_MAP[applianceId];
+
+    // ═══ TURN-OFF TASK (Task 1: Family Room) ═══
+    if (currentTask.type === 'turn_off') {
+      // Protection: can't turn off Living Room appliances
+      if (currentTask.protectedIds && currentTask.protectedIds.includes(applianceId)) {
+        playWrongSound();
+        setTaskHint(currentTask.protectedPopup);
+        setTaskFeedback({ type: 'wrong', text: `${ICONS.house} This is needed right now!` });
+        addFloating('Family needs this!', 'wrong');
+        setTimeout(() => { setTaskFeedback(null); setTaskHint(null); }, 2500);
+        return;
+      }
+      // Not a target waste appliance
+      if (!currentTask.turnOffIds.includes(applianceId)) {
+        playWrongSound();
+        addFloating('Not a target', 'wrong');
+        setTimeout(() => { setTaskFeedback(null); setTaskHint(null); }, 2000);
+        return;
+      }
+      // Already turned off
+      if (!applianceStates[applianceId]) {
+        addFloating('Already OFF', 'save');
+        return;
+      }
+      // Turn OFF the appliance
+      playToggleOffSound(); playCorrectSound();
+      setApplianceStates(prev => ({ ...prev, [applianceId]: false }));
+      const priority = getWattagePriority(appliance.wattage);
+      const offMsg = currentTask.offPopups[priority];
+      addFloating(`-${appliance.wattage}W saved!`, 'save');
+      setInfoPopup({
+        name: appliance.name, icon: appliance.icon, wattage: appliance.wattage,
+        message: { text: offMsg, type: 'good', icon: ICONS.check },
+        co2hint: `${ICONS.leaf} ${priority === 'high' ? 'High energy waste' : priority === 'medium' ? 'Moderate waste' : 'Low impact'} ${priority === 'high' ? '\u{26A0}\u{FE0F}\u{26A0}\u{FE0F}' : ''}`,
+      });
+      setTimeout(() => setInfoPopup(null), 3000);
+      // Track turned-off appliances
+      const newTracker = [...turnOffTracker, applianceId];
+      setTurnOffTracker(newTracker);
+      recordHistory(totalWatts - appliance.wattage);
+      // Check completion
+      if (newTracker.length >= currentTask.turnOffIds.length) {
+        // All turned off — 3 stars!
+        setCorrectTasks(c => c + 1);
+        setEfficientChoices(e => e + 1);
+        const totalSaved = newTracker.reduce((s, id) => s + L2_APPLIANCE_MAP[id].wattage, 0);
+        const biggest = newTracker.reduce((best, id) => L2_APPLIANCE_MAP[id].wattage > L2_APPLIANCE_MAP[best].wattage ? id : best, newTracker[0]);
+        setTimeout(() => {
+          setTurnOffSummary({
+            totalSaved,
+            count: newTracker.length,
+            biggest: L2_APPLIANCE_MAP[biggest],
+            stars: 3,
+            learning: currentTask.finalLearning,
+          });
+        }, 800);
+      } else if (newTracker.length >= currentTask.requiredOff) {
+        // Show progress encouragement
+        addFloating(`${newTracker.length}/${currentTask.turnOffIds.length} found!`, 'correct');
+      }
+      return;
+    }
+
+    // ═══ NORMAL TURN-ON TASKS (Tasks 2-7) ═══
     const isCorrect = currentTask.correctIds.includes(applianceId);
     const isBest = applianceId === currentTask.bestId;
     if (isCorrect) {
@@ -492,7 +562,7 @@ export default function Level2() {
       addFloating('Try again!', 'wrong');
       setTimeout(() => { setTaskFeedback(null); setTaskHint(null); }, 2500);
     }
-  }, [currentTask, taskFeedback, addFloating]);
+  }, [currentTask, taskFeedback, addFloating, applianceStates, turnOffTracker, totalWatts, recordHistory]);
 
   const advanceTask = useCallback(() => {
     setTaskFeedback(null); setTaskComparison(null); setTaskHint(null);
@@ -547,6 +617,27 @@ export default function Level2() {
     setNearestAppliance(id);
     setProximityLevels(getProximityLevels(playerState.x, playerState.z));
   }, []);
+
+  // ═══════════════════════════════════════════════════════
+  //  RENDER — LEVEL INTRO (Learn Before Play)
+  // ═══════════════════════════════════════════════════════
+  if (showLevelIntro) {
+    return (
+      <LevelIntro
+        levelNumber={2}
+        levelTitle="The Energy Meter"
+        levelIcon="\u{26A1}"
+        objective="Explore your home with a powerful new tool — the Energy Meter. Walk through each room, toggle appliances ON and OFF, and watch how each one affects electricity usage, bills, and the environment in real-time."
+        learningOutcome="By the end of this level, you will understand how much electricity each appliance uses (in Watts), how energy consumption translates to monthly bills, and how to identify and stop energy waste in your home."
+        terms={[
+          { icon: '\u{26A1}', name: 'Watts', definition: 'Watts tell you how much electricity an appliance uses at any moment. Higher watts = more electricity consumed.', example: 'AC uses 1500W while a fan uses only 75W' },
+          { icon: '\u{1F50B}', name: 'Energy Consumption', definition: 'The total amount of electricity used over time. It is measured in kilowatt-hours (kWh) and determines your monthly usage.', example: 'Running a 1000W heater for 1 hour = 1 kWh' },
+          { icon: '\u{1F4B0}', name: 'Electricity Bill', definition: 'The money you pay for the electricity your home uses each month. The more appliances you run, the higher the bill.', example: 'A home using 300 kWh/month pays around \u20B92,000' },
+        ]}
+        onComplete={() => setShowLevelIntro(false)}
+      />
+    );
+  }
 
   // ═══════════════════════════════════════════════════════
   //  RENDER — INTRO
@@ -663,11 +754,58 @@ export default function Level2() {
       </div>
 
       {/* TASK BAR */}
-      {phase === 'tasks' && currentTask && !taskFeedback && !learningInsert && !microQuestion && (
+      {phase === 'tasks' && currentTask && !taskFeedback && !learningInsert && !microQuestion && !turnOffSummary && (
         <div className="l2-task-bar">
           <div className="l2-task-progress-label">{ICONS.target} Task {currentTaskIdx + 1} of {TASKS.length}</div>
           <div className="l2-task-scenario"><span className="l2-task-icon">{currentTask.icon}</span><span className="l2-task-text">{currentTask.scenario}</span></div>
           <div className="l2-task-hint-text">{ICONS.bulb} {currentTask.hint}</div>
+          {currentTask.type === 'turn_off' && (
+            <div className="l2-task-turnoff-progress">
+              <span>{ICONS.plug} Turned OFF: {turnOffTracker.length}/{currentTask.turnOffIds.length}</span>
+              {turnOffTracker.length >= currentTask.requiredOff && turnOffTracker.length < currentTask.turnOffIds.length && (
+                <button className="l2-task-next-btn" style={{ marginLeft: 12, padding: '4px 14px', fontSize: '12px' }} onClick={() => {
+                  const totalSaved = turnOffTracker.reduce((s, id) => s + L2_APPLIANCE_MAP[id].wattage, 0);
+                  const biggest = turnOffTracker.reduce((best, id) => L2_APPLIANCE_MAP[id].wattage > L2_APPLIANCE_MAP[best].wattage ? id : best, turnOffTracker[0]);
+                  setCorrectTasks(c => c + 1);
+                  setTurnOffSummary({
+                    totalSaved, count: turnOffTracker.length,
+                    biggest: L2_APPLIANCE_MAP[biggest],
+                    stars: turnOffTracker.length >= currentTask.turnOffIds.length ? 3 : turnOffTracker.length >= 4 ? 2 : 1,
+                    learning: currentTask.finalLearning,
+                  });
+                }}>Done {ICONS.check}</button>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* TURN-OFF SUMMARY POPUP */}
+      {turnOffSummary && (
+        <div className="l2-learning-overlay">
+          <div className="l2-learning-card" style={{ maxWidth: 440 }}>
+            <div className="l2-learning-icon">{ICONS.check}</div>
+            <h3 className="l2-learning-title">Energy Waste Stopped!</h3>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: 8, margin: '10px 0' }}>
+              {[1,2,3].map(s => <span key={s} style={{ fontSize: 24, opacity: s <= turnOffSummary.stars ? 1 : 0.2 }}>{ICONS.star}</span>)}
+            </div>
+            <div style={{ background: 'rgba(34,197,94,0.12)', borderRadius: 10, padding: '12px 16px', margin: '10px 0' }}>
+              <div style={{ fontSize: 22, fontWeight: 800, color: '#22c55e' }}>-{turnOffSummary.totalSaved.toLocaleString()}W saved</div>
+              <div style={{ fontSize: 13, color: '#94a3b8', marginTop: 4 }}>{turnOffSummary.count} appliances turned OFF</div>
+            </div>
+            <div style={{ background: 'rgba(245,158,11,0.1)', borderRadius: 8, padding: '8px 12px', margin: '8px 0', fontSize: 13 }}>
+              {ICONS.zap} Biggest contributor: <strong>{turnOffSummary.biggest.icon} {turnOffSummary.biggest.name} ({turnOffSummary.biggest.wattage}W)</strong>
+            </div>
+            {turnOffSummary.learning && (
+              <div style={{ margin: '12px 0' }}>
+                <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 6 }}>{turnOffSummary.learning.title}</div>
+                {turnOffSummary.learning.messages.map((msg, i) => (
+                  <div key={i} style={{ fontSize: 12, color: '#cbd5e1', margin: '4px 0' }}>{ICONS.bulb} {msg}</div>
+                ))}
+              </div>
+            )}
+            <button className="l2-learning-btn" onClick={() => { setTurnOffSummary(null); advanceTask(); }}>Next Task {'\u{2192}'}</button>
+          </div>
         </div>
       )}
 
@@ -678,8 +816,24 @@ export default function Level2() {
           {interactionCount >= 2 && <button className="l2-action-btn bill-btn" onClick={() => setShowBill(true)}>{ICONS.money} {l2t.billCalc || 'Bill Calc'}</button>}
           {interactionCount >= 2 && <button className="l2-action-btn co2-btn" onClick={() => setShowCO2Panel(true)}>{ICONS.globe} {l2t.co2Impact || 'CO₂ Impact'}</button>}
           {canStartTasks && <button className="l2-start-tasks-btn" onClick={() => {
+            // Reset all appliances OFF first
             const reset = {}; L2_APPLIANCE_IDS.forEach(id => { reset[id] = false; });
-            setApplianceStates(reset); setTotalWatts(0); setOnCount(0); setPhase('tasks');
+            // Task 1 is turn_off: auto-turn ON waste appliances + protected ones
+            const firstTask = TASKS[0];
+            if (firstTask.type === 'turn_off') {
+              firstTask.turnOffIds.forEach(id => { reset[id] = true; });
+              if (firstTask.protectedIds) firstTask.protectedIds.forEach(id => { reset[id] = true; });
+            }
+            setApplianceStates(reset); setTotalWatts(0); setOnCount(0); setTurnOffTracker([]); setTurnOffSummary(null); setPhase('tasks');
+            // Show initial task popup
+            if (firstTask.type === 'turn_off' && firstTask.startPopup) {
+              setInfoPopup({
+                name: 'Energy Alert', icon: ICONS.warn, wattage: 0,
+                message: { text: firstTask.startPopup, type: 'warning', icon: ICONS.warn },
+                co2hint: null,
+              });
+              setTimeout(() => setInfoPopup(null), 4000);
+            }
           }}>{ICONS.target} {l2t.startTasks || 'Start Tasks'} {'\u{2192}'}</button>}
         </div>
       )}

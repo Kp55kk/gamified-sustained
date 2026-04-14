@@ -9,9 +9,19 @@ import { APPLIANCE_POSITIONS } from '../applianceData';
 const INTERACTION_RADIUS = 3.0;
 const PLAYER_RADIUS = 0.45;
 
+// Level 5 Store appliance positions (placed in the house after buying)
+const L5_APPLIANCE_POSITIONS = {
+  air_cooler:         { pos: [-3, 0.5, -4] },     // Living Room — near center
+  smart_power_strip:  { pos: [-8, 0.3, -3.5] },   // Living Room — near sofa
+  led_smart_system:   { pos: [3, 2.5, -5] },       // Bedroom — near table fan area
+  solar_water_heater: { pos: [9.0, 1.5, 3] },      // Bathroom — near geyser
+  ev_charger:         { pos: [0, 0, 12] },         // Outside — Behind house
+};
+
 const WALL_SEGMENTS = [
   { type: 'h', z: -8, x1: -10, x2: 10 },
-  { type: 'h', z: 8, x1: -10, x2: 10 },
+  { type: 'h', z: 8, x1: -10, x2: -2 },
+  { type: 'h', z: 8, x1: 2, x2: 10 },
   { type: 'v', x: -10, z1: -8, z2: -3.5 },
   { type: 'v', x: -10, z1: -0.5, z2: 8 },
   { type: 'v', x: 10, z1: -8, z2: 8 },
@@ -68,16 +78,11 @@ function getZone(x, z) {
 function getNearestAppliance(px, pz, idList) {
   let nearest = null, minDist = INTERACTION_RADIUS;
   for (const id of idList) {
-    const ap = APPLIANCE_POSITIONS[id];
+    const ap = APPLIANCE_POSITIONS[id] || L5_APPLIANCE_POSITIONS[id];
     if (!ap) continue;
     const dx = px - ap.pos[0], dz = pz - ap.pos[2];
     const dist = Math.sqrt(dx * dx + dz * dz);
     if (dist < minDist) { minDist = dist; nearest = id; }
-  }
-  // EV charger proximity (position [16, 0, -8])
-  const evDx = px - 16, evDz = pz - (-8);
-  if (Math.sqrt(evDx * evDx + evDz * evDz) < INTERACTION_RADIUS) {
-    if (!nearest) nearest = 'ev_charger';
   }
   return nearest;
 }

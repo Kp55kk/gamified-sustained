@@ -13,12 +13,13 @@ import {
   calculateL5Stars, LEVEL5_BADGE, ENTRY_DIALOGUE, FINAL_DIALOGUE,
   L5, ROOM_ICONS, L2_APPLIANCE_IDS, L2_APPLIANCE_MAP, STARTING_BONUS, STARTING_BONUS_MSG,
   computeTotalSavings, L5_QUIZ, STAGES,
-  MULTI_USE_TASKS, COMBO_TASKS, PROGRESSIVE_GOALS,
-  DYNAMIC_EVENTS, MASTER_CYCLE_GOALS, ANALYSIS_QUESTIONS,
   HOME_EVOLUTION, ENVIRONMENT_FEEDBACK, getEnvironmentGrade,
   PROBLEM_HINTS, CONFIDENCE_MESSAGES,
+  INTERACTIVE_TASKS, TASKS_BY_STAGE, GAMEPLAY_MESSAGES,
+  TOTAL_POSSIBLE_TASK_SCORE,
 } from './level5Data';
 import Level5Quiz from './Level5Quiz';
+import LevelIntro from '../LevelIntro';
 import './Level5.css';
 
 // ═══ AUDIO ═══
@@ -30,13 +31,14 @@ function playSuccess() { [523,659,784,1047].forEach((f,i) => { try { const c=get
 function playError() { try { const c=getAC(),o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.type='sawtooth';o.frequency.setValueAtTime(200,c.currentTime);g.gain.setValueAtTime(0.06,c.currentTime);g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+0.3);o.start(c.currentTime);o.stop(c.currentTime+0.3);} catch(e){} }
 function playPlace() { [600,800,1000].forEach((f,i) => { try { const c=getAC(),o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.type='sine';o.frequency.setValueAtTime(f,c.currentTime+i*0.08);g.gain.setValueAtTime(0.06,c.currentTime+i*0.08);g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+i*0.08+0.15);o.start(c.currentTime+i*0.08);o.stop(c.currentTime+i*0.08+0.15);} catch(e){} }); }
 function playAlert() { [800,600,800].forEach((f,i) => { try { const c=getAC(),o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.type='square';o.frequency.setValueAtTime(f,c.currentTime+i*0.15);g.gain.setValueAtTime(0.04,c.currentTime+i*0.15);g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+i*0.15+0.12);o.start(c.currentTime+i*0.15);o.stop(c.currentTime+i*0.15+0.12);} catch(e){} }); }
-function playCombo() { [523,659,784,880,1047].forEach((f,i) => { try { const c=getAC(),o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.type='triangle';o.frequency.setValueAtTime(f,c.currentTime+i*0.08);g.gain.setValueAtTime(0.06,c.currentTime+i*0.08);g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+i*0.08+0.2);o.start(c.currentTime+i*0.08);o.stop(c.currentTime+i*0.08+0.2);} catch(e){} }); }
-function playThink() { try { const c=getAC(),o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.type='sine';o.frequency.setValueAtTime(440,c.currentTime);o.frequency.linearRampToValueAtTime(660,c.currentTime+0.3);g.gain.setValueAtTime(0.04,c.currentTime);g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+0.4);o.start(c.currentTime);o.stop(c.currentTime+0.4);} catch(e){} }
+function playDiscover() { [330,440,550].forEach((f,i) => { try { const c=getAC(),o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.type='sine';o.frequency.setValueAtTime(f,c.currentTime+i*0.1);g.gain.setValueAtTime(0.06,c.currentTime+i*0.1);g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+i*0.1+0.2);o.start(c.currentTime+i*0.1);o.stop(c.currentTime+i*0.1+0.2);} catch(e){} }); }
+function playComplete() { [523,659,784,880,1047].forEach((f,i) => { try { const c=getAC(),o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.type='triangle';o.frequency.setValueAtTime(f,c.currentTime+i*0.08);g.gain.setValueAtTime(0.06,c.currentTime+i*0.08);g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+i*0.08+0.2);o.start(c.currentTime+i*0.08);o.stop(c.currentTime+i*0.08+0.2);} catch(e){} }); }
 
-// ═══ 3D ═══
+// ═══ 3D SCENE ═══
 function CamRef({r}){const{camera}=useThree();useEffect(()=>{r.current=camera},[camera,r]);return null;}
-function Scene({ appStates, nearest, onZone, onNearest, onInteract, camRef, proxLevels, timeOfDay, batteryPct, isEVCharging }) {
-  return (<><CamRef r={camRef}/><Level5Environment timeOfDay={timeOfDay} batteryPct={batteryPct} isEVCharging={isEVCharging}/><House/><Level2Appliances applianceStates={appStates} nearestAppliance={nearest} taskTargetIds={null} proximityLevels={proxLevels}/><Level5Player onZoneChange={onZone} onNearestApplianceChange={onNearest} onInteract={onInteract} applianceIdList={L2_APPLIANCE_IDS}/></>);
+function Scene({ appStates, nearest, onZone, onNearest, onInteract, camRef, proxLevels, timeOfDay, batteryPct, isEVCharging, weatherFactor, homeAppliances }) {
+  const allIds = useMemo(() => [...L2_APPLIANCE_IDS, ...STORE_IDS], []);
+  return (<><CamRef r={camRef}/><Level5Environment timeOfDay={timeOfDay} batteryPct={batteryPct} isEVCharging={isEVCharging} weatherFactor={weatherFactor} homeAppliances={homeAppliances} nearestAppliance={nearest}/><House/><Level2Appliances applianceStates={appStates} nearestAppliance={nearest} taskTargetIds={null} proximityLevels={proxLevels}/><Level5Player onZoneChange={onZone} onNearestApplianceChange={onNearest} onInteract={onInteract} applianceIdList={allIds}/></>);
 }
 
 // ═══ STAGE BAR COMPONENT ═══
@@ -67,7 +69,7 @@ function HomeEvoStrip({ stage }) {
   );
 }
 
-// ═══ ENERGY METER COMPONENT (used in simulations) ═══
+// ═══ ENERGY METER COMPONENT ═══
 function EnergyMeter({ label, value, max, unit, color, icon, animate }) {
   const pct = Math.min((value / max) * 100, 100);
   return (
@@ -77,6 +79,55 @@ function EnergyMeter({ label, value, max, unit, color, icon, animate }) {
         <div className={`l5-sim-meter-fill ${animate ? 'animate' : ''}`} style={{ width: `${pct}%`, background: color }}></div>
       </div>
       <div className="l5-sim-meter-value" style={{ color }}>{value}{unit}</div>
+    </div>
+  );
+}
+
+// ═══ LIVE ENERGY HUD (shown during 3D tasks) ═══
+function TaskEnergyHUD({ currentWatts, solarW, co2Rate, gameplayMsg }) {
+  const gridW = Math.max(currentWatts - solarW, 0);
+  const solarPct = currentWatts > 0 ? Math.round((Math.min(solarW, currentWatts) / currentWatts) * 100) : 100;
+  return (
+    <div className="l5-task-energy-hud">
+      <div className="l5-energy-bar-row">
+        <span className="l5-energy-icon">{L5.zap}</span>
+        <div className="l5-energy-bar-track">
+          <div className="l5-energy-bar-fill" style={{
+            width: `${Math.min(currentWatts / 5000 * 100, 100)}%`,
+            background: currentWatts > 3000 ? '#ef4444' : currentWatts > 1000 ? '#f5a623' : '#22c55e',
+          }}></div>
+        </div>
+        <span className="l5-energy-val">{currentWatts}W</span>
+      </div>
+      <div className="l5-energy-stats-row">
+        <span className="l5-energy-mini">{L5.sun} Solar: {solarPct}%</span>
+        <span className="l5-energy-mini">{L5.globe} CO₂: {co2Rate.toFixed(2)} kg/hr</span>
+        <span className="l5-energy-mini">{L5.plug} Grid: {gridW}W</span>
+      </div>
+      {gameplayMsg && (
+        <div className="l5-gameplay-msg" style={{ borderColor: gameplayMsg.color + '60' }}>
+          <span>{gameplayMsg.icon}</span> {gameplayMsg.text}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ═══ TASK OBJECTIVE CHECKLIST (shown during 3D tasks) ═══
+function TaskObjectives({ objectives, completedObjectives }) {
+  return (
+    <div className="l5-task-objectives">
+      <div className="l5-obj-title">{L5.target} Objectives</div>
+      {objectives.map(obj => {
+        const done = completedObjectives.includes(obj.id);
+        return (
+          <div key={obj.id} className={`l5-obj-item ${done ? 'done' : ''}`}>
+            <span className="l5-obj-check">{done ? L5.check : '☐'}</span>
+            <span className="l5-obj-label">{obj.label}</span>
+            {obj.room && <span className="l5-obj-room">{ROOM_ICONS[obj.room] || ''} {obj.room}</span>}
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -91,6 +142,7 @@ export default function Level5() {
   const [stage, setStage] = useState(1);
 
   // ─── Screen Machine ───
+  const [showLevelIntro, setShowLevelIntro] = useState(true);
   const [screen, setScreen] = useState('entry');
   const [introReady, setIntroReady] = useState(false);
   const [dialogIdx, setDialogIdx] = useState(0);
@@ -127,76 +179,31 @@ export default function Level5() {
   const [timeOfDay, setTimeOfDay] = useState('noon');
   const [weather, setWeather] = useState(WEATHER_TYPES[0]);
   const [batteryKwh, setBatteryKwh] = useState(5.0);
-  const timeSlot = useMemo(() => SCHEDULE_SLOTS.find(s => s.id === timeOfDay) || SCHEDULE_SLOTS[2], [timeOfDay]);
 
-  // ─── Stage 2: Interactive Simulation Tasks ───
-  const [multiUseAppIdx, setMultiUseAppIdx] = useState(0);
-  const [multiUseTaskIdx, setMultiUseTaskIdx] = useState(0);
-  const [multiUseCompleted, setMultiUseCompleted] = useState({});
-  const [totalMultiUseScore, setTotalMultiUseScore] = useState(0);
-  // Simulation sub-phases: 'task' → 'result' → 'think' → 'quiz' → 'feedback'
-  const [simPhase, setSimPhase] = useState('task');
-  const [simSelectedOption, setSimSelectedOption] = useState(null);
-  const [quizAnswer, setQuizAnswer] = useState(null);
-  const [showRetry, setShowRetry] = useState(false);
-  const [confidenceMsg, setConfidenceMsg] = useState(null);
+  // ═══ 8 INTERACTIVE TASKS STATE ═══
+  const [currentTaskIdx, setCurrentTaskIdx] = useState(0);
+  const [completedTasks, setCompletedTasks] = useState([]);
+  const [completedObjectives, setCompletedObjectives] = useState([]);
+  const [taskScore, setTaskScore] = useState(0);
+  const [taskCurrentWatts, setTaskCurrentWatts] = useState(0);
+  const [gameplayMsg, setGameplayMsg] = useState(null);
+  const [taskInteractionMsg, setTaskInteractionMsg] = useState(null);
+  const [taskSubtlePrompt, setTaskSubtlePrompt] = useState(false);
 
-  // ─── Stage 3: Combo Tasks ───
-  const [comboIdx, setComboIdx] = useState(0);
-  const [comboScore, setComboScore] = useState(0);
-  const [comboPhase, setComboPhase] = useState('task');
-  const [comboSimOption, setComboSimOption] = useState(null);
-  const [comboQuizAnswer, setComboQuizAnswer] = useState(null);
-  const [comboRetry, setComboRetry] = useState(false);
-  const [progressGoalIdx, setProgressGoalIdx] = useState(0);
-  const [accumulatedCO2, setAccumulatedCO2] = useState(0);
-  const [goalMet, setGoalMet] = useState(false);
-
-  // ─── Stage 4: Dynamic Events ───
-  const [eventIdx, setEventIdx] = useState(0);
-  const [eventTimer, setEventTimer] = useState(0);
-  const [totalConsequences, setTotalConsequences] = useState({ co2: 0, bill: 0 });
-  const [crisisScore, setCrisisScore] = useState(0);
-  const [crisisPhase, setCrisisPhase] = useState('event');
-  const [crisisSimOption, setCrisisSimOption] = useState(null);
-  const [crisisQuizAnswer, setCrisisQuizAnswer] = useState(null);
-  const [crisisRetry, setCrisisRetry] = useState(false);
-
-  // ─── Stage 5: Master Simulation ───
-  const [masterCycle, setMasterCycle] = useState(0);
-  const [simTimeIdx, setSimTimeIdx] = useState(0);
-  const [simResults, setSimResults] = useState([]);
-  const [simRunning, setSimRunning] = useState(false);
-  const [allCycleResults, setAllCycleResults] = useState([]);
-  const [analysisIdx, setAnalysisIdx] = useState(0);
-  const [analysisAnswer, setAnalysisAnswer] = useState(null);
-  const [analysisFeedback, setAnalysisFeedback] = useState(false);
-  const [analysisScore, setAnalysisScore] = useState(0);
-
-  // ─── Integration (preserved) ───
-  const [integrationScore, setIntegrationScore] = useState(0);
+  // Full Day Task (Task 8) — period tracking
+  const [fullDayPeriodIdx, setFullDayPeriodIdx] = useState(0);
+  const [fullDayPeriodObjectives, setFullDayPeriodObjectives] = useState([]);
+  const [fullDayResults, setFullDayResults] = useState([]);
 
   // ─── Quiz/Results ───
   const [quizResult, setQuizResult] = useState(null);
 
   // ═══ DERIVED ═══
-  const currentSolarW = useMemo(() => calcSolarW(timeSlot.sunlight, weather.factor), [timeSlot, weather]);
-  const houseWatts = useMemo(() => {
-    let w = 0;
-    Object.entries(appStates).forEach(([id, on]) => {
-      if (on) { const appData = L2_APPLIANCE_MAP[id]; if (appData) w += appData.wattage; }
-    });
-    homeAppliances.forEach(id => {
-      const sa = STORE_APPLIANCE_MAP[id]; if (sa) w += sa.wattage;
-    });
-    return w;
-  }, [appStates, homeAppliances]);
+  const currentSolarW = useMemo(() => {
+    const slot = SCHEDULE_SLOTS.find(s => s.id === timeOfDay) || SCHEDULE_SLOTS[2];
+    return calcSolarW(slot.sunlight, weather.factor);
+  }, [timeOfDay, weather]);
 
-  const solarUsed = Math.min(currentSolarW, houseWatts);
-  const gridWatts = Math.max(houseWatts - currentSolarW, 0);
-  const solarPct = houseWatts > 0 ? Math.round((solarUsed / houseWatts) * 100) : (currentSolarW > 0 ? 100 : 0);
-  const co2Rate = (gridWatts / 1000) * 0.71;
-  const billRate = (gridWatts / 1000) * COST_PER_KWH;
   const batteryPct = Math.round((batteryKwh / BATTERY_CAPACITY) * 100);
   const isEVCharging = homeAppliances.includes('ev_charger');
 
@@ -204,31 +211,27 @@ export default function Level5() {
   const totalSavings = useMemo(() => computeTotalSavings(completed), [completed]);
   const allAppsCompleted = completed.length >= STORE_APPLIANCES.length;
 
-  const nextAvailableIdx = useMemo(() => {
-    for (let i = 0; i < STORE_APPLIANCES.length; i++) {
-      if (!purchased.includes(STORE_APPLIANCES[i].id)) return i;
+  // Current interactive task
+  const stageTasks = useMemo(() => TASKS_BY_STAGE[stage] || [], [stage]);
+  const stageTaskStartIdx = useMemo(() => {
+    let idx = 0;
+    for (let s = 2; s < stage; s++) {
+      idx += (TASKS_BY_STAGE[s] || []).length;
     }
-    return -1;
-  }, [purchased]);
+    return idx;
+  }, [stage]);
+  const localTaskIdx = currentTaskIdx - stageTaskStartIdx;
+  const currentTask = INTERACTIVE_TASKS[currentTaskIdx] || null;
 
-  // Multi-use current task
-  const currentMultiApp = STORE_APPLIANCES[multiUseAppIdx] || null;
-  const currentMultiTasks = currentMultiApp ? MULTI_USE_TASKS[currentMultiApp.id] || [] : [];
-  const currentMultiTask = currentMultiTasks[multiUseTaskIdx] || null;
-
-  // Combo
-  const currentCombo = COMBO_TASKS[comboIdx] || null;
-
-  // Events
-  const currentEvent = DYNAMIC_EVENTS[eventIdx] || null;
-
-  // Master cycle target
-  const currentCycleGoal = MASTER_CYCLE_GOALS[masterCycle] || null;
-
-  // Random confidence message
-  const getConfidenceMsg = useCallback(() => {
-    return CONFIDENCE_MESSAGES[Math.floor(Math.random() * CONFIDENCE_MESSAGES.length)];
-  }, []);
+  // Objectives for current context (task or full-day period)
+  const activeObjectives = useMemo(() => {
+    if (!currentTask) return [];
+    if (currentTask.isFullDay) {
+      const period = currentTask.periods[fullDayPeriodIdx];
+      return period ? period.objectives : [];
+    }
+    return currentTask.objectives;
+  }, [currentTask, fullDayPeriodIdx]);
 
   // ═══ EFFECTS ═══
 
@@ -249,7 +252,7 @@ export default function Level5() {
 
   // Proximity levels
   useEffect(() => {
-    if (!['place', 'integration', 'simulation'].includes(screen)) return;
+    if (!['place', 'task_active'].includes(screen)) return;
     const interval = setInterval(() => {
       const p = getProximityLevels(l5PlayerState.x, l5PlayerState.z, L2_APPLIANCE_IDS);
       setProxLevels(p);
@@ -264,47 +267,49 @@ export default function Level5() {
     return () => clearTimeout(t);
   }, [placementError]);
 
-  // Event timer countdown (Stage 4)
+  // Gameplay message auto-dismiss
   useEffect(() => {
-    if (screen !== 'crisis' || crisisPhase !== 'event') return;
-    if (eventTimer <= 0) return;
-    const t = setInterval(() => {
-      setEventTimer(prev => {
-        if (prev <= 1) { clearInterval(t); return 0; }
-        return prev - 1;
-      });
-    }, 1000);
-    return () => clearInterval(t);
-  }, [screen, crisisPhase, eventTimer]);
-
-  // Simulation runner (Stage 5)
-  useEffect(() => {
-    if (screen !== 'master_sim' || !simRunning) return;
-    if (simTimeIdx >= SCHEDULE_SLOTS.length) {
-      setSimRunning(false);
-      return;
-    }
-    const slot = SCHEDULE_SLOTS[simTimeIdx];
-    setTimeOfDay(slot.id);
-    const t = setTimeout(() => {
-      const sw = calcSolarW(slot.sunlight, weather.factor);
-      const sp = houseWatts > 0 ? Math.round((Math.min(sw, houseWatts) / houseWatts) * 100) : 100;
-      const gw = Math.max(houseWatts - sw, 0);
-      const co2 = ((gw) / 1000 * 0.71);
-      setSimResults(prev => [...prev, {
-        time: slot.label, icon: slot.icon, solarW: sw, solarPct: sp,
-        gridW: gw, co2: co2.toFixed(2),
-      }]);
-      setSimTimeIdx(i => i + 1);
-    }, 1800);
+    if (!gameplayMsg) return;
+    const t = setTimeout(() => setGameplayMsg(null), 3000);
     return () => clearTimeout(t);
-  }, [screen, simRunning, simTimeIdx, weather, houseWatts]);
+  }, [gameplayMsg]);
+
+  // Task interaction message auto-dismiss
+  useEffect(() => {
+    if (!taskInteractionMsg) return;
+    const t = setTimeout(() => setTaskInteractionMsg(null), 4000);
+    return () => clearTimeout(t);
+  }, [taskInteractionMsg]);
+
+  // Initialize task watts when entering task
+  useEffect(() => {
+    if (screen === 'task_active' && currentTask) {
+      setTaskCurrentWatts(currentTask.isFullDay
+        ? (currentTask.periods[fullDayPeriodIdx]?.actualWattsIfWrong || 0)
+        : currentTask.energyBefore.watts
+      );
+      // Set time of day for task context
+      if (currentTask.isFullDay) {
+        const period = currentTask.periods[fullDayPeriodIdx];
+        if (period) setTimeOfDay(period.timeOfDay);
+      }
+      // Set weather for weather task
+      if (currentTask.id === 'task_weather') {
+        setWeather(WEATHER_TYPES[2]); // cloudy
+      } else {
+        setWeather(WEATHER_TYPES[0]); // clear
+      }
+    }
+  }, [screen, currentTask, fullDayPeriodIdx]);
 
   // ═══ CALLBACKS ═══
 
   const handleZone = useCallback(z => setZone(z), []);
   const handleNearest = useCallback(n => setNearest(n), []);
+
+  // ─── 3D INTERACTION HANDLER ───
   const handleInteract = useCallback(id => {
+    // Stage 1: Placement mode
     if (screen === 'place' && currentApp) {
       if (zone === currentApp.correctRoom) {
         playPlace();
@@ -318,14 +323,82 @@ export default function Level5() {
       }
       return;
     }
-    if (['integration', 'master_sim'].includes(screen)) {
-      if (!L2_APPLIANCE_IDS.includes(id)) return;
-      setAppStates(prev => ({ ...prev, [id]: !prev[id] }));
-      playClick();
-    }
-  }, [screen, currentApp, zone]);
 
-  // Buy appliance (Stage 1)
+    // Interactive Tasks: Handle task-specific interactions
+    if (screen === 'task_active' && currentTask) {
+      const objectives = activeObjectives;
+      // Find matching objective for this interaction
+      const matchingObj = objectives.find(obj =>
+        !completedObjectives.includes(obj.id) &&
+        (obj.target === id || (obj.room && obj.room === zone && obj.target === id))
+      );
+
+      if (matchingObj) {
+        playDiscover();
+        setCompletedObjectives(prev => [...prev, matchingObj.id]);
+
+        // Show message
+        if (matchingObj.message) {
+          setTaskInteractionMsg({ text: matchingObj.message, obj: matchingObj });
+        }
+
+        // Show gameplay message
+        if (matchingObj.isInefficient) {
+          setGameplayMsg(GAMEPLAY_MESSAGES.high_energy);
+        } else if (matchingObj.isPhantom) {
+          setGameplayMsg(GAMEPLAY_MESSAGES.phantom);
+        } else if (matchingObj.isSolution) {
+          setGameplayMsg(GAMEPLAY_MESSAGES.efficient);
+        } else if (matchingObj.isOverload) {
+          setGameplayMsg(GAMEPLAY_MESSAGES.overload);
+          playAlert();
+        } else if (matchingObj.isFixStep) {
+          setGameplayMsg(GAMEPLAY_MESSAGES.efficient);
+        }
+
+        // Update watts
+        if (matchingObj.watts !== undefined) {
+          if (matchingObj.isSolution || matchingObj.isFixStep) {
+            setTaskCurrentWatts(prev => Math.max(0, prev + matchingObj.watts));
+          } else if (matchingObj.isInefficient || matchingObj.isOverload) {
+            setTaskCurrentWatts(matchingObj.watts);
+          }
+        }
+
+        // Check if all objectives complete
+        const newCompleted = [...completedObjectives, matchingObj.id];
+        const allDone = objectives.every(obj => newCompleted.includes(obj.id));
+        if (allDone) {
+          playComplete();
+          // For full-day tasks, move to next period or complete
+          if (currentTask.isFullDay) {
+            const period = currentTask.periods[fullDayPeriodIdx];
+            setFullDayResults(prev => [...prev, {
+              period: period.label,
+              icon: period.icon,
+              optimalWatts: period.optimalWatts,
+            }]);
+            setTimeout(() => {
+              if (fullDayPeriodIdx + 1 < currentTask.periods.length) {
+                setFullDayPeriodIdx(prev => prev + 1);
+                setCompletedObjectives([]);
+              } else {
+                setScreen('task_result');
+                setTaskSubtlePrompt(false);
+              }
+            }, 1500);
+          } else {
+            setTimeout(() => {
+              setScreen('task_result');
+              setTaskSubtlePrompt(false);
+            }, 1500);
+          }
+        }
+      }
+    }
+  }, [screen, currentApp, zone, currentTask, activeObjectives, completedObjectives, fullDayPeriodIdx]);
+
+  // ─── Stage 1: Buy appliance ───
   const handleBuy = useCallback((appId) => {
     const app = STORE_APPLIANCE_MAP[appId];
     if (!app || carbonCoins < app.cost) return;
@@ -366,252 +439,55 @@ export default function Level5() {
     }
   }, [currentApp, purchased, completed]);
 
-  // ─── Stage 2: Interactive Simulation Handlers ───
-  const handleSimOptionSelect = useCallback((option) => {
-    setSimSelectedOption(option);
+  // ─── Task Navigation ───
+  const handleStartTask = useCallback(() => {
+    setCompletedObjectives([]);
+    setTaskInteractionMsg(null);
+    setGameplayMsg(null);
+    setTaskSubtlePrompt(false);
+    if (currentTask?.isFullDay) {
+      setFullDayPeriodIdx(0);
+      setFullDayPeriodObjectives([]);
+      setFullDayResults([]);
+    }
+    setScreen('task_active');
     playClick();
-    // Show result for 1.5s, then transition to think prompt
-    setTimeout(() => setSimPhase('result'), 300);
-  }, []);
+  }, [currentTask]);
 
-  const handleSimResult = useCallback(() => {
-    setSimPhase('think');
-    playThink();
-    // Show "Think about what happened" for 1.5s, then show quiz
-    setTimeout(() => setSimPhase('quiz'), 1500);
-  }, []);
-
-  const handleQuizAnswer = useCallback((idx) => {
-    setQuizAnswer(idx);
-    playClick();
-    const task = currentMultiTask;
-    if (!task) return;
-    const isCorrect = idx === task.hiddenQuiz.correctIndex;
-    setTimeout(() => {
-      setSimPhase('feedback');
-      if (isCorrect) {
-        setTotalMultiUseScore(s => s + task.reward);
-        addCarbonCoins(task.reward);
-        setConfidenceMsg(getConfidenceMsg());
-        setShowRetry(false);
-      } else {
-        setShowRetry(true);
-        setConfidenceMsg(null);
-      }
-    }, 500);
-  }, [currentMultiTask, addCarbonCoins, getConfidenceMsg]);
-
-  const handleMultiUseRetry = useCallback(() => {
-    setSimPhase('task');
-    setSimSelectedOption(null);
-    setQuizAnswer(null);
-    setShowRetry(false);
-    setConfidenceMsg(null);
+  const handleTaskLearning = useCallback(() => {
+    setScreen('task_learning');
+    setTaskSubtlePrompt(true);
     playClick();
   }, []);
 
-  const handleMultiUseNext = useCallback(() => {
-    const appId = STORE_APPLIANCES[multiUseAppIdx]?.id;
-    const tasks = MULTI_USE_TASKS[appId] || [];
+  const handleTaskComplete = useCallback(() => {
+    if (!currentTask) return;
+    setCompletedTasks(prev => [...prev, currentTask.id]);
+    setTaskScore(prev => prev + currentTask.reward);
+    addCarbonCoins(currentTask.reward);
+    playSuccess();
 
-    if (multiUseTaskIdx + 1 < tasks.length) {
-      setMultiUseTaskIdx(t => t + 1);
-    } else {
-      setMultiUseCompleted(prev => ({ ...prev, [appId]: true }));
-      if (multiUseAppIdx + 1 < STORE_APPLIANCES.length) {
-        setMultiUseAppIdx(a => a + 1);
-        setMultiUseTaskIdx(0);
-      } else {
-        setStage(3);
+    // Move to next task or stage
+    const nextIdx = currentTaskIdx + 1;
+    if (nextIdx < INTERACTIVE_TASKS.length) {
+      const nextTask = INTERACTIVE_TASKS[nextIdx];
+      setCurrentTaskIdx(nextIdx);
+      if (nextTask.stage !== currentTask.stage) {
+        // New stage
+        setStage(nextTask.stage);
         setScreen('stage_transition');
-      }
-    }
-    // Reset simulation state
-    setSimPhase('task');
-    setSimSelectedOption(null);
-    setQuizAnswer(null);
-    setShowRetry(false);
-    setConfidenceMsg(null);
-  }, [multiUseAppIdx, multiUseTaskIdx]);
-
-  // ─── Stage 3: Combo Task Handlers ───
-  const handleComboSimSelect = useCallback((option) => {
-    setComboSimOption(option);
-    playClick();
-    setTimeout(() => setComboPhase('result'), 300);
-  }, []);
-
-  const handleComboResult = useCallback(() => {
-    setComboPhase('think');
-    playThink();
-    setTimeout(() => setComboPhase('quiz'), 1500);
-  }, []);
-
-  const handleComboQuizAnswer = useCallback((idx) => {
-    setComboQuizAnswer(idx);
-    playClick();
-    const combo = currentCombo;
-    if (!combo) return;
-    const isCorrect = idx === combo.hiddenQuiz.correctIndex;
-    setTimeout(() => {
-      setComboPhase('feedback');
-      if (isCorrect) {
-        playCombo();
-        setComboScore(s => s + combo.reward);
-        addCarbonCoins(combo.reward);
-        setAccumulatedCO2(prev => Math.max(0, prev + combo.co2Impact));
-        setComboRetry(false);
-        setConfidenceMsg(getConfidenceMsg());
       } else {
-        setAccumulatedCO2(prev => prev + Math.abs(combo.co2Impact));
-        setComboRetry(true);
-        setConfidenceMsg(null);
+        setScreen('task_intro');
       }
-    }, 500);
-  }, [currentCombo, addCarbonCoins, getConfidenceMsg]);
-
-  const handleComboRetry = useCallback(() => {
-    setComboPhase('task');
-    setComboSimOption(null);
-    setComboQuizAnswer(null);
-    setComboRetry(false);
-    setConfidenceMsg(null);
-    playClick();
-  }, []);
-
-  const handleComboNext = useCallback(() => {
-    if (comboIdx + 1 < COMBO_TASKS.length) {
-      setComboIdx(c => c + 1);
     } else {
-      const goal = PROGRESSIVE_GOALS[progressGoalIdx];
-      if (goal && accumulatedCO2 <= goal.target) {
-        setGoalMet(true);
-        if (progressGoalIdx + 1 < PROGRESSIVE_GOALS.length) {
-          setProgressGoalIdx(p => p + 1);
-          setComboIdx(0);
-          setGoalMet(false);
-        } else {
-          setStage(4);
-          setScreen('stage_transition');
-        }
-      } else {
-        setComboIdx(0);
-      }
-    }
-    setComboPhase('task');
-    setComboSimOption(null);
-    setComboQuizAnswer(null);
-    setComboRetry(false);
-    setConfidenceMsg(null);
-  }, [comboIdx, progressGoalIdx, accumulatedCO2]);
-
-  // ─── Stage 4: Event Handlers ───
-  const handleCrisisSimSelect = useCallback((option) => {
-    setCrisisSimOption(option);
-    playClick();
-    setTimeout(() => setCrisisPhase('result'), 300);
-  }, []);
-
-  const handleCrisisResult = useCallback(() => {
-    setCrisisPhase('think');
-    playThink();
-    setTimeout(() => setCrisisPhase('quiz'), 1500);
-  }, []);
-
-  const handleCrisisQuizAnswer = useCallback((idx) => {
-    setCrisisQuizAnswer(idx);
-    playClick();
-    const evt = currentEvent;
-    if (!evt) return;
-    const isCorrect = idx === evt.hiddenQuiz.correctIndex;
-    setTimeout(() => {
-      setCrisisPhase('feedback');
-      if (isCorrect) {
-        playSuccess();
-        setCrisisScore(s => s + evt.reward);
-        addCarbonCoins(evt.reward);
-        setCrisisRetry(false);
-        setConfidenceMsg(getConfidenceMsg());
-      } else {
-        setTotalConsequences(prev => ({
-          co2: prev.co2 + evt.consequence.co2Spike,
-          bill: prev.bill + evt.consequence.billSpike,
-        }));
-        setCrisisRetry(true);
-        setConfidenceMsg(null);
-      }
-    }, 500);
-  }, [currentEvent, addCarbonCoins, getConfidenceMsg]);
-
-  const handleCrisisRetry = useCallback(() => {
-    setCrisisPhase('event');
-    setCrisisSimOption(null);
-    setCrisisQuizAnswer(null);
-    setCrisisRetry(false);
-    setConfidenceMsg(null);
-    setEventTimer(12);
-    playClick();
-  }, []);
-
-  const handleEventNext = useCallback(() => {
-    if (eventIdx + 1 < DYNAMIC_EVENTS.length) {
-      setEventIdx(e => e + 1);
-      setEventTimer(12);
-    } else {
-      setStage(5);
-      setScreen('stage_transition');
-    }
-    setCrisisPhase('event');
-    setCrisisSimOption(null);
-    setCrisisQuizAnswer(null);
-    setCrisisRetry(false);
-    setConfidenceMsg(null);
-  }, [eventIdx]);
-
-  // ─── Stage 5: Master Simulation ───
-  const handleStartCycle = useCallback(() => {
-    setSimTimeIdx(0);
-    setSimResults([]);
-    setSimRunning(true);
-  }, []);
-
-  const handleCycleComplete = useCallback(() => {
-    const cycleData = {
-      cycle: masterCycle + 1,
-      results: [...simResults],
-      avgSolar: simResults.length > 0 ? Math.round(simResults.reduce((s, r) => s + r.solarPct, 0) / simResults.length) : 0,
-      totalCO2: simResults.reduce((s, r) => s + parseFloat(r.co2), 0),
-    };
-    setAllCycleResults(prev => [...prev, cycleData]);
-
-    if (masterCycle + 1 < MASTER_CYCLE_GOALS.length) {
-      setMasterCycle(c => c + 1);
-      setSimTimeIdx(0);
-      setSimResults([]);
-    } else {
-      setScreen('analysis');
-    }
-  }, [masterCycle, simResults]);
-
-  // Analysis
-  const handleAnalysisAnswer = useCallback((idx) => {
-    setAnalysisAnswer(idx);
-    setAnalysisFeedback(true);
-    playClick();
-    if (idx === ANALYSIS_QUESTIONS[analysisIdx]?.correctIndex) {
-      setAnalysisScore(s => s + 1);
-    }
-  }, [analysisIdx]);
-
-  const handleAnalysisNext = useCallback(() => {
-    if (analysisIdx + 1 < ANALYSIS_QUESTIONS.length) {
-      setAnalysisIdx(a => a + 1);
-    } else {
+      // All tasks done → dashboard
       setScreen('dashboard');
     }
-    setAnalysisAnswer(null);
-    setAnalysisFeedback(false);
-  }, [analysisIdx]);
+    // Reset
+    setCompletedObjectives([]);
+    setTaskInteractionMsg(null);
+    setGameplayMsg(null);
+  }, [currentTask, currentTaskIdx, addCarbonCoins]);
 
   // Quiz complete
   const handleQuizComplete = useCallback(result => {
@@ -620,30 +496,24 @@ export default function Level5() {
     playSuccess();
     completeLevel(5);
     unlockLevel(6);
-    const masterAvgSolar = allCycleResults.length > 0
-      ? Math.round(allCycleResults.reduce((s, c) => s + c.avgSolar, 0) / allCycleResults.length)
-      : 50;
     const stars = calculateL5Stars(
       completed.length,
       (result.score / result.total) * 100,
-      integrationScore || comboScore,
-      masterAvgSolar,
+      taskScore,
+      TOTAL_POSSIBLE_TASK_SCORE,
     );
     addCarbonCoins(LEVEL5_BADGE.coins * stars);
-  }, [completed, integrationScore, comboScore, allCycleResults, completeLevel, unlockLevel, addCarbonCoins]);
+  }, [completed, taskScore, completeLevel, unlockLevel, addCarbonCoins]);
 
   const stars = useMemo(() => {
     if (!quizResult) return 1;
-    const masterAvgSolar = allCycleResults.length > 0
-      ? Math.round(allCycleResults.reduce((s, c) => s + c.avgSolar, 0) / allCycleResults.length)
-      : 50;
     return calculateL5Stars(
       completed.length,
       (quizResult.score / quizResult.total) * 100,
-      integrationScore || comboScore,
-      masterAvgSolar,
+      taskScore,
+      TOTAL_POSSIBLE_TASK_SCORE,
     );
-  }, [quizResult, completed, integrationScore, comboScore, allCycleResults]);
+  }, [quizResult, completed, taskScore]);
 
   // Environment grade for dashboard
   const envGrade = useMemo(() => getEnvironmentGrade(totalSavings.solarPct, totalSavings.co2Saved), [totalSavings]);
@@ -656,13 +526,34 @@ export default function Level5() {
       {/* ══ STAGE PROGRESS BAR ══ */}
       {!['entry', 'reward'].includes(screen) && <StageBar currentStage={stage} />}
 
+      {/* ══════════════════════════════════════════════════════ */}
+      {/* ══ LEVEL INTRO (Learn Before Play) ══ */}
+      {/* ══════════════════════════════════════════════════════ */}
+      {showLevelIntro && (
+        <LevelIntro
+          levelNumber={5}
+          levelTitle="Smart Sustainable Home"
+          levelIcon="\u{1F3D8}\u{FE0F}"
+          objective="Take charge of an entire smart home as the Chief Sustainability Engineer. Purchase, place, and manage 5 advanced eco-friendly appliances across multiple stages to build the ultimate energy-efficient home."
+          learningOutcome="By the end of this level, you will master energy efficiency, learn how to optimize appliance usage for minimum waste, and understand load management to balance electricity demand across your home."
+          terms={[
+            { icon: '\u{2699}\u{FE0F}', name: 'Efficiency', definition: 'Getting the most useful work done while using the least amount of energy. An efficient home wastes very little electricity.', example: 'An inverter AC is more efficient than a regular AC' },
+            { icon: '\u{1F9E0}', name: 'Optimization', definition: 'Using your resources in the smartest possible way \u{2014} choosing the right appliance, the right time, and the right settings to save energy.', example: 'Running the washing machine during solar peak hours' },
+            { icon: '\u{1F4CA}', name: 'Load Management', definition: 'Controlling how much electricity is used at any given time by spreading out heavy appliance usage and avoiding peak overload.', example: 'Don\u{2019}t run AC, geyser, and washing machine all at once' },
+          ]}
+          onComplete={() => setShowLevelIntro(false)}
+        />
+      )}
+
+      {/* ══════════════════════════════════════════════════════ */}
       {/* ══ ENTRY SCREEN ══ */}
-      {screen === 'entry' && (
+      {/* ══════════════════════════════════════════════════════ */}
+      {!showLevelIntro && screen === 'entry' && (
         <div className="l5-intro-overlay">
           <div className={`l5-intro-icon ${introReady ? 'visible' : ''}`}>{L5.house}</div>
           <div className={`l5-intro-title ${introReady ? 'visible' : ''}`}>SMART SUSTAINABLE HOME</div>
           <div className={`l5-intro-sub ${introReady ? 'visible' : ''}`}>FULL HOME SIMULATION</div>
-          <div className={`l5-intro-role ${introReady ? 'visible' : ''}`}>5 Stages • 40–50 Minutes • Build, Master & Optimize</div>
+          <div className={`l5-intro-role ${introReady ? 'visible' : ''}`}>5 Stages • 8 Interactive Tasks • 40–50 Minutes</div>
           <div className={`l5-intro-dialogue ${introReady ? 'visible' : ''}`}>
             <span className="l5-intro-avatar">{'\u{1F468}\u{200D}\u{1F393}'}</span>
             <span className="l5-intro-quote">{ENTRY_DIALOGUE[dialogIdx]}</span>
@@ -679,7 +570,9 @@ export default function Level5() {
         </div>
       )}
 
+      {/* ══════════════════════════════════════════════════════ */}
       {/* ══ STAGE TRANSITION SCREEN ══ */}
+      {/* ══════════════════════════════════════════════════════ */}
       {screen === 'stage_transition' && (
         <div className="l5-stage-transition-overlay">
           <div className="l5-stage-transition-card">
@@ -690,10 +583,7 @@ export default function Level5() {
             <div className="l5-stage-transition-time">{L5.clock} {STAGES[stage - 1]?.time}</div>
             <HomeEvoStrip stage={stage} />
             <button className="l5-stage-transition-btn" onClick={() => {
-              if (stage === 2) { setScreen('multiuse'); setSimPhase('task'); }
-              else if (stage === 3) { setScreen('combo'); setAccumulatedCO2(20); setComboPhase('task'); }
-              else if (stage === 4) { setScreen('crisis'); setEventTimer(12); setCrisisPhase('event'); playAlert(); }
-              else if (stage === 5) setScreen('master_sim');
+              setScreen('task_intro');
             }}>
               Begin Stage {stage} {'\u{2192}'}
             </button>
@@ -701,7 +591,9 @@ export default function Level5() {
         </div>
       )}
 
+      {/* ══════════════════════════════════════════════════════ */}
       {/* ══ SMART STORE (Stage 1) ══ */}
+      {/* ══════════════════════════════════════════════════════ */}
       {screen === 'store' && (
         <div className="l5-store-overlay">
           <div className="l5-store-header">
@@ -735,7 +627,7 @@ export default function Level5() {
 
               return (
                 <div key={app.id} className={`l5-store-card ${isDone ? 'done' : isBought ? 'bought' : isLocked ? 'locked' : canBuy ? 'available' : 'unavailable'}`}>
-                  {/* Problem banner (shown for available/unlocked cards) */}
+                  {/* Problem banner */}
                   {!isLocked && !isDone && hint && (
                     <div className="l5-store-problem">
                       <div className="l5-store-problem-issue">{L5.warn} {hint.problem}</div>
@@ -820,7 +712,7 @@ export default function Level5() {
                 <Scene appStates={appStates} nearest={nearest} onZone={handleZone}
                   onNearest={handleNearest} onInteract={handleInteract} camRef={camRef}
                   proxLevels={proxLevels} timeOfDay={timeOfDay} batteryPct={batteryPct}
-                  isEVCharging={isEVCharging} />
+                  isEVCharging={isEVCharging} weatherFactor={weather.factor} homeAppliances={homeAppliances} />
               </Suspense>
             </Canvas>
           </div>
@@ -962,575 +854,246 @@ export default function Level5() {
       )}
 
       {/* ══════════════════════════════════════════════════════ */}
-      {/* ══ STAGE 2: INTERACTIVE SIMULATION TASKS ══ */}
+      {/* ══ TASK INTRO (before 3D) ══ */}
       {/* ══════════════════════════════════════════════════════ */}
-      {screen === 'multiuse' && currentMultiApp && currentMultiTask && (
-        <div className="l5-multiuse-overlay">
-          <div className="l5-multiuse-card">
-            {/* Task chain progress */}
-            <div className="l5-multiuse-progress">
-              <div className="l5-multiuse-app-name">{currentMultiApp.icon} {currentMultiApp.name}</div>
-              <div className="l5-multiuse-chain">
-                {currentMultiTasks.map((t, i) => (
-                  <div key={t.id} className={`l5-chain-dot ${i < multiUseTaskIdx ? 'done' : i === multiUseTaskIdx ? 'active' : ''}`}>
-                    {i < multiUseTaskIdx ? L5.check : i + 1}
+      {screen === 'task_intro' && currentTask && (
+        <div className="l5-task-intro-overlay">
+          <div className="l5-task-intro-card">
+            <div className="l5-task-intro-badge">TASK {currentTask.num} of 8</div>
+            <div className="l5-task-intro-icon">{currentTask.icon}</div>
+            <div className="l5-task-intro-title">{currentTask.title}</div>
+            <div className="l5-task-intro-scenario">{currentTask.scenario}</div>
+            <div className="l5-task-intro-desc">{currentTask.description}</div>
+
+            {/* Before metrics */}
+            <div className="l5-task-intro-metrics">
+              <div className="l5-task-metric before">
+                <span className="l5-task-metric-label">{L5.warn} Current</span>
+                <span className="l5-task-metric-val">{currentTask.energyBefore.watts}W</span>
+                <span className="l5-task-metric-sub">{currentTask.energyBefore.co2} kg CO₂/hr</span>
+              </div>
+              <div className="l5-task-metric arrow">{'\u{2192}'}</div>
+              <div className="l5-task-metric target">
+                <span className="l5-task-metric-label">{L5.target} Target</span>
+                <span className="l5-task-metric-val">{currentTask.energyAfter.watts}W</span>
+                <span className="l5-task-metric-sub">{currentTask.energyAfter.co2} kg CO₂/hr</span>
+              </div>
+            </div>
+
+            {/* Objectives preview */}
+            <div className="l5-task-intro-objectives">
+              <div className="l5-task-intro-obj-title">{L5.target} What to do:</div>
+              {(currentTask.isFullDay ? currentTask.periods[0].objectives : currentTask.objectives).map(obj => (
+                <div key={obj.id} className="l5-task-intro-obj-item">
+                  <span>☐</span> {obj.label} <span className="l5-task-intro-obj-room">{ROOM_ICONS[obj.room] || ''}</span>
+                </div>
+              ))}
+            </div>
+
+            {currentTask.isFullDay && (
+              <div className="l5-task-fullday-periods">
+                <div className="l5-task-fullday-label">{L5.clock} 3 Time Periods:</div>
+                {currentTask.periods.map(p => (
+                  <span key={p.id} className="l5-task-period-tag">{p.icon} {p.label}</span>
+                ))}
+              </div>
+            )}
+
+            <button className="l5-task-intro-btn" onClick={handleStartTask}>
+              {L5.play} Start Task — Walk & Interact {'\u{2192}'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════ */}
+      {/* ══ TASK ACTIVE (3D Scene + HUD) ══ */}
+      {/* ══════════════════════════════════════════════════════ */}
+      {screen === 'task_active' && currentTask && (
+        <div className="l5-container">
+          <div className="l5-canvas-wrapper">
+            <Canvas
+              camera={{ position: [-5, 8, -14], fov: 50 }}
+              gl={{ antialias: false }}
+              onCreated={({ gl }) => { gl.setClearColor('#050a15'); gl.toneMapping = 1; gl.toneMappingExposure = 1.0; gl.setPixelRatio(Math.min(window.devicePixelRatio, 1.5)); }}
+            >
+              <Suspense fallback={null}>
+                <Scene appStates={appStates} nearest={nearest} onZone={handleZone}
+                  onNearest={handleNearest} onInteract={handleInteract} camRef={camRef}
+                  proxLevels={proxLevels} timeOfDay={timeOfDay} batteryPct={batteryPct}
+                  isEVCharging={isEVCharging} weatherFactor={weather.factor} homeAppliances={homeAppliances} />
+              </Suspense>
+            </Canvas>
+          </div>
+
+          {/* Top HUD */}
+          <div className="l5-hud-top">
+            <div className="l5-hud-task-badge">{currentTask.icon} Task {currentTask.num}</div>
+            <div className="l5-hud-title">{currentTask.title}</div>
+            <div className="l5-hud-zone">{ROOM_ICONS[zone] || L5.pin} {zone}</div>
+          </div>
+
+          {/* Full Day period indicator */}
+          {currentTask.isFullDay && (
+            <div className="l5-fullday-period-hud">
+              {currentTask.periods.map((p, i) => (
+                <div key={p.id} className={`l5-period-dot ${i < fullDayPeriodIdx ? 'done' : i === fullDayPeriodIdx ? 'active' : ''}`}>
+                  {i < fullDayPeriodIdx ? L5.check : p.icon}
+                  <span>{p.label}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Energy HUD */}
+          <TaskEnergyHUD
+            currentWatts={taskCurrentWatts}
+            solarW={currentSolarW}
+            co2Rate={(Math.max(taskCurrentWatts - currentSolarW, 0) / 1000) * 0.71}
+            gameplayMsg={gameplayMsg}
+          />
+
+          {/* Objectives checklist */}
+          <TaskObjectives
+            objectives={activeObjectives}
+            completedObjectives={completedObjectives}
+          />
+
+          {/* Interaction message popup */}
+          {taskInteractionMsg && (
+            <div className={`l5-task-interaction-msg ${taskInteractionMsg.obj?.isSolution ? 'success' : taskInteractionMsg.obj?.isInefficient ? 'warning' : taskInteractionMsg.obj?.isOverload ? 'danger' : taskInteractionMsg.obj?.isPhantom ? 'phantom' : 'info'}`}>
+              <div className="l5-interaction-msg-text">{taskInteractionMsg.text}</div>
+            </div>
+          )}
+
+          {/* Nearest appliance hint */}
+          {nearest && (
+            <div className="l5-nearest-hint">
+              Press <span className="l5-key">E</span> to interact with {nearest.replace(/_/g, ' ')}
+            </div>
+          )}
+
+          <HelpBtn />
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════ */}
+      {/* ══ TASK RESULT (before/after comparison) ══ */}
+      {/* ══════════════════════════════════════════════════════ */}
+      {screen === 'task_result' && currentTask && (
+        <div className="l5-task-result-overlay">
+          <div className="l5-task-result-card">
+            <div className="l5-task-result-badge">{L5.chart} RESULT</div>
+            <div className="l5-task-result-icon">{currentTask.icon}</div>
+            <div className="l5-task-result-title">{currentTask.title}</div>
+
+            <div className="l5-task-result-compare">
+              <div className="l5-task-result-col before">
+                <div className="l5-task-result-col-label">{L5.warn} Before</div>
+                <div className="l5-task-result-stat">
+                  <span>{L5.zap}</span> {currentTask.energyBefore.watts}W
+                </div>
+                <div className="l5-task-result-stat">
+                  <span>{L5.globe}</span> {currentTask.energyBefore.co2} kg CO₂/hr
+                </div>
+                <div className="l5-task-result-stat">
+                  <span>{L5.money}</span> ₹{currentTask.energyBefore.bill}/hr
+                </div>
+              </div>
+              <div className="l5-task-result-arrow">{'\u{2192}'}</div>
+              <div className="l5-task-result-col after">
+                <div className="l5-task-result-col-label">{L5.leaf} After</div>
+                <div className="l5-task-result-stat">
+                  <span>{L5.zap}</span> {currentTask.energyAfter.watts}W
+                </div>
+                <div className="l5-task-result-stat">
+                  <span>{L5.globe}</span> {currentTask.energyAfter.co2} kg CO₂/hr
+                </div>
+                <div className="l5-task-result-stat">
+                  <span>{L5.money}</span> ₹{currentTask.energyAfter.bill}/hr
+                </div>
+              </div>
+            </div>
+
+            {/* Savings highlight */}
+            <div className="l5-task-result-savings">
+              <div className="l5-task-result-saving-item">
+                {L5.zap} Power Reduced: <strong>{Math.round((1 - currentTask.energyAfter.watts / Math.max(currentTask.energyBefore.watts, 1)) * 100)}%</strong>
+              </div>
+              <div className="l5-task-result-saving-item">
+                {L5.globe} CO₂ Saved: <strong>{(currentTask.energyBefore.co2 - currentTask.energyAfter.co2).toFixed(2)} kg/hr</strong>
+              </div>
+            </div>
+
+            {/* Full day results */}
+            {currentTask.isFullDay && fullDayResults.length > 0 && (
+              <div className="l5-fullday-results">
+                <div className="l5-fullday-results-title">{L5.clock} Period Results:</div>
+                {fullDayResults.map((r, i) => (
+                  <div key={i} className="l5-fullday-result-row">
+                    <span>{r.icon} {r.period}</span>
+                    <span className="l5-fullday-result-watts">{L5.check} {r.optimalWatts}W optimal</span>
                   </div>
                 ))}
               </div>
-              <div className="l5-multiuse-overall">
-                Appliance {multiUseAppIdx + 1}/{STORE_APPLIANCES.length} • Task {multiUseTaskIdx + 1}/{currentMultiTasks.length}
-              </div>
-            </div>
-
-            {/* PHASE: TASK — Interactive Simulation */}
-            {simPhase === 'task' && (
-              <>
-                <div className="l5-multiuse-badge">{L5.play} INTERACTIVE TASK</div>
-                <div className="l5-multiuse-title">{currentMultiTask.title}</div>
-                <div className="l5-multiuse-instruction">{currentMultiTask.simulation.scenario}</div>
-                <div className="l5-sim-options">
-                  {currentMultiTask.simulation.options.map(opt => (
-                    <button key={opt.id} className="l5-sim-option" onClick={() => handleSimOptionSelect(opt)}>
-                      <span className="l5-sim-option-icon">{opt.icon}</span>
-                      <span className="l5-sim-option-label">{opt.label}</span>
-                    </button>
-                  ))}
-                </div>
-              </>
             )}
 
-            {/* PHASE: RESULT — Show simulation meters */}
-            {simPhase === 'result' && simSelectedOption && (
-              <>
-                <div className="l5-multiuse-badge">{L5.chart} SIMULATION RESULT</div>
-                <div className="l5-result-header">
-                  <span className="l5-result-chosen-icon">{simSelectedOption.icon}</span>
-                  <span className="l5-result-chosen-label">{simSelectedOption.label}</span>
-                </div>
-                <div className="l5-sim-meters">
-                  <EnergyMeter label="Power Usage" value={simSelectedOption.watts} max={2000} unit="W" color={simSelectedOption.watts > 500 ? '#ef4444' : simSelectedOption.watts > 200 ? '#f5a623' : '#22c55e'} icon={L5.zap} animate />
-                  <EnergyMeter label="CO₂ Emissions" value={simSelectedOption.co2} max={2} unit=" kg/hr" color={simSelectedOption.co2 > 0.5 ? '#ef4444' : simSelectedOption.co2 > 0.1 ? '#f5a623' : '#22c55e'} icon={L5.globe} animate />
-                  {simSelectedOption.cost !== undefined && (
-                    <EnergyMeter label="Hourly Cost" value={simSelectedOption.cost} max={15} unit=" ₹/hr" color={simSelectedOption.cost > 5 ? '#ef4444' : simSelectedOption.cost > 1 ? '#f5a623' : '#22c55e'} icon={L5.money} animate />
-                  )}
-                  {simSelectedOption.cooling !== undefined && (
-                    <EnergyMeter label="Cooling Effect" value={simSelectedOption.cooling} max={100} unit="%" color="#3b82f6" icon={L5.wind} animate />
-                  )}
-                  {simSelectedOption.saving !== undefined && (
-                    <EnergyMeter label="Annual Saving" value={simSelectedOption.saving} max={1500} unit=" kWh" color="#22c55e" icon={L5.leaf} animate />
-                  )}
-                  {simSelectedOption.comfort !== undefined && (
-                    <EnergyMeter label="Comfort" value={simSelectedOption.comfort} max={100} unit="%" color="#a855f7" icon={L5.star} animate />
-                  )}
-                </div>
-                <button className="l5-usage-next-btn" onClick={handleSimResult}>
-                  {L5.think} Reflect on Results {'\u{2192}'}
-                </button>
-              </>
-            )}
-
-            {/* PHASE: THINK — Thinking prompt */}
-            {simPhase === 'think' && (
-              <div className="l5-think-phase">
-                <div className="l5-think-icon">{L5.think}</div>
-                <div className="l5-think-text">{currentMultiTask.hiddenQuiz.thinkPrompt}</div>
-                <div className="l5-think-dots">
-                  <span className="l5-dot-1">.</span>
-                  <span className="l5-dot-2">.</span>
-                  <span className="l5-dot-3">.</span>
-                </div>
-              </div>
-            )}
-
-            {/* PHASE: QUIZ — Hidden quiz (3 neutral options) */}
-            {simPhase === 'quiz' && (
-              <>
-                <div className="l5-multiuse-badge">{L5.brain} REFLECTION</div>
-                <div className="l5-quiz-question">{currentMultiTask.hiddenQuiz.question}</div>
-                <div className="l5-sim-options">
-                  {currentMultiTask.hiddenQuiz.options.map((opt, i) => (
-                    <button key={i}
-                      className={`l5-sim-option ${quizAnswer === i ? 'selected' : ''}`}
-                      onClick={() => quizAnswer === null && handleQuizAnswer(i)}
-                      disabled={quizAnswer !== null}
-                    >
-                      <span className="l5-sim-option-icon">{L5.play}</span>
-                      <span className="l5-sim-option-label">{opt}</span>
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
-
-            {/* PHASE: FEEDBACK — Narrative feedback */}
-            {simPhase === 'feedback' && (
-              <div className="l5-usage-feedback">
-                <div className="l5-narrative-feedback">
-                  <div className="l5-narrative-icon">{L5.speech}</div>
-                  <div className="l5-narrative-text">
-                    {quizAnswer === currentMultiTask.hiddenQuiz.correctIndex
-                      ? currentMultiTask.feedback.correct
-                      : currentMultiTask.feedback.wrong
-                    }
-                  </div>
-                </div>
-
-                {confidenceMsg && (
-                  <div className="l5-confidence-boost">{L5.sparkle} {confidenceMsg}</div>
-                )}
-
-                {quizAnswer === currentMultiTask.hiddenQuiz.correctIndex && (
-                  <div className="l5-multiuse-reward">
-                    {L5.coin} +{currentMultiTask.reward} coins • {L5.globe} {currentMultiTask.co2Impact} kg CO₂
-                  </div>
-                )}
-
-                {showRetry ? (
-                  <div className="l5-retry-section">
-                    <div className="l5-retry-text">{L5.speech} {currentMultiTask.feedback.retry}</div>
-                    <button className="l5-retry-btn" onClick={handleMultiUseRetry}>
-                      {L5.cycle} Try Again with Better Strategy
-                    </button>
-                    <button className="l5-skip-btn" onClick={handleMultiUseNext}>
-                      Continue Anyway {'\u{2192}'}
-                    </button>
-                  </div>
-                ) : (
-                  <button className="l5-usage-next-btn" onClick={handleMultiUseNext}>
-                    {multiUseTaskIdx + 1 >= currentMultiTasks.length && multiUseAppIdx + 1 >= STORE_APPLIANCES.length
-                      ? `Complete Stage 2 ${'\u{2192}'}`
-                      : multiUseTaskIdx + 1 >= currentMultiTasks.length
-                        ? `Next Appliance ${'\u{2192}'}`
-                        : `Next Task ${'\u{2192}'}`
-                    }
-                  </button>
-                )}
-              </div>
-            )}
-
-            {/* Score tracker */}
-            <div className="l5-multiuse-score">
-              {L5.star} Total Score: {totalMultiUseScore} pts
-            </div>
+            <button className="l5-task-result-btn" onClick={handleTaskLearning}>
+              {L5.brain} What Did You Learn? {'\u{2192}'}
+            </button>
           </div>
         </div>
       )}
 
       {/* ══════════════════════════════════════════════════════ */}
-      {/* ══ STAGE 3: COMBO TASKS + PROGRESSIVE GOALS ══ */}
+      {/* ══ TASK LEARNING (educational summary) ══ */}
       {/* ══════════════════════════════════════════════════════ */}
-      {screen === 'combo' && currentCombo && (
-        <div className="l5-combo-overlay">
-          {/* Progressive goal banner */}
-          <div className="l5-progressive-goal">
-            <div className="l5-goal-icon">{PROGRESSIVE_GOALS[progressGoalIdx]?.icon || L5.target}</div>
-            <div className="l5-goal-text">{PROGRESSIVE_GOALS[progressGoalIdx]?.label}</div>
-            <div className="l5-goal-current">Current CO₂: {accumulatedCO2.toFixed(1)} kg</div>
-            <div className="l5-goal-bar">
-              <div className="l5-goal-fill" style={{
-                width: `${Math.max(0, 100 - (accumulatedCO2 / (PROGRESSIVE_GOALS[progressGoalIdx]?.target || 20)) * 100)}%`,
-                background: accumulatedCO2 <= (PROGRESSIVE_GOALS[progressGoalIdx]?.target || 20) ? '#22c55e' : '#ef4444',
-              }}></div>
-            </div>
-          </div>
+      {screen === 'task_learning' && currentTask && (
+        <div className="l5-task-learning-overlay">
+          <div className="l5-task-learning-card">
+            <div className="l5-task-learning-badge">{L5.brain} LEARNING</div>
+            <div className="l5-task-learning-icon">{currentTask.icon}</div>
+            <div className="l5-task-learning-title">{currentTask.title}</div>
 
-          <div className="l5-combo-card">
-            <div className="l5-combo-badge">{L5.combo} COMBO TASK {comboIdx + 1}/{COMBO_TASKS.length}</div>
-            <div className="l5-combo-title">{currentCombo.title}</div>
-            <div className="l5-combo-desc">{currentCombo.description}</div>
-
-            {/* Appliances involved */}
-            <div className="l5-combo-appliances">
-              {currentCombo.appliances.map(id => {
-                const a = STORE_APPLIANCE_MAP[id];
-                return a ? <span key={id} className="l5-combo-app-tag">{a.icon} {a.name}</span> : null;
-              })}
+            <div className="l5-task-learning-msg">
+              <div className="l5-narrative-feedback">
+                <div className="l5-narrative-icon">{L5.speech}</div>
+                <div className="l5-narrative-text">{currentTask.learning}</div>
+              </div>
             </div>
 
-            <div className="l5-combo-time">{L5.clock} Time: {SCHEDULE_SLOTS.find(s => s.id === currentCombo.timeOfDay)?.label}</div>
-
-            {/* PHASE: TASK */}
-            {comboPhase === 'task' && (
-              <>
-                <div className="l5-combo-instruction">{currentCombo.simulation.scenario}</div>
-                <div className="l5-sim-options">
-                  {currentCombo.simulation.options.map(opt => (
-                    <button key={opt.id} className="l5-sim-option" onClick={() => handleComboSimSelect(opt)}>
-                      <span className="l5-sim-option-icon">{opt.icon}</span>
-                      <span className="l5-sim-option-label">{opt.label}</span>
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
-
-            {/* PHASE: RESULT */}
-            {comboPhase === 'result' && comboSimOption && (
-              <>
-                <div className="l5-result-header">
-                  <span className="l5-result-chosen-icon">{comboSimOption.icon}</span>
-                  <span className="l5-result-chosen-label">{comboSimOption.label}</span>
-                </div>
-                <div className="l5-sim-meters">
-                  <EnergyMeter label="Total Power" value={comboSimOption.totalW} max={2000} unit="W" color={comboSimOption.totalW > 500 ? '#ef4444' : '#22c55e'} icon={L5.zap} animate />
-                  <EnergyMeter label="CO₂/hr" value={comboSimOption.co2} max={2} unit=" kg" color={comboSimOption.co2 > 0.5 ? '#ef4444' : '#22c55e'} icon={L5.globe} animate />
-                  {comboSimOption.solarUsed !== undefined && (
-                    <EnergyMeter label="Solar Used" value={comboSimOption.solarUsed} max={1920} unit="W" color="#f5a623" icon={L5.sun} animate />
-                  )}
-                  {comboSimOption.gridW !== undefined && (
-                    <EnergyMeter label="Grid Power" value={comboSimOption.gridW} max={5000} unit="W" color={comboSimOption.gridW > 1000 ? '#ef4444' : '#22c55e'} icon={L5.plug} animate />
-                  )}
-                </div>
-                <button className="l5-usage-next-btn" onClick={handleComboResult}>
-                  {L5.think} Reflect on Results {'\u{2192}'}
-                </button>
-              </>
-            )}
-
-            {/* PHASE: THINK */}
-            {comboPhase === 'think' && (
-              <div className="l5-think-phase">
-                <div className="l5-think-icon">{L5.think}</div>
-                <div className="l5-think-text">{currentCombo.hiddenQuiz.thinkPrompt}</div>
-                <div className="l5-think-dots"><span className="l5-dot-1">.</span><span className="l5-dot-2">.</span><span className="l5-dot-3">.</span></div>
+            {/* Subtle prompt */}
+            {taskSubtlePrompt && currentTask.subtlePrompt && (
+              <div className="l5-task-subtle-prompt">
+                <span>{L5.think}</span> {currentTask.subtlePrompt}
               </div>
             )}
 
-            {/* PHASE: QUIZ */}
-            {comboPhase === 'quiz' && (
-              <>
-                <div className="l5-multiuse-badge">{L5.brain} REFLECTION</div>
-                <div className="l5-quiz-question">{currentCombo.hiddenQuiz.question}</div>
-                <div className="l5-sim-options">
-                  {currentCombo.hiddenQuiz.options.map((opt, i) => (
-                    <button key={i} className={`l5-sim-option ${comboQuizAnswer === i ? 'selected' : ''}`}
-                      onClick={() => comboQuizAnswer === null && handleComboQuizAnswer(i)} disabled={comboQuizAnswer !== null}>
-                      <span className="l5-sim-option-icon">{L5.play}</span>
-                      <span className="l5-sim-option-label">{opt}</span>
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
+            {/* Reward */}
+            <div className="l5-task-learning-reward">
+              {L5.coin} +{currentTask.reward} coins • {L5.globe} {currentTask.co2Impact} kg CO₂
+            </div>
 
-            {/* PHASE: FEEDBACK */}
-            {comboPhase === 'feedback' && (
-              <div className="l5-usage-feedback">
-                <div className="l5-narrative-feedback">
-                  <div className="l5-narrative-icon">{L5.speech}</div>
-                  <div className="l5-narrative-text">
-                    {comboQuizAnswer === currentCombo.hiddenQuiz.correctIndex ? currentCombo.feedback.correct : currentCombo.feedback.wrong}
-                  </div>
-                </div>
-                {confidenceMsg && <div className="l5-confidence-boost">{L5.sparkle} {confidenceMsg}</div>}
-                {comboQuizAnswer === currentCombo.hiddenQuiz.correctIndex && (
-                  <div className="l5-multiuse-reward">{L5.coin} +{currentCombo.reward} coins • {L5.globe} {currentCombo.co2Impact} kg CO₂</div>
-                )}
-                {comboRetry ? (
-                  <div className="l5-retry-section">
-                    <div className="l5-retry-text">{L5.speech} {currentCombo.feedback.retry}</div>
-                    <button className="l5-retry-btn" onClick={handleComboRetry}>{L5.cycle} Try Again</button>
-                    <button className="l5-skip-btn" onClick={handleComboNext}>Continue {'\u{2192}'}</button>
-                  </div>
-                ) : (
-                  <button className="l5-usage-next-btn" onClick={handleComboNext}>
-                    {comboIdx + 1 >= COMBO_TASKS.length ? `Check Goal ${'\u{2192}'}` : `Next Combo ${'\u{2192}'}`}
-                  </button>
-                )}
-              </div>
-            )}
+            {/* Confidence message */}
+            <div className="l5-confidence-boost">
+              {L5.sparkle} {CONFIDENCE_MESSAGES[currentTaskIdx % CONFIDENCE_MESSAGES.length]}
+            </div>
+
+            <button className="l5-task-learning-btn" onClick={handleTaskComplete}>
+              {currentTaskIdx + 1 >= INTERACTIVE_TASKS.length
+                ? `${L5.chart} View Impact Dashboard ${'\u{2192}'}`
+                : INTERACTIVE_TASKS[currentTaskIdx + 1]?.stage !== currentTask.stage
+                  ? `${L5.sparkle} Complete Stage ${currentTask.stage} ${'\u{2192}'}`
+                  : `${L5.play} Next Task ${'\u{2192}'}`
+              }
+            </button>
           </div>
         </div>
       )}
 
       {/* ══════════════════════════════════════════════════════ */}
-      {/* ══ STAGE 4: CRISIS — DYNAMIC EVENTS ══ */}
+      {/* ══ FINAL IMPACT DASHBOARD ══ */}
       {/* ══════════════════════════════════════════════════════ */}
-      {screen === 'crisis' && currentEvent && (
-        <div className="l5-crisis-overlay">
-          <div className="l5-crisis-card">
-            {/* Event header */}
-            <div className="l5-crisis-header">
-              <div className="l5-crisis-event-icon">{currentEvent.icon}</div>
-              <div className="l5-crisis-event-title">{currentEvent.title}</div>
-              {crisisPhase === 'event' && (
-                <div className={`l5-crisis-timer ${eventTimer <= 3 ? 'urgent' : ''}`}>
-                  {L5.clock} {eventTimer}s
-                </div>
-              )}
-            </div>
-
-            <div className="l5-crisis-event-num">Event {eventIdx + 1} / {DYNAMIC_EVENTS.length}</div>
-            <div className="l5-crisis-desc">{currentEvent.description}</div>
-
-            {/* PHASE: EVENT — Live simulation task */}
-            {crisisPhase === 'event' && (
-              <>
-                <div className="l5-crisis-question">{currentEvent.simulation.scenario}</div>
-                <div className="l5-sim-options">
-                  {currentEvent.simulation.options.map(opt => (
-                    <button key={opt.id} className="l5-sim-option" onClick={() => handleCrisisSimSelect(opt)}>
-                      <span className="l5-sim-option-icon">{opt.icon}</span>
-                      <span className="l5-sim-option-label">{opt.label}</span>
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
-
-            {/* PHASE: RESULT */}
-            {crisisPhase === 'result' && crisisSimOption && (
-              <>
-                <div className="l5-result-header">
-                  <span className="l5-result-chosen-icon">{crisisSimOption.icon}</span>
-                  <span className="l5-result-chosen-label">{crisisSimOption.label}</span>
-                </div>
-                <div className="l5-sim-meters">
-                  {crisisSimOption.gridW !== undefined && (
-                    <EnergyMeter label="Grid Power" value={crisisSimOption.gridW} max={4000} unit="W" color={crisisSimOption.gridW > 1000 ? '#ef4444' : '#22c55e'} icon={L5.zap} animate />
-                  )}
-                  {crisisSimOption.co2 !== undefined && (
-                    <EnergyMeter label="CO₂ Impact" value={crisisSimOption.co2} max={3} unit=" kg/hr" color={crisisSimOption.co2 > 1 ? '#ef4444' : '#22c55e'} icon={L5.globe} animate />
-                  )}
-                  {crisisSimOption.watts !== undefined && (
-                    <EnergyMeter label="Energy Used" value={crisisSimOption.watts} max={2000} unit="W" color={crisisSimOption.watts > 500 ? '#ef4444' : '#22c55e'} icon={L5.bolt} animate />
-                  )}
-                  {crisisSimOption.avgW !== undefined && (
-                    <EnergyMeter label="Avg Load" value={crisisSimOption.avgW} max={500} unit="W" color={crisisSimOption.avgW > 200 ? '#ef4444' : '#22c55e'} icon={L5.meter} animate />
-                  )}
-                </div>
-                <button className="l5-usage-next-btn" onClick={handleCrisisResult}>
-                  {L5.think} Reflect on Decision {'\u{2192}'}
-                </button>
-              </>
-            )}
-
-            {/* PHASE: THINK */}
-            {crisisPhase === 'think' && (
-              <div className="l5-think-phase">
-                <div className="l5-think-icon">{L5.think}</div>
-                <div className="l5-think-text">{currentEvent.hiddenQuiz.thinkPrompt}</div>
-                <div className="l5-think-dots"><span className="l5-dot-1">.</span><span className="l5-dot-2">.</span><span className="l5-dot-3">.</span></div>
-              </div>
-            )}
-
-            {/* PHASE: QUIZ */}
-            {crisisPhase === 'quiz' && (
-              <>
-                <div className="l5-multiuse-badge">{L5.brain} CRISIS REFLECTION</div>
-                <div className="l5-quiz-question">{currentEvent.hiddenQuiz.question}</div>
-                <div className="l5-sim-options">
-                  {currentEvent.hiddenQuiz.options.map((opt, i) => (
-                    <button key={i} className={`l5-sim-option ${crisisQuizAnswer === i ? 'selected' : ''}`}
-                      onClick={() => crisisQuizAnswer === null && handleCrisisQuizAnswer(i)} disabled={crisisQuizAnswer !== null}>
-                      <span className="l5-sim-option-icon">{L5.play}</span>
-                      <span className="l5-sim-option-label">{opt}</span>
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
-
-            {/* PHASE: FEEDBACK */}
-            {crisisPhase === 'feedback' && (
-              <div className="l5-usage-feedback">
-                <div className="l5-narrative-feedback">
-                  <div className="l5-narrative-icon">{L5.speech}</div>
-                  <div className="l5-narrative-text">
-                    {crisisQuizAnswer === currentEvent.hiddenQuiz.correctIndex ? currentEvent.feedback.correct : currentEvent.feedback.wrong}
-                  </div>
-                </div>
-                {confidenceMsg && <div className="l5-confidence-boost">{L5.sparkle} {confidenceMsg}</div>}
-                {crisisQuizAnswer === currentEvent.hiddenQuiz.correctIndex && (
-                  <div className="l5-multiuse-reward">{L5.coin} +{currentEvent.reward} coins earned!</div>
-                )}
-                {crisisRetry ? (
-                  <div className="l5-retry-section">
-                    <div className="l5-consequence-flash">
-                      <div className="l5-consequence-title">{L5.warn} Impact of this decision:</div>
-                      <div className="l5-consequence-item">{L5.globe} CO₂ Spike: +{currentEvent.consequence.co2Spike} kg</div>
-                      <div className="l5-consequence-item">{L5.money} Bill Impact: +₹{currentEvent.consequence.billSpike}</div>
-                    </div>
-                    <div className="l5-retry-text">{L5.speech} {currentEvent.feedback.retry}</div>
-                    <button className="l5-retry-btn" onClick={handleCrisisRetry}>{L5.cycle} Try Again</button>
-                    <button className="l5-skip-btn" onClick={handleEventNext}>Continue {'\u{2192}'}</button>
-                  </div>
-                ) : (
-                  <button className="l5-usage-next-btn" onClick={handleEventNext}>
-                    {eventIdx + 1 >= DYNAMIC_EVENTS.length ? `Complete Stage 4 ${'\u{2192}'}` : `Next Event ${'\u{2192}'}`}
-                  </button>
-                )}
-              </div>
-            )}
-
-            {/* Running consequences total */}
-            {(totalConsequences.co2 > 0 || totalConsequences.bill > 0) && (
-              <div className="l5-crisis-totals">
-                {L5.warn} Total Impact: {totalConsequences.co2.toFixed(1)} kg CO₂ • ₹{totalConsequences.bill} extra
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* ══════════════════════════════════════════════════════ */}
-      {/* ══ STAGE 5: MASTER SIMULATION ══ */}
-      {/* ══════════════════════════════════════════════════════ */}
-      {screen === 'master_sim' && (
-        <div className="l5-master-overlay">
-          <div className="l5-master-card">
-            {/* Cycle indicator */}
-            <div className="l5-cycle-indicator">
-              {MASTER_CYCLE_GOALS.map((c, i) => (
-                <div key={i} className={`l5-cycle-dot ${i < masterCycle ? 'done' : i === masterCycle ? 'active' : ''}`}>
-                  {i < masterCycle ? L5.check : c.icon}
-                  <span>{c.name}</span>
-                </div>
-              ))}
-            </div>
-
-            <div className="l5-master-title">
-              {L5.clock} Cycle {masterCycle + 1}: {currentCycleGoal?.name || 'Master'}
-            </div>
-            <div className="l5-master-goal">{currentCycleGoal?.goal}</div>
-            <div className="l5-master-target-co2">
-              {L5.target} Target: CO₂ below {currentCycleGoal?.targetCO2 || 5} kg
-            </div>
-
-            {/* Home appliances bar */}
-            <div className="l5-master-home-bar">
-              {L5.house} Your Home: {homeAppliances.map(id => STORE_APPLIANCE_MAP[id]?.icon || '').join(' ')}
-            </div>
-
-            {!simRunning && simResults.length === 0 && (
-              <button className="l5-sim-start-btn" onClick={handleStartCycle}>
-                Start Cycle {masterCycle + 1} {'\u{2192}'}
-              </button>
-            )}
-
-            {(simRunning || simResults.length > 0) && (
-              <div className="l5-sim-timeline">
-                {SCHEDULE_SLOTS.map((slot, i) => {
-                  const result = simResults[i];
-                  const isCurrent = simRunning && i === simTimeIdx;
-                  return (
-                    <div key={slot.id} className={`l5-sim-slot ${result ? 'done' : ''} ${isCurrent ? 'current' : ''}`}>
-                      <div className="l5-sim-slot-icon">{slot.icon}</div>
-                      <div className="l5-sim-slot-label">{slot.label}</div>
-                      {result && (
-                        <div className="l5-sim-slot-results">
-                          <span className="l5-sim-solar">{L5.sun} {result.solarPct}%</span>
-                          <span className="l5-sim-grid">Grid: {result.gridW}W</span>
-                          <span className="l5-sim-co2">CO₂: {result.co2} kg</span>
-                        </div>
-                      )}
-                      {isCurrent && <div className="l5-sim-slot-running">Running...</div>}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-
-            {simResults.length >= SCHEDULE_SLOTS.length && (
-              <div className="l5-sim-summary">
-                <div className="l5-sim-summary-title">{L5.chart} Cycle {masterCycle + 1} Summary</div>
-
-                {/* Energy bar graph */}
-                <div className="l5-energy-graph">
-                  <div className="l5-graph-title">{L5.graph} Energy Timeline</div>
-                  <div className="l5-graph-bars">
-                    {simResults.map((r, i) => (
-                      <div key={i} className="l5-graph-bar-group">
-                        <div className="l5-graph-bar-solar" style={{ height: `${Math.min(r.solarPct, 100)}%` }}></div>
-                        <div className="l5-graph-bar-grid" style={{ height: `${Math.min(100 - r.solarPct, 100)}%` }}></div>
-                        <div className="l5-graph-bar-label">{r.icon}</div>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="l5-graph-legend">
-                    <span className="l5-legend-solar">{L5.sun} Solar</span>
-                    <span className="l5-legend-grid">{L5.zap} Grid</span>
-                  </div>
-                </div>
-
-                <div className="l5-sim-summary-stats">
-                  <div className="l5-sim-stat">
-                    <div className="l5-sim-stat-val">{Math.round(simResults.reduce((s, r) => s + r.solarPct, 0) / simResults.length)}%</div>
-                    <div className="l5-sim-stat-label">Avg Solar</div>
-                  </div>
-                  <div className="l5-sim-stat">
-                    <div className="l5-sim-stat-val">{simResults.reduce((s, r) => s + parseFloat(r.co2), 0).toFixed(1)} kg</div>
-                    <div className="l5-sim-stat-label">Total CO₂</div>
-                  </div>
-                </div>
-                <button className="l5-sim-next-btn" onClick={handleCycleComplete}>
-                  {masterCycle + 1 >= MASTER_CYCLE_GOALS.length
-                    ? `All Cycles Done — Analysis ${'\u{2192}'}`
-                    : `Start Cycle ${masterCycle + 2} ${'\u{2192}'}`
-                  }
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* ══ ENERGY ANALYSIS (after Master Sim) ══ */}
-      {screen === 'analysis' && (
-        <div className="l5-analysis-overlay">
-          <div className="l5-analysis-card">
-            <div className="l5-analysis-title">{L5.graph} Energy Analysis</div>
-            <div className="l5-analysis-sub">Reflect on your simulation performance</div>
-
-            {/* Cycle comparison */}
-            <div className="l5-analysis-cycles">
-              {allCycleResults.map((c, i) => (
-                <div key={i} className="l5-analysis-cycle-row">
-                  <span className="l5-analysis-cycle-name">{MASTER_CYCLE_GOALS[i]?.icon} Cycle {c.cycle}</span>
-                  <span className="l5-analysis-cycle-solar">{L5.sun} {c.avgSolar}%</span>
-                  <span className="l5-analysis-cycle-co2">{L5.globe} {c.totalCO2.toFixed(1)} kg</span>
-                </div>
-              ))}
-            </div>
-
-            {/* Analysis question (narrative feedback, no correct/wrong indicators) */}
-            {analysisIdx < ANALYSIS_QUESTIONS.length && (
-              <div className="l5-analysis-question-box">
-                <div className="l5-analysis-q-badge">{L5.brain} Reflection {analysisIdx + 1}/{ANALYSIS_QUESTIONS.length}</div>
-                <div className="l5-analysis-q-text">{ANALYSIS_QUESTIONS[analysisIdx].question}</div>
-
-                {!analysisFeedback ? (
-                  <div className="l5-sim-options">
-                    {ANALYSIS_QUESTIONS[analysisIdx].options.map((opt, i) => (
-                      <button key={i} className="l5-sim-option" onClick={() => handleAnalysisAnswer(i)}>
-                        <span className="l5-sim-option-icon">{L5.play}</span>
-                        <span className="l5-sim-option-label">{opt}</span>
-                      </button>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="l5-usage-feedback">
-                    <div className="l5-narrative-feedback">
-                      <div className="l5-narrative-icon">{L5.speech}</div>
-                      <div className="l5-narrative-text">
-                        {analysisAnswer === ANALYSIS_QUESTIONS[analysisIdx].correctIndex
-                          ? ANALYSIS_QUESTIONS[analysisIdx].feedback.correct
-                          : ANALYSIS_QUESTIONS[analysisIdx].feedback.wrong
-                        }
-                      </div>
-                    </div>
-                    <button className="l5-usage-next-btn" onClick={handleAnalysisNext}>
-                      {analysisIdx + 1 >= ANALYSIS_QUESTIONS.length ? `View Dashboard ${'\u{2192}'}` : `Next ${'\u{2192}'}`}
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* ══ FINAL DASHBOARD (UPGRADED) ══ */}
       {screen === 'dashboard' && (
         <div className="l5-dash-overlay">
           <div className="l5-dash-card">
@@ -1546,7 +1109,7 @@ export default function Level5() {
               <div className="l5-env-desc">{envData.desc}</div>
             </div>
 
-            {/* Key Solar & Emissions Callouts */}
+            {/* Key Callouts */}
             <div className="l5-dash-callouts">
               <div className="l5-dash-callout solar">
                 <div className="l5-callout-icon">{L5.sun}</div>
@@ -1577,19 +1140,24 @@ export default function Level5() {
               {L5.sparkle} You saved {totalSavings.co2Saved} kg CO₂ and ₹{totalSavings.billSaved}/month!
             </div>
 
-            {/* Simulation performance */}
-            {allCycleResults.length > 0 && (
-              <div className="l5-dash-sim-summary">
-                <div className="l5-dash-breakdown-title">{L5.cycle} Simulation Performance</div>
-                {allCycleResults.map((c, i) => (
-                  <div key={i} className="l5-dash-breakdown-row">
-                    <span>{MASTER_CYCLE_GOALS[i]?.icon} Cycle {c.cycle}: {MASTER_CYCLE_GOALS[i]?.name}</span>
-                    <span className="l5-dash-save-pct">{c.avgSolar}% solar</span>
-                    <span className="l5-dash-save-co2">{c.totalCO2.toFixed(1)} kg</span>
-                  </div>
-                ))}
+            {/* Final message */}
+            <div className="l5-dash-final-msg">
+              {L5.globe} "You reduced emissions by {totalSavings.efficiencyPct}%"
+            </div>
+
+            {/* Task performance */}
+            <div className="l5-dash-task-summary">
+              <div className="l5-dash-breakdown-title">{L5.play} Task Performance</div>
+              {INTERACTIVE_TASKS.map(t => (
+                <div key={t.id} className="l5-dash-breakdown-row">
+                  <span>{t.icon} {t.title}</span>
+                  <span className="l5-dash-save-pct">{completedTasks.includes(t.id) ? `${L5.check} +${t.reward} pts` : `${L5.cross} Missed`}</span>
+                </div>
+              ))}
+              <div className="l5-dash-task-total">
+                {L5.star} Total: {taskScore}/{TOTAL_POSSIBLE_TASK_SCORE} points
               </div>
-            )}
+            </div>
 
             {/* Upgrade breakdown */}
             <div className="l5-dash-breakdown">
@@ -1603,13 +1171,6 @@ export default function Level5() {
               ))}
             </div>
 
-            {/* Crisis consequences (if any) */}
-            {totalConsequences.co2 > 0 && (
-              <div className="l5-dash-consequences">
-                {L5.warn} Crisis Impact: +{totalConsequences.co2.toFixed(1)} kg CO₂, +₹{totalConsequences.bill} (from suboptimal decisions)
-              </div>
-            )}
-
             <button className="l5-dash-quiz-btn" onClick={() => setScreen('quiz')}>
               Take Final Reflection Quiz {'\u{2192}'}
             </button>
@@ -1620,7 +1181,9 @@ export default function Level5() {
       {/* ══ QUIZ ══ */}
       {screen === 'quiz' && <Level5Quiz onComplete={handleQuizComplete} />}
 
+      {/* ══════════════════════════════════════════════════════ */}
       {/* ══ REWARD ══ */}
+      {/* ══════════════════════════════════════════════════════ */}
       {screen === 'reward' && (
         <div className="l5-reward-overlay">
           <div className="l5-reward-card">
@@ -1656,7 +1219,7 @@ export default function Level5() {
               <div className="l5-reward-stat"><div className="l5-reward-stat-label">CO₂ Saved</div><div className="l5-reward-stat-value">{totalSavings.co2Saved} kg</div></div>
               <div className="l5-reward-stat"><div className="l5-reward-stat-label">Bill Saved</div><div className="l5-reward-stat-value">₹{totalSavings.billSaved}</div></div>
               <div className="l5-reward-stat"><div className="l5-reward-stat-label">Solar</div><div className="l5-reward-stat-value">{totalSavings.solarPct}%</div></div>
-              <div className="l5-reward-stat"><div className="l5-reward-stat-label">Upgrades</div><div className="l5-reward-stat-value">{completed.length}/{STORE_APPLIANCES.length}</div></div>
+              <div className="l5-reward-stat"><div className="l5-reward-stat-label">Tasks</div><div className="l5-reward-stat-value">{completedTasks.length}/8</div></div>
             </div>
 
             <div className="l5-reward-coins">{L5.coin} +{LEVEL5_BADGE.coins * stars} Carbon Coins</div>

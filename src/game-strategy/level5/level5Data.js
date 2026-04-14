@@ -1,7 +1,8 @@
 // ═══════════════════════════════════════════════════════════
-//  LEVEL 5: SMART SUSTAINABLE HOME — INTERACTIVE SIMULATION
-//  40–50 min progressive 5-stage gameplay
-//  PLAY → EXPERIENCE → THINK → ANSWER → CONFIRM
+//  LEVEL 5: SMART SUSTAINABLE HOME — 8 INTERACTIVE TASKS
+//  40–50 min progressive gameplay
+//  BUY → PLACE → USE → REUSE → OPTIMIZE
+//  Walk → Interact → See Result → Learn
 // ═══════════════════════════════════════════════════════════
 import {
   LEVEL2_APPLIANCES, L2_APPLIANCE_IDS, L2_APPLIANCE_MAP,
@@ -45,24 +46,24 @@ export const ROOM_ICONS = {
 export const STARTING_BONUS = 100;
 export const STARTING_BONUS_MSG = 'Government Smart Home Subsidy: +100 Carbon Coins!';
 
-// ═══ STAGE DEFINITIONS ═══
+// ═══ STAGE DEFINITIONS (UPDATED) ═══
 export const STAGES = [
-  { id: 1, name: 'Basic Upgrade',    icon: '\u{1F527}', desc: 'Learn & place appliances',        time: '~10 min' },
-  { id: 2, name: 'Smart Usage',      icon: '\u{1F9E0}', desc: 'Master each appliance',           time: '~10 min' },
-  { id: 3, name: 'Optimization',     icon: '\u{1F4CA}', desc: 'Combo tasks & CO₂ goals',        time: '~8 min' },
-  { id: 4, name: 'Crisis',           icon: '\u{1F6A8}', desc: 'Handle dynamic problems',         time: '~8 min' },
-  { id: 5, name: 'Master Simulation',icon: '\u{1F3C6}', desc: 'Run house perfectly',             time: '~10 min' },
+  { id: 1, name: 'Basic Upgrade',     icon: '\u{1F527}', desc: 'Buy & place appliances step-by-step', time: '~10-12 min' },
+  { id: 2, name: 'Smart Usage',       icon: '\u{1F9E0}', desc: 'Stop waste & detect phantom loads',   time: '~10-12 min' },
+  { id: 3, name: 'Optimization',      icon: '\u{1F4CA}', desc: 'Replace & time-optimize systems',     time: '~8-10 min' },
+  { id: 4, name: 'Crisis Mode',       icon: '\u{1F6A8}', desc: 'Handle overloads & weather changes',  time: '~6-8 min' },
+  { id: 5, name: 'Master Simulation', icon: '\u{1F3C6}', desc: 'Manage full day: morning to night',   time: '~8-10 min' },
 ];
 
 // ═══════════════════════════════════════════════════════════
 //  HOME EVOLUTION SYSTEM
 // ═══════════════════════════════════════════════════════════
 export const HOME_EVOLUTION = [
-  { stage: 1, label: 'Basic House',          icon: '\u{1F3E0}', desc: 'Standard home, no upgrades',          color: '#888' },
-  { stage: 2, label: 'Better Lighting',      icon: '\u{1F4A1}', desc: 'Smart lighting installed',            color: '#f5a623' },
-  { stage: 3, label: 'Smart Home',           icon: '\u{1F3E1}', desc: 'Optimized appliance scheduling',      color: '#3b82f6' },
-  { stage: 4, label: 'Resilient Home',       icon: '\u{1F6E1}\u{FE0F}', desc: 'Crisis-ready with battery backup',    color: '#a855f7' },
-  { stage: 5, label: 'Green Sustainable Home', icon: '\u{1F30D}', desc: 'Fully solar-powered smart home',    color: '#22c55e' },
+  { stage: 1, label: 'Normal House',          icon: '\u{1F3E0}', desc: 'Standard home, no upgrades',          color: '#888' },
+  { stage: 2, label: 'Aware Home',            icon: '\u{1F4A1}', desc: 'Standby waste eliminated',            color: '#f5a623' },
+  { stage: 3, label: 'Smart Home',            icon: '\u{1F3E1}', desc: 'Optimized systems installed',         color: '#3b82f6' },
+  { stage: 4, label: 'Resilient Home',        icon: '\u{1F6E1}\u{FE0F}', desc: 'Crisis-ready with load balancing', color: '#a855f7' },
+  { stage: 5, label: 'Green Sustainable Home', icon: '\u{1F30D}', desc: 'Fully optimized smart home',         color: '#22c55e' },
 ];
 
 // ═══════════════════════════════════════════════════════════
@@ -218,684 +219,252 @@ STORE_APPLIANCES.forEach(a => { STORE_APPLIANCE_MAP[a.id] = a; });
 export const STORE_IDS = STORE_APPLIANCES.map(a => a.id);
 
 // ═══════════════════════════════════════════════════════════
-//  STAGE 2: MULTI-USE INTERACTIVE TASKS
-//  Format: simulation → hiddenQuiz (3 options) → narrativeFeedback
+//  8 INTERACTIVE TASKS — Walk → Interact → See Result → Learn
+//  These replace all old card-based stages (2–5)
 // ═══════════════════════════════════════════════════════════
-export const MULTI_USE_TASKS = {
-  air_cooler: [
-    {
-      id: 'ac_t1', title: 'Cool the Living Room',
-      // ─── SIMULATION: Player tries 3 cooling methods ───
-      simulation: {
-        scenario: 'Your living room temperature is 35°C. Try each cooling method and observe the energy impact.',
-        options: [
-          { id: 'ac',     label: 'Turn on AC',                icon: '\u{2744}\u{FE0F}', watts: 1500, co2: 1.07, cost: 10.5, cooling: 95 },
-          { id: 'fan',    label: 'Use Ceiling Fan',            icon: '\u{1F4A8}', watts: 75,   co2: 0.05, cost: 0.53, cooling: 35 },
-          { id: 'cooler', label: 'Use Air Cooler',             icon: '\u{1F32C}\u{FE0F}', watts: 150,  co2: 0.11, cost: 1.05, cooling: 78 },
+
+// Task interaction targets — maps appliance IDs to what
+// happens when player presses E near them during each task
+export const INTERACTIVE_TASKS = [
+  // ─── STAGE 2: SMART USAGE TASKS ─────────────────────────
+  {
+    id: 'task_standby',
+    num: 1,
+    stage: 2,
+    title: 'Stop Wasting Standby Power',
+    icon: '\u{1F50C}',
+    scenario: 'Devices are OFF but still consuming power! Walk around your house and find the hidden energy waste.',
+    description: 'Your smart meter shows 100W being consumed — but everything looks turned off. Find the standby devices and use your Smart Power Strip to cut the waste!',
+    objectives: [
+      { id: 'find_tv',      label: 'Find TV standby drain',      room: 'Living Room', target: 'tv_smart',       watts: 15 },
+      { id: 'find_stb',     label: 'Find Set-Top Box standby',   room: 'Living Room', target: 'set_top_box',    watts: 25 },
+      { id: 'find_charger', label: 'Find Charger phantom load',  room: 'Bedroom',    target: 'phone_charger',  watts: 15 },
+      { id: 'use_strip',    label: 'Activate Smart Power Strip', room: 'Living Room', target: 'smart_power_strip', watts: -55, isSolution: true },
+    ],
+    energyBefore: { watts: 100, co2: 0.071, bill: 0.70 },
+    energyAfter:  { watts: 0,   co2: 0,     bill: 0 },
+    learning: 'Devices consume power even when OFF! This is called "standby" or "phantom" power. A smart strip cuts ALL standby drain automatically.',
+    subtlePrompt: 'Was switching off each device enough, or was the smart strip more reliable?',
+    reward: 15,
+    co2Impact: -1.5,
+  },
+  {
+    id: 'task_phantom',
+    num: 2,
+    stage: 2,
+    title: 'Phantom Load Detection',
+    icon: '\u{1F50D}',
+    scenario: 'Your energy meter is HIGH, but nothing seems to be ON. Walk around and find the hidden energy sources!',
+    description: 'Energy is leaking from hidden sources. Investigate every room — chargers plugged in without phones, idle appliances, and forgotten devices.',
+    objectives: [
+      { id: 'find_fan',       label: 'Check ceiling fan (idle)',   room: 'Living Room', target: 'ceiling_fan',  watts: 5, isPhantom: true },
+      { id: 'find_fridge',    label: 'Check refrigerator cycles',  room: 'Kitchen',     target: 'fridge',       watts: 45, isPhantom: false, message: 'Fridge needs to stay on — but it cycles ON/OFF. This is normal consumption.' },
+      { id: 'find_microwave', label: 'Find microwave standby',    room: 'Kitchen',     target: 'microwave',    watts: 8, isPhantom: true },
+      { id: 'find_ac',        label: 'Find AC standby drain',     room: 'Bedroom',     target: 'ac_1_5ton',    watts: 20, isPhantom: true },
+      { id: 'fix_all',        label: 'Fix all phantom loads',     room: 'Living Room', target: 'smart_power_strip', watts: -33, isSolution: true },
+    ],
+    energyBefore: { watts: 78, co2: 0.055, bill: 0.55 },
+    energyAfter:  { watts: 45, co2: 0.032, bill: 0.32 },
+    learning: 'Hidden energy waste exists! Phantom loads from standby devices, idle chargers, and forgotten appliances silently drain energy 24/7.',
+    subtlePrompt: 'Not all background power is waste — the fridge needs it. Can you tell the difference?',
+    reward: 15,
+    co2Impact: -1.2,
+  },
+  {
+    id: 'task_cooling',
+    num: 3,
+    stage: 2,
+    title: 'Smart Cooling Strategy',
+    icon: '\u{1F4A8}',
+    scenario: 'The room is slightly hot (32°C — not extreme). Find the most efficient cooling method!',
+    description: 'Walk to each cooling device and try it. The energy meter will show you the impact of each choice. Can you find the efficient combo?',
+    objectives: [
+      { id: 'try_ac',     label: 'Try AC alone',           room: 'Living Room', target: 'ac_1_5ton',    watts: 1500, isInefficient: true, message: 'AC: 1500W ⚠️ Overkill for 32°C! Energy spike detected.' },
+      { id: 'try_fan',    label: 'Try Fan alone',           room: 'Living Room', target: 'ceiling_fan',  watts: 75,   isPartial: true,     message: 'Fan: 75W — Low energy but only 35% cooling effect.' },
+      { id: 'try_cooler', label: 'Try Air Cooler alone',    room: 'Living Room', target: 'air_cooler', watts: 200, isPartial: true,  message: 'Cooler: 200W — Good! 78% cooling effect.' },
+      { id: 'combo',      label: 'Combine Fan + Cooler',    room: 'Living Room', target: 'air_cooler', watts: 275, isSolution: true, message: 'Fan + Cooler = 275W, 88% cooling! Best combo!' },
+    ],
+    energyBefore: { watts: 1500, co2: 1.07, bill: 10.50 },
+    energyAfter:  { watts: 275,  co2: 0.20, bill: 1.93 },
+    learning: 'Combining appliances is efficient! Fan + Cooler gives 88% of AC cooling at only 18% of the energy cost.',
+    subtlePrompt: 'Was using AC really necessary at 32°C?',
+    reward: 20,
+    co2Impact: -2.5,
+  },
+
+  // ─── STAGE 3: OPTIMIZATION TASKS ────────────────────────
+  {
+    id: 'task_solar_heater',
+    num: 4,
+    stage: 3,
+    title: 'Use Solar Water Heater',
+    icon: '\u{2615}',
+    scenario: 'You need hot water. Walk to each heating option and compare their energy impact!',
+    description: 'The geyser uses 2000W — the HIGHEST single appliance load in your home. But you have a solar water heater now. Compare both!',
+    objectives: [
+      { id: 'try_geyser', label: 'Check Electric Geyser',    room: 'Bathroom', target: 'geyser',  watts: 2000, isInefficient: true, message: 'Geyser: 2000W ⚠️ Your biggest energy hog!' },
+      { id: 'use_solar',  label: 'Use Solar Water Heater',   room: 'Bathroom', target: 'solar_water_heater', watts: 0, isSolution: true, message: 'Solar Heater: 0W! Free energy from sunlight!' },
+    ],
+    energyBefore: { watts: 2000, co2: 1.42, bill: 14.00 },
+    energyAfter:  { watts: 0,    co2: 0,    bill: 0 },
+    learning: 'Replace appliances, don\'t just optimize! The solar water heater ELIMINATES 2000W by using free sunlight. That\'s the biggest single saving in your home.',
+    subtlePrompt: 'Could you have optimized the geyser instead? Or was replacement the right call?',
+    reward: 20,
+    co2Impact: -4.0,
+  },
+  {
+    id: 'task_ev_timing',
+    num: 5,
+    stage: 3,
+    title: 'EV Charging Strategy',
+    icon: '\u{26A1}',
+    scenario: 'Your EV needs charging! Walk to the EV charger and decide WHEN to charge.',
+    description: 'The EV charger uses 3000W — a heavy load. But timing matters! Solar panels produce free energy during the day.',
+    objectives: [
+      { id: 'check_solar', label: 'Check solar panel output',     room: 'Outside', target: 'ev_charger', watts: 0,    isInfo: true, message: 'Solar output: 1920W at noon. Night: 0W.' },
+      { id: 'try_night',   label: 'Simulate night charging',      room: 'Outside', target: 'ev_charger', watts: 3000, isInefficient: true, message: 'Night: 3000W from GRID! Cost: ₹21/hr, CO₂: 2.13 kg/hr' },
+      { id: 'try_day',     label: 'Simulate day (solar) charging', room: 'Outside', target: 'ev_charger', watts: 3000, isSolution: true, message: 'Day: Solar covers 1920W! Grid only 1080W. Cost: ₹7.56/hr' },
+    ],
+    energyBefore: { watts: 3000, co2: 2.13, bill: 21.00 },
+    energyAfter:  { watts: 1080, co2: 0.77, bill: 7.56 },
+    learning: 'Timing matters! Charging during solar peak means free energy covers 64% of the load. Night charging = 100% grid power.',
+    subtlePrompt: 'What if you could charge at noon every day?',
+    reward: 20,
+    co2Impact: -5.0,
+  },
+
+  // ─── STAGE 4: CRISIS MODE ───────────────────────────────
+  {
+    id: 'task_overload',
+    num: 6,
+    stage: 4,
+    title: 'Overload Prevention',
+    icon: '\u{26A0}\u{FE0F}',
+    scenario: 'Too many appliances are ON! The system is overloading — balance the load quickly!',
+    description: 'AC (1500W) + Geyser (2000W) + EV Charger (3000W) are all running. Total: 6500W! Solar only provides 1920W. You need to reduce the load!',
+    objectives: [
+      { id: 'see_overload', label: 'See overload warning',    room: 'Living Room', target: 'ac_1_5ton',  watts: 6500, isOverload: true, message: '⚠️ OVERLOAD! 6500W total — Grid: 4580W! System unstable!' },
+      { id: 'turn_off_ac',  label: 'Replace AC with Cooler',  room: 'Living Room', target: 'ac_1_5ton',  watts: -1300, isFixStep: true, message: 'Replaced AC (1500W) with Cooler (200W). Saved 1300W!' },
+      { id: 'turn_off_gey', label: 'Switch to Solar Heater',  room: 'Bathroom',    target: 'geyser',  watts: -2000, isFixStep: true, message: 'Solar Heater replaces Geyser. Saved 2000W!' },
+      { id: 'balanced',     label: 'Check system stability',  room: 'Outside',     target: 'ev_charger', watts: 3200, isSolution: true, message: 'System stable! 3200W total, Solar covers 1920W. Grid: 1280W' },
+    ],
+    energyBefore: { watts: 6500, co2: 3.26, bill: 32.20 },
+    energyAfter:  { watts: 3200, co2: 0.91, bill: 8.96 },
+    learning: 'Energy has limits! When too many high-load appliances run together, you must substitute inefficient ones with your smart upgrades.',
+    subtlePrompt: 'What would happen if you didn\'t have the cooler and solar heater?',
+    reward: 25,
+    co2Impact: -6.0,
+  },
+  {
+    id: 'task_weather',
+    num: 7,
+    stage: 4,
+    title: 'Weather Adaptation',
+    icon: '\u{2601}\u{FE0F}',
+    scenario: 'Cloudy weather! Solar output has dropped by 65%. Adapt your energy usage!',
+    description: 'Solar panels went from 1920W to just 672W. Your current usage is 1500W. You need to reduce or shift to battery!',
+    objectives: [
+      { id: 'see_drop',     label: 'See solar drop warning',   room: 'Outside',     target: 'ev_charger', watts: 0, isInfo: true, message: 'Solar dropped: 1920W → 672W (65% reduction)!' },
+      { id: 'pause_ev',     label: 'Pause EV charging',        room: 'Outside',     target: 'ev_charger', watts: -3000, isFixStep: true, message: 'EV charging paused. Saved 3000W! Will resume when sun returns.' },
+      { id: 'use_battery',  label: 'Switch essentials to battery', room: 'Living Room', target: 'smart_power_strip', watts: 0, isFixStep: true, message: 'Battery backup activated for essentials. Grid usage minimized.' },
+      { id: 'adapted',      label: 'Verify adaptation',        room: 'Living Room', target: 'ceiling_fan', watts: 280, isSolution: true, message: 'Smart adjustment! Running on battery + reduced solar. Grid: minimal.' },
+    ],
+    energyBefore: { watts: 1500, co2: 0.59, bill: 5.81 },
+    energyAfter:  { watts: 280,  co2: 0.04, bill: 0.42 },
+    learning: 'Energy availability changes! Clouds, weather, and time of day affect solar output. Smart managers adapt by pausing heavy loads and using battery backup.',
+    subtlePrompt: 'Clouds are temporary — was pausing the EV charger permanent?',
+    reward: 25,
+    co2Impact: -3.5,
+  },
+
+  // ─── STAGE 5: MASTER SIMULATION ─────────────────────────
+  {
+    id: 'task_fullday',
+    num: 8,
+    stage: 5,
+    title: 'Full Day Management',
+    icon: '\u{1F30D}',
+    scenario: 'Manage your home through a FULL DAY — Morning, Noon, and Night. Each period needs a different strategy!',
+    description: 'This is your final challenge. Walk through your home during each time period and make smart energy decisions. Solar availability changes throughout the day!',
+    // Full day has 3 time periods, each with sub-objectives
+    isFullDay: true,
+    periods: [
+      {
+        id: 'morning',
+        label: 'Morning (6-10 AM)',
+        icon: '\u{1F305}',
+        timeOfDay: 'morning',
+        solarW: 1152,
+        description: 'Solar warming up. Use solar heater for hot water. Start light loads.',
+        objectives: [
+          { id: 'morning_heater', label: 'Use Solar Water Heater',     room: 'Bathroom',    target: 'solar_water_heater', watts: 0,   isSolution: true, message: 'Morning sun heats water for free! Geyser stays OFF.' },
+          { id: 'morning_lights', label: 'Ensure smart LED daylight mode', room: 'Bedroom',  target: 'led_smart_system',   watts: 0,   isSolution: true, message: 'LEDs auto-off — sunlight is sufficient!' },
+          { id: 'morning_strip',  label: 'Check smart strip status',   room: 'Living Room', target: 'smart_power_strip',  watts: 0,   isSolution: true, message: 'Smart strip cut overnight phantom loads. Saved 8 hours of waste!' },
         ],
+        optimalWatts: 80,
+        actualWattsIfWrong: 2200,
       },
-      // ─── HIDDEN QUIZ (after simulation experience) ───
-      hiddenQuiz: {
-        thinkPrompt: 'Think about what you just experienced...',
-        question: 'Which option provided efficient cooling with lower energy?',
-        options: ['AC at full power', 'Ceiling Fan only', 'Air Cooler'],
-        correctIndex: 2,
-      },
-      // ─── NARRATIVE FEEDBACK (no ✅/❌) ───
-      feedback: {
-        correct: 'That approach provides balanced cooling at just 150W — 10x less than AC with 78% cooling effectiveness!',
-        wrong: 'That approach either uses excessive energy or doesn\'t cool effectively. The air cooler balances both needs.',
-        retry: 'Try the simulation again and observe the energy meter more carefully.',
-      },
-      reward: 10, co2Impact: -2.1,
-    },
-    {
-      id: 'ac_t2', title: 'Moderate Heat Day',
-      simulation: {
-        scenario: 'Temperature is 32°C (moderate heat). Try different strategies and observe energy consumption.',
-        options: [
-          { id: 'ac_full',    label: 'AC on full blast',            icon: '\u{2744}\u{FE0F}', watts: 2000, co2: 1.42, cost: 14.0, cooling: 98 },
-          { id: 'cooler_win', label: 'Cooler + open windows',       icon: '\u{1F32C}\u{FE0F}', watts: 150,  co2: 0.11, cost: 1.05, cooling: 82 },
-          { id: 'cooler_max', label: 'Cooler on max, windows shut',  icon: '\u{1F4A8}', watts: 200,  co2: 0.14, cost: 1.40, cooling: 65 },
+      {
+        id: 'noon',
+        label: 'Noon (11 AM-3 PM)',
+        icon: '\u{2600}\u{FE0F}',
+        timeOfDay: 'noon',
+        solarW: 1920,
+        description: 'Peak solar! Run heavy loads NOW — EV charging, laundry, etc.',
+        objectives: [
+          { id: 'noon_ev',      label: 'Start EV charging (solar peak)', room: 'Outside',     target: 'ev_charger',   watts: 3000, isSolution: true, message: 'EV charging during peak solar! 64% covered by free energy!' },
+          { id: 'noon_cooler',  label: 'Use Cooler (not AC)',            room: 'Living Room', target: 'air_cooler',   watts: 200,  isSolution: true, message: 'Cooler at 200W instead of AC at 1500W. Smart choice!' },
+          { id: 'noon_battery', label: 'Let battery charge from solar',  room: 'Outside',     target: 'ev_charger',   watts: 0,    isSolution: true, message: 'Excess solar charges your battery for tonight!' },
         ],
+        optimalWatts: 3280,
+        actualWattsIfWrong: 6500,
       },
-      hiddenQuiz: {
-        thinkPrompt: 'Consider the cooling vs energy tradeoff you observed...',
-        question: 'At moderate temperatures, which strategy was most energy-efficient while staying comfortable?',
-        options: ['AC at full capacity', 'Cooler with ventilation', 'Cooler at max without airflow'],
-        correctIndex: 1,
-      },
-      feedback: {
-        correct: 'Cooler + natural ventilation at moderate temps uses only 150W with 82% comfort — no AC needed!',
-        wrong: 'At 32°C, natural ventilation amplifies the cooler\'s effectiveness. Observe how airflow affects cooling.',
-        retry: 'Run the simulation again — notice how open windows change the cooling efficiency.',
-      },
-      reward: 10, co2Impact: -1.8,
-    },
-    {
-      id: 'ac_t3', title: 'Maximize Cooling Efficiency',
-      simulation: {
-        scenario: 'Hot afternoon — find the most efficient cooling combo with minimum energy.',
-        options: [
-          { id: 'two_coolers', label: 'Run two coolers at max',        icon: '\u{1F4A8}', watts: 400,  co2: 0.28, cost: 2.80, cooling: 70 },
-          { id: 'cooler_fan',  label: 'Cooler near window + fan',      icon: '\u{1F32C}\u{FE0F}', watts: 275,  co2: 0.20, cost: 1.93, cooling: 88 },
-          { id: 'ac_low',      label: 'AC on eco mode',                icon: '\u{2744}\u{FE0F}', watts: 900,  co2: 0.64, cost: 6.30, cooling: 92 },
+      {
+        id: 'night',
+        label: 'Night (7-11 PM)',
+        icon: '\u{1F303}',
+        timeOfDay: 'night',
+        solarW: 0,
+        description: 'No solar. Use only necessary appliances. Battery backup for essentials.',
+        objectives: [
+          { id: 'night_strip',   label: 'Activate smart strip (cut standby)', room: 'Living Room', target: 'smart_power_strip', watts: 0,  isSolution: true, message: 'Smart strip cuts all standby. Zero phantom drain!' },
+          { id: 'night_led',     label: 'Smart LED night mode (auto-dim)',     room: 'Bedroom',     target: 'led_smart_system',  watts: 2,  isSolution: true, message: 'LEDs at 20% ambient — 90% savings vs full brightness.' },
+          { id: 'night_cooler',  label: 'Cooler on timer (not AC)',           room: 'Living Room', target: 'air_cooler',        watts: 200, isSolution: true, message: 'Cooler on timer: auto-off at 2 AM. Smart scheduling!' },
+          { id: 'night_no_ev',   label: 'Ensure EV is NOT charging at night', room: 'Outside',     target: 'ev_charger',        watts: 0,   isSolution: true, message: 'EV charged during day. No night charging needed!' },
         ],
+        optimalWatts: 282,
+        actualWattsIfWrong: 4500,
       },
-      hiddenQuiz: {
-        thinkPrompt: 'Which combination gave the best cooling-to-energy ratio?',
-        question: 'How can you maximize air cooler efficiency with minimal energy?',
-        options: ['Two coolers at maximum speed', 'One cooler near window with ceiling fan', 'AC on eco/low mode'],
-        correctIndex: 1,
-      },
-      feedback: {
-        correct: 'Cooler near window draws fresh air, fan circulates it. Total: 275W with 88% comfort — brilliant combo!',
-        wrong: 'The simulation showed that strategic placement + fan circulation outperforms brute force cooling.',
-        retry: 'Try again — watch the cooling percentage vs watts used for each option.',
-      },
-      reward: 15, co2Impact: -2.5,
-    },
-  ],
-  smart_power_strip: [
-    {
-      id: 'sp_t1', title: 'Nighttime Power Management',
-      simulation: {
-        scenario: 'It\'s bedtime. TV, set-top box, and laptop charger are in standby. Observe what happens overnight.',
-        options: [
-          { id: 'strip_auto', label: 'Smart strip auto-cuts standby',  icon: '\u{1F50C}', watts: 0,   co2: 0,    cost: 0,    saving: 85 },
-          { id: 'manual',     label: 'Manually unplug each device',    icon: '\u{1F91A}', watts: 5,   co2: 0.004,cost: 0.04, saving: 80 },
-          { id: 'standby',    label: 'Leave everything in standby',    icon: '\u{1F4A4}', watts: 85,  co2: 0.06, cost: 0.60, saving: 0 },
-        ],
-      },
-      hiddenQuiz: {
-        thinkPrompt: 'Observe the overnight energy drain difference...',
-        question: 'Which method most reliably eliminates phantom power drain?',
-        options: ['Automatic smart strip cutoff', 'Manual unplugging each night', 'Keeping devices on standby'],
-        correctIndex: 0,
-      },
-      feedback: {
-        correct: 'The smart strip automatically detects and cuts standby drain — zero effort, 100% reliable, saves 744 kWh/year!',
-        wrong: 'Manual unplugging works but people forget. Standby keeps draining. Automation is the most reliable approach.',
-        retry: 'Run the simulation again and compare the overnight energy waste between methods.',
-      },
-      reward: 10, co2Impact: -1.5,
-    },
-    {
-      id: 'sp_t2', title: 'Schedule Auto-Off Times',
-      simulation: {
-        scenario: 'Configure the smart strip\'s schedule. See how different schedules affect annual energy waste.',
-        options: [
-          { id: 'full_sched', label: 'Auto-off 11PM–6AM + work hours', icon: '\u{1F4C5}', watts: 0,  co2: 0,    cost: 0,    saving: 1200 },
-          { id: 'night_only', label: 'Night-only auto-off',            icon: '\u{1F303}', watts: 40, co2: 0.03, cost: 0.28, saving: 600 },
-          { id: 'manual_rem', label: 'Cut power when you remember',    icon: '\u{1F914}', watts: 60, co2: 0.04, cost: 0.42, saving: 300 },
-        ],
-      },
-      hiddenQuiz: {
-        thinkPrompt: 'Compare the annual savings between scheduling approaches...',
-        question: 'Which scheduling strategy saves the most energy annually?',
-        options: ['Full schedule (night + work hours)', 'Night-only schedule', 'Whenever you remember'],
-        correctIndex: 0,
-      },
-      feedback: {
-        correct: 'Double schedule covers 16 hours of zero phantom drain — saving ~1,200 kWh/year. Smart automation!',
-        wrong: 'Partial schedules miss peak waste hours. Full scheduling maximizes the strip\'s potential.',
-        retry: 'Observe the annual kWh savings number for each approach in the simulation.',
-      },
-      reward: 12, co2Impact: -2.0,
-    },
-    {
-      id: 'sp_t3', title: 'Monitor Charging Waste',
-      simulation: {
-        scenario: 'Smart strip shows your charger draws 15W even when phone is 100%. What approach saves the most?',
-        options: [
-          { id: 'auto_cut',   label: 'Enable charge-complete cutoff',  icon: '\u{1F50B}', watts: 0,  co2: 0,    cost: 0,    saving: 131 },
-          { id: 'timer',      label: 'Set 2-hour charging timer',      icon: '\u{23F1}\u{FE0F}', watts: 5,  co2: 0.004,cost: 0.04, saving: 100 },
-          { id: 'ignore',     label: 'Leave it — 15W is tiny',         icon: '\u{1F937}', watts: 15, co2: 0.01, cost: 0.11, saving: 0 },
-        ],
-      },
-      hiddenQuiz: {
-        thinkPrompt: 'Small watts add up over a full year...',
-        question: 'What\'s the most effective way to handle charger waste?',
-        options: ['Auto-cutoff when fully charged', 'Fixed-time charging timer', 'Ignore the small drain'],
-        correctIndex: 0,
-      },
-      feedback: {
-        correct: 'Auto-cutoff saves 131 kWh/year per charger. Every watt matters when multiplied by 8,760 hours!',
-        wrong: '15W seems small, but 15W × 24h × 365 = 131 kWh/year = ₹920 wasted. Smart monitoring catches these leaks.',
-        retry: 'Check the annual savings column — small continuous drains become significant over time.',
-      },
-      reward: 12, co2Impact: -1.8,
-    },
-  ],
-  led_smart_system: [
-    {
-      id: 'led_t1', title: 'Evening Lighting',
-      simulation: {
-        scenario: 'It\'s 10 PM — you\'re watching TV in the living room. Try different lighting setups.',
-        options: [
-          { id: 'auto_dim',  label: 'Auto-dim to 20% ambient',     icon: '\u{1F4A1}', watts: 2,   co2: 0.001, cost: 0.01, comfort: 90 },
-          { id: 'half',      label: 'Manual dim to 50%',            icon: '\u{1F506}', watts: 5,   co2: 0.004, cost: 0.04, comfort: 75 },
-          { id: 'full',      label: 'All room lights at 100%',      icon: '\u{2600}\u{FE0F}', watts: 10,  co2: 0.007, cost: 0.07, comfort: 50 },
-        ],
-      },
-      hiddenQuiz: {
-        thinkPrompt: 'Consider both comfort and energy in your experience...',
-        question: 'Which lighting setup gave the best movie experience with lowest energy?',
-        options: ['Smart auto-dim to ambient level', 'Manual 50% dimming', 'Full brightness everywhere'],
-        correctIndex: 0,
-      },
-      feedback: {
-        correct: 'Smart auto-dim detected TV mode and optimized to 20% — best ambiance AND lowest energy!',
-        wrong: 'Full brightness during TV watching wastes energy and reduces viewing experience. Smart dimming adapts automatically.',
-        retry: 'Notice how comfort rating changes with brightness — sometimes less light is better.',
-      },
-      reward: 10, co2Impact: -1.2,
-    },
-    {
-      id: 'led_t2', title: 'Prevent Wasted Lighting',
-      simulation: {
-        scenario: 'Bathroom light was left on for 2 hours with nobody inside. Try different prevention methods.',
-        options: [
-          { id: 'motion',     label: 'Motion sensor (auto-off 5 min)', icon: '\u{1F6B6}', watts: 0,  co2: 0,    cost: 0,    saving: 365 },
-          { id: 'reminder',   label: 'Put up a reminder sign',         icon: '\u{1F4DD}', watts: 5,  co2: 0.004,cost: 0.04, saving: 120 },
-          { id: 'do_nothing', label: 'Accept it happens sometimes',    icon: '\u{1F937}', watts: 10, co2: 0.007,cost: 0.07, saving: 0 },
-        ],
-      },
-      hiddenQuiz: {
-        thinkPrompt: 'Which approach was most reliable at preventing waste?',
-        question: 'How do you most effectively prevent forgotten lights?',
-        options: ['Automatic motion sensor cutoff', 'Reminder signs near switches', 'Accept occasional waste'],
-        correctIndex: 0,
-      },
-      feedback: {
-        correct: 'Motion sensors are 100% reliable — they never forget! Saves an average of 3 hours/day of unnecessary lighting.',
-        wrong: 'Signs get ignored over time. Technology beats manual habits for consistent energy savings.',
-        retry: 'Compare the annual savings — automated systems catch every instance of waste.',
-      },
-      reward: 10, co2Impact: -1.0,
-    },
-    {
-      id: 'led_t3', title: 'Daylight Harvesting',
-      simulation: {
-        scenario: 'Sunny afternoon — bright sunlight through windows. How should indoor lighting respond?',
-        options: [
-          { id: 'sensor',     label: 'Light sensor auto-reduces LEDs', icon: '\u{2600}\u{FE0F}', watts: 0,  co2: 0,    cost: 0,    saving: 70 },
-          { id: 'manual_off', label: 'Manually turn lights off',       icon: '\u{1F91A}', watts: 0,  co2: 0,    cost: 0,    saving: 40 },
-          { id: 'keep_on',    label: 'Keep LEDs on — they\'re efficient', icon: '\u{1F4A1}', watts: 10, co2: 0.007,cost: 0.07, saving: 0 },
-        ],
-      },
-      hiddenQuiz: {
-        thinkPrompt: 'Even efficient lights waste energy when sunlight is sufficient...',
-        question: 'What\'s the smartest way to handle daytime lighting?',
-        options: ['Automatic light sensors adjust brightness', 'Manual on/off switching', 'Keep efficient LEDs running'],
-        correctIndex: 0,
-      },
-      feedback: {
-        correct: 'Daylight harvesting automatically adjusts brightness based on sunlight — saves 50-70% of daytime lighting energy!',
-        wrong: 'Even efficient LEDs waste energy when natural light is enough. Smart sensors eliminate this automatically.',
-        retry: 'Notice that automation captures savings consistently — manual methods miss moments.',
-      },
-      reward: 15, co2Impact: -1.5,
-    },
-  ],
-  solar_water_heater: [
-    {
-      id: 'sw_t1', title: 'Optimal Water Heating',
-      simulation: {
-        scenario: 'You need hot water. Try each heating method and compare energy cost and effectiveness.',
-        options: [
-          { id: 'solar_peak', label: 'Solar heater (9AM–2PM sun)',  icon: '\u{2600}\u{FE0F}', watts: 0,    co2: 0,    cost: 0,    temp: 65 },
-          { id: 'geyser_30',  label: 'Electric geyser for 30 min',  icon: '\u{26A1}',          watts: 2000, co2: 1.42, cost: 14.0, temp: 70 },
-          { id: 'solar_eve',  label: 'Solar heater in evening',     icon: '\u{1F307}',         watts: 0,    co2: 0,    cost: 0,    temp: 35 },
-        ],
-      },
-      hiddenQuiz: {
-        thinkPrompt: 'Compare heating effectiveness vs energy consumption...',
-        question: 'When should you use the solar water heater for maximum efficiency?',
-        options: ['During peak sunlight hours (9AM–2PM)', 'In the evening for dinner', 'Anytime — solar always works'],
-        correctIndex: 0,
-      },
-      feedback: {
-        correct: 'Solar thermal is most efficient during peak sun. Water stays hot 24+ hours in the insulated tank!',
-        wrong: 'Solar heating depends on sunlight intensity. Peak hours give maximum heat with zero electricity.',
-        retry: 'Check the temperature output — timing matters for solar efficiency.',
-      },
-      reward: 10, co2Impact: -3.0,
-    },
-    {
-      id: 'sw_t2', title: 'Early Morning Hot Water',
-      simulation: {
-        scenario: 'You need hot water at 6 AM tomorrow. Plan your approach and see the results.',
-        options: [
-          { id: 'trust_tank', label: 'Solar heated all day — insulated tank keeps hot', icon: '\u{1F321}\u{FE0F}', watts: 0,    co2: 0,    cost: 0,    temp: 55 },
-          { id: 'geyser_5am', label: 'Turn on geyser backup at 5 AM',                  icon: '\u{26A1}',          watts: 2000, co2: 1.42, cost: 14.0, temp: 70 },
-          { id: 'no_plan',    label: 'Hope the water is warm enough',                   icon: '\u{1F937}',         watts: 0,    co2: 0,    cost: 0,    temp: 30 },
-        ],
-      },
-      hiddenQuiz: {
-        thinkPrompt: 'Consider the insulated tank\'s heat retention overnight...',
-        question: 'What\'s the smartest plan for early morning hot water?',
-        options: ['Trust the insulated solar tank', 'Run electric geyser at 5 AM', 'Just use cold water'],
-        correctIndex: 0,
-      },
-      feedback: {
-        correct: 'Quality solar heaters maintain temperature for 24-48 hours. No electricity needed even for early morning!',
-        wrong: 'The insulated tank retains heat overnight. Using the geyser wastes 2000W when solar heat is already stored.',
-        retry: 'Check the temperature reading — insulated tanks lose very little heat overnight.',
-      },
-      reward: 12, co2Impact: -4.0,
-    },
-    {
-      id: 'sw_t3', title: 'Cloudy Day Strategy',
-      simulation: {
-        scenario: '2 cloudy days — solar water isn\'t very hot (38°C). How do you handle bathing?',
-        options: [
-          { id: 'boost_5',   label: 'Lukewarm solar + 5-min electric boost', icon: '\u{26A1}',  watts: 170,  co2: 0.12, cost: 1.19, temp: 55 },
-          { id: 'full_gey',  label: 'Full geyser cycle (30 minutes)',        icon: '\u{1F525}', watts: 2000, co2: 1.42, cost: 14.0, temp: 70 },
-          { id: 'cold_bath', label: 'Just use the lukewarm water as-is',     icon: '\u{1F4A7}', watts: 0,    co2: 0,    cost: 0,    temp: 38 },
-        ],
-      },
-      hiddenQuiz: {
-        thinkPrompt: 'Balance comfort with energy usage in cloudy conditions...',
-        question: 'What\'s the smartest approach on cloudy days?',
-        options: ['Quick electric boost on lukewarm water', 'Full geyser cycle from scratch', 'Use water as-is, no heating'],
-        correctIndex: 0,
-      },
-      feedback: {
-        correct: '5-minute boost = ~170Wh VS full geyser = 1000Wh. 90% savings even on cloudy days — smart strategy!',
-        wrong: 'A quick boost on already-warm water is much more efficient than heating from scratch.',
-        retry: 'Compare the energy cost — even partial solar heating dramatically reduces backup needs.',
-      },
-      reward: 15, co2Impact: -3.5,
-    },
-  ],
-  ev_charger: [
-    {
-      id: 'ev_t1', title: 'Solar-Powered Charging',
-      simulation: {
-        scenario: 'It\'s noon with full sunlight. Your EV needs charging. Try different charging times.',
-        options: [
-          { id: 'noon_solar', label: 'Charge now during solar peak',    icon: '\u{2600}\u{FE0F}', watts: 3000, co2: 0,    cost: 0,    solarCover: 100 },
-          { id: 'evening',    label: 'Wait till evening after work',    icon: '\u{1F307}',         watts: 3000, co2: 2.13, cost: 21.0, solarCover: 10 },
-          { id: 'night_grid', label: 'Charge overnight using grid',     icon: '\u{1F303}',         watts: 3000, co2: 2.13, cost: 21.0, solarCover: 0 },
-        ],
-      },
-      hiddenQuiz: {
-        thinkPrompt: 'Observe which charging time used the most free solar energy...',
-        question: 'When is the ideal time to charge your EV for zero emissions?',
-        options: ['Noon during peak solar', 'Evening after work hours', 'Overnight for convenience'],
-        correctIndex: 0,
-      },
-      feedback: {
-        correct: 'Noon solar covers the full 3000W load — zero cost, zero emissions. Free fuel from sunlight!',
-        wrong: 'Non-solar charging means 100% grid power — 2.13 kg CO₂ and ₹21/hour. Solar hours = free charging.',
-        retry: 'Watch the solar coverage meter — noon provides maximum panel output.',
-      },
-      reward: 12, co2Impact: -5.0,
-    },
-    {
-      id: 'ev_t2', title: 'Night Charging Strategy',
-      simulation: {
-        scenario: '9 PM — EV at 40% charge, 100% needed by 7 AM. Plan your charging strategy.',
-        options: [
-          { id: 'partial_solar', label: 'Charge to 80% now + finish with solar at 10 AM', icon: '\u{2600}\u{FE0F}', watts: 1800, co2: 0.85, cost: 8.40, smart: true },
-          { id: 'full_night',    label: 'Charge to 100% overnight on grid',               icon: '\u{1F303}',         watts: 3000, co2: 2.13, cost: 21.0, smart: false },
-          { id: 'morning_rush',  label: 'Wait till morning and rush-charge',               icon: '\u{23F0}',          watts: 3000, co2: 0.75, cost: 7.00, smart: false },
-        ],
-      },
-      hiddenQuiz: {
-        thinkPrompt: 'Consider total emissions across the full charging cycle...',
-        question: 'What\'s the best plan when you need a full charge by morning?',
-        options: ['Partial charge now, finish with solar tomorrow', 'Full overnight grid charging', 'Rush-charge in the morning'],
-        correctIndex: 0,
-      },
-      feedback: {
-        correct: '80% is enough for most commutes. Finishing with solar saves 30% emissions vs full night charging!',
-        wrong: 'Full overnight charging = 18 kWh from grid = 12.78 kg CO₂. Split charging with solar is smarter.',
-        retry: 'Compare the total CO₂ column — partial + solar always wins.',
-      },
-      reward: 15, co2Impact: -4.5,
-    },
-    {
-      id: 'ev_t3', title: 'Balance EV + Home Load',
-      simulation: {
-        scenario: 'EV charging at 3000W. AC (1500W) and geyser (2000W) also running. Solar only covers 1920W.',
-        options: [
-          { id: 'substitute', label: 'Stop AC (use cooler) + stop geyser (use solar heater)', icon: '\u{1F4A1}', watts: 3200, co2: 0.91, cost: 8.96, gridW: 1280 },
-          { id: 'all_on',     label: 'Keep everything running at once',                       icon: '\u{26A1}',  watts: 6500, co2: 3.26, cost: 32.2, gridW: 4580 },
-          { id: 'stop_ev',    label: 'Pause EV charging to save power',                       icon: '\u{1F697}', watts: 3500, co2: 1.12, cost: 11.1, gridW: 1580 },
-        ],
-      },
-      hiddenQuiz: {
-        thinkPrompt: 'Which approach reduced grid dependency the most while keeping EV charging?',
-        question: 'When EV is charging, how do you minimize total home energy from grid?',
-        options: ['Substitute high-load appliances with efficient alternatives', 'Run everything simultaneously', 'Pause EV charging entirely'],
-        correctIndex: 0,
-      },
-      feedback: {
-        correct: 'Smart substitution: Cooler (200W) replaces AC (1500W), solar heater replaces geyser (2000W). Grid drops from 4580W to 1280W!',
-        wrong: 'Running all loads = 4580W from grid. Smart appliance substitution is the key to managing high-demand periods.',
-        retry: 'Compare grid watts — substituting old appliances with your upgrades makes a massive difference.',
-      },
-      reward: 20, co2Impact: -6.0,
-    },
-  ],
+    ],
+    energyBefore: { watts: 4400, co2: 3.12, bill: 30.80 },
+    energyAfter:  { watts: 1214, co2: 0.42, bill: 3.72 },
+    learning: 'Different strategy for day vs night! Morning = use solar heater. Noon = charge EV + heavy loads on solar. Night = minimize, use battery, avoid grid.',
+    subtlePrompt: 'Could you run your entire home with zero grid power?',
+    reward: 40,
+    co2Impact: -10.0,
+  },
+];
+
+// Map tasks by stage
+export const TASKS_BY_STAGE = {
+  2: INTERACTIVE_TASKS.filter(t => t.stage === 2),
+  3: INTERACTIVE_TASKS.filter(t => t.stage === 3),
+  4: INTERACTIVE_TASKS.filter(t => t.stage === 4),
+  5: INTERACTIVE_TASKS.filter(t => t.stage === 5),
 };
 
-// ═══════════════════════════════════════════════════════════
-//  STAGE 3: COMBO TASKS — INTERACTIVE SIMULATION + HIDDEN QUIZ
-// ═══════════════════════════════════════════════════════════
-export const COMBO_TASKS = [
-  {
-    id: 'combo_1',
-    title: 'Efficient Evening Setup',
-    description: 'Run lighting + entertainment + cooling simultaneously with minimum energy.',
-    appliances: ['led_smart_system', 'smart_power_strip', 'air_cooler'],
-    timeOfDay: 'evening',
-    simulation: {
-      scenario: 'Evening — you want TV, comfortable cooling, and good lighting. Configure your setup.',
-      options: [
-        { id: 'smart',   label: 'LED 30% + Smart strip monitor + Cooler low', icon: '\u{1F4A1}', totalW: 175,  co2: 0.12, bill: 1.23 },
-        { id: 'normal',  label: 'All lights + AC + devices in standby',       icon: '\u{26A1}',  totalW: 1800, co2: 1.28, bill: 12.6 },
-        { id: 'minimal', label: 'Everything off except TV',                    icon: '\u{1F4FA}', totalW: 120,  co2: 0.09, bill: 0.84 },
-      ],
-    },
-    hiddenQuiz: {
-      thinkPrompt: 'Which setup balanced comfort and efficiency?',
-      question: 'What combination provided the best comfort-to-energy ratio for an evening at home?',
-      options: ['Smart LED + Strip + Cooler combo', 'Traditional lights + AC + standby', 'Minimal — only TV on'],
-      correctIndex: 0,
-    },
-    feedback: {
-      correct: 'Total: 175W vs traditional 1800W — you saved 90% with equal comfort. This is smart orchestration!',
-      wrong: 'The smart combo maintains full comfort at a fraction of the energy. Minimal mode sacrifices comfort unnecessarily.',
-      retry: 'Compare comfort levels alongside energy — the smart combo offers both.',
-    },
-    reward: 20, co2Impact: -3.5,
-  },
-  {
-    id: 'combo_2',
-    title: 'Solar Peak Maximizer',
-    description: 'Use maximum solar during noon — charge EV, heat water, run home efficiently.',
-    appliances: ['ev_charger', 'solar_water_heater', 'led_smart_system'],
-    timeOfDay: 'noon',
-    simulation: {
-      scenario: 'Peak solar noon (1920W available). How do you maximize free solar energy?',
-      options: [
-        { id: 'maximize', label: 'EV charging + Solar heater + LEDs auto-off (sun)', icon: '\u{2600}\u{FE0F}', totalW: 3000, solarUsed: 1920, gridW: 1080, co2: 0.77 },
-        { id: 'wasteful', label: 'Save EV for night + geyser + lights on (curtains shut)', icon: '\u{1F303}', totalW: 2210, solarUsed: 400,  gridW: 1810, co2: 1.29 },
-        { id: 'conserve', label: 'Turn everything off to save power',                     icon: '\u{1F6AB}', totalW: 0,    solarUsed: 0,    gridW: 0,    co2: 0 },
-      ],
-    },
-    hiddenQuiz: {
-      thinkPrompt: 'Solar energy is free — not using it during peak IS wasting it...',
-      question: 'How do you maximize the value of peak solar hours?',
-      options: ['Run high-load tasks during solar peak', 'Save tasks for night/cheaper grid', 'Minimize all usage during peak'],
-      correctIndex: 0,
-    },
-    feedback: {
-      correct: 'EV charges free, water heats free, LEDs off because sun is bright — 100% solar utilization!',
-      wrong: 'Unused solar energy is wasted energy! Peak hours are your free-power window for heavy loads.',
-      retry: 'Observe the "Solar Used" meter — higher is better during peak hours.',
-    },
-    reward: 25, co2Impact: -8.0,
-  },
-  {
-    id: 'combo_3',
-    title: 'Night Efficiency Master',
-    description: 'Minimize energy waste during zero-solar hours.',
-    appliances: ['smart_power_strip', 'led_smart_system', 'air_cooler'],
-    timeOfDay: 'night',
-    simulation: {
-      scenario: 'Nighttime — zero solar. How do you minimize grid dependency?',
-      options: [
-        { id: 'optimized', label: 'Strip cuts phantom + Motion LED + Cooler timer', icon: '\u{1F303}', totalW: 80,  co2: 0.06, bill: 0.56 },
-        { id: 'normal',    label: 'Leave everything running normally',              icon: '\u{26A1}',  totalW: 400, co2: 0.28, bill: 2.80 },
-        { id: 'off_all',   label: 'Turn off everything including cooler',           icon: '\u{1F6AB}', totalW: 0,   co2: 0,    bill: 0 },
-      ],
-    },
-    hiddenQuiz: {
-      thinkPrompt: 'Balance comfort and conservation at night...',
-      question: 'What\'s the optimal nighttime energy strategy?',
-      options: ['Smart automation with timed settings', 'Normal operation unchanged', 'Shut everything off completely'],
-      correctIndex: 0,
-    },
-    feedback: {
-      correct: '80W average vs 400W — smart night mode reduces grid usage by 80% while maintaining comfort!',
-      wrong: 'Normal mode wastes through phantom loads. Shutting everything off sacrifices comfort. Smart automation balances both.',
-      retry: 'Check the watts vs comfort — automation finds the sweet spot.',
-    },
-    reward: 20, co2Impact: -4.0,
-  },
-  {
-    id: 'combo_4',
-    title: 'Full Home Orchestration',
-    description: 'Run ALL 5 upgrades together at maximum efficiency.',
-    appliances: ['air_cooler', 'smart_power_strip', 'led_smart_system', 'solar_water_heater', 'ev_charger'],
-    timeOfDay: 'afternoon',
-    simulation: {
-      scenario: 'Afternoon — all 5 appliances active. How do you orchestrate them for minimum grid use?',
-      options: [
-        { id: 'orchest',  label: 'EV solar + SWH + Cooler med + LED auto + Strip monitor', icon: '\u{1F3AF}', totalW: 3225, solarUsed: 1920, gridW: 1305, co2: 0.93 },
-        { id: 'chaos',    label: 'Everything at max without coordination',                 icon: '\u{26A1}',  totalW: 8700, solarUsed: 1920, gridW: 6780, co2: 4.81 },
-        { id: 'rotate',   label: 'Run one appliance at a time',                            icon: '\u{1F501}', totalW: 600,  solarUsed: 600,  gridW: 0,    co2: 0 },
-      ],
-    },
-    hiddenQuiz: {
-      thinkPrompt: 'Which approach used solar most effectively while running the whole home?',
-      question: 'How is a smart home best orchestrated when all appliances are active?',
-      options: ['Coordinated scheduling with solar priority', 'Run everything at maximum simultaneously', 'One appliance at a time to avoid overload'],
-      correctIndex: 0,
-    },
-    feedback: {
-      correct: '3225W total, solar covers 1920W, grid only 1305W. Compared to uncoordinated: 6780W from grid! Orchestration is key.',
-      wrong: 'Uncoordinated = chaos and high bills. One-at-a-time is impractical. Smart orchestration balances all loads with solar.',
-      retry: 'Compare grid watts between approaches — coordination dramatically reduces dependency.',
-    },
-    reward: 30, co2Impact: -10.0,
-  },
-];
-
-export const PROGRESSIVE_GOALS = [
-  { round: 1, target: 15, label: 'Reduce daily CO₂ to 15 kg', icon: '\u{1F3AF}' },
-  { round: 2, target: 10, label: 'Reduce daily CO₂ to 10 kg', icon: '\u{1F525}' },
-  { round: 3, target: 5,  label: 'Below 5 kg — Master level!',icon: '\u{1F3C6}' },
-];
-
-// ═══════════════════════════════════════════════════════════
-//  STAGE 4: DYNAMIC EVENTS — LIVE SIMULATION + HIDDEN QUIZ
-// ═══════════════════════════════════════════════════════════
-export const DYNAMIC_EVENTS = [
-  {
-    id: 'evt_cloudy',
-    type: 'weather',
-    title: 'Cloud Cover Detected!',
-    description: 'Heavy clouds have reduced solar output by 65%!',
-    icon: '\u{2601}\u{FE0F}',
-    effect: { solarFactor: 0.35 },
-    duration: 12000,
-    simulation: {
-      scenario: 'Solar dropped to 35%. EV is charging at 3000W. What action do you take?',
-      options: [
-        { id: 'battery',  label: 'Pause EV, switch to battery backup',  icon: '\u{1F50B}', gridW: 200,  co2: 0.14, saved: 2800 },
-        { id: 'grid',     label: 'Keep everything on grid power',       icon: '\u{26A1}',  gridW: 3200, co2: 2.27, saved: 0 },
-        { id: 'shutdown', label: 'Shut down all non-essential devices',  icon: '\u{1F6AB}', gridW: 50,   co2: 0.04, saved: 3150 },
-      ],
-    },
-    hiddenQuiz: {
-      thinkPrompt: 'Clouds are temporary — which response was proportionate?',
-      question: 'When solar drops suddenly, what\'s the proportionate response?',
-      options: ['Pause heavy loads + use battery for essentials', 'Continue normally on grid power', 'Shut down everything immediately'],
-      correctIndex: 0,
-    },
-    feedback: {
-      correct: 'Battery covers essentials while clouds pass. EV can resume when sun returns. Smart proportional response!',
-      wrong: 'Full grid usage creates a CO₂ spike. Complete shutdown is overreaction. Battery bridging is the balanced approach.',
-      retry: 'Consider: clouds are temporary. What preserves comfort while minimizing grid spikes?',
-    },
-    consequence: { co2Spike: 3.5, billSpike: 24 },
-    reward: 15,
-  },
-  {
-    id: 'evt_night',
-    type: 'time',
-    title: 'Night Falls',
-    description: 'Solar output is now ZERO. Battery at 60%.',
-    icon: '\u{1F303}',
-    effect: { solarFactor: 0 },
-    duration: 12000,
-    simulation: {
-      scenario: 'No solar. 6 kWh in battery. How do you manage the next 10 hours until sunrise?',
-      options: [
-        { id: 'smart_night', label: 'Smart strip + cooler timer + motion LED only',  icon: '\u{1F303}', avgW: 80,  batteryHours: 75, co2: 0.06 },
-        { id: 'normal',      label: 'Run normally, switch to grid when battery dies', icon: '\u{26A1}',  avgW: 400, batteryHours: 15, co2: 0.28 },
-        { id: 'all_off',     label: 'Turn off everything to preserve battery',       icon: '\u{1F6AB}', avgW: 0,   batteryHours: 999, co2: 0 },
-      ],
-    },
-    hiddenQuiz: {
-      thinkPrompt: 'How long does the battery last with each approach?',
-      question: 'What\'s the smartest nighttime energy management?',
-      options: ['Smart automation at minimal load', 'Normal usage until battery depletes', 'Complete shutdown to save battery'],
-      correctIndex: 0,
-    },
-    feedback: {
-      correct: '80W average means battery lasts 75 hours — far more than needed until sunrise! Smart automation wins.',
-      wrong: 'Normal mode drains battery in 15 hours. Shutdown preserves battery but sacrifices comfort. Smart mode does both.',
-      retry: 'Check battery hours — smart automation extends battery life dramatically.',
-    },
-    consequence: { co2Spike: 2.8, billSpike: 18 },
-    reward: 15,
-  },
-  {
-    id: 'evt_demand',
-    type: 'demand',
-    title: 'Peak Demand Surge!',
-    description: 'All rooms need cooling. Multiple family members using devices simultaneously.',
-    icon: '\u{26A1}',
-    effect: { demandMultiplier: 1.5 },
-    duration: 12000,
-    simulation: {
-      scenario: 'Family demand surge: cooling + devices + cooking + EV all requested at once.',
-      options: [
-        { id: 'prioritize', label: 'Solar heater for water + cooler + defer EV',  icon: '\u{1F3AF}', totalW: 425,  gridW: 0,    co2: 0 },
-        { id: 'all_on',     label: 'Turn everything on simultaneously',           icon: '\u{26A1}',  totalW: 6500, gridW: 4580, co2: 3.25 },
-        { id: 'ration',     label: 'Only allow one room to use appliances',        icon: '\u{1F6AB}', totalW: 200,  gridW: 0,    co2: 0 },
-      ],
-    },
-    hiddenQuiz: {
-      thinkPrompt: 'Which approach served the family while keeping energy manageable?',
-      question: 'During peak demand, what\'s the best load management strategy?',
-      options: ['Prioritize with smart substitution', 'Run everything at once', 'Strictly ration to one room'],
-      correctIndex: 0,
-    },
-    feedback: {
-      correct: 'Prioritization puts zero-watt solar heater first, uses efficient cooler, defers EV. Total: 425W vs 6500W!',
-      wrong: 'Everything at once = 4580W from grid. Strict rationing upsets the family. Prioritization serves everyone efficiently.',
-      retry: 'Compare how many family needs are met vs energy used in each approach.',
-    },
-    consequence: { co2Spike: 4.5, billSpike: 32 },
-    reward: 20,
-  },
-  {
-    id: 'evt_heatwave',
-    type: 'weather',
-    title: 'Heat Wave Alert!',
-    description: 'Temperature soared to 45°C! Cooling demand doubles.',
-    icon: '\u{1F321}\u{FE0F}',
-    effect: { demandMultiplier: 2.0 },
-    duration: 12000,
-    simulation: {
-      scenario: 'Extreme heat — everyone wants maximum cooling. You have an air cooler. What do you do?',
-      options: [
-        { id: 'combo',    label: 'Cooler max + wet curtains + ceiling fan',  icon: '\u{1F4A8}', watts: 275,  cooling: 85, co2: 0.20 },
-        { id: 'rent_ac',  label: 'Give up and rent an AC unit',             icon: '\u{2744}\u{FE0F}', watts: 2000, cooling: 92, co2: 1.42 },
-        { id: 'endure',   label: 'Just use the fan and endure',             icon: '\u{1F937}', watts: 75,   cooling: 30, co2: 0.05 },
-      ],
-    },
-    hiddenQuiz: {
-      thinkPrompt: 'Which approach provided near-AC comfort without AC energy cost?',
-      question: 'During extreme heat, what\'s the most sustainable cooling strategy?',
-      options: ['Evaporative combo (cooler + wet curtains + fan)', 'Temporary AC rental', 'Endure with just a fan'],
-      correctIndex: 0,
-    },
-    feedback: {
-      correct: 'Evaporative combo achieves 85% of AC comfort at just 275W — that\'s 86% less energy even in extreme heat!',
-      wrong: 'AC rental uses 2000W. Fan alone is insufficient at 45°C. The evaporative combo is the smart middle ground.',
-      retry: 'Compare cooling percentage vs watts — the combo is surprisingly effective.',
-    },
-    consequence: { co2Spike: 5.0, billSpike: 38 },
-    reward: 20,
-  },
-  {
-    id: 'evt_battery_low',
-    type: 'system',
-    title: 'Battery Critical!',
-    description: 'Battery dropped to 15%. Grid dependency increasing.',
-    icon: '\u{1F50B}',
-    effect: { batteryDrain: true },
-    duration: 12000,
-    simulation: {
-      scenario: 'Battery at 15%. Solar is moderate. How do you handle this situation?',
-      options: [
-        { id: 'recharge', label: 'Reduce load + let solar recharge battery first',  icon: '\u{2600}\u{FE0F}', result: 'Battery recovers to 60% in 2 hours', watts: 200 },
-        { id: 'drain',    label: 'Drain battery fully then switch to grid',          icon: '\u{26A1}',         result: 'Battery lifespan reduced by 20%',    watts: 800 },
-        { id: 'grid_now', label: 'Switch entirely to grid immediately',             icon: '\u{1F50C}',        result: 'Battery stays at 15%, grid costs rise', watts: 600 },
-      ],
-    },
-    hiddenQuiz: {
-      thinkPrompt: 'Deep discharge affects battery lifespan significantly...',
-      question: 'When battery is critically low, what protects both battery health and budget?',
-      options: ['Reduce load and let solar recharge', 'Drain completely then switch', 'Abandon battery, use grid only'],
-      correctIndex: 0,
-    },
-    feedback: {
-      correct: 'Reducing load + solar recharge recovers battery to 60% in 2 hours. Battery health preserved, grid avoided!',
-      wrong: 'Deep discharge damages battery lifespan by 20%. Immediate grid switch wastes stored solar. Managed recharge is optimal.',
-      retry: 'Consider long-term battery health alongside immediate power needs.',
-    },
-    consequence: { co2Spike: 2.0, billSpike: 15 },
-    reward: 15,
-  },
-];
-
-// ═══════════════════════════════════════════════════════════
-//  STAGE 5: MASTER SIMULATION — 3 DAY CYCLES + ANALYSIS
-// ═══════════════════════════════════════════════════════════
-export const MASTER_CYCLE_GOALS = [
-  { cycle: 1, name: 'Learn',   goal: 'Observe your home through a full day',       targetCO2: 20, icon: '\u{1F4D6}' },
-  { cycle: 2, name: 'Improve', goal: 'Optimize each time period to reduce CO₂',    targetCO2: 12, icon: '\u{1F4C8}' },
-  { cycle: 3, name: 'Master',  goal: 'Achieve near-zero grid dependency',          targetCO2: 5,  icon: '\u{1F3C6}' },
-];
-
-export const ANALYSIS_QUESTIONS = [
-  {
-    question: 'Based on your simulation experience, what caused the biggest energy spike across the day?',
-    options: ['EV charging during non-solar hours', 'Running AC instead of cooler', 'Morning geyser usage'],
-    correctIndex: 0,
-    feedback: {
-      correct: 'EV charging at night = 3000W × grid power = the biggest single spike. Shifting to solar hours eliminates this entirely.',
-      wrong: 'While all options waste energy, the EV\'s 3000W non-solar charging creates the single largest grid dependency.',
-    },
-  },
-  {
-    question: 'During which time period did your home use the most free solar energy?',
-    options: ['Dawn (early morning)', 'Noon (peak sunlight)', 'Evening (after sunset)'],
-    correctIndex: 1,
-    feedback: {
-      correct: 'Noon has 100% sunlight factor — ~1920W from panels. This is your golden hour for heavy loads!',
-      wrong: 'Solar output peaks at noon. Dawn and evening have minimal sunlight. Schedule heavy tasks during peak hours.',
-    },
-  },
-  {
-    question: 'Looking at the full-day pattern, what strategy reduced CO₂ the most overall?',
-    options: ['Running everything on battery', 'Using solar-timed scheduling for all loads', 'Minimizing appliance usage completely'],
-    correctIndex: 1,
-    feedback: {
-      correct: 'Solar-timed scheduling matches heavy loads to solar availability — the most impactful single strategy for CO₂ reduction!',
-      wrong: 'Battery has limits. Minimizing usage is impractical. Solar-timed scheduling is practical AND maximally effective.',
-    },
-  },
-];
+// ═══ IN-GAME LEARNING MESSAGES (shown during gameplay) ═══
+export const GAMEPLAY_MESSAGES = {
+  high_energy:  { icon: '\u{26A0}\u{FE0F}', text: 'High energy usage!',   color: '#ef4444' },
+  efficient:    { icon: '\u{1F33F}',          text: 'Efficient choice!',    color: '#22c55e' },
+  overload:     { icon: '\u{1F6A8}',          text: 'Overload detected!',   color: '#ef4444' },
+  solar_good:   { icon: '\u{2600}\u{FE0F}',  text: 'Solar powering this!', color: '#f5a623' },
+  phantom:      { icon: '\u{1F50D}',          text: 'Phantom load found!',  color: '#f59e0b' },
+  standby:      { icon: '\u{1F50C}',          text: 'Standby drain detected!', color: '#f59e0b' },
+  battery_low:  { icon: '\u{1F50B}',          text: 'Battery running low!', color: '#ef4444' },
+  weather_drop: { icon: '\u{2601}\u{FE0F}',  text: 'Solar output dropped!', color: '#6b7280' },
+  great_combo:  { icon: '\u{2728}',           text: 'Great combination!',   color: '#a855f7' },
+};
 
 // ═══ TIME SYSTEM ═══
 export const SCHEDULE_SLOTS = [
@@ -929,40 +498,10 @@ export const WEATHER_TYPES = [
 export const COST_PER_KWH = 7;
 export const BEFORE_STATS = { co2Month: 223, billMonth: 2500 };
 
-// ═══ PHASE DEFINITIONS ═══
-export const PHASES = [
-  { id: 'entry',       title: 'Welcome',               icon: '\u{1F3E0}' },
-  { id: 'store',       title: 'Smart Store',            icon: '\u{1F3EA}' },
-  { id: 'appliance',   title: 'Upgrade Home',           icon: '\u{1F527}' },
-  { id: 'integration', title: 'Integration Mode',       icon: '\u{1F504}' },
-  { id: 'simulation',  title: 'Full Day Simulation',    icon: '\u{23F1}\u{FE0F}' },
-  { id: 'dashboard',   title: 'Final Impact Dashboard', icon: '\u{1F4CA}' },
-  { id: 'quiz',        title: 'Final Quiz',             icon: '\u{1F9E0}' },
-  { id: 'reward',      title: 'Reward',                 icon: '\u{1F3C6}' },
-];
-
-// ═══ QUIZ — HIDDEN STYLE (NO ✅/❌) ═══
+// ═══ QUIZ — FINAL ONLY (NO QUIZ DURING GAME) ═══
 export const L5_QUIZ = [
   {
-    question: 'Air Cooler uses how much less energy than AC?',
-    options: ['50% less', '70% less', '86% less'],
-    correctIndex: 2,
-    feedback: {
-      correct: 'Air Cooler uses 200W vs AC\'s 1500W — that\'s 86% less energy. You experienced this in the simulation!',
-      wrong: 'Remember the simulation — air cooler ran at 200W while AC used 1500W. That difference is 86%.',
-    },
-  },
-  {
-    question: 'What does a Smart Power Strip eliminate?',
-    options: ['Wi-Fi signal interference', 'Phantom/standby power drain', 'Solar panel degradation'],
-    correctIndex: 1,
-    feedback: {
-      correct: 'Smart strips detect and cut phantom power — devices drawing energy even when "off." Saves ~876 kWh/year!',
-      wrong: 'Think back to the nighttime simulation — those standby devices were silently draining power. That\'s phantom load.',
-    },
-  },
-  {
-    question: 'When is the most efficient time to charge an EV with solar?',
+    question: 'What is the best time to charge your EV for zero emissions?',
     options: ['Night (for convenience)', 'Noon (peak solar output)', 'Evening (after work)'],
     correctIndex: 1,
     feedback: {
@@ -971,39 +510,57 @@ export const L5_QUIZ = [
     },
   },
   {
+    question: 'Which cooling combination is most efficient at moderate temperatures?',
+    options: ['AC at full blast (1500W)', 'Fan + Air Cooler combo (275W)', 'Two fans at maximum (150W)'],
+    correctIndex: 1,
+    feedback: {
+      correct: 'Fan + Cooler gives 88% cooling at only 275W — compared to AC at 1500W. You experienced this in Task 3!',
+      wrong: 'Remember Task 3: Fan + Cooler combination provided near-AC comfort at a fraction of the energy.',
+    },
+  },
+  {
+    question: 'How does a Smart Power Strip save energy?',
+    options: ['It generates solar power', 'It cuts phantom/standby power drain automatically', 'It reduces WiFi usage'],
+    correctIndex: 1,
+    feedback: {
+      correct: 'Smart strips detect and cut phantom power — devices drawing energy even when "off." Saves ~876 kWh/year!',
+      wrong: 'Think back to Task 1: those standby devices were silently draining power. The smart strip cut it all automatically.',
+    },
+  },
+  {
     question: 'Solar Water Heater replaces which high-load appliance?',
     options: ['AC (1500W)', 'Microwave (1000W)', 'Electric Geyser (2000W)'],
     correctIndex: 2,
     feedback: {
       correct: 'The geyser was your home\'s biggest single load at 2000W — solar heating eliminated it completely!',
-      wrong: 'Remember the energy meters — the electric geyser drew 2000W, more than any other single appliance.',
+      wrong: 'Remember Task 4: the electric geyser drew 2000W, more than any other single appliance. Solar replaced it with 0W.',
     },
   },
   {
-    question: 'Smart LED lighting saves how much energy compared to traditional bulbs?',
-    options: ['50%', '70%', '90%'],
-    correctIndex: 2,
-    feedback: {
-      correct: 'Smart LEDs use 10W vs traditional 100W — 90% savings with better light quality and smart features!',
-      wrong: 'The simulation showed smart LEDs at just 10W with auto-dimming. Traditional lighting was around 100W+.',
-    },
-  },
-  {
-    question: 'Which combination provides the largest annual CO₂ savings?',
-    options: ['Air Cooler + Smart Strip', 'Solar Heater + EV Charger (solar)', 'LED + Cooler'],
-    correctIndex: 1,
-    feedback: {
-      correct: 'Solar heater (259 kg) + EV solar charging (1,800 kg) = 2,059 kg CO₂ saved. The simulation showed this massive combined impact!',
-      wrong: 'Think about which appliances replace the highest-wattage loads. The geyser (2000W) and petrol vehicles create the most emissions.',
-    },
-  },
-  {
-    question: 'During a sudden cloud event, what strategy maintains the best balance?',
+    question: 'When solar drops due to clouds, what should you do?',
     options: ['Switch everything to grid immediately', 'Pause heavy loads + use battery for essentials', 'Turn off all appliances completely'],
     correctIndex: 1,
     feedback: {
-      correct: 'Battery bridges temporary disruptions. Heavy loads can wait for sun to return. Proportional response!',
+      correct: 'Battery bridges temporary disruptions. Heavy loads can wait for sun to return. You practiced this in Task 7!',
       wrong: 'Clouds are temporary. Full grid switch wastes money. Total shutdown is overkill. Battery bridging is proportional.',
+    },
+  },
+  {
+    question: 'During system overload (6500W), what was the best strategy?',
+    options: ['Turn off everything', 'Replace AC with Cooler + Geyser with Solar Heater', 'Just use grid power for everything'],
+    correctIndex: 1,
+    feedback: {
+      correct: 'Smart substitution: Cooler replaces AC (-1300W), Solar Heater replaces Geyser (-2000W). You did this in Task 6!',
+      wrong: 'Task 6 showed that substituting inefficient appliances with efficient upgrades is better than shutdown or grid overload.',
+    },
+  },
+  {
+    question: 'What uses the most free solar energy from your daily routine?',
+    options: ['Running LED lights during day', 'Charging EV at noon + Solar water heating', 'Keeping AC on during sunset'],
+    correctIndex: 1,
+    feedback: {
+      correct: 'EV charging (3000W) + Solar heater (2000W replaced) at noon = maximum solar utilization. Task 8 morning-noon cycle showed this!',
+      wrong: 'LEDs during day should be OFF (sunlight!). AC at sunset has little solar. Noon heavy loads maximize free solar energy.',
     },
   },
   {
@@ -1012,25 +569,7 @@ export const L5_QUIZ = [
     correctIndex: 1,
     feedback: {
       correct: 'Phantom load is the silent energy drain from devices in standby. At ~100W continuous, it costs ₹6,100/year!',
-      wrong: 'Remember the smart strip simulation — those "off" devices were drawing 85W continuously. Over a year, that adds up significantly.',
-    },
-  },
-  {
-    question: 'When battery drops to 15%, what approach protects the battery\'s long-term health?',
-    options: ['Drain it completely first', 'Reduce load + let solar recharge above 20%', 'Disconnect battery and use grid only'],
-    correctIndex: 1,
-    feedback: {
-      correct: 'Deep discharge damages batteries. Reducing load + solar recharge preserves battery health for 5+ years.',
-      wrong: 'The crisis simulation showed that deep discharge reduces battery lifespan by 20%. Managed recharge is essential.',
-    },
-  },
-  {
-    question: 'Running cooler + fan combo vs AC — what energy savings did the simulation show?',
-    options: ['About 50% savings', 'About 82% savings', 'About 95% savings'],
-    correctIndex: 1,
-    feedback: {
-      correct: 'Cooler (200W) + Fan (75W) = 275W. AC = 1500W. That\'s 82% savings with nearly equivalent comfort!',
-      wrong: 'Think back to the simulation meters — 275W combo vs 1500W AC. The percentage difference is significant.',
+      wrong: 'Remember Task 2: those "off" devices were drawing 78W+ continuously. Over a year, that adds up to thousands of rupees.',
     },
   },
 ];
@@ -1045,19 +584,23 @@ export const CONFIDENCE_MESSAGES = [
 ];
 
 // ═══ STAR SYSTEM ═══
-export function calculateL5Stars(appliancesCompleted, quizPct, integrationPct, simulationPct) {
+export function calculateL5Stars(appliancesCompleted, quizPct, taskScore, totalPossibleTaskScore) {
   const appPct = (appliancesCompleted / STORE_APPLIANCES.length) * 100;
-  const overall = appPct * 0.3 + quizPct * 0.3 + integrationPct * 0.2 + simulationPct * 0.2;
+  const taskPct = totalPossibleTaskScore > 0 ? (taskScore / totalPossibleTaskScore) * 100 : 50;
+  const overall = appPct * 0.25 + quizPct * 0.25 + taskPct * 0.5;
   if (overall >= 75) return 3;
   if (overall >= 50) return 2;
   return 1;
 }
 
+// Total possible task score
+export const TOTAL_POSSIBLE_TASK_SCORE = INTERACTIVE_TASKS.reduce((sum, t) => sum + t.reward, 0);
+
 // ═══ BADGE ═══
 export const LEVEL5_BADGE = {
   id: 'sustainability_master',
   title: 'Sustainability Master',
-  description: 'Built and mastered a fully smart sustainable home simulation!',
+  description: 'Built and mastered a fully smart sustainable home!',
   icon: '\u{1F3C6}',
   coins: 200,
 };
@@ -1073,9 +616,9 @@ export const ENTRY_DIALOGUE = [
 
 export const FINAL_DIALOGUE = [
   "You built and mastered a fully sustainable home!",
-  "You handled crises, optimized combos, and ran 3 full cycles.",
+  "You handled overloads, adapted to weather, and managed a full day.",
   "Every upgrade made your home smarter and greener.",
-  "You are now a true Sustainability Master!",
+  "The future is shaped by YOUR choices!",
   "Go make a difference in the real world. \u{1F30D}\u{2728}",
 ];
 

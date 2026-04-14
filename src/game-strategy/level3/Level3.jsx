@@ -21,6 +21,7 @@ import {
   SOLAR_HOOK_DATA, GUIDANCE_CONFIG,
 } from './level3Data';
 import Level3Quiz from './Level3Quiz';
+import LevelIntro from '../LevelIntro';
 import './Level3.css';
 
 // ═══ AUDIO ═══
@@ -84,6 +85,7 @@ export default function Level3() {
   const cameraRef = useRef(null);
 
   // ─── Phases ───
+  const [showLevelIntro, setShowLevelIntro] = useState(true);
   const [phase, setPhase] = useState('intro');
   const [introStep, setIntroStep] = useState(0);
 
@@ -383,6 +385,25 @@ export default function Level3() {
   const handleNearestChange = useCallback(id => { setNearestAppliance(id); setProximityLevels(getProximityLevels(playerState.x, playerState.z)); }, []);
 
   const canContinueExplore = toggledSet.size >= 4;
+
+  // ═══ RENDER: LEVEL INTRO (Learn Before Play) ═══
+  if (showLevelIntro) {
+    return (
+      <LevelIntro
+        levelNumber={3}
+        levelTitle="The Carbon Crisis"
+        levelIcon="\u{1F30D}"
+        objective="Discover the hidden environmental cost of electricity. See how every appliance you turn ON releases CO\u{2082} into the atmosphere, damages the environment around your home, and contributes to climate change."
+        learningOutcome="By the end of this level, you will understand what CO\u{2082} emissions are, how your daily electricity usage creates pollution, and why reducing your carbon footprint matters for the planet."
+        terms={[
+          { icon: '\u{1F30D}', name: 'CO\u{2082} Emission', definition: 'Carbon dioxide (CO\u{2082}) is a harmful gas released into the air when electricity is generated from fossil fuels like coal and gas.', example: 'Using 100 kWh of electricity produces about 71 kg of CO\u{2082}' },
+          { icon: '\u{1F32B}\u{FE0F}', name: 'Pollution', definition: 'The harmful effect on our environment caused by burning fossil fuels. More electricity use means more air, water, and soil pollution.', example: 'Running AC all day creates more pollution than a ceiling fan' },
+          { icon: '\u{1F525}', name: 'Carbon Impact', definition: 'The total amount of environmental damage caused by your energy usage. Every watt consumed adds to your carbon footprint.', example: 'A geyser has 10x more carbon impact than an LED light' },
+        ]}
+        onComplete={() => setShowLevelIntro(false)}
+      />
+    );
+  }
 
   // ═══ RENDER: INTRO ═══
   if (phase === 'intro') {

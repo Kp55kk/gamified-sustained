@@ -31,6 +31,13 @@ export function getSmartMessage(wattage) {
   return { text: 'Energy efficient choice', type: 'good', icon: '\u{2705}' };
 }
 
+// Priority classification for turn-off task popups
+export function getWattagePriority(wattage) {
+  if (wattage >= 1000) return 'high';
+  if (wattage >= 100) return 'medium';
+  return 'low';
+}
+
 // ─── Bar color for graph system ───
 export function getBarColor(watts) {
   if (watts < 100) return '#22c55e';   // Green — Low
@@ -201,19 +208,44 @@ export const COMPARISON_PAIRS = [
 
 export const TASKS = [
   {
-    id: 'task_hot_room',
-    scenario: 'The room is too hot!',
-    icon: '\u{1F525}',
-    hint: 'You need something that cools the room down.',
-    correctIds: ['ceiling_fan', 'ac_1_5ton', 'table_fan'],
-    bestId: 'table_fan',
-    wrongHint: 'This appliance doesn\'t reduce temperature.',
-    comparison: {
-      efficient: { id: 'table_fan', label: 'Table Fan', watts: 50 },
-      alternative: { id: 'ac_1_5ton', label: 'AC (1.5 Ton)', watts: 1500 },
-      message: 'Table Fan uses 50W vs AC at 1500W \u{2014} that\'s 30\u{00D7} less energy!',
-      lesson: 'Use a fan when possible. Reserve AC for extreme heat.',
+    id: 'task_family_room',
+    type: 'turn_off',
+    scenario: '\u{1F468}\u{200D}\u{1F469}\u{200D}\u{1F467}\u{200D}\u{1F466} Family is gathered in the Living Room!',
+    icon: '\u{1F3E0}',
+    hint: 'Find and turn OFF unnecessary appliances in other rooms.',
+    // Appliances auto-turned ON when task starts — player must turn them OFF
+    turnOffIds: ['geyser', 'ac_1_5ton', 'mixer_grinder', 'table_fan', 'led_tube'],
+    // Living Room appliances that should STAY on (protected)
+    protectedIds: ['ceiling_fan', 'tv_smart', 'wifi_router', 'set_top_box'],
+    requiredOff: 3,
+    // Priority-based popup messages
+    startPopup: 'Some appliances are ON in empty rooms \u{26A0}\u{FE0F}\nFind and turn them OFF to save energy',
+    nearPopups: {
+      high:   'This consumes a LOT of energy even when unused \u{26A0}\u{FE0F}',
+      medium: 'Still consuming power \u{2014} moderate waste',
+      low:    'Still consuming power \u{2014} but less impact',
     },
+    offPopups: {
+      high:   'Great! Significant energy saved \u{1F331}',
+      medium: 'Good catch! Energy saved \u{1F44D}',
+      low:    'Energy saved \u{1F44D}',
+    },
+    protectedPopup: 'This appliance is currently needed \u{2014} the family is using it!',
+    // Star thresholds
+    starThresholds: {
+      three: ['geyser', 'ac_1_5ton', 'mixer_grinder', 'table_fan', 'led_tube'],  // all 5 = 3 stars
+      two: 3,    // 3-4 appliances
+      one: 2,    // minimum pass
+    },
+    // Final summary
+    finalLearning: {
+      title: '\u{1F4A1} Key Learning',
+      messages: [
+        'Most energy waste comes from high-power appliances left ON unnecessarily',
+        'Turning OFF unused devices reduces both cost and CO\u{2082}',
+      ],
+    },
+    comparison: null,
   },
   {
     id: 'task_dark_room',

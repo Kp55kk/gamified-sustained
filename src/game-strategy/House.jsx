@@ -443,8 +443,12 @@ export default function House() {
       {/* Front wall (z = -8) - fully solid, no door */}
       <WallBox position={[0, WALL_HEIGHT / 2, -8]} size={[20, WALL_HEIGHT, WALL_THICKNESS]} />
 
-      {/* Back wall (z = 8) */}
-      <WallBox position={[0, WALL_HEIGHT / 2, 8]} size={[20, WALL_HEIGHT, WALL_THICKNESS]} />
+      {/* Back wall (z = 8) — gap at x=[-2, 2] for backyard door */}
+      <WallBox position={[-6, WALL_HEIGHT / 2, 8]} size={[8, WALL_HEIGHT, WALL_THICKNESS]} />
+      <WallBox position={[6, WALL_HEIGHT / 2, 8]} size={[8, WALL_HEIGHT, WALL_THICKNESS]} />
+      {/* Above back door */}
+      <WallBox position={[0, 2.7, 8]} size={[4, 0.6, WALL_THICKNESS]} />
+      <DoorFrame position={[0, 0, 8]} />
 
       {/* Left wall (x = -10) — door gap at z = [-3.5, -0.5] near WiFi router */}
       <WallBox position={[-10, WALL_HEIGHT / 2, -5.75]} size={[WALL_THICKNESS, WALL_HEIGHT, 4.5]} />

@@ -507,3 +507,160 @@
 .l5-multiuse-card::-webkit-scrollbar, .l5-combo-card::-webkit-scrollbar, .l5-crisis-card::-webkit-scrollbar, .l5-analysis-card::-webkit-scrollbar { width:4px; }
 .l5-store-overlay::-webkit-scrollbar-thumb, .l5-master-card::-webkit-scrollbar-thumb, .l5-dash-card::-webkit-scrollbar-thumb,
 .l5-multiuse-card::-webkit-scrollbar-thumb, .l5-combo-card::-webkit-scrollbar-thumb, .l5-crisis-card::-webkit-scrollbar-thumb { background:rgba(34,197,94,0.3); border-radius:2px; }
+
+/* ═══════════════════════════════════════════════════════════
+   INTERACTIVE TASK SYSTEM — Walk → Interact → Result → Learn
+═══════════════════════════════════════════════════════════ */
+
+/* ─── Task Intro Screen ─── */
+.l5-task-intro-overlay { position:absolute; inset:0; z-index:50; display:flex; align-items:center; justify-content:center; background:radial-gradient(ellipse at center,#0a1a28 0%,#050a15 70%); overflow-y:auto; padding:50px 16px 20px; }
+.l5-task-intro-card { background:linear-gradient(145deg,#0a1a2a,#061018); border:2px solid rgba(59,130,246,0.3); border-radius:20px; padding:28px; max-width:480px; width:100%; animation:l5-popup-bounce 0.6s cubic-bezier(0.34,1.56,0.64,1); }
+.l5-task-intro-badge { display:inline-block; background:linear-gradient(135deg,rgba(59,130,246,0.2),rgba(136,204,255,0.15)); border:1px solid rgba(59,130,246,0.4); color:#88ccff; padding:6px 18px; border-radius:24px; font-size:11px; font-weight:800; letter-spacing:3px; text-transform:uppercase; margin-bottom:14px; }
+.l5-task-intro-icon { font-size:72px; text-align:center; margin-bottom:8px; filter:drop-shadow(0 0 30px rgba(59,130,246,0.3)); animation:l5-float 3s ease-in-out infinite; }
+.l5-task-intro-title { font-family:'Fredoka',sans-serif; font-size:26px; font-weight:700; color:#fff; text-align:center; margin-bottom:10px; text-shadow:0 0 20px rgba(136,204,255,0.3); }
+.l5-task-intro-scenario { font-size:15px; color:#88ccff; text-align:center; line-height:1.6; margin-bottom:8px; font-weight:600; }
+.l5-task-intro-desc { font-size:13px; color:#aaa; text-align:center; line-height:1.6; margin-bottom:16px; padding:0 8px; }
+
+/* Task Intro Metrics (Before → Target) */
+.l5-task-intro-metrics { display:flex; align-items:center; gap:8px; margin-bottom:16px; justify-content:center; }
+.l5-task-metric { text-align:center; padding:12px 16px; border-radius:12px; min-width:100px; }
+.l5-task-metric.before { background:rgba(239,68,68,0.08); border:1px solid rgba(239,68,68,0.25); }
+.l5-task-metric.target { background:rgba(34,197,94,0.08); border:1px solid rgba(34,197,94,0.25); }
+.l5-task-metric.arrow { font-size:24px; color:#22c55e; padding:0 4px; background:none; border:none; }
+.l5-task-metric-label { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:1px; display:block; margin-bottom:4px; }
+.l5-task-metric.before .l5-task-metric-label { color:#ff8888; }
+.l5-task-metric.target .l5-task-metric-label { color:#22c55e; }
+.l5-task-metric-val { font-family:'Fredoka',sans-serif; font-size:22px; font-weight:700; display:block; }
+.l5-task-metric.before .l5-task-metric-val { color:#ff8888; }
+.l5-task-metric.target .l5-task-metric-val { color:#66dd88; }
+.l5-task-metric-sub { font-size:10px; color:#888; display:block; margin-top:2px; }
+
+/* Task Intro Objectives Preview */
+.l5-task-intro-objectives { padding:14px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:12px; margin-bottom:14px; }
+.l5-task-intro-obj-title { font-size:12px; font-weight:700; color:#88ccff; margin-bottom:8px; }
+.l5-task-intro-obj-item { font-size:12px; color:#ccc; padding:4px 0; display:flex; align-items:center; gap:6px; }
+.l5-task-intro-obj-room { font-size:10px; color:#888; margin-left:auto; }
+
+/* Full Day Period Tags */
+.l5-task-fullday-periods { text-align:center; margin-bottom:14px; }
+.l5-task-fullday-label { font-size:12px; font-weight:700; color:#f5a623; margin-bottom:6px; }
+.l5-task-period-tag { display:inline-flex; align-items:center; gap:4px; background:rgba(245,166,35,0.08); border:1px solid rgba(245,166,35,0.2); border-radius:8px; padding:4px 10px; font-size:11px; color:#f5a623; font-weight:600; margin:2px 4px; }
+
+.l5-task-intro-btn { width:100%; background:linear-gradient(135deg,#2563eb,#3b82f6); border:none; color:#fff; padding:16px; border-radius:14px; font-size:16px; font-weight:700; font-family:'Fredoka',sans-serif; cursor:pointer; box-shadow:0 0 24px rgba(59,130,246,0.3); transition:all 0.2s; margin-top:4px; }
+.l5-task-intro-btn:hover { transform:scale(1.03); box-shadow:0 0 36px rgba(59,130,246,0.5); }
+
+/* ─── Task Active: 3D HUD Overlays ─── */
+.l5-hud-task-badge { display:inline-flex; align-items:center; gap:4px; background:rgba(59,130,246,0.15); border:1px solid rgba(59,130,246,0.3); color:#88ccff; padding:4px 12px; border-radius:8px; font-size:11px; font-weight:700; }
+
+/* Live Energy HUD (bottom-left during 3D) */
+.l5-task-energy-hud { position:absolute; bottom:60px; left:12px; z-index:20; width:280px; background:rgba(5,10,20,0.92); border:1px solid rgba(34,197,94,0.2); border-radius:14px; padding:12px 14px; backdrop-filter:blur(6px); }
+.l5-energy-bar-row { display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+.l5-energy-icon { font-size:16px; flex-shrink:0; }
+.l5-energy-bar-track { flex:1; height:10px; background:rgba(255,255,255,0.08); border-radius:5px; overflow:hidden; }
+.l5-energy-bar-fill { height:100%; border-radius:5px; transition:width 0.5s ease, background 0.3s; }
+.l5-energy-val { font-family:'Fredoka',sans-serif; font-size:14px; font-weight:700; color:#f5a623; min-width:50px; text-align:right; }
+.l5-energy-stats-row { display:flex; justify-content:space-between; gap:4px; }
+.l5-energy-mini { font-size:9px; color:#888; font-weight:600; }
+
+/* Gameplay Message Banner (floating above energy HUD) */
+.l5-gameplay-msg { display:flex; align-items:center; gap:6px; padding:8px 12px; border-radius:10px; background:rgba(5,10,20,0.9); border:1px solid rgba(255,255,255,0.15); font-size:13px; font-weight:700; color:#fff; margin-top:8px; animation:l5-msg-slide-in 0.4s ease; }
+@keyframes l5-msg-slide-in { from { opacity:0; transform:translateX(-20px); } to { opacity:1; transform:translateX(0); } }
+
+/* Task Objectives Checklist (right side during 3D) */
+.l5-task-objectives { position:absolute; top:95px; right:12px; z-index:20; width:220px; background:rgba(5,10,20,0.92); border:1px solid rgba(59,130,246,0.2); border-radius:14px; padding:10px 12px; backdrop-filter:blur(6px); }
+.l5-obj-title { font-size:11px; font-weight:700; color:#88ccff; margin-bottom:6px; letter-spacing:0.5px; }
+.l5-obj-item { display:flex; align-items:center; gap:6px; padding:5px 0; font-size:11px; color:#bbb; transition:all 0.3s; border-bottom:1px solid rgba(255,255,255,0.03); }
+.l5-obj-item:last-child { border-bottom:none; }
+.l5-obj-item.done { color:#22c55e; text-decoration:line-through; opacity:0.7; }
+.l5-obj-check { font-size:12px; flex-shrink:0; width:16px; }
+.l5-obj-label { flex:1; line-height:1.3; }
+.l5-obj-room { font-size:9px; color:#666; white-space:nowrap; }
+
+/* Task Interaction Message (center popup during 3D) */
+.l5-task-interaction-msg { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); z-index:25; max-width:420px; width:88%; padding:16px 20px; border-radius:16px; backdrop-filter:blur(10px); animation:l5-interaction-pop 0.5s cubic-bezier(0.34,1.56,0.64,1); text-align:center; }
+@keyframes l5-interaction-pop { from { opacity:0; transform:translate(-50%,-50%) scale(0.7); } to { opacity:1; transform:translate(-50%,-50%) scale(1); } }
+.l5-task-interaction-msg.success { background:rgba(34,197,94,0.15); border:2px solid rgba(34,197,94,0.4); }
+.l5-task-interaction-msg.warning { background:rgba(239,68,68,0.12); border:2px solid rgba(239,68,68,0.35); }
+.l5-task-interaction-msg.danger { background:rgba(239,68,68,0.18); border:2px solid rgba(239,68,68,0.5); animation:l5-interaction-pop 0.5s cubic-bezier(0.34,1.56,0.64,1), l5-crisis-shake 0.5s ease; }
+.l5-task-interaction-msg.phantom { background:rgba(245,166,35,0.12); border:2px solid rgba(245,166,35,0.35); }
+.l5-task-interaction-msg.info { background:rgba(59,130,246,0.12); border:2px solid rgba(59,130,246,0.3); }
+.l5-interaction-msg-text { font-size:15px; font-weight:700; color:#fff; line-height:1.5; text-shadow:0 1px 3px rgba(0,0,0,0.5); }
+
+/* Nearest Appliance Hint (bottom center during 3D) */
+.l5-nearest-hint { position:absolute; bottom:20px; left:50%; transform:translateX(-50%); z-index:20; padding:8px 18px; border-radius:10px; background:rgba(5,10,20,0.85); border:1px solid rgba(34,197,94,0.3); font-size:12px; color:#88ccbb; font-weight:600; white-space:nowrap; animation:l5-hint-pulse 2s ease infinite; }
+@keyframes l5-hint-pulse { 0%,100% { box-shadow:0 0 8px rgba(34,197,94,0.1); } 50% { box-shadow:0 0 18px rgba(34,197,94,0.3); } }
+
+/* Full Day Period HUD (below top bar during 3D) */
+.l5-fullday-period-hud { position:absolute; top:90px; left:50%; transform:translateX(-50%); z-index:20; display:flex; gap:6px; padding:8px 14px; background:rgba(5,10,20,0.92); border:1px solid rgba(245,166,35,0.2); border-radius:12px; backdrop-filter:blur(6px); }
+.l5-period-dot { display:flex; flex-direction:column; align-items:center; gap:2px; padding:4px 10px; border-radius:8px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.06); transition:all 0.3s; font-size:14px; }
+.l5-period-dot span { font-size:8px; font-weight:700; color:#888; text-transform:uppercase; white-space:nowrap; }
+.l5-period-dot.done { background:rgba(34,197,94,0.1); border-color:rgba(34,197,94,0.3); }
+.l5-period-dot.done span { color:#22c55e; }
+.l5-period-dot.active { background:rgba(245,166,35,0.12); border-color:rgba(245,166,35,0.4); box-shadow:0 0 12px rgba(245,166,35,0.2); animation:l5-dot-pulse 1.5s ease infinite; }
+.l5-period-dot.active span { color:#f5a623; }
+
+/* ─── Task Result Screen ─── */
+.l5-task-result-overlay { position:absolute; inset:0; z-index:50; display:flex; align-items:center; justify-content:center; background:radial-gradient(ellipse at center,#0a2a1a 0%,#050a15 70%); overflow-y:auto; padding:50px 16px 20px; }
+.l5-task-result-card { background:linear-gradient(145deg,#0a1a2a,#061018); border:2px solid rgba(34,197,94,0.3); border-radius:20px; padding:28px; max-width:480px; width:100%; text-align:center; animation:l5-popup-bounce 0.5s ease; }
+.l5-task-result-badge { display:inline-block; background:linear-gradient(135deg,rgba(34,197,94,0.15),rgba(136,204,187,0.1)); border:1px solid rgba(34,197,94,0.3); color:#22c55e; padding:6px 18px; border-radius:24px; font-size:11px; font-weight:800; letter-spacing:3px; text-transform:uppercase; margin-bottom:10px; }
+.l5-task-result-icon { font-size:56px; margin-bottom:6px; }
+.l5-task-result-title { font-family:'Fredoka',sans-serif; font-size:22px; font-weight:700; color:#fff; margin-bottom:16px; }
+
+/* Before/After Comparison */
+.l5-task-result-compare { display:flex; align-items:stretch; gap:8px; margin-bottom:16px; }
+.l5-task-result-col { flex:1; padding:14px 12px; border-radius:14px; text-align:center; }
+.l5-task-result-col.before { background:rgba(239,68,68,0.08); border:1px solid rgba(239,68,68,0.2); }
+.l5-task-result-col.after { background:rgba(34,197,94,0.08); border:1px solid rgba(34,197,94,0.2); }
+.l5-task-result-col-label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:1px; margin-bottom:10px; }
+.l5-task-result-col.before .l5-task-result-col-label { color:#ff8888; }
+.l5-task-result-col.after .l5-task-result-col-label { color:#22c55e; }
+.l5-task-result-arrow { display:flex; align-items:center; font-size:24px; color:#22c55e; }
+.l5-task-result-stat { display:flex; align-items:center; gap:6px; padding:4px 0; font-size:13px; }
+.l5-task-result-col.before .l5-task-result-stat { color:#ff8888; }
+.l5-task-result-col.after .l5-task-result-stat { color:#66dd88; }
+.l5-task-result-stat span { font-size:14px; }
+
+/* Savings Highlight */
+.l5-task-result-savings { padding:14px; background:rgba(34,197,94,0.08); border:1px solid rgba(34,197,94,0.2); border-radius:12px; margin-bottom:14px; }
+.l5-task-result-saving-item { font-size:13px; color:#88ccbb; padding:3px 0; }
+.l5-task-result-saving-item strong { color:#22c55e; font-family:'Fredoka',sans-serif; }
+
+/* Full Day Results */
+.l5-fullday-results { padding:12px; background:rgba(245,166,35,0.06); border:1px solid rgba(245,166,35,0.15); border-radius:12px; margin-bottom:14px; }
+.l5-fullday-results-title { font-size:12px; font-weight:700; color:#f5a623; margin-bottom:8px; }
+.l5-fullday-result-row { display:flex; align-items:center; justify-content:space-between; padding:5px 0; font-size:12px; color:#ccc; border-bottom:1px solid rgba(255,255,255,0.04); }
+.l5-fullday-result-row:last-child { border-bottom:none; }
+.l5-fullday-result-watts { color:#22c55e; font-weight:700; font-size:11px; }
+
+.l5-task-result-btn { width:100%; background:linear-gradient(135deg,#16a34a,#22c55e); border:none; color:#fff; padding:14px; border-radius:12px; font-size:15px; font-weight:700; font-family:'Fredoka',sans-serif; cursor:pointer; box-shadow:0 0 16px rgba(34,197,94,0.3); transition:all 0.2s; }
+.l5-task-result-btn:hover { transform:scale(1.02); box-shadow:0 0 24px rgba(34,197,94,0.5); }
+
+/* ─── Task Learning Screen ─── */
+.l5-task-learning-overlay { position:absolute; inset:0; z-index:50; display:flex; align-items:center; justify-content:center; background:radial-gradient(ellipse at center,#0a2a1a 0%,#050a15 70%); overflow-y:auto; padding:50px 16px 20px; }
+.l5-task-learning-card { background:linear-gradient(145deg,#0a1a2a,#061018); border:2px solid rgba(34,197,94,0.3); border-radius:20px; padding:28px; max-width:460px; width:100%; text-align:center; animation:l5-popup-bounce 0.5s ease; }
+.l5-task-learning-badge { display:inline-block; background:linear-gradient(135deg,rgba(34,197,94,0.15),rgba(136,204,187,0.1)); border:1px solid rgba(34,197,94,0.3); color:#22c55e; padding:6px 18px; border-radius:24px; font-size:11px; font-weight:800; letter-spacing:3px; text-transform:uppercase; margin-bottom:10px; }
+.l5-task-learning-icon { font-size:56px; margin-bottom:6px; filter:drop-shadow(0 0 20px rgba(34,197,94,0.4)); }
+.l5-task-learning-title { font-family:'Fredoka',sans-serif; font-size:20px; font-weight:700; color:#fff; margin-bottom:14px; }
+.l5-task-learning-msg { margin-bottom:14px; }
+
+/* Subtle Prompt */
+.l5-task-subtle-prompt { padding:12px 16px; background:rgba(168,85,247,0.08); border:1px solid rgba(168,85,247,0.2); border-radius:12px; font-size:13px; color:#c4b5fd; font-style:italic; line-height:1.5; margin-bottom:14px; display:flex; align-items:center; gap:8px; text-align:left; animation:l5-fade-in 0.8s ease 0.3s both; }
+.l5-task-subtle-prompt span { font-size:24px; flex-shrink:0; }
+
+/* Task Learning Reward */
+.l5-task-learning-reward { padding:10px; background:rgba(245,166,35,0.08); border:1px solid rgba(245,166,35,0.2); border-radius:10px; font-size:13px; font-weight:700; color:#f5a623; margin-bottom:12px; }
+
+.l5-task-learning-btn { width:100%; background:linear-gradient(135deg,#16a34a,#22c55e); border:none; color:#fff; padding:14px; border-radius:12px; font-size:15px; font-weight:700; font-family:'Fredoka',sans-serif; cursor:pointer; box-shadow:0 0 16px rgba(34,197,94,0.3); transition:all 0.2s; }
+.l5-task-learning-btn:hover { transform:scale(1.02); box-shadow:0 0 24px rgba(34,197,94,0.5); }
+
+/* ─── Dashboard Additions ─── */
+.l5-dash-final-msg { text-align:center; padding:14px; background:linear-gradient(135deg,rgba(34,197,94,0.1),rgba(59,130,246,0.08)); border:1px solid rgba(34,197,94,0.25); border-radius:14px; font-size:16px; font-weight:700; color:#22c55e; margin-bottom:16px; font-family:'Fredoka',sans-serif; animation:l5-glow-pulse 2s ease infinite; }
+
+.l5-dash-task-summary { margin-bottom:16px; }
+.l5-dash-task-total { text-align:center; padding:8px; background:rgba(34,197,94,0.06); border-radius:8px; font-size:13px; font-weight:700; color:#22c55e; margin-top:8px; }
+
+/* ─── Scrollbar additions for new cards ─── */
+.l5-task-intro-card::-webkit-scrollbar, .l5-task-result-card::-webkit-scrollbar,
+.l5-task-learning-card::-webkit-scrollbar { width:4px; }
+.l5-task-intro-card::-webkit-scrollbar-thumb, .l5-task-result-card::-webkit-scrollbar-thumb,
+.l5-task-learning-card::-webkit-scrollbar-thumb { background:rgba(34,197,94,0.3); border-radius:2px; }
