@@ -626,13 +626,13 @@ export default function Level2() {
       <LevelIntro
         levelNumber={2}
         levelTitle="The Energy Meter"
-        levelIcon="\u{26A1}"
+        levelIcon="⚡"
         objective="Explore your home with a powerful new tool — the Energy Meter. Walk through each room, toggle appliances ON and OFF, and watch how each one affects electricity usage, bills, and the environment in real-time."
         learningOutcome="By the end of this level, you will understand how much electricity each appliance uses (in Watts), how energy consumption translates to monthly bills, and how to identify and stop energy waste in your home."
         terms={[
-          { icon: '\u{26A1}', name: 'Watts', definition: 'Watts tell you how much electricity an appliance uses at any moment. Higher watts = more electricity consumed.', example: 'AC uses 1500W while a fan uses only 75W' },
-          { icon: '\u{1F50B}', name: 'Energy Consumption', definition: 'The total amount of electricity used over time. It is measured in kilowatt-hours (kWh) and determines your monthly usage.', example: 'Running a 1000W heater for 1 hour = 1 kWh' },
-          { icon: '\u{1F4B0}', name: 'Electricity Bill', definition: 'The money you pay for the electricity your home uses each month. The more appliances you run, the higher the bill.', example: 'A home using 300 kWh/month pays around \u20B92,000' },
+          { icon: '⚡', name: 'Watts', definition: 'Watts tell you how much electricity an appliance uses at any moment. Higher watts = more electricity consumed.', example: 'AC uses 1500W while a fan uses only 75W' },
+          { icon: '🔋', name: 'Energy Consumption', definition: 'The total amount of electricity used over time. It is measured in kilowatt-hours (kWh) and determines your monthly usage.', example: 'Running a 1000W heater for 1 hour = 1 kWh' },
+          { icon: '💰', name: 'Electricity Bill', definition: 'The money you pay for the electricity your home uses each month. The more appliances you run, the higher the bill.', example: 'A home using 300 kWh/month pays around ₹2,000' },
         ]}
         onComplete={() => setShowLevelIntro(false)}
       />

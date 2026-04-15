@@ -858,13 +858,13 @@ export default function Level1() {
       <LevelIntro
         levelNumber={1}
         levelTitle="Home Energy Audit"
-        levelIcon="\u{1F3E0}"
+        levelIcon="🏠"
         objective="Walk through your virtual home and discover the appliances that power your daily life. Learn how each device works, what it does, and how much electricity it uses."
         learningOutcome="By the end of this level, you will understand what household appliances are, how to interact with them, and why knowing about them matters for energy awareness."
         terms={[
-          { icon: '\u{1F9E9}', name: 'Appliance', definition: 'A device in your home that uses electricity to perform a task — like a fan, TV, or fridge.', example: 'A ceiling fan is an appliance that cools the room' },
-          { icon: '\u{1F3AE}', name: 'Interaction', definition: 'When you do something with an object in the game — like walking up to it and pressing a button to learn about it.', example: 'Press E near an appliance to interact' },
-          { icon: '\u{1F7E2}', name: 'Activation', definition: 'Turning something ON so it starts working and begins using electricity.', example: 'When you turn ON the AC, it starts consuming 1500W' },
+          { icon: '🧩', name: 'Appliance', definition: 'A device in your home that uses electricity to perform a task — like a fan, TV, or fridge.', example: 'A ceiling fan is an appliance that cools the room' },
+          { icon: '🎮', name: 'Interaction', definition: 'When you do something with an object in the game — like walking up to it and pressing a button to learn about it.', example: 'Press E near an appliance to interact' },
+          { icon: '🟢', name: 'Activation', definition: 'Turning something ON so it starts working and begins using electricity.', example: 'When you turn ON the AC, it starts consuming 1500W' },
         ]}
         onComplete={() => setShowLevelIntro(false)}
       />

@@ -533,13 +533,13 @@ export default function Level5() {
         <LevelIntro
           levelNumber={5}
           levelTitle="Smart Sustainable Home"
-          levelIcon="\u{1F3D8}\u{FE0F}"
+          levelIcon="🏘️"
           objective="Take charge of an entire smart home as the Chief Sustainability Engineer. Purchase, place, and manage 5 advanced eco-friendly appliances across multiple stages to build the ultimate energy-efficient home."
           learningOutcome="By the end of this level, you will master energy efficiency, learn how to optimize appliance usage for minimum waste, and understand load management to balance electricity demand across your home."
           terms={[
-            { icon: '\u{2699}\u{FE0F}', name: 'Efficiency', definition: 'Getting the most useful work done while using the least amount of energy. An efficient home wastes very little electricity.', example: 'An inverter AC is more efficient than a regular AC' },
-            { icon: '\u{1F9E0}', name: 'Optimization', definition: 'Using your resources in the smartest possible way \u{2014} choosing the right appliance, the right time, and the right settings to save energy.', example: 'Running the washing machine during solar peak hours' },
-            { icon: '\u{1F4CA}', name: 'Load Management', definition: 'Controlling how much electricity is used at any given time by spreading out heavy appliance usage and avoiding peak overload.', example: 'Don\u{2019}t run AC, geyser, and washing machine all at once' },
+            { icon: '⚙️', name: 'Efficiency', definition: 'Getting the most useful work done while using the least amount of energy. An efficient home wastes very little electricity.', example: 'An inverter AC is more efficient than a regular AC' },
+            { icon: '🧠', name: 'Optimization', definition: 'Using your resources in the smartest possible way — choosing the right appliance, the right time, and the right settings to save energy.', example: 'Running the washing machine during solar peak hours' },
+            { icon: '📊', name: 'Load Management', definition: 'Controlling how much electricity is used at any given time by spreading out heavy appliance usage and avoiding peak overload.', example: "Don't run AC, geyser, and washing machine all at once" },
           ]}
           onComplete={() => setShowLevelIntro(false)}
         />

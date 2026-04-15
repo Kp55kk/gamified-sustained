@@ -263,13 +263,13 @@ export default function Level4() {
       <LevelIntro
         levelNumber={4}
         levelTitle="Solar Revolution"
-        levelIcon="\u{2600}\u{FE0F}"
+        levelIcon="☀️"
         objective="Install solar panels on your home's roof, optimize their angle for maximum sunlight, and discover how renewable energy can power your entire house while reducing pollution and electricity bills."
         learningOutcome="By the end of this level, you will understand how solar energy works, how to store it in batteries for night use, and how clean energy can restore the environment and save money."
         terms={[
-          { icon: '\u{2600}\u{FE0F}', name: 'Solar Energy', definition: 'Energy captured from sunlight using solar panels. It is clean, free, and does not create any pollution or CO\u{2082} emissions.', example: '6 solar panels can generate enough power for most homes' },
-          { icon: '\u{1F50B}', name: 'Energy Storage', definition: 'Saving excess solar energy in batteries during the day so you can use it at night when there is no sunlight.', example: 'A battery charged at noon can power lights all night' },
-          { icon: '\u{26A1}', name: 'Clean Energy', definition: 'Energy that comes from natural sources like sunlight, wind, or water. It does not pollute the air or harm the environment.', example: 'Solar and wind are clean; coal and gas are not' },
+          { icon: '☀️', name: 'Solar Energy', definition: 'Energy captured from sunlight using solar panels. It is clean, free, and does not create any pollution or CO₂ emissions.', example: '6 solar panels can generate enough power for most homes' },
+          { icon: '🔋', name: 'Energy Storage', definition: 'Saving excess solar energy in batteries during the day so you can use it at night when there is no sunlight.', example: 'A battery charged at noon can power lights all night' },
+          { icon: '⚡', name: 'Clean Energy', definition: 'Energy that comes from natural sources like sunlight, wind, or water. It does not pollute the air or harm the environment.', example: 'Solar and wind are clean; coal and gas are not' },
         ]}
         onComplete={() => setShowLevelIntro(false)}
       />

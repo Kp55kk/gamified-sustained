@@ -392,13 +392,13 @@ export default function Level3() {
       <LevelIntro
         levelNumber={3}
         levelTitle="The Carbon Crisis"
-        levelIcon="\u{1F30D}"
-        objective="Discover the hidden environmental cost of electricity. See how every appliance you turn ON releases CO\u{2082} into the atmosphere, damages the environment around your home, and contributes to climate change."
-        learningOutcome="By the end of this level, you will understand what CO\u{2082} emissions are, how your daily electricity usage creates pollution, and why reducing your carbon footprint matters for the planet."
+        levelIcon="🌍"
+        objective="Discover the hidden environmental cost of electricity. See how every appliance you turn ON releases CO₂ into the atmosphere, damages the environment around your home, and contributes to climate change."
+        learningOutcome="By the end of this level, you will understand what CO₂ emissions are, how your daily electricity usage creates pollution, and why reducing your carbon footprint matters for the planet."
         terms={[
-          { icon: '\u{1F30D}', name: 'CO\u{2082} Emission', definition: 'Carbon dioxide (CO\u{2082}) is a harmful gas released into the air when electricity is generated from fossil fuels like coal and gas.', example: 'Using 100 kWh of electricity produces about 71 kg of CO\u{2082}' },
-          { icon: '\u{1F32B}\u{FE0F}', name: 'Pollution', definition: 'The harmful effect on our environment caused by burning fossil fuels. More electricity use means more air, water, and soil pollution.', example: 'Running AC all day creates more pollution than a ceiling fan' },
-          { icon: '\u{1F525}', name: 'Carbon Impact', definition: 'The total amount of environmental damage caused by your energy usage. Every watt consumed adds to your carbon footprint.', example: 'A geyser has 10x more carbon impact than an LED light' },
+          { icon: '🌍', name: 'CO₂ Emission', definition: 'Carbon dioxide (CO₂) is a harmful gas released into the air when electricity is generated from fossil fuels like coal and gas.', example: 'Using 100 kWh of electricity produces about 71 kg of CO₂' },
+          { icon: '🌫️', name: 'Pollution', definition: 'The harmful effect on our environment caused by burning fossil fuels. More electricity use means more air, water, and soil pollution.', example: 'Running AC all day creates more pollution than a ceiling fan' },
+          { icon: '🔥', name: 'Carbon Impact', definition: 'The total amount of environmental damage caused by your energy usage. Every watt consumed adds to your carbon footprint.', example: 'A geyser has 10x more carbon impact than an LED light' },
         ]}
         onComplete={() => setShowLevelIntro(false)}
       />
