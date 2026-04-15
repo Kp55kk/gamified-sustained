@@ -275,8 +275,8 @@
     },
     "Bathroom": {
       "name": "📍 Bathroom",
-      "display_text": "The bathroom has the water purifier and the geyser. The geyser uses 2000 watts — one of the highest in the house! 🚿🔥",
-      "voice_text": "The bathroom has the water purifier and the geyser. The geyser uses 2000 watts."
+      "display_text": "The bathroom has the washing machine and the geyser. The geyser uses 2000 watts — one of the highest in the house! 🚿🔥",
+      "voice_text": "The bathroom has the washing machine and the geyser. The geyser uses 2000 watts."
     }
   },
   "level2": {
