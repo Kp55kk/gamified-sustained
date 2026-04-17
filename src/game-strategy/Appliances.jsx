@@ -72,19 +72,19 @@ function TV({ onClick, active }) {
     <group position={p.pos} rotation={p.rot} onClick={onClick}>
       <mesh position={[0, -0.55, 0]} castShadow>
         <boxGeometry args={[0.6, 0.04, 0.25]} />
-        <meshStandardMaterial color="#222" metalness={0.5} roughness={0.3} />
+        <meshStandardMaterial color="#1a1a1a" metalness={0.6} roughness={0.2} />
       </mesh>
       <mesh position={[0, -0.35, 0]} castShadow>
         <cylinderGeometry args={[0.04, 0.06, 0.4]} />
-        <meshStandardMaterial color="#333" metalness={0.4} />
+        <meshStandardMaterial color="#2c2c2c" metalness={0.5} />
       </mesh>
       <mesh position={[0, 0, 0]} castShadow>
         <boxGeometry args={[1.8, 1.0, 0.07]} />
-        <meshStandardMaterial color="#111" roughness={0.3} />
+        <meshStandardMaterial color="#0a0a0a" roughness={0.15} metalness={0.3} />
       </mesh>
       <mesh position={[0, 0, 0.04]}>
         <planeGeometry args={[1.65, 0.88]} />
-        <meshStandardMaterial color="#1a2a4a" emissive="#1a2a4a" emissiveIntensity={0.4} />
+        <meshStandardMaterial color="#0d1b3e" emissive="#1e3a6e" emissiveIntensity={0.5} />
       </mesh>
 
     </group>
@@ -97,15 +97,15 @@ function AC({ onClick, active }) {
     <group position={p.pos} rotation={p.rot} onClick={onClick}>
       <mesh castShadow>
         <boxGeometry args={[1.3, 0.32, 0.22]} />
-        <meshStandardMaterial color="#f5f5f5" roughness={0.4} />
+        <meshStandardMaterial color="#f0f0f0" roughness={0.3} metalness={0.15} />
       </mesh>
       <mesh position={[0, -0.08, 0.12]}>
         <boxGeometry args={[1.1, 0.1, 0.01]} />
-        <meshStandardMaterial color="#e0e0e0" roughness={0.5} />
+        <meshStandardMaterial color="#d4d4d4" roughness={0.4} />
       </mesh>
       <mesh position={[0.5, 0.1, 0.12]}>
         <sphereGeometry args={[0.02]} />
-        <meshStandardMaterial color="#22c55e" emissive="#22c55e" emissiveIntensity={2} />
+        <meshStandardMaterial color="#00e676" emissive="#00e676" emissiveIntensity={2.5} />
       </mesh>
 
     </group>
@@ -123,11 +123,11 @@ function CeilingFan({ onClick, active }) {
     <group position={p.pos} onClick={onClick}>
       <mesh position={[0, 0.07, 0]}>
         <cylinderGeometry args={[0.03, 0.03, 0.15]} />
-        <meshStandardMaterial color="#888" metalness={0.6} />
+        <meshStandardMaterial color="#b8860b" metalness={0.7} roughness={0.3} />
       </mesh>
       <mesh>
         <cylinderGeometry args={[0.12, 0.12, 0.08, 16]} />
-        <meshStandardMaterial color="#ddd" metalness={0.3} />
+        <meshStandardMaterial color="#cd853f" metalness={0.4} roughness={0.3} />
       </mesh>
       <group ref={bladeRef}>
         {[0, 72, 144, 216, 288].map((deg) => (
@@ -135,7 +135,7 @@ function CeilingFan({ onClick, active }) {
             position={[Math.cos(deg * Math.PI / 180) * 0.5, -0.02, Math.sin(deg * Math.PI / 180) * 0.5]}
             rotation={[0, -deg * Math.PI / 180, 0]}>
             <boxGeometry args={[0.8, 0.02, 0.15]} />
-            <meshStandardMaterial color="#8B6914" roughness={0.6} />
+            <meshStandardMaterial color="#5c3317" roughness={0.5} />
           </mesh>
         ))}
       </group>
@@ -148,14 +148,14 @@ function LEDBulb({ onClick, active }) {
   return (
     <group position={p.pos} onClick={onClick}>
       <mesh>
-        <sphereGeometry args={[0.1, 16, 16]} />
-        <meshStandardMaterial color="#fffbe6" emissive="#fffbe6" emissiveIntensity={1.5} />
+        <sphereGeometry args={[0.12, 16, 16]} />
+        <meshStandardMaterial color="#fff8dc" emissive="#ffdd57" emissiveIntensity={1.8} />
       </mesh>
-      <mesh position={[0, 0.06, 0]}>
-        <cylinderGeometry args={[0.04, 0.06, 0.05]} />
-        <meshStandardMaterial color="#ccc" />
+      <mesh position={[0, 0.08, 0]}>
+        <cylinderGeometry args={[0.04, 0.07, 0.06]} />
+        <meshStandardMaterial color="#b0b0b0" metalness={0.7} roughness={0.2} />
       </mesh>
-      <pointLight position={[0, -0.2, 0]} intensity={0.8} distance={6} color="#fff5e0" />
+      <pointLight position={[0, -0.2, 0]} intensity={1.0} distance={7} color="#ffe4a0" />
     </group>
   );
 }
@@ -166,19 +166,19 @@ function Fridge({ onClick, active }) {
     <group position={p.pos} rotation={p.rot} onClick={onClick}>
       <mesh position={[0, 0, 0]} castShadow>
         <boxGeometry args={[0.7, 1.8, 0.65]} />
-        <meshStandardMaterial color="#e8e8e8" roughness={0.4} metalness={0.2} />
+        <meshStandardMaterial color="#c0c0c0" roughness={0.25} metalness={0.35} />
       </mesh>
       <mesh position={[0, 0.2, 0.33]}>
         <boxGeometry args={[0.62, 0.02, 0.01]} />
-        <meshStandardMaterial color="#ccc" />
+        <meshStandardMaterial color="#a0a0a0" metalness={0.4} />
       </mesh>
       <mesh position={[0.28, 0.5, 0.35]} castShadow>
         <boxGeometry args={[0.03, 0.4, 0.04]} />
-        <meshStandardMaterial color="#aaa" metalness={0.6} roughness={0.3} />
+        <meshStandardMaterial color="#888" metalness={0.7} roughness={0.2} />
       </mesh>
       <mesh position={[0.28, -0.3, 0.35]} castShadow>
         <boxGeometry args={[0.03, 0.4, 0.04]} />
-        <meshStandardMaterial color="#aaa" metalness={0.6} roughness={0.3} />
+        <meshStandardMaterial color="#888" metalness={0.7} roughness={0.2} />
       </mesh>
 
     </group>
@@ -191,15 +191,15 @@ function InductionStove({ onClick, active }) {
     <group position={p.pos} rotation={p.rot} onClick={onClick}>
       <mesh castShadow>
         <boxGeometry args={[0.5, 0.05, 0.4]} />
-        <meshStandardMaterial color="#111" roughness={0.2} metalness={0.3} />
+        <meshStandardMaterial color="#1a1a1a" roughness={0.15} metalness={0.4} />
       </mesh>
       <mesh position={[0, 0.03, -0.02]} rotation={[-Math.PI / 2, 0, 0]}>
         <ringGeometry args={[0.08, 0.14, 24]} />
-        <meshStandardMaterial color="#c0392b" emissive="#c0392b" emissiveIntensity={0.3} />
+        <meshStandardMaterial color="#e74c3c" emissive="#ff4500" emissiveIntensity={0.5} />
       </mesh>
       <mesh position={[0, 0.03, 0.13]}>
         <boxGeometry args={[0.3, 0.01, 0.08]} />
-        <meshStandardMaterial color="#222" />
+        <meshStandardMaterial color="#333" metalness={0.3} />
       </mesh>
 
     </group>
@@ -241,22 +241,22 @@ function MixerGrinder({ onClick, active }) {
       {/* Base */}
       <mesh position={[0, 0, 0]} castShadow>
         <boxGeometry args={[0.25, 0.12, 0.2]} />
-        <meshStandardMaterial color="#e0e0e0" roughness={0.3} metalness={0.2} />
+        <meshStandardMaterial color="#b22222" roughness={0.35} metalness={0.2} />
       </mesh>
       {/* Jar */}
       <mesh position={[0, 0.22, 0]} castShadow>
         <cylinderGeometry args={[0.08, 0.1, 0.3, 12]} />
-        <meshStandardMaterial color="#ddd" transparent opacity={0.7} roughness={0.1} />
+        <meshStandardMaterial color="#e8e8e8" transparent opacity={0.75} roughness={0.08} />
       </mesh>
       {/* Lid */}
       <mesh position={[0, 0.38, 0]}>
         <cylinderGeometry args={[0.09, 0.08, 0.04, 12]} />
-        <meshStandardMaterial color="#333" />
+        <meshStandardMaterial color="#2c2c2c" metalness={0.3} />
       </mesh>
       {/* Speed dial */}
       <mesh position={[0.1, 0.03, 0.11]}>
         <cylinderGeometry args={[0.02, 0.02, 0.02, 8]} />
-        <meshStandardMaterial color="#e74c3c" />
+        <meshStandardMaterial color="#ff6347" />
       </mesh>
 
     </group>
@@ -333,15 +333,15 @@ function Geyser({ onClick, active }) {
     <group position={p.pos} rotation={p.rot} onClick={onClick}>
       <mesh castShadow>
         <cylinderGeometry args={[0.2, 0.2, 0.6, 16]} />
-        <meshStandardMaterial color="#f0f0f0" roughness={0.4} />
+        <meshStandardMaterial color="#f5ebe0" roughness={0.35} metalness={0.1} />
       </mesh>
       <mesh position={[0, 0.1, 0.21]}>
         <sphereGeometry args={[0.03]} />
-        <meshStandardMaterial color="#ef4444" emissive="#ef4444" emissiveIntensity={1} />
+        <meshStandardMaterial color="#ff3333" emissive="#ff3333" emissiveIntensity={1.5} />
       </mesh>
       <mesh position={[0, -0.4, 0]}>
         <cylinderGeometry args={[0.025, 0.025, 0.25]} />
-        <meshStandardMaterial color="#aaa" metalness={0.7} />
+        <meshStandardMaterial color="#b87333" metalness={0.8} roughness={0.2} />
       </mesh>
 
     </group>
@@ -360,32 +360,32 @@ function WashingMachine({ onClick, active }) {
       {/* Body */}
       <mesh castShadow>
         <boxGeometry args={[0.65, 0.9, 0.6]} />
-        <meshStandardMaterial color="#eee" roughness={0.4} metalness={0.2} />
+        <meshStandardMaterial color="#e8e8e8" roughness={0.3} metalness={0.25} />
       </mesh>
       {/* Door - round glass */}
       <mesh position={[0, -0.05, 0.31]}>
         <cylinderGeometry args={[0.2, 0.2, 0.02, 24]} />
-        <meshStandardMaterial color="#aaddee" transparent opacity={0.5} roughness={0.1} />
+        <meshStandardMaterial color="#87ceeb" transparent opacity={0.55} roughness={0.08} />
       </mesh>
       {/* Door ring */}
       <mesh position={[0, -0.05, 0.32]}>
         <ringGeometry args={[0.18, 0.22, 24]} />
-        <meshStandardMaterial color="#999" metalness={0.5} side={THREE.DoubleSide} />
+        <meshStandardMaterial color="#a0a0a0" metalness={0.6} side={THREE.DoubleSide} />
       </mesh>
       {/* Drum visible through glass */}
       <mesh ref={drumRef} position={[0, -0.05, 0.28]} rotation={[Math.PI / 2, 0, 0]}>
         <cylinderGeometry args={[0.15, 0.15, 0.02, 12]} />
-        <meshStandardMaterial color="#ccc" metalness={0.3} />
+        <meshStandardMaterial color="#b0b0b0" metalness={0.4} />
       </mesh>
       {/* Control panel */}
       <mesh position={[0, 0.35, 0.28]}>
         <boxGeometry args={[0.55, 0.15, 0.02]} />
-        <meshStandardMaterial color="#ddd" />
+        <meshStandardMaterial color="#4a90d9" roughness={0.3} />
       </mesh>
       {/* Dial */}
       <mesh position={[0.15, 0.35, 0.3]}>
         <cylinderGeometry args={[0.04, 0.04, 0.02, 12]} />
-        <meshStandardMaterial color="#444" />
+        <meshStandardMaterial color="#333" metalness={0.5} />
       </mesh>
 
     </group>

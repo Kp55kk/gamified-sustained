@@ -99,6 +99,21 @@ function playAchievementSound() {
     osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.6);
   } catch (e) {}
 }
+function playCoinSound() {
+  try {
+    const ctx = getAudioCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(987, ctx.currentTime);
+    osc.frequency.setValueAtTime(1319, ctx.currentTime + 0.08);
+    osc.frequency.setValueAtTime(1568, ctx.currentTime + 0.16);
+    gain.gain.setValueAtTime(0.18, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.45);
+    osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.45);
+  } catch (e) {}
+}
 function playLevelCompleteSound() {
   try {
     const ctx = getAudioCtx();
@@ -151,6 +166,10 @@ const ICONS = {
   checkBox: '\u{2705}',
   emptyBox: '\u{2B1C}',
   mouse: '\u{1F5B1}\u{FE0F}',
+  coin: '\u{1FA99}',
+  sparkles: '\u{2728}',
+  gift: '\u{1F381}',
+  tada: '\u{1F389}',
 };
 
 // ─── Flash Card (Memory Boost) ───
@@ -202,7 +221,40 @@ const CATEGORY_COLORS = {
   'Electronics/Charging': { bg: '#e0e7ff', color: '#4338ca' },
 };
 
-// ─── Screen-Centered Appliance Popup (Section-wise, no BEE, JS emoji) ───
+// ─── Coin Reward Popup ───
+function CoinRewardPopup({ visible, applianceName, points }) {
+  if (!visible) return null;
+  return (
+    <div className="coin-reward-popup">
+      <div className="coin-reward-inner">
+        <div className="coin-reward-coin">{ICONS.coin}</div>
+        <div className="coin-reward-sparkles">{ICONS.sparkles}</div>
+        <div className="coin-reward-text">+{points} Coins!</div>
+        <div className="coin-reward-sub">You discovered <strong>{applianceName}</strong>!</div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Points Display (Top of Screen) ───
+function PointsDisplay({ points, totalDiscovered, total }) {
+  return (
+    <div className="points-display">
+      <div className="points-display-coin">{ICONS.coin}</div>
+      <div className="points-display-info">
+        <div className="points-display-value">{points}</div>
+        <div className="points-display-label">Points</div>
+      </div>
+      <div className="points-display-divider" />
+      <div className="points-display-info">
+        <div className="points-display-value">{totalDiscovered}/{total}</div>
+        <div className="points-display-label">Found</div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Full-Screen Appliance Popup (Kid-Friendly, Colorful) ───
 function ApplianceTooltip({ appliance, onClose, t, langCode }) {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [closing, setClosing] = useState(false);
@@ -220,7 +272,7 @@ function ApplianceTooltip({ appliance, onClose, t, langCode }) {
 
   const handleClose = () => {
     setClosing(true);
-    setTimeout(() => { setClosing(false); onClose(); }, 150);
+    setTimeout(() => { setClosing(false); onClose(); }, 200);
   };
 
   if (!appliance || !data) return null;
@@ -245,80 +297,94 @@ function ApplianceTooltip({ appliance, onClose, t, langCode }) {
   };
 
   return (
-    <div className="popup-overlay" onClick={handleClose}>
+    <div className={`popup-overlay-fullscreen ${closing ? 'closing' : ''}`} onClick={handleClose}>
       <div
-        className={`popup-card ${closing ? 'closing' : ''}`}
+        className={`popup-card-fullscreen ${closing ? 'closing' : ''}`}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* ── Section 1: Identity ── */}
-        <div className="popup-icon">{data.icon || ICONS.zap}</div>
-        <div className="popup-name">{at?.name || data.name}</div>
-        <div className="popup-category" style={{ background: catColors.bg, color: catColors.color }}>
-          {data.category}
-        </div>
+        {/* Floating decorative elements */}
+        <div className="popup-fs-deco popup-fs-deco-1" />
+        <div className="popup-fs-deco popup-fs-deco-2" />
+        <div className="popup-fs-deco popup-fs-deco-3" />
 
-        {/* ── Section 2: Power & Usage ── */}
-        <div className="popup-section">
-          <div className="popup-section-label">{ICONS.zap} Power & Usage</div>
-          <div className="popup-wattage">{data.wattage}W</div>
-          {usageLine && <div className="popup-usage">{usageLine}</div>}
-        </div>
+        {/* Close button */}
+        <button className="popup-fs-close" onClick={handleClose}>{ICONS.close}</button>
 
-        {/* ── Section 3: About ── */}
-        {description && (
-          <div className="popup-section">
-            <div className="popup-section-label">{ICONS.info} About</div>
-            <div className="popup-description-full">{description}</div>
+        {/* Scrollable content */}
+        <div className="popup-fs-scroll">
+          {/* ── Section 1: Identity ── */}
+          <div className="popup-fs-icon-wrap">
+            <div className="popup-fs-icon">{data.icon || ICONS.zap}</div>
           </div>
-        )}
-
-        {/* ── Section 4: Energy Impact (NO BEE rating) ── */}
-        <div className="popup-section">
-          <div className="popup-section-label">{ICONS.leaf} Energy Impact</div>
-          <div className="popup-stats-row">
-            <div className="popup-stat">
-              <div className="popup-stat-value">{annualKwh}</div>
-              <div className="popup-stat-label">{t?.ui?.annualUsage || 'kWh/year'}</div>
-            </div>
-            <div className="popup-stat">
-              <div className="popup-stat-value">{co2PerYear}</div>
-              <div className="popup-stat-label">{t?.ui?.co2Emissions || 'kg CO\u2082/yr'}</div>
-            </div>
+          <div className="popup-fs-name">{at?.name || data.name}</div>
+          <div className="popup-fs-category" style={{ background: catColors.bg, color: catColors.color }}>
+            {data.category}
           </div>
-        </div>
 
-        {/* ── Section 5: Energy Saving Tip ── */}
-        {energyTip && (
-          <div className="popup-section">
-            <div className="popup-tip-box">
-              <div className="popup-tip-label">{ICONS.bulb} {t?.ui?.energySavingTip || 'Energy Saving Tip'}</div>
-              <div className="popup-tip-text">{energyTip}</div>
-            </div>
+          {/* ── Section 2: Power & Usage ── */}
+          <div className="popup-fs-section">
+            <div className="popup-fs-section-label">{ICONS.zap} POWER & USAGE</div>
+            <div className="popup-fs-wattage">{data.wattage}W</div>
+            {usageLine && <div className="popup-fs-usage">{usageLine}</div>}
           </div>
-        )}
 
-        {/* ── Section 6: Fun Fact ── */}
-        {funFact && (
-          <div className="popup-section">
-            <div className="popup-funfact-box">
-              <div className="popup-funfact-label">{ICONS.think} {t?.ui?.didYouKnow || 'Did You Know?'}</div>
-              <div className="popup-funfact-text">{funFact}</div>
+          {/* ── Section 3: About ── */}
+          {description && (
+            <div className="popup-fs-section">
+              <div className="popup-fs-section-label">{ICONS.info} ABOUT</div>
+              <div className="popup-fs-description">{description}</div>
             </div>
-          </div>
-        )}
-
-        {/* ── Bottom row ── */}
-        <div className="popup-bottom-row">
-          {langCode === 'en' && (
-            <button
-              className={`popup-speaker ${isSpeaking ? 'speaking' : ''}`}
-              onClick={handleReplay}
-            >
-              {ICONS.speaker}
-            </button>
           )}
-          <div style={{ flex: 1 }} />
-          <button className="popup-close-btn" onClick={handleClose}>{ICONS.close}</button>
+
+          {/* ── Section 4: Energy Impact ── */}
+          <div className="popup-fs-section">
+            <div className="popup-fs-section-label">{ICONS.leaf} ENERGY IMPACT</div>
+            <div className="popup-fs-stats-row">
+              <div className="popup-fs-stat">
+                <div className="popup-fs-stat-value">{annualKwh}</div>
+                <div className="popup-fs-stat-label">{t?.ui?.annualUsage || 'kWh/year'}</div>
+              </div>
+              <div className="popup-fs-stat">
+                <div className="popup-fs-stat-value">{co2PerYear}</div>
+                <div className="popup-fs-stat-label">{t?.ui?.co2Emissions || 'kg CO\u2082/yr'}</div>
+              </div>
+            </div>
+          </div>
+
+          {/* ── Section 5: Energy Saving Tip ── */}
+          {energyTip && (
+            <div className="popup-fs-section">
+              <div className="popup-fs-tip-box">
+                <div className="popup-fs-tip-label">{ICONS.bulb} {t?.ui?.energySavingTip || 'Energy Saving Tip'}</div>
+                <div className="popup-fs-tip-text">{energyTip}</div>
+              </div>
+            </div>
+          )}
+
+          {/* ── Section 6: Fun Fact ── */}
+          {funFact && (
+            <div className="popup-fs-section">
+              <div className="popup-fs-funfact-box">
+                <div className="popup-fs-funfact-label">{ICONS.think} {t?.ui?.didYouKnow || 'Did You Know?'}</div>
+                <div className="popup-fs-funfact-text">{funFact}</div>
+              </div>
+            </div>
+          )}
+
+          {/* ── Bottom row ── */}
+          <div className="popup-fs-bottom-row">
+            {langCode === 'en' && (
+              <button
+                className={`popup-fs-speaker ${isSpeaking ? 'speaking' : ''}`}
+                onClick={handleReplay}
+              >
+                {ICONS.speaker} Listen
+              </button>
+            )}
+            <button className="popup-fs-close-btn" onClick={handleClose}>
+              Got it! {ICONS.thumbsUp}
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -687,6 +753,11 @@ export default function Level1() {
 
   // Rewards
   const [stars, setStars] = useState(0);
+  const [totalPoints, setTotalPoints] = useState(0);
+
+  // Coin reward popup
+  const [showCoinReward, setShowCoinReward] = useState(false);
+  const [coinRewardName, setCoinRewardName] = useState('');
 
   // Achievements
   const [unlockedAchievements, setUnlockedAchievements] = useState(new Set());
@@ -756,6 +827,13 @@ export default function Level1() {
 
       if (wasNew) {
         setStars(s => s + 1);
+        // Award 10 coins for first discovery
+        setTotalPoints(p => p + 10);
+        playCoinSound();
+        setCoinRewardName(data.name);
+        setShowCoinReward(true);
+        setTimeout(() => setShowCoinReward(false), 2200);
+
         const newCount = next.size;
 
         if (newCount === 1) triggerAchievement('interact_1');
@@ -913,6 +991,9 @@ export default function Level1() {
             <div className="hud-instructions">{t?.ui?.homeAuditMission || `${ICONS.house} Home Audit Mission`}</div>
           </div>
 
+          {/* Points Display */}
+          <PointsDisplay points={totalPoints} totalDiscovered={interacted.size} total={INTERACTABLE_IDS.length} />
+
           {/* Stars */}
           <RewardsDisplay stars={stars} />
 
@@ -956,6 +1037,11 @@ export default function Level1() {
       {/* Achievement Toast - hidden during quiz */}
       {!showFullQuiz && !showLevelComplete && (
         <AchievementToast achievement={currentAchievement} visible={showAchievement} t={t} />
+      )}
+
+      {/* Coin Reward Popup */}
+      {!showFullQuiz && !showLevelComplete && (
+        <CoinRewardPopup visible={showCoinReward} applianceName={coinRewardName} points={10} />
       )}
 
       {/* Full Quiz */}
