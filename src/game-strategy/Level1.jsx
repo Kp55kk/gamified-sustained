@@ -8,6 +8,7 @@ import Player, { cameraMode, playerState } from './Player';
 import { APPLIANCE_DATA, APPLIANCE_POSITIONS, INTERACTABLE_IDS, QUIZ_QUESTIONS, ACHIEVEMENTS } from './applianceData';
 import { useGame } from '../context/GameContext';
 import { getTranslation, getVoiceLocale } from '../translations/index';
+import LevelIntro from './LevelIntro';
 import './Level1.css';
 
 // ─── Speech Engine (ENGLISH ONLY — FIX 3) ───
@@ -623,6 +624,36 @@ function SceneContent({ onApplianceClick, onRoomChange, onNearestChange, onInter
   );
 }
 
+// ─── L1 Controls Help (Fix 6: ? button matching Level 2) ───
+function L1ControlsHelp({ t }) {
+  const [show, setShow] = useState(false);
+  const [auto, setAuto] = useState(false);
+  useEffect(() => { if (!auto) { setShow(true); setAuto(true); const timer = setTimeout(() => setShow(false), 3000); return () => clearTimeout(timer); } }, []);
+  useEffect(() => { if (!show) return; const h = (e) => { if (e.key === 'Escape') setShow(false); }; window.addEventListener('keydown', h); return () => window.removeEventListener('keydown', h); }, [show]);
+  const l2t = t?.level2 || {};
+  return (
+    <>
+      <button className="l1-help-btn" onClick={() => setShow(true)}>?</button>
+      {show && (
+        <div className="l1-controls-overlay" onClick={() => setShow(false)}>
+          <div className="l1-controls-card" onClick={e => e.stopPropagation()}>
+            <div className="l1-controls-title">{ICONS.star} {l2t.controls || 'Controls'}</div>
+            <div className="l1-controls-list">
+              <div className="l1-ctrl-row"><span className="l1-ctrl-keys"><span className="l1-key">W</span> / <span className="l1-key">{"\u2191"}</span></span><span>{l2t.moveForward || 'Move Forward'}</span></div>
+              <div className="l1-ctrl-row"><span className="l1-ctrl-keys"><span className="l1-key">S</span> / <span className="l1-key">{"\u2193"}</span></span><span>{l2t.moveBackward || 'Move Backward'}</span></div>
+              <div className="l1-ctrl-row"><span className="l1-ctrl-keys"><span className="l1-key">A</span> / <span className="l1-key">{"\u2190"}</span></span><span>{l2t.turnLeft || 'Turn Left'}</span></div>
+              <div className="l1-ctrl-row"><span className="l1-ctrl-keys"><span className="l1-key">D</span> / <span className="l1-key">{"\u2192"}</span></span><span>{l2t.turnRight || 'Turn Right'}</span></div>
+              <div className="l1-ctrl-row"><span className="l1-ctrl-keys"><span className="l1-key">E</span></span><span>{l2t.interactAppliance || 'Interact with Appliance'}</span></div>
+              <div className="l1-ctrl-row"><span className="l1-ctrl-keys"><span className="l1-key">ESC</span></span><span>{l2t.exitMenu || 'Exit to Menu'}</span></div>
+            </div>
+            <button className="l1-controls-got-it" onClick={() => setShow(false)}>{l2t.gotIt || 'Got it!'}</button>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
 // ─── Main Level 1 Component ───
 export default function Level1() {
   const navigate = useNavigate();
@@ -634,11 +665,12 @@ export default function Level1() {
   const cameraRef = useRef(null);
   const canvasRef = useRef(null);
 
+  const [showLevelIntro, setShowLevelIntro] = useState(true);
   const [activeAppliance, setActiveAppliance] = useState(null);
   const [currentRoom, setCurrentRoom] = useState('Living Room');
   const [nearestAppliance, setNearestAppliance] = useState(null);
   const [interacted, setInteracted] = useState(new Set());
-  const [checklistOpen, setChecklistOpen] = useState(true);
+  const [checklistOpen, setChecklistOpen] = useState(false);
   const [isCinematic, setIsCinematic] = useState(false);
 
   // Flash card state
@@ -820,6 +852,25 @@ export default function Level1() {
     setNearestAppliance(id);
   }, []);
 
+  // ─── LEVEL INTRO ───
+  if (showLevelIntro) {
+    return (
+      <LevelIntro
+        levelNumber={1}
+        levelTitle="Home Energy Audit"
+        levelIcon="🏠"
+        objective="Walk through your virtual home and discover the appliances that power your daily life. Learn how each device works, what it does, and how much electricity it uses."
+        learningOutcome="By the end of this level, you will understand what household appliances are, how to interact with them, and why knowing about them matters for energy awareness."
+        terms={[
+          { icon: '🧩', name: 'Appliance', definition: 'A device in your home that uses electricity to perform a task — like a fan, TV, or fridge.', example: 'A ceiling fan is an appliance that cools the room' },
+          { icon: '🎮', name: 'Interaction', definition: 'When you do something with an object in the game — like walking up to it and pressing a button to learn about it.', example: 'Press E near an appliance to interact' },
+          { icon: '🟢', name: 'Activation', definition: 'Turning something ON so it starts working and begins using electricity.', example: 'When you turn ON the AC, it starts consuming 1500W' },
+        ]}
+        onComplete={() => setShowLevelIntro(false)}
+      />
+    );
+  }
+
   return (
     <div className="level1-container">
       {/* 3D Canvas */}
@@ -851,10 +902,7 @@ export default function Level1() {
         <div className="vignette-overlay" />
       </div>
 
-      {/* Cursor/Play instruction (Fix 7) */}
-      <div className="cursor-instruction">
-        {t?.ui?.clickToPlay || 'Click to play | ESC to exit'}
-      </div>
+
 
       {/* HUD - hidden during quiz */}
       {!showFullQuiz && !showLevelComplete && (
@@ -876,18 +924,7 @@ export default function Level1() {
             t={t}
           />
 
-          {/* Bottom hint */}
-          <div className="interaction-hint">
-            <span className="key-icon">W</span><span className="key-icon">A</span>
-            <span className="key-icon">S</span><span className="key-icon">D</span> {t?.ui?.move || 'Move'}
-            &nbsp;{ICONS.mouse}&nbsp; {t?.ui?.lookAround || 'Look Around'}
-            &nbsp;•&nbsp; <span className="key-icon">E</span> {t?.ui?.interact || 'Interact'}
-            {nearestAppliance && !activeAppliance && (
-              <span className="hint-nearby">
-                &nbsp;{String.fromCharCode(8212)} <span className="pulse-text">{APPLIANCE_DATA[nearestAppliance]?.icon} {t?.appliances?.[nearestAppliance]?.name || APPLIANCE_DATA[nearestAppliance]?.name} {t?.ui?.nearby || 'nearby!'}</span>
-              </span>
-            )}
-          </div>
+
         </>
       )}
 
@@ -946,6 +983,8 @@ export default function Level1() {
           t={t}
         />
       )}
+      {/* Help Button (Fix 6) */}
+      <L1ControlsHelp t={t} />
     </div>
   );
 }

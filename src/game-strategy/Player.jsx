@@ -9,9 +9,8 @@ import { APPLIANCE_POSITIONS, INTERACTABLE_IDS } from './applianceData';
 // ════════════════════════════════════════════════════════════
 
 const WALL_SEGMENTS = [
-  // Front wall (z = -8) — door gap at [-6.5,-3.5]
-  { type: 'h', z: -8, x1: -10, x2: -6.5 },
-  { type: 'h', z: -8, x1: -3.5, x2: 10 },
+  // Front wall (z = -8) — fully solid, no door
+  { type: 'h', z: -8, x1: -10, x2: 10 },
 
   // Back wall (z = 8)
   { type: 'h', z: 8, x1: -10, x2: 10 },
@@ -21,8 +20,9 @@ const WALL_SEGMENTS = [
   { type: 'h', z: 0, x1: -3.5, x2: 3.5 },
   { type: 'h', z: 0, x1: 6.5, x2: 10 },
 
-  // Left wall (x = -10)
-  { type: 'v', x: -10, z1: -8, z2: 8 },
+  // Left wall (x = -10) — door gap at z = [-3.5, -0.5] near WiFi router
+  { type: 'v', x: -10, z1: -8, z2: -3.5 },
+  { type: 'v', x: -10, z1: -0.5, z2: 8 },
   // Right wall (x = 10)
   { type: 'v', x: 10, z1: -8, z2: 8 },
 
@@ -35,8 +35,8 @@ const WALL_SEGMENTS = [
   { type: 'v', x: 4, z1: 5.5, z2: 8 },
 ];
 
-// Small collision radius so character fits through doors
-const PLAYER_RADIUS = 0.3;
+// Collision radius — 0.4 triggers collisions earlier so character doesn't clip
+const PLAYER_RADIUS = 0.45;
 const INTERACTION_RADIUS = 2.8;
 
 // ════════════════════════════════════════════════════════════
@@ -47,22 +47,22 @@ const INTERACTION_RADIUS = 2.8;
 // ════════════════════════════════════════════════════════════
 
 const FURNITURE_BOXES = [
-  // Fridge (Kitchen)
-  { minX: -2.2, maxX: -0.8, minZ: 6.5, maxZ: 7.8 },
-  // Washing Machine (Bathroom)
-  { minX: 4.8, maxX: 6.2, minZ: 6.5, maxZ: 7.8 },
-  // Kitchen counter back wall
-  { minX: -9.5, maxX: -3.5, minZ: 6.8, maxZ: 7.8 },
+  // Fridge (Kitchen) - moved inward
+  { minX: -2.2, maxX: -0.8, minZ: 5.8, maxZ: 7.2 },
+  // Washing Machine (Bathroom) - moved inward
+  { minX: 4.8, maxX: 6.2, minZ: 5.8, maxZ: 7.2 },
+  // Kitchen counter back wall - moved inward
+  { minX: -9.0, maxX: -3.5, minZ: 6.0, maxZ: 7.2 },
   // Living room sofa (L-shaped)
   { minX: -9.5, maxX: -6.5, minZ: -7.5, maxZ: -5.5 },
-  // Living room TV stand
-  { minX: -6.0, maxX: -4.0, minZ: -7.7, maxZ: -7.2 },
+  // Living room TV stand - tight around TV at z=-7.0
+  { minX: -6.0, maxX: -4.0, minZ: -7.5, maxZ: -7.0 },
   // Bedroom bed
   { minX: 5.0, maxX: 9.5, minZ: -7.5, maxZ: -4.5 },
-  // Bedroom desk
-  { minX: 1.5, maxX: 3.5, minZ: -7.7, maxZ: -7.0 },
-  // Bathroom fixtures area
-  { minX: 8.5, maxX: 9.8, minZ: 1.0, maxZ: 3.0 },
+  // Bedroom desk - tight around desk at z=-7.0
+  { minX: 1.5, maxX: 3.5, minZ: -7.5, maxZ: -7.0 },
+  // Bathroom fixtures area (geyser) - moved inward
+  { minX: 8.2, maxX: 9.5, minZ: 1.0, maxZ: 3.0 },
 ];
 
 // ════════════════════════════════════════════════════════════
@@ -90,13 +90,18 @@ function checkCollision(x, z) {
   return false;
 }
 
-// moveWithCollisions equivalent — try full move, then slide
+// moveWithCollisions equivalent — try full move, then slide, then clamp to house bounds
 function moveWithCollisions(x, z, dx, dz) {
-  const nx = x + dx;
-  const nz = z + dz;
+  let nx = x + dx;
+  let nz = z + dz;
+  // Clamp to house boundary as safety net (walls at ±10 x, ±8 z)
+  nx = Math.max(-9.5, Math.min(9.5, nx));
+  nz = Math.max(-7.5, Math.min(7.5, nz));
   if (!checkCollision(nx, nz)) return { x: nx, z: nz };
-  if (!checkCollision(nx, z)) return { x: nx, z: z };
-  if (!checkCollision(x, nz)) return { x: x, z: nz };
+  const cx = Math.max(-9.5, Math.min(9.5, x + dx));
+  if (!checkCollision(cx, z)) return { x: cx, z: z };
+  const cz = Math.max(-9.5, Math.min(9.5, z + dz));
+  if (!checkCollision(x, cz)) return { x: x, z: cz };
   return { x, z };
 }
 
@@ -290,12 +295,12 @@ export default function Player({ onRoomChange, onNearestApplianceChange, onInter
     const speed = 0.15;
     const turnSpeed = 0.05;
 
-    // ─── ROTATE character left/right ───
+    // ─── ROTATE character left/right (swapped signs for camera-relative controls) ───
     if (k['a'] || k['arrowleft']) {
-      rotRef.current -= turnSpeed;
+      rotRef.current += turnSpeed;
     }
     if (k['d'] || k['arrowright']) {
-      rotRef.current += turnSpeed;
+      rotRef.current -= turnSpeed;
     }
 
     // ─── Calculate forward direction based on character rotation ───

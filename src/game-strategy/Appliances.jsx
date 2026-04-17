@@ -24,157 +24,31 @@ function getApplianceRoom(id) {
   return APPLIANCE_DATA[id]?.room || 'Living Room';
 }
 
-// ─── Animated Face (eyes + mouth) for talking appliances ───
-function AnimatedFace({ active, offset = [0, 0.4, 0.3] }) {
-  const leftEyeRef = useRef();
-  const rightEyeRef = useRef();
-  const mouthRef = useRef();
-  const groupRef = useRef();
-  const scaleRef = useRef(0);
 
-  useFrame(() => {
-    if (!groupRef.current) return;
-    const target = active ? 1 : 0;
-    scaleRef.current = THREE.MathUtils.lerp(scaleRef.current, target, 0.1);
-    groupRef.current.scale.setScalar(scaleRef.current);
-    groupRef.current.visible = scaleRef.current > 0.01;
 
-    if (active) {
-      const t = performance.now() * 0.003;
-      // Blink
-      const blink = Math.sin(t * 2) > 0.95 ? 0.1 : 1;
-      if (leftEyeRef.current) leftEyeRef.current.scale.y = blink;
-      if (rightEyeRef.current) rightEyeRef.current.scale.y = blink;
-      // Mouth animation (talking)
-      if (mouthRef.current) {
-        mouthRef.current.scale.y = 0.5 + Math.abs(Math.sin(t * 4)) * 0.8;
-        mouthRef.current.scale.x = 0.8 + Math.sin(t * 3) * 0.2;
-      }
-    }
-  });
-
-  return (
-    <group ref={groupRef} position={offset} visible={false}>
-      {/* Left eye */}
-      <mesh ref={leftEyeRef} position={[-0.12, 0.05, 0]}>
-        <sphereGeometry args={[0.06, 12, 12]} />
-        <meshStandardMaterial color="#fff" />
-      </mesh>
-      <mesh position={[-0.12, 0.05, 0.05]}>
-        <sphereGeometry args={[0.035, 8, 8]} />
-        <meshStandardMaterial color="#111" />
-      </mesh>
-      {/* Right eye */}
-      <mesh ref={rightEyeRef} position={[0.12, 0.05, 0]}>
-        <sphereGeometry args={[0.06, 12, 12]} />
-        <meshStandardMaterial color="#fff" />
-      </mesh>
-      <mesh position={[0.12, 0.05, 0.05]}>
-        <sphereGeometry args={[0.035, 8, 8]} />
-        <meshStandardMaterial color="#111" />
-      </mesh>
-      {/* Mouth */}
-      <mesh ref={mouthRef} position={[0, -0.08, 0.02]}>
-        <boxGeometry args={[0.12, 0.04, 0.02]} />
-        <meshStandardMaterial color="#e74c3c" />
-      </mesh>
-    </group>
-  );
-}
 
 // ─── Glow Effect Wrapper ───
 function GlowAppliance({ children, id, activeId, interacted }) {
   const glowRef = useRef();
-  const emotionRef = useRef();
-  const scaleRef = useRef(1);
-  const [chatter, setChatter] = useState(null);
-  const chatterTimerRef = useRef(0);
-  const lastChatterRef = useRef(0);
-  const recentlyInteractedRef = useRef(false);
-  const interactTimeRef = useRef(0);
-
   const isNear = playerState.nearestAppliance === id;
   const isActive = activeId === id;
-  const isInteracted = interacted?.has(id);
 
-  // Track room visits
-  const appRoom = getApplianceRoom(id);
-  
-  useFrame((_, delta) => {
+  useFrame(() => {
     if (!glowRef.current) return;
     const t = performance.now() * 0.003;
-    const now = performance.now();
-
-    // Track room visits for emotional state
-    const currentRoom = playerState.x < 0 && playerState.z < 0 ? 'Living Room'
-      : playerState.x >= 0 && playerState.z < 0 ? 'Bedroom'
-      : playerState.x < 4 && playerState.z >= 0 ? 'Kitchen' : 'Bathroom';
-    trackRoomVisit(currentRoom);
-
-    // Emotional state: sad if room visited 3+ times but not interacted
-    const isSad = !isInteracted && roomVisitTracker[appRoom] >= 3;
-    const isHappy = isInteracted && (now - interactTimeRef.current < 10000);
-
-    // Glow pulsing — enhanced with emotion colors
     if (isNear && !isActive) {
       glowRef.current.visible = true;
-      const baseGlow = 0.3 + Math.sin(t * 2) * 0.15;
-      glowRef.current.material.emissiveIntensity = baseGlow;
-      glowRef.current.material.color.set(isSad ? '#f59e0b' : '#22c55e');
-      glowRef.current.material.emissive.set(isSad ? '#f59e0b' : '#22c55e');
-    } else if (isSad) {
-      // Subtle sad glow when not near
-      glowRef.current.visible = true;
-      glowRef.current.material.emissiveIntensity = 0.08 + Math.sin(t) * 0.04;
-      glowRef.current.material.color.set('#f59e0b');
-      glowRef.current.material.emissive.set('#f59e0b');
-    } else if (isHappy) {
-      // Happy pulse after interaction
-      glowRef.current.visible = true;
-      const fadeOut = Math.max(0, 1 - (now - interactTimeRef.current) / 10000);
-      glowRef.current.material.emissiveIntensity = (0.15 + Math.sin(t * 3) * 0.1) * fadeOut;
-      glowRef.current.material.color.set('#22c55e');
-      glowRef.current.material.emissive.set('#22c55e');
+      glowRef.current.material.emissiveIntensity = 0.25 + Math.sin(t * 2) * 0.1;
     } else {
       glowRef.current.visible = false;
-    }
-
-    // Detect newly interacted (to trigger happy state)
-    if (isInteracted && !recentlyInteractedRef.current) {
-      recentlyInteractedRef.current = true;
-      interactTimeRef.current = now;
-    }
-
-    // Idle chatter for unvisited appliances
-    if (!isInteracted && !isNear && !isActive) {
-      chatterTimerRef.current += delta;
-      if (chatterTimerRef.current > 15 + Math.random() * 20 && now - lastChatterRef.current > 30000) {
-        const dist = Math.sqrt(
-          (playerState.x - (APPLIANCE_POSITIONS[id]?.pos[0] || 0)) ** 2 +
-          (playerState.z - (APPLIANCE_POSITIONS[id]?.pos[2] || 0)) ** 2
-        );
-        if (dist < 5) {
-          // Sad appliances have different chatter
-          const lines = isSad 
-            ? ["\u{1F622} You keep passing me by...", "\u{1F622} Don't you want to learn about me?", "\u{1F622} I feel so ignored..."]
-            : IDLE_CHATTER;
-          setChatter(lines[Math.floor(Math.random() * lines.length)]);
-          lastChatterRef.current = now;
-          chatterTimerRef.current = 0;
-          setTimeout(() => setChatter(null), 3000);
-        }
-      }
     }
   });
 
   const pos = APPLIANCE_POSITIONS[id]?.pos || [0, 0, 0];
-  const appRoom2 = getApplianceRoom(id);
-  const isSadNow = !isInteracted && roomVisitTracker[appRoom2] >= 3;
 
   return (
     <group>
       {children}
-      {/* Glow sphere around appliance */}
       <mesh ref={glowRef} position={pos} visible={false}>
         <sphereGeometry args={[0.6, 16, 16]} />
         <meshStandardMaterial
@@ -182,30 +56,10 @@ function GlowAppliance({ children, id, activeId, interacted }) {
           emissive="#22c55e"
           emissiveIntensity={0}
           transparent
-          opacity={0.15}
+          opacity={0.12}
           side={THREE.DoubleSide}
         />
       </mesh>
-      {/* Emotional emoji indicator */}
-      {isSadNow && !isNear && !isActive && (
-        <Html position={[pos[0], pos[1] + 0.6, pos[2]]} center>
-          <div className="emotion-indicator sad">{"\u{1F622}"}</div>
-        </Html>
-      )}
-      {/* "Press E" prompt */}
-      {isNear && !isActive && (
-        <Html position={[pos[0], pos[1] + 0.8, pos[2]]} center>
-          <div className="press-e-prompt">
-            Press <span className="key-e">E</span> to interact
-          </div>
-        </Html>
-      )}
-      {/* Idle chatter */}
-      {chatter && (
-        <Html position={[pos[0], pos[1] + 1.2, pos[2]]} center>
-          <div className="idle-chatter">{chatter}</div>
-        </Html>
-      )}
     </group>
   );
 }
@@ -232,8 +86,7 @@ function TV({ onClick, active }) {
         <planeGeometry args={[1.65, 0.88]} />
         <meshStandardMaterial color="#1a2a4a" emissive="#1a2a4a" emissiveIntensity={0.4} />
       </mesh>
-      <AnimatedFace active={active} offset={[0, 0.1, 0.06]} />
-      <Html position={[0, 0.7, 0]} center><div className="appliance-label">{"\u{1F4FA}"} Smart TV</div></Html>
+
     </group>
   );
 }
@@ -254,8 +107,7 @@ function AC({ onClick, active }) {
         <sphereGeometry args={[0.02]} />
         <meshStandardMaterial color="#22c55e" emissive="#22c55e" emissiveIntensity={2} />
       </mesh>
-      <AnimatedFace active={active} offset={[0, 0, 0.14]} />
-      <Html position={[0, 0.35, 0]} center><div className="appliance-label">{"\u{2744}\u{FE0F}"} AC 1.5T</div></Html>
+
     </group>
   );
 }
@@ -328,8 +180,7 @@ function Fridge({ onClick, active }) {
         <boxGeometry args={[0.03, 0.4, 0.04]} />
         <meshStandardMaterial color="#aaa" metalness={0.6} roughness={0.3} />
       </mesh>
-      <AnimatedFace active={active} offset={[0, 0.6, 0.35]} />
-      <Html position={[0, 1.1, 0]} center><div className="appliance-label">{"\u{1F9CA}"} Fridge</div></Html>
+
     </group>
   );
 }
@@ -350,8 +201,7 @@ function InductionStove({ onClick, active }) {
         <boxGeometry args={[0.3, 0.01, 0.08]} />
         <meshStandardMaterial color="#222" />
       </mesh>
-      <AnimatedFace active={active} offset={[0, 0.15, 0]} />
-      <Html position={[0, 0.3, 0]} center><div className="appliance-label">{"\u{1F373}"} Induction</div></Html>
+
     </group>
   );
 }
@@ -379,8 +229,7 @@ function Microwave({ onClick, active }) {
         <boxGeometry args={[0.08, 0.04, 0.01]} />
         <meshStandardMaterial color="#22c55e" emissive="#22c55e" emissiveIntensity={0.5} />
       </mesh>
-      <AnimatedFace active={active} offset={[-0.05, 0.05, 0.2]} />
-      <Html position={[0, 0.35, 0]} center><div className="appliance-label">{"\u{1F4E1}"} Microwave</div></Html>
+
     </group>
   );
 }
@@ -409,8 +258,7 @@ function MixerGrinder({ onClick, active }) {
         <cylinderGeometry args={[0.02, 0.02, 0.02, 8]} />
         <meshStandardMaterial color="#e74c3c" />
       </mesh>
-      <AnimatedFace active={active} offset={[0, 0.3, 0.1]} />
-      <Html position={[0, 0.5, 0]} center><div className="appliance-label">{"\u{26A1}"} Mixer</div></Html>
+
     </group>
   );
 }
@@ -444,8 +292,7 @@ function WifiRouter({ onClick, active }) {
         <sphereGeometry args={[0.012, 8, 8]} />
         <meshStandardMaterial color="#22c55e" emissive="#22c55e" emissiveIntensity={1} />
       </mesh>
-      <AnimatedFace active={active} offset={[0, 0.1, 0.1]} />
-      <Html position={[0, 0.3, 0]} center><div className="appliance-label">{"\u{1F4F6}"} Router</div></Html>
+
     </group>
   );
 }
@@ -475,8 +322,7 @@ function SetTopBox({ onClick, active }) {
         <sphereGeometry args={[0.015, 8, 8]} />
         <meshStandardMaterial color="#222" />
       </mesh>
-      <AnimatedFace active={active} offset={[0, 0.08, 0.1]} />
-      <Html position={[0, 0.2, 0]} center><div className="appliance-label">{"\u{1F4E6}"} Set-Top Box</div></Html>
+
     </group>
   );
 }
@@ -497,8 +343,7 @@ function Geyser({ onClick, active }) {
         <cylinderGeometry args={[0.025, 0.025, 0.25]} />
         <meshStandardMaterial color="#aaa" metalness={0.7} />
       </mesh>
-      <AnimatedFace active={active} offset={[0, 0.15, 0.22]} />
-      <Html position={[0, 0.5, 0]} center><div className="appliance-label">{"\u{1F6BF}"} Geyser</div></Html>
+
     </group>
   );
 }
@@ -542,8 +387,7 @@ function WashingMachine({ onClick, active }) {
         <cylinderGeometry args={[0.04, 0.04, 0.02, 12]} />
         <meshStandardMaterial color="#444" />
       </mesh>
-      <AnimatedFace active={active} offset={[0, 0.15, 0.34]} />
-      <Html position={[0, 0.65, 0]} center><div className="appliance-label">{"\u{1F455}"} Washer</div></Html>
+
     </group>
   );
 }
@@ -576,8 +420,7 @@ function LEDTubeLight({ onClick, active }) {
       {/* End caps */}
       <mesh position={[-0.55, 0, 0]}><boxGeometry args={[0.05, 0.08, 0.08]} /><meshStandardMaterial color="#999" /></mesh>
       <mesh position={[0.55, 0, 0]}><boxGeometry args={[0.05, 0.08, 0.08]} /><meshStandardMaterial color="#999" /></mesh>
-      <AnimatedFace active={active} offset={[0, -0.2, 0.1]} />
-      <Html position={[0, 0.2, 0]} center><div className="appliance-label">{"\u{1F4A1}"} LED Tube</div></Html>
+
     </group>
   );
 }
@@ -617,8 +460,7 @@ function PhoneCharger({ onClick, active }) {
         <sphereGeometry args={[0.01, 8, 8]} />
         <meshStandardMaterial color="#22c55e" emissive="#22c55e" emissiveIntensity={0.5} />
       </mesh>
-      <AnimatedFace active={active} offset={[0, 0.25, 0.1]} />
-      <Html position={[0, 0.4, 0]} center><div className="appliance-label">{"\u{1F50C}"} Charger</div></Html>
+
     </group>
   );
 }
@@ -675,8 +517,7 @@ function TableFan({ onClick, active }) {
           ))}
         </group>
       </group>
-      <AnimatedFace active={active} offset={[0, 0.55, 0.15]} />
-      <Html position={[0, 0.7, 0]} center><div className="appliance-label">{"\u{1F32A}\u{FE0F}"} Table Fan</div></Html>
+
     </group>
   );
 }
@@ -731,6 +572,49 @@ function GuidanceArrow({ interacted }) {
         <meshStandardMaterial color="#22c55e" emissive="#22c55e" emissiveIntensity={0.5} transparent opacity={0.7} />
       </mesh>
     </group>
+  );
+}
+
+// ─── Single-Appliance Label System (minimal: name pill + Press E pill) ───
+const LABEL_OFFSETS = {
+  ceiling_fan: 0.3, tv_smart: 0.7, ac_1_5ton: 0.35, fridge: 1.1,
+  washing_machine: 0.65, geyser: 0.5, wifi_router: 0.3, set_top_box: 0.2,
+  phone_charger: 0.4, induction: 0.3, microwave: 0.35, mixer_grinder: 0.5,
+  led_tube: 0.3, table_fan: 0.55, led_bulb: 0.2,
+};
+
+function SingleApplianceLabel({ activeId }) {
+  const [nearestId, setNearestId] = useState(null);
+  useFrame(() => {
+    // Only show label for the SINGLE nearest appliance within 2.5 units
+    let best = null, bestDist = 2.5;
+    for (const id of INTERACTABLE_IDS) {
+      const ap = APPLIANCE_POSITIONS[id];
+      if (!ap) continue;
+      const dx = playerState.x - ap.pos[0], dz = playerState.z - ap.pos[2];
+      const dist = Math.sqrt(dx * dx + dz * dz);
+      if (dist < bestDist) { bestDist = dist; best = id; }
+    }
+    setNearestId(best);
+  });
+
+  if (!nearestId || activeId === nearestId) return null;
+  const pos = APPLIANCE_POSITIONS[nearestId]?.pos;
+  const data = APPLIANCE_DATA[nearestId];
+  if (!pos || !data) return null;
+  const yOffset = LABEL_OFFSETS[nearestId] || 0.5;
+
+  return (
+    <Html position={[pos[0], pos[1] + yOffset, pos[2]]} center>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', pointerEvents: 'none' }}>
+        <div style={{ background: 'rgba(0,0,0,0.7)', color: '#fff', padding: '4px 12px', borderRadius: '8px', fontSize: '12px', fontFamily: 'Nunito, sans-serif', fontWeight: 600, whiteSpace: 'nowrap' }}>
+          {data.icon} {data.name}
+        </div>
+        <div style={{ background: 'rgba(34,197,94,0.85)', color: '#fff', padding: '3px 10px', borderRadius: '6px', fontSize: '11px', fontFamily: 'Nunito, sans-serif', fontWeight: 600, whiteSpace: 'nowrap' }}>
+          Press <span style={{ background: 'rgba(255,255,255,0.3)', padding: '1px 5px', borderRadius: '3px', fontWeight: 700 }}>E</span>
+        </div>
+      </div>
+    </Html>
   );
 }
 
@@ -810,6 +694,9 @@ export default function Appliances({ onApplianceClick, activeApplianceId, intera
 
       {/* Guidance Arrow */}
       <GuidanceArrow interacted={interactedAppliances} />
+
+      {/* Single appliance label — only nearest within 2.5 units */}
+      <SingleApplianceLabel activeId={activeApplianceId} />
     </group>
   );
 }

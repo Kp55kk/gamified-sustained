@@ -9,7 +9,7 @@ import {
   LEVEL2_APPLIANCES, L2_APPLIANCE_IDS, L2_APPLIANCE_MAP,
   getEnergyTier, MAX_POSSIBLE_WATTS, ENERGY_TIPS,
   QUIZ_QUESTIONS, LEVEL2_BADGE, TASKS, LEARNING_INSERTS,
-  MICRO_QUESTIONS, getSmartMessage, calculateStars,
+  MICRO_QUESTIONS, getSmartMessage, calculateStars, getWattagePriority,
   getBarColor, getBarTierLabel, CO2_FACTOR,
   calculateBill, calculateCO2, calculateAnnualEnergy,
   USAGE_HOURS, BILL_SLABS, SHOCK_FACTS,
@@ -18,6 +18,8 @@ import {
 import { APPLIANCE_POSITIONS } from '../applianceData';
 import QuizModal from './QuizModal';
 import { useGame } from '../../context/GameContext';
+import { getTranslation } from '../../translations/index';
+import LevelIntro from '../LevelIntro';
 import './Level2.css';
 
 // ─── Audio System ───
@@ -180,7 +182,7 @@ function FloatingText({ text, type, id, onDone }) {
   return <div className={`l2-floating-text ${type}`}>{text}</div>;
 }
 
-// ─── SVG Energy Gauge ───
+// ─── SVG Energy Gauge (Fix 4: bright white needle, vivid arcs, tick marks) ───
 function EnergyGauge({ watts, maxWatts = 4000 }) {
   const [animW, setAnimW] = useState(0);
   const aRef = useRef(null);
@@ -192,27 +194,51 @@ function EnergyGauge({ watts, maxWatts = 4000 }) {
   }, [watts]);
   const pct = Math.min(animW / maxWatts, 1), ang = -90 + pct * 180, cx = 110, cy = 100, r = 80;
   const arc = (s, e) => { const sa = (-90 + s * 180) * Math.PI / 180, ea = (-90 + e * 180) * Math.PI / 180; return `M ${cx + r * Math.cos(sa)} ${cy + r * Math.sin(sa)} A ${r} ${r} 0 ${e - s > 0.5 ? 1 : 0} 1 ${cx + r * Math.cos(ea)} ${cy + r * Math.sin(ea)}`; };
-  const nr = ang * Math.PI / 180, nx = cx + 65 * Math.cos(nr), ny = cy + 65 * Math.sin(nr);
+  const nr = ang * Math.PI / 180, nx = cx + 68 * Math.cos(nr), ny = cy + 68 * Math.sin(nr);
+  // Tick marks at 0W, 1000W, 2000W, 3000W, 4000W
+  const ticks = [
+    { pct: 0, label: '0W' }, { pct: 0.25, label: '1000W' },
+    { pct: 0.5, label: '2000W' }, { pct: 0.75, label: '3000W' }, { pct: 1, label: '4000W' },
+  ];
   return (
     <div className="l2-gauge-container">
       <svg viewBox="0 0 220 120" className="l2-gauge-svg">
         <path d={arc(0, 1)} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="18" strokeLinecap="round" />
-        <path d={arc(0, 0.125)} fill="none" stroke="#22c55e" strokeWidth="16" strokeLinecap="round" opacity="0.8" />
-        <path d={arc(0.125, 0.375)} fill="none" stroke="#facc15" strokeWidth="16" opacity="0.8" />
-        <path d={arc(0.375, 0.625)} fill="none" stroke="#f97316" strokeWidth="16" opacity="0.8" />
-        <path d={arc(0.625, 1)} fill="none" stroke="#ef4444" strokeWidth="16" strokeLinecap="round" opacity="0.8" />
-        <text x="22" y="108" fill="#64748b" fontSize="9" textAnchor="middle">0</text>
-        <text x="110" y="18" fill="#64748b" fontSize="9" textAnchor="middle">2k</text>
-        <text x="198" y="108" fill="#64748b" fontSize="9" textAnchor="middle">4k</text>
-        <line x1={cx} y1={cy} x2={nx} y2={ny} stroke="#fff" strokeWidth="2.5" strokeLinecap="round" style={{ filter: 'drop-shadow(0 0 4px rgba(255,255,255,0.5))', transition: 'all 0.3s' }} />
-        <circle cx={cx} cy={cy} r="6" fill="#1e293b" stroke="#f59e0b" strokeWidth="2" />
-        <circle cx={cx} cy={cy} r="3" fill="#f59e0b" />
+        <path d={arc(0, 0.125)} fill="none" stroke="#16e868" strokeWidth="16" strokeLinecap="round" />
+        <path d={arc(0.125, 0.375)} fill="none" stroke="#fde047" strokeWidth="16" />
+        <path d={arc(0.375, 0.625)} fill="none" stroke="#fb923c" strokeWidth="16" />
+        <path d={arc(0.625, 1)} fill="none" stroke="#f43f5e" strokeWidth="16" strokeLinecap="round" />
+        {/* Tick marks with labels */}
+        {ticks.map((t, i) => {
+          const ta = (-90 + t.pct * 180) * Math.PI / 180;
+          const innerR = r - 12, outerR = r + 4, labelR = r + 14;
+          return (
+            <g key={i}>
+              <line x1={cx + innerR * Math.cos(ta)} y1={cy + innerR * Math.sin(ta)}
+                    x2={cx + outerR * Math.cos(ta)} y2={cy + outerR * Math.sin(ta)}
+                    stroke="#fff" strokeWidth="1.5" opacity="0.7" />
+              <text x={cx + labelR * Math.cos(ta)} y={cy + labelR * Math.sin(ta) + 3}
+                    fill="#e2e8f0" fontSize="7" textAnchor="middle" fontWeight="600">{t.label}</text>
+            </g>
+          );
+        })}
+        {/* Needle — bright white, thick, with strong glow */}
+        <line x1={cx} y1={cy} x2={nx} y2={ny} stroke="#ffffff" strokeWidth="3.5" strokeLinecap="round"
+          style={{ filter: 'drop-shadow(0 0 8px rgba(255,255,255,0.9)) drop-shadow(0 0 16px rgba(255,255,255,0.4))', transition: 'all 0.3s' }} />
+        {/* Center hub */}
+        <circle cx={cx} cy={cy} r="7" fill="#1e293b" stroke="#ffffff" strokeWidth="2.5"
+          style={{ filter: 'drop-shadow(0 0 6px rgba(255,255,255,0.6))' }} />
+        <circle cx={cx} cy={cy} r="3.5" fill="#ffffff" />
+        {/* Needle tip dot */}
+        <circle cx={nx} cy={ny} r="4" fill="#ffffff"
+          style={{ filter: 'drop-shadow(0 0 10px white) drop-shadow(0 0 20px rgba(255,255,255,0.5))' }} />
       </svg>
     </div>
   );
 }
 
-function ControlsHelp() {
+function ControlsHelp({ t }) {
+  const l2t = t?.level2 || {};
   const [show, setShow] = useState(false);
   const [auto, setAuto] = useState(false);
   useEffect(() => { if (!auto) { setShow(true); setAuto(true); const t = setTimeout(() => setShow(false), 3000); return () => clearTimeout(t); } }, []);
@@ -223,16 +249,16 @@ function ControlsHelp() {
       {show && (
         <div className="l2-controls-overlay" onClick={() => setShow(false)}>
           <div className="l2-controls-card" onClick={e => e.stopPropagation()}>
-            <div className="l2-controls-title">{ICONS.grad} Controls</div>
+            <div className="l2-controls-title">{ICONS.grad} {l2t.controls || 'Controls'}</div>
             <div className="l2-controls-list">
-              <div className="l2-ctrl-row"><span className="l2-ctrl-keys"><span className="l2-key">W</span> / <span className="l2-key">{'\u2191'}</span></span><span>Move Forward</span></div>
-              <div className="l2-ctrl-row"><span className="l2-ctrl-keys"><span className="l2-key">S</span> / <span className="l2-key">{'\u2193'}</span></span><span>Move Backward</span></div>
-              <div className="l2-ctrl-row"><span className="l2-ctrl-keys"><span className="l2-key">A</span> / <span className="l2-key">{'\u2190'}</span></span><span>Turn Left</span></div>
-              <div className="l2-ctrl-row"><span className="l2-ctrl-keys"><span className="l2-key">D</span> / <span className="l2-key">{'\u2192'}</span></span><span>Turn Right</span></div>
-              <div className="l2-ctrl-row"><span className="l2-ctrl-keys"><span className="l2-key">E</span></span><span>Interact with Appliance</span></div>
-              <div className="l2-ctrl-row"><span className="l2-ctrl-keys"><span className="l2-key">ESC</span></span><span>Exit to Menu</span></div>
+              <div className="l2-ctrl-row"><span className="l2-ctrl-keys"><span className="l2-key">W</span> / <span className="l2-key">{'\u2191'}</span></span><span>{l2t.moveForward || 'Move Forward'}</span></div>
+              <div className="l2-ctrl-row"><span className="l2-ctrl-keys"><span className="l2-key">S</span> / <span className="l2-key">{'\u2193'}</span></span><span>{l2t.moveBackward || 'Move Backward'}</span></div>
+              <div className="l2-ctrl-row"><span className="l2-ctrl-keys"><span className="l2-key">A</span> / <span className="l2-key">{'\u2190'}</span></span><span>{l2t.turnLeft || 'Turn Left'}</span></div>
+              <div className="l2-ctrl-row"><span className="l2-ctrl-keys"><span className="l2-key">D</span> / <span className="l2-key">{'\u2192'}</span></span><span>{l2t.turnRight || 'Turn Right'}</span></div>
+              <div className="l2-ctrl-row"><span className="l2-ctrl-keys"><span className="l2-key">E</span></span><span>{l2t.interactAppliance || 'Interact with Appliance'}</span></div>
+              <div className="l2-ctrl-row"><span className="l2-ctrl-keys"><span className="l2-key">ESC</span></span><span>{l2t.exitMenu || 'Exit to Menu'}</span></div>
             </div>
-            <button className="l2-controls-got-it" onClick={() => setShow(false)}>Got it!</button>
+            <button className="l2-controls-got-it" onClick={() => setShow(false)}>{l2t.gotIt || 'Got it!'}</button>
           </div>
         </div>
       )}
@@ -246,31 +272,32 @@ function ScreenGlow({ totalWatts }) {
   return null;
 }
 
-const EYE_STYLES = {
-  fridge: { w: 18, h: 22, p: 7 }, wifi_router: { w: 8, h: 8, p: 4 },
-  ac_1_5ton: { w: 16, h: 10, p: 6 }, tv_smart: { w: 18, h: 12, p: 5, rect: true },
-  table_fan: { w: 10, h: 14, p: 5, dizzy: true }, ceiling_fan: { w: 14, h: 14, p: 5 },
-};
-function ApplianceFace({ id, isOn, dist, popupOpen, px, pz }) {
+// ─── Simple Googly Eyes for Appliances (Fix 6) ───
+function GooglyEyes({ id, isOn, dist, px, pz }) {
   const [blink, setBlink] = useState(false);
+  const [wide, setWide] = useState(false);
   const pos = APPLIANCE_POSITIONS[id]?.pos;
-  useEffect(() => { const iv = setInterval(() => { setBlink(true); setTimeout(() => setBlink(false), 150); }, 3000 + Math.random() * 1000); return () => clearInterval(iv); }, []);
-  if (!pos || dist > 4) return null;
-  const op = dist > 3.5 ? (4 - dist) * 2 : 1;
-  const e = EYE_STYLES[id] || { w: 14, h: 16, p: 5 };
+  const prevOnRef = useRef(isOn);
+  useEffect(() => {
+    const iv = setInterval(() => { setBlink(true); setTimeout(() => setBlink(false), 100); }, 4000 + Math.random() * 1000);
+    return () => clearInterval(iv);
+  }, []);
+  useEffect(() => {
+    if (isOn !== prevOnRef.current) { setWide(true); setTimeout(() => setWide(false), 500); prevOnRef.current = isOn; }
+  }, [isOn]);
+  if (!pos || dist > 3) return null;
+  const op = dist > 2.5 ? (3 - dist) * 2 : 1;
   const dx = (px || 0) - pos[0], dz = (pz || 0) - pos[2], len = Math.sqrt(dx * dx + dz * dz) || 1;
-  const ppx = (dx / len) * e.w * 0.2, ppy = (dz / len) * e.h * 0.15;
-  const ex = popupOpen && isOn, eyeH = blink ? 2 : (ex ? e.h * 1.3 : e.h);
+  const pupilX = (dx / len) * 1.5, pupilY = (dz / len) * 1;
+  const eyeScale = wide ? 1.2 : 1;
+  const eyeH = blink ? 1 : 8;
   return (
-    <div className="l2-face-container" style={{ opacity: op, transition: 'opacity 0.3s' }}>
-      <div className="l2-face-eyes">
-        {[0, 1].map(i => (
-          <div key={i} className="l2-face-eye" style={{ width: e.w, height: eyeH, borderRadius: e.rect ? '3px' : '50%', transition: 'height 0.1s' }}>
-            {!e.dizzy ? <div className="l2-face-pupil" style={{ width: e.p, height: blink ? 1 : e.p, borderRadius: '50%', transform: `translate(${ppx}px, ${ppy}px)` }} /> : <span style={{fontSize:6}}>@</span>}
-          </div>
-        ))}
-      </div>
-      <div className={`l2-face-mouth ${ex ? 'excited' : ''}`}>{ex ? 'O' : '\u2323'}</div>
+    <div style={{ opacity: op, transition: 'opacity 0.3s', display: 'flex', gap: '6px', justifyContent: 'center' }}>
+      {[0, 1].map(i => (
+        <div key={i} style={{ width: 8 * eyeScale, height: eyeH * eyeScale, borderRadius: '50%', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'height 0.1s, transform 0.3s', boxShadow: '0 1px 3px rgba(0,0,0,0.3)' }}>
+          {!blink && <div style={{ width: 4, height: 4, borderRadius: '50%', background: '#111', transform: `translate(${pupilX}px, ${pupilY}px)`, transition: 'transform 0.15s' }} />}
+        </div>
+      ))}
     </div>
   );
 }
@@ -281,9 +308,13 @@ function ApplianceFace({ id, isOn, dist, popupOpen, px, pz }) {
 
 export default function Level2() {
   const navigate = useNavigate();
-  const { addCarbonCoins, completeLevel, unlockLevel } = useGame();
+  const { addCarbonCoins, completeLevel, unlockLevel, selectedLanguage } = useGame();
+  const langCode = selectedLanguage || 'en';
+  const t = getTranslation(langCode);
+  const l2t = t?.level2 || {};
   const cameraRef = useRef(null);
 
+  const [showLevelIntro, setShowLevelIntro] = useState(true);
   const [phase, setPhase] = useState('intro');
   const [introStep, setIntroStep] = useState(0);
   const [applianceStates, setApplianceStates] = useState(() => {
@@ -302,6 +333,8 @@ export default function Level2() {
   const [correctTasks, setCorrectTasks] = useState(0);
   const [efficientChoices, setEfficientChoices] = useState(0);
   const [taskHint, setTaskHint] = useState(null);
+  const [turnOffTracker, setTurnOffTracker] = useState([]);  // IDs turned off for task_family_room
+  const [turnOffSummary, setTurnOffSummary] = useState(null);  // summary popup
   const [learningInsert, setLearningInsert] = useState(null);
   const [microQuestion, setMicroQuestion] = useState(null);
   const [microAnswer, setMicroAnswer] = useState(null);
@@ -390,7 +423,9 @@ export default function Level2() {
 
   const canStartTasks = toggledSet.size >= 4;
   const currentTask = TASKS[currentTaskIdx] || null;
-  const taskTargetIds = (phase === 'tasks' && currentTask) ? currentTask.correctIds : null;
+  const taskTargetIds = (phase === 'tasks' && currentTask)
+    ? (currentTask.type === 'turn_off' ? currentTask.turnOffIds : currentTask.correctIds)
+    : null;
 
   const addFloating = useCallback((text, type) => {
     const id = floatingIdRef.current++;
@@ -438,6 +473,70 @@ export default function Level2() {
     if (!L2_APPLIANCE_IDS.includes(applianceId)) return;
     if (!currentTask || taskFeedback) return;
     const appliance = L2_APPLIANCE_MAP[applianceId];
+
+    // ═══ TURN-OFF TASK (Task 1: Family Room) ═══
+    if (currentTask.type === 'turn_off') {
+      // Protection: can't turn off Living Room appliances
+      if (currentTask.protectedIds && currentTask.protectedIds.includes(applianceId)) {
+        playWrongSound();
+        setTaskHint(currentTask.protectedPopup);
+        setTaskFeedback({ type: 'wrong', text: `${ICONS.house} This is needed right now!` });
+        addFloating('Family needs this!', 'wrong');
+        setTimeout(() => { setTaskFeedback(null); setTaskHint(null); }, 2500);
+        return;
+      }
+      // Not a target waste appliance
+      if (!currentTask.turnOffIds.includes(applianceId)) {
+        playWrongSound();
+        addFloating('Not a target', 'wrong');
+        setTimeout(() => { setTaskFeedback(null); setTaskHint(null); }, 2000);
+        return;
+      }
+      // Already turned off
+      if (!applianceStates[applianceId]) {
+        addFloating('Already OFF', 'save');
+        return;
+      }
+      // Turn OFF the appliance
+      playToggleOffSound(); playCorrectSound();
+      setApplianceStates(prev => ({ ...prev, [applianceId]: false }));
+      const priority = getWattagePriority(appliance.wattage);
+      const offMsg = currentTask.offPopups[priority];
+      addFloating(`-${appliance.wattage}W saved!`, 'save');
+      setInfoPopup({
+        name: appliance.name, icon: appliance.icon, wattage: appliance.wattage,
+        message: { text: offMsg, type: 'good', icon: ICONS.check },
+        co2hint: `${ICONS.leaf} ${priority === 'high' ? 'High energy waste' : priority === 'medium' ? 'Moderate waste' : 'Low impact'} ${priority === 'high' ? '\u{26A0}\u{FE0F}\u{26A0}\u{FE0F}' : ''}`,
+      });
+      setTimeout(() => setInfoPopup(null), 3000);
+      // Track turned-off appliances
+      const newTracker = [...turnOffTracker, applianceId];
+      setTurnOffTracker(newTracker);
+      recordHistory(totalWatts - appliance.wattage);
+      // Check completion
+      if (newTracker.length >= currentTask.turnOffIds.length) {
+        // All turned off — 3 stars!
+        setCorrectTasks(c => c + 1);
+        setEfficientChoices(e => e + 1);
+        const totalSaved = newTracker.reduce((s, id) => s + L2_APPLIANCE_MAP[id].wattage, 0);
+        const biggest = newTracker.reduce((best, id) => L2_APPLIANCE_MAP[id].wattage > L2_APPLIANCE_MAP[best].wattage ? id : best, newTracker[0]);
+        setTimeout(() => {
+          setTurnOffSummary({
+            totalSaved,
+            count: newTracker.length,
+            biggest: L2_APPLIANCE_MAP[biggest],
+            stars: 3,
+            learning: currentTask.finalLearning,
+          });
+        }, 800);
+      } else if (newTracker.length >= currentTask.requiredOff) {
+        // Show progress encouragement
+        addFloating(`${newTracker.length}/${currentTask.turnOffIds.length} found!`, 'correct');
+      }
+      return;
+    }
+
+    // ═══ NORMAL TURN-ON TASKS (Tasks 2-7) ═══
     const isCorrect = currentTask.correctIds.includes(applianceId);
     const isBest = applianceId === currentTask.bestId;
     if (isCorrect) {
@@ -463,7 +562,7 @@ export default function Level2() {
       addFloating('Try again!', 'wrong');
       setTimeout(() => { setTaskFeedback(null); setTaskHint(null); }, 2500);
     }
-  }, [currentTask, taskFeedback, addFloating]);
+  }, [currentTask, taskFeedback, addFloating, applianceStates, turnOffTracker, totalWatts, recordHistory]);
 
   const advanceTask = useCallback(() => {
     setTaskFeedback(null); setTaskComparison(null); setTaskHint(null);
@@ -520,6 +619,27 @@ export default function Level2() {
   }, []);
 
   // ═══════════════════════════════════════════════════════
+  //  RENDER — LEVEL INTRO (Learn Before Play)
+  // ═══════════════════════════════════════════════════════
+  if (showLevelIntro) {
+    return (
+      <LevelIntro
+        levelNumber={2}
+        levelTitle="The Energy Meter"
+        levelIcon="⚡"
+        objective="Explore your home with a powerful new tool — the Energy Meter. Walk through each room, toggle appliances ON and OFF, and watch how each one affects electricity usage, bills, and the environment in real-time."
+        learningOutcome="By the end of this level, you will understand how much electricity each appliance uses (in Watts), how energy consumption translates to monthly bills, and how to identify and stop energy waste in your home."
+        terms={[
+          { icon: '⚡', name: 'Watts', definition: 'Watts tell you how much electricity an appliance uses at any moment. Higher watts = more electricity consumed.', example: 'AC uses 1500W while a fan uses only 75W' },
+          { icon: '🔋', name: 'Energy Consumption', definition: 'The total amount of electricity used over time. It is measured in kilowatt-hours (kWh) and determines your monthly usage.', example: 'Running a 1000W heater for 1 hour = 1 kWh' },
+          { icon: '💰', name: 'Electricity Bill', definition: 'The money you pay for the electricity your home uses each month. The more appliances you run, the higher the bill.', example: 'A home using 300 kWh/month pays around ₹2,000' },
+        ]}
+        onComplete={() => setShowLevelIntro(false)}
+      />
+    );
+  }
+
+  // ═══════════════════════════════════════════════════════
   //  RENDER — INTRO
   // ═══════════════════════════════════════════════════════
   if (phase === 'intro') {
@@ -535,19 +655,18 @@ export default function Level2() {
             <div className="l2-intro-badge-icon">{ICONS.zap}</div>
             <div className="l2-intro-badge-glow" />
           </div>
-          <h1 className={`l2-intro-title ${introStep >= 2 ? 'visible' : ''}`}>New Tool Unlocked</h1>
+          <h1 className={`l2-intro-title ${introStep >= 2 ? 'visible' : ''}`}>{l2t.newToolUnlocked || 'New Tool Unlocked'}</h1>
           <div className={`l2-intro-subtitle ${introStep >= 2 ? 'visible' : ''}`}>
             <span className="l2-intro-tool-name">{ICONS.zap} ENERGY METER {ICONS.zap}</span>
           </div>
           <div className={`l2-intro-dialogue ${introStep >= 3 ? 'visible' : ''}`}>
             <div className="l2-intro-avatar">{'\u{1F9D1}\u{200D}\u{1F393}'}</div>
             <p className="l2-intro-quote">
-              "Let's see how much electricity these appliances use!
-              Toggle them ON and OFF to see the energy impact in real-time."
+              "{l2t.introQuote || "Let's see how much electricity these appliances use! Toggle them ON and OFF to see the energy impact in real-time."}"
             </p>
           </div>
           <button className={`l2-intro-start-btn ${introStep >= 3 ? 'visible' : ''}`} onClick={() => setPhase('explore')}>
-            Begin Level 2 {'\u{2192}'}
+            {l2t.beginLevel2 || 'Begin Level 2'} {'\u{2192}'}
           </button>
         </div>
       </div>
@@ -629,50 +748,113 @@ export default function Level2() {
 
       {/* HUD TOP BAR */}
       <div className="l2-hud-top">
-        <button className="l2-back-btn" onClick={() => navigate('/hub')}>{'\u{2190}'} Back</button>
-        <div className="l2-hud-title">{ICONS.zap} Energy Meter</div>
-        <div className="l2-hud-room">{ROOM_ICONS[currentRoom] || ICONS.pin} {currentRoom}</div>
+        <button className="l2-back-btn" onClick={() => navigate('/hub')}>{l2t.back || '\u{2190} Back'}</button>
+        <div className="l2-hud-title">{ICONS.zap} {l2t.energyMeter || 'Energy Meter'}</div>
+        <div className="l2-hud-room">{ROOM_ICONS[currentRoom] || ICONS.pin} {t?.rooms?.[currentRoom]?.name?.replace('📍 ', '') || currentRoom}</div>
       </div>
 
       {/* TASK BAR */}
-      {phase === 'tasks' && currentTask && !taskFeedback && !learningInsert && !microQuestion && (
+      {phase === 'tasks' && currentTask && !taskFeedback && !learningInsert && !microQuestion && !turnOffSummary && (
         <div className="l2-task-bar">
           <div className="l2-task-progress-label">{ICONS.target} Task {currentTaskIdx + 1} of {TASKS.length}</div>
           <div className="l2-task-scenario"><span className="l2-task-icon">{currentTask.icon}</span><span className="l2-task-text">{currentTask.scenario}</span></div>
           <div className="l2-task-hint-text">{ICONS.bulb} {currentTask.hint}</div>
+          {currentTask.type === 'turn_off' && (
+            <div className="l2-task-turnoff-progress">
+              <span>{ICONS.plug} Turned OFF: {turnOffTracker.length}/{currentTask.turnOffIds.length}</span>
+              {turnOffTracker.length >= currentTask.requiredOff && turnOffTracker.length < currentTask.turnOffIds.length && (
+                <button className="l2-task-next-btn" style={{ marginLeft: 12, padding: '4px 14px', fontSize: '12px' }} onClick={() => {
+                  const totalSaved = turnOffTracker.reduce((s, id) => s + L2_APPLIANCE_MAP[id].wattage, 0);
+                  const biggest = turnOffTracker.reduce((best, id) => L2_APPLIANCE_MAP[id].wattage > L2_APPLIANCE_MAP[best].wattage ? id : best, turnOffTracker[0]);
+                  setCorrectTasks(c => c + 1);
+                  setTurnOffSummary({
+                    totalSaved, count: turnOffTracker.length,
+                    biggest: L2_APPLIANCE_MAP[biggest],
+                    stars: turnOffTracker.length >= currentTask.turnOffIds.length ? 3 : turnOffTracker.length >= 4 ? 2 : 1,
+                    learning: currentTask.finalLearning,
+                  });
+                }}>Done {ICONS.check}</button>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* TURN-OFF SUMMARY POPUP */}
+      {turnOffSummary && (
+        <div className="l2-learning-overlay">
+          <div className="l2-learning-card" style={{ maxWidth: 440 }}>
+            <div className="l2-learning-icon">{ICONS.check}</div>
+            <h3 className="l2-learning-title">Energy Waste Stopped!</h3>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: 8, margin: '10px 0' }}>
+              {[1,2,3].map(s => <span key={s} style={{ fontSize: 24, opacity: s <= turnOffSummary.stars ? 1 : 0.2 }}>{ICONS.star}</span>)}
+            </div>
+            <div style={{ background: 'rgba(34,197,94,0.12)', borderRadius: 10, padding: '12px 16px', margin: '10px 0' }}>
+              <div style={{ fontSize: 22, fontWeight: 800, color: '#22c55e' }}>-{turnOffSummary.totalSaved.toLocaleString()}W saved</div>
+              <div style={{ fontSize: 13, color: '#94a3b8', marginTop: 4 }}>{turnOffSummary.count} appliances turned OFF</div>
+            </div>
+            <div style={{ background: 'rgba(245,158,11,0.1)', borderRadius: 8, padding: '8px 12px', margin: '8px 0', fontSize: 13 }}>
+              {ICONS.zap} Biggest contributor: <strong>{turnOffSummary.biggest.icon} {turnOffSummary.biggest.name} ({turnOffSummary.biggest.wattage}W)</strong>
+            </div>
+            {turnOffSummary.learning && (
+              <div style={{ margin: '12px 0' }}>
+                <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 6 }}>{turnOffSummary.learning.title}</div>
+                {turnOffSummary.learning.messages.map((msg, i) => (
+                  <div key={i} style={{ fontSize: 12, color: '#cbd5e1', margin: '4px 0' }}>{ICONS.bulb} {msg}</div>
+                ))}
+              </div>
+            )}
+            <button className="l2-learning-btn" onClick={() => { setTurnOffSummary(null); advanceTask(); }}>Next Task {'\u{2192}'}</button>
+          </div>
         </div>
       )}
 
       {/* EXPLORE → TASKS + Graph/Bill/CO2 buttons */}
       {phase === 'explore' && (
         <div className="l2-action-buttons">
-          {interactionCount >= 2 && <button className="l2-action-btn graph-btn" onClick={() => setShowGraph(true)}>{ICONS.chart} Energy Graph</button>}
-          {interactionCount >= 2 && <button className="l2-action-btn bill-btn" onClick={() => setShowBill(true)}>{ICONS.money} Bill Calc</button>}
-          {interactionCount >= 2 && <button className="l2-action-btn co2-btn" onClick={() => setShowCO2Panel(true)}>{ICONS.globe} CO{'\u{2082}'} Impact</button>}
+          {interactionCount >= 2 && <button className="l2-action-btn graph-btn" onClick={() => setShowGraph(true)}>{ICONS.chart} {l2t.energyGraph || 'Energy Graph'}</button>}
+          {interactionCount >= 2 && <button className="l2-action-btn bill-btn" onClick={() => setShowBill(true)}>{ICONS.money} {l2t.billCalc || 'Bill Calc'}</button>}
+          {interactionCount >= 2 && <button className="l2-action-btn co2-btn" onClick={() => setShowCO2Panel(true)}>{ICONS.globe} {l2t.co2Impact || 'CO₂ Impact'}</button>}
           {canStartTasks && <button className="l2-start-tasks-btn" onClick={() => {
+            // Reset all appliances OFF first
             const reset = {}; L2_APPLIANCE_IDS.forEach(id => { reset[id] = false; });
-            setApplianceStates(reset); setTotalWatts(0); setOnCount(0); setPhase('tasks');
-          }}>{ICONS.target} Start Tasks {'\u{2192}'}</button>}
+            // Task 1 is turn_off: auto-turn ON waste appliances + protected ones
+            const firstTask = TASKS[0];
+            if (firstTask.type === 'turn_off') {
+              firstTask.turnOffIds.forEach(id => { reset[id] = true; });
+              if (firstTask.protectedIds) firstTask.protectedIds.forEach(id => { reset[id] = true; });
+            }
+            setApplianceStates(reset); setTotalWatts(0); setOnCount(0); setTurnOffTracker([]); setTurnOffSummary(null); setPhase('tasks');
+            // Show initial task popup
+            if (firstTask.type === 'turn_off' && firstTask.startPopup) {
+              setInfoPopup({
+                name: 'Energy Alert', icon: ICONS.warn, wattage: 0,
+                message: { text: firstTask.startPopup, type: 'warning', icon: ICONS.warn },
+                co2hint: null,
+              });
+              setTimeout(() => setInfoPopup(null), 4000);
+            }
+          }}>{ICONS.target} {l2t.startTasks || 'Start Tasks'} {'\u{2192}'}</button>}
         </div>
       )}
 
       {/* ENERGY GAUGE PANEL */}
       <div className="l2-energy-panel">
         <div className="l2-energy-header">
-          <span className="l2-energy-icon">{ICONS.zap}</span><span className="l2-energy-label">Energy Meter</span>
+          <span className="l2-energy-icon">{ICONS.zap}</span><span className="l2-energy-label">{l2t.energyMeter || 'Energy Meter'}</span>
         </div>
         <EnergyGauge watts={totalWatts} maxWatts={4000} />
         <div className="l2-gauge-digital">
           <AnimatedWattCounter targetValue={totalWatts} />
         </div>
         <div className="l2-gauge-info">
-          <span className="l2-gauge-count">{onCount}/{L2_APPLIANCE_IDS.length} ON</span>
-          <span className="l2-gauge-co2">{ICONS.globe} CO{'\u{2082}'}: {co2Data.co2Month} kg/mo</span>
+          <span className="l2-gauge-count">{onCount}/{L2_APPLIANCE_IDS.length} {l2t.on || 'ON'}</span>
+          <span className="l2-gauge-co2">{ICONS.globe} {l2t.co2Label || 'CO₂'}: {co2Data.co2Month} {l2t.kgMo || 'kg/mo'}</span>
         </div>
       </div>
 
       {/* SESSION TRACKER */}
-      <div className="l2-session-tracker">{ICONS.zap} Session: <strong>{sessionEnergy.toLocaleString()}W</strong></div>
+      <div className="l2-session-tracker">{ICONS.zap} {l2t.session || 'Session'}: <strong>{sessionEnergy.toLocaleString()}W</strong></div>
 
       {/* INTELLIGENT INSIGHT TICKER */}
       {currentInsight && (phase === 'explore' || phase === 'tasks') && (
@@ -685,9 +867,9 @@ export default function Level2() {
       {/* PROGRESS PANEL */}
       {phase === 'explore' && (
         <div className="l2-progress-panel">
-          <div className="l2-progress-header">{ICONS.check} Discovery</div>
+          <div className="l2-progress-header">{ICONS.check} {l2t.discovery || 'Discovery'}</div>
           <div className="l2-progress-bar-outer"><div className="l2-progress-bar-inner" style={{ width: `${(toggledSet.size / L2_APPLIANCE_IDS.length) * 100}%` }} /></div>
-          <div className="l2-progress-text">{toggledSet.size}/{L2_APPLIANCE_IDS.length} tested{canStartTasks && <span className="l2-progress-complete"> {ICONS.party} Ready!</span>}</div>
+          <div className="l2-progress-text">{toggledSet.size}/{L2_APPLIANCE_IDS.length} {l2t.tested || 'tested'}{canStartTasks && <span className="l2-progress-complete"> {ICONS.party} {l2t.ready || 'Ready!'}</span>}</div>
         </div>
       )}
       {phase === 'tasks' && (
@@ -904,18 +1086,18 @@ export default function Level2() {
         {floatingTexts.map(ft => <FloatingText key={ft.id} id={ft.id} text={ft.text} type={ft.type} onDone={removeFloatingText} />)}
       </div>
 
-      {/* HELP BUTTON + APPLIANCE FACES */}
-      <ControlsHelp />
+      {/* HELP BUTTON + GOOGLY EYES */}
+      <ControlsHelp t={t} />
       {(() => {
         const sorted = L2_APPLIANCE_IDS.map(id => {
           const ap = APPLIANCE_POSITIONS[id];
           if (!ap) return { id, dist: Infinity };
           const dx = playerState.x - ap.pos[0], dz = playerState.z - ap.pos[2];
           return { id, dist: Math.sqrt(dx * dx + dz * dz) };
-        }).sort((a, b) => a.dist - b.dist).slice(0, 3).filter(a => a.dist <= 4);
+        }).sort((a, b) => a.dist - b.dist).slice(0, 3).filter(a => a.dist <= 3);
         return sorted.map(({ id, dist }) => (
-          <div key={`face-${id}`} className="l2-face-wrapper" style={{ position: 'absolute', left: '50%', top: '35%', transform: 'translate(-50%, -50%)', pointerEvents: 'none', zIndex: 20 }}>
-            <ApplianceFace id={id} isOn={!!applianceStates[id]} dist={dist} popupOpen={!!infoPopup && infoPopup.name === L2_APPLIANCE_MAP[id]?.name} px={playerState.x} pz={playerState.z} />
+          <div key={`eyes-${id}`} style={{ position: 'absolute', left: '50%', top: '35%', transform: 'translate(-50%, -50%)', pointerEvents: 'none', zIndex: 20 }}>
+            <GooglyEyes id={id} isOn={!!applianceStates[id]} dist={dist} px={playerState.x} pz={playerState.z} />
           </div>
         ));
       })()}

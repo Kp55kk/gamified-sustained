@@ -10,6 +10,9 @@ import VideoScreen from './screens/VideoScreen';
 import HubScreen from './screens/HubScreen';
 import Level1 from './game-strategy/Level1';
 import Level2 from './game-strategy/level2/Level2';
+import Level3 from './game-strategy/level3/Level3';
+import Level4 from './game-strategy/level4/Level4';
+import Level5 from './game-strategy/level5/Level5';
 
 const AnimatedRoutes = () => {
   const location = useLocation();
@@ -24,6 +27,9 @@ const AnimatedRoutes = () => {
         <Route path="/hub" element={<HubScreen />} />
         <Route path="/level1" element={<Level1 />} />
         <Route path="/level2" element={<Level2 />} />
+        <Route path="/level3" element={<Level3 />} />
+        <Route path="/level4" element={<Level4 />} />
+        <Route path="/level5" element={<Level5 />} />
       </Routes>
     </AnimatePresence>
   );

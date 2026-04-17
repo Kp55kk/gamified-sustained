@@ -1,0 +1,875 @@
+import React, { useState, useCallback, useRef, useEffect, useMemo, Suspense } from 'react';
+import { Canvas, useThree } from '@react-three/fiber';
+import { useNavigate } from 'react-router-dom';
+import House from '../House';
+import Level4Player, { l4PlayerState } from './Level4Player';
+import Level2Appliances, { getProximityLevels } from '../level2/Level2Appliances';
+import Level4Environment from './Level4Environment';
+import { useGame } from '../../context/GameContext';
+import {
+  L2_APPLIANCE_IDS, L2_APPLIANCE_MAP, USAGE_HOURS,
+  PANEL_WATT_PEAK, MAX_PANELS, ROOF_GRID_SLOTS, TIME_PERIODS, WEATHER_TYPES, TILT_OPTIONS,
+  BATTERY_CAPACITY_KWH,
+  calcSolarOutput, calcSolarDailyKwh, calcMonthlySolarKwh, calcCO2Saved, calcBillSavings,
+  calcHouseMonthlyKwh, getEfficiencyPct,
+  LEVEL3_BEFORE, calculateL4Stars, LEVEL4_BADGE,
+  SOLAR_FACTS, ENTRY_DIALOGUE, FINAL_MESSAGE, L4_ICONS, ROOM_ICONS,
+} from './level4Data';
+import Level4Quiz from './Level4Quiz';
+import LevelIntro from '../LevelIntro';
+import './Level4.css';
+
+// ═══ AUDIO ═══
+let audioCtx = null;
+function getAC() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); return audioCtx; }
+function playPlace() { try { const c=getAC(),o=c.createOscillator(),g=c.createGain(); o.connect(g);g.connect(c.destination);o.type='triangle';o.frequency.setValueAtTime(600,c.currentTime);o.frequency.linearRampToValueAtTime(900,c.currentTime+0.1);g.gain.setValueAtTime(0.1,c.currentTime);g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+0.2);o.start(c.currentTime);o.stop(c.currentTime+0.2); } catch(e){} }
+function playSuccess() { [523,659,784,1047].forEach((f,i) => { try { const c=getAC(),o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.type='triangle';o.frequency.setValueAtTime(f,c.currentTime+i*0.12);g.gain.setValueAtTime(0.08,c.currentTime+i*0.12);g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+i*0.12+0.3);o.start(c.currentTime+i*0.12);o.stop(c.currentTime+i*0.12+0.3); } catch(e){} }); }
+function playToggle(on) { try { const c=getAC(),o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.setValueAtTime(on?800:300,c.currentTime);g.gain.setValueAtTime(0.08,c.currentTime);g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+0.1);o.start(c.currentTime);o.stop(c.currentTime+0.1); } catch(e){} }
+
+// ═══ 3D HELPERS ═══
+function CamRef({r}){const{camera}=useThree();useEffect(()=>{r.current=camera},[camera,r]);return null;}
+
+function Scene({appStates,nearest,onRoom,onNearest,onInteract,camRef,proxLevels,recovery,timeOfDay,slots,tilt,showMarkers,onRooftopReach}){
+  return(<><CamRef r={camRef}/><Level4Environment recoveryLevel={recovery} timeOfDay={timeOfDay} installedSlots={slots} tiltAngle={tilt} showSlotMarkers={showMarkers}/><House/><Level2Appliances applianceStates={appStates} nearestAppliance={nearest} taskTargetIds={null} proximityLevels={proxLevels}/><Level4Player onRoomChange={onRoom} onNearestApplianceChange={onNearest} onInteract={onInteract} applianceIdList={L2_APPLIANCE_IDS} onRooftopReach={onRooftopReach}/></>);
+}
+
+// ═══ TASKS DEFINITION ═══
+const TASKS = [
+  { id: 'discover', title: 'Solar Discovery', icon: '\u{2600}\u{FE0F}', objective: 'Walk outside and explore the environment', desc: 'Look at the house and the surrounding environment. Explore the area, check out the roof.', hint: 'Use W to walk forward, A/D to turn. Q to look up, Z to look down.' },
+  { id: 'install', title: 'Install Solar Panels', icon: '\u{1F527}', objective: 'Place solar panels on the roof', desc: 'Walk to the front of the house and look up at the roof. Place at least 3 panels.', hint: 'Click the roof grid to place panels. Avoid shadow spots!' },
+  { id: 'optimize', title: 'Optimize Panels', icon: '\u{2699}\u{FE0F}', objective: 'Adjust tilt for max efficiency', desc: 'Set the best panel angle. Target: 80%+ efficiency.', hint: '25\u{00B0} is optimal for India!' },
+  { id: 'energy', title: 'Energy Management', icon: '\u{26A1}', objective: 'Run the house on solar power', desc: 'Go inside and turn on appliances. Watch solar vs grid split.', hint: 'Solar supplies power first. Keep grid usage low!' },
+  { id: 'daynight', title: 'Day-Night Challenge', icon: '\u{1F305}', objective: 'Manage energy across the day', desc: 'Use the time slider to see how solar changes. Use heavy appliances at noon!', hint: 'Slide time to see output change' },
+  { id: 'battery', title: 'Battery Storage', icon: '\u{1F50B}', objective: 'Store solar energy for night use', desc: 'At noon, excess solar charges battery. At night, battery powers house.', hint: 'Slide time to charge/discharge' },
+  { id: 'recovery', title: 'Witness the World Recover', icon: '\u{1F30D}', objective: 'Restore the environment using solar energy', desc: 'Use solar power to reduce CO\u{2082} emissions and grid usage. Watch the environment recover in real-time!', hint: 'Achieve \u{2265}70% solar usage to trigger full environment recovery.' },
+  { id: 'challenge', title: 'Final Challenge', icon: '\u{1F3AF}', objective: 'Run house with minimum grid', desc: 'Max solar usage (70%+), minimize grid. Smart timing!', hint: 'Turn on appliances during noon for best solar coverage' },
+];
+
+// ═══ CONTROLS HELP ═══
+function ControlsHelp(){const[s,setS]=useState(false);
+  return(<><button className="l4-help-btn" onClick={()=>setS(true)}>?</button>{s&&<div className="l4-controls-overlay" onClick={()=>setS(false)}><div className="l4-controls-card" onClick={e=>e.stopPropagation()}><div className="l4-controls-title">{L4_ICONS.grad} Controls</div>{[['W/\u2191','Forward'],['S/\u2193','Backward'],['A/\u2190','Turn Left'],['D/\u2192','Turn Right'],['Q','Look Up'],['Z','Look Down'],['E','Interact']].map(([k,l])=><div key={k} className="l4-ctrl-row"><span><span className="l4-key">{k}</span></span><span>{l}</span></div>)}<button className="l4-controls-got-it" onClick={()=>setS(false)}>Got it!</button></div></div>}</>);
+}
+
+// ═══ MAIN ═══
+export default function Level4() {
+  const navigate = useNavigate();
+  const { addCarbonCoins, completeLevel, unlockLevel } = useGame();
+  const camRef = useRef(null);
+
+  const [showLevelIntro, setShowLevelIntro] = useState(true);
+  const [phase, setPhase] = useState('entry');
+  const [introStep, setIntroStep] = useState(0);
+  const [introBg, setIntroBg] = useState('dark');
+
+  // Task system
+  const [taskIdx, setTaskIdx] = useState(0);
+  const [taskPhase, setTaskPhase] = useState('objective'); // objective | active | complete
+  const [tasksPassed, setTasksPassed] = useState(0);
+
+  // Solar
+  const [installedSlots, setInstalledSlots] = useState([]);
+  const [tiltAngle, setTiltAngle] = useState(25);
+  const [tiltEff, setTiltEff] = useState(1.0);
+  const [weatherIdx, setWeatherIdx] = useState(0);
+  const [timeIdx, setTimeIdx] = useState(2);
+
+  // Battery
+  const [batteryCharge, setBatteryCharge] = useState(0);
+
+  // Appliances
+  const [appStates, setAppStates] = useState(() => { const s={}; L2_APPLIANCE_IDS.forEach(id=>{s[id]=false}); return s; });
+  const [currentRoom, setCurrentRoom] = useState('Living Room');
+  const [nearest, setNearest] = useState(null);
+  const [proxLevels, setProxLevels] = useState({});
+
+  // Discovery - starts outside already
+  const [hasGoneOutside, setHasGoneOutside] = useState(true);
+  const [discoveryQ, setDiscoveryQ] = useState(null);
+  const [reachedRooftop, setReachedRooftop] = useState(false);
+
+  // Recovery task state
+  const [recoveryStep, setRecoveryStep] = useState(0); // 0=observe, 1=activate, 2=meet-condition, 3=env-change, 4=complete
+  const [recoveryStage, setRecoveryStage] = useState(0); // 0-3 visual stages
+  const [recoveryMsg, setRecoveryMsg] = useState('');
+  const [recoveryObserved, setRecoveryObserved] = useState(false);
+  const [showBeforeAfter, setShowBeforeAfter] = useState(false);
+  const [showInlineCompare, setShowInlineCompare] = useState(false);
+  const [hasSeenCompare, setHasSeenCompare] = useState(false);
+  const [impactPulse, setImpactPulse] = useState(false);
+
+  // Quiz/Reward
+  const [quizResult, setQuizResult] = useState(null);
+  const [stars, setStars] = useState(0);
+
+  // Computed
+  const weather = WEATHER_TYPES[weatherIdx];
+  const timePeriod = TIME_PERIODS[timeIdx];
+  const panelCount = installedSlots.length;
+  const avgShadow = panelCount > 0 ? installedSlots.reduce((s,i)=>s+ROOF_GRID_SLOTS[i].shadow,0)/panelCount : 0;
+  const currentSolarW = calcSolarOutput(panelCount, tiltEff, timePeriod.sunlight, weather.factor, avgShadow);
+  const dailyKwh = calcSolarDailyKwh(panelCount, tiltEff, weather.factor, installedSlots);
+  const monthlyKwh = calcMonthlySolarKwh(dailyKwh);
+  const houseKwh = calcHouseMonthlyKwh();
+  const effPct = getEfficiencyPct(tiltEff, avgShadow, weather.factor);
+  const co2Saved = calcCO2Saved(monthlyKwh);
+  const savings = calcBillSavings(monthlyKwh, houseKwh);
+
+  const houseWatts = useMemo(() => {
+    let w=0; L2_APPLIANCE_IDS.forEach(id=>{if(appStates[id])w+=L2_APPLIANCE_MAP[id].wattage}); return w;
+  }, [appStates]);
+  const solarUsed = Math.min(currentSolarW, houseWatts);
+  const gridWatts = Math.max(houseWatts - currentSolarW, 0);
+  const excessSolar = Math.max(currentSolarW - houseWatts, 0);
+  const solarPct = houseWatts > 0 ? Math.round((solarUsed / houseWatts) * 100) : (panelCount > 0 ? 100 : 0);
+  const gridPct = 100 - solarPct;
+
+  // Live solar energy in kWh (current instantaneous → projected)
+  const liveKwh = useMemo(() => (currentSolarW / 1000).toFixed(1), [currentSolarW]);
+  const liveCO2Saved = useMemo(() => (parseFloat(liveKwh) * 0.71).toFixed(1), [liveKwh]);
+  const liveBillSaved = useMemo(() => Math.round(parseFloat(liveKwh) * 8), [liveKwh]);
+
+  // Efficiency formula breakdown
+  const usefulEnergy = solarUsed;
+  const totalEnergy = houseWatts || 1;
+  const liveEfficiency = houseWatts > 0 ? Math.round((usefulEnergy / totalEnergy) * 100) : effPct;
+
+  const currentTask = TASKS[taskIdx];
+
+  // Trigger inline compare the first time solar is supplying > 30% in energy/recovery tasks
+  useEffect(() => {
+    if (!hasSeenCompare && solarPct >= 30 && panelCount > 0 && houseWatts > 0 && ['energy','recovery','challenge'].includes(currentTask?.id)) {
+      setShowInlineCompare(true);
+      setHasSeenCompare(true);
+    }
+  }, [solarPct, panelCount, houseWatts, currentTask, hasSeenCompare]);
+
+  // Impact pulse animation when values change significantly
+  useEffect(() => {
+    if (currentSolarW > 0) {
+      setImpactPulse(true);
+      const t = setTimeout(() => setImpactPulse(false), 600);
+      return () => clearTimeout(t);
+    }
+  }, [Math.round(currentSolarW / 100)]);
+
+  const recoveryLevel = useMemo(() => {
+    if (phase === 'entry') return 0;
+    // During recovery task: START from damaged, dramatic visual improvement per stage
+    if (currentTask?.id === 'recovery') {
+      if (taskPhase === 'objective') return 0.05; // Show damaged world in briefing
+      // Stage 0 = damaged (0.05), Stage 1 = partial (0.3), Stage 2 = good (0.6), Stage 3 = full (1.0)
+      const stageLevels = [0.05, 0.3, 0.6, 1.0];
+      return stageLevels[Math.min(recoveryStage, 3)];
+    }
+    // Other tasks: gradual improvement but cap at 0.5 so recovery task has room
+    const base = Math.min(taskIdx / TASKS.length, 1);
+    return 0.1 + base * 0.4;
+  }, [phase, taskIdx, recoveryStage, taskPhase, currentTask]);
+
+  // ─── Intro animation ───
+  useEffect(() => {
+    if (phase !== 'entry') return;
+    const t1=setTimeout(()=>setIntroStep(1),500);
+    const t2=setTimeout(()=>{setIntroStep(2);setIntroBg('dawn')},1800);
+    const t3=setTimeout(()=>{setIntroStep(3);setIntroBg('bright')},3500);
+    const t4=setTimeout(()=>{setIntroStep(4);setIntroBg('solar')},5000);
+    return()=>{clearTimeout(t1);clearTimeout(t2);clearTimeout(t3);clearTimeout(t4)};
+  }, [phase]);
+
+  // ─── Room change → detect going outside ───
+  const handleRoomChange = useCallback(r => {
+    setCurrentRoom(r);
+    if (r === 'Outside' && !hasGoneOutside) setHasGoneOutside(true);
+  }, [hasGoneOutside]);
+
+  // ─── Interact ───
+  const handleInteract = useCallback(id => {
+    if (!L2_APPLIANCE_IDS.includes(id)) return;
+    setAppStates(p => { playToggle(!p[id]); return {...p,[id]:!p[id]}; });
+  }, []);
+
+  // ─── Panel slot toggle ───
+  const toggleSlot = useCallback(idx => {
+    setInstalledSlots(prev => {
+      if (prev.includes(idx)) return prev.filter(i=>i!==idx);
+      if (prev.length >= MAX_PANELS) return prev;
+      playPlace(); return [...prev, idx];
+    });
+  }, []);
+
+  const selectTilt = useCallback((angle, eff) => { setTiltAngle(angle); setTiltEff(eff); playPlace(); }, []);
+
+  // ─── Task completion checks ───
+  useEffect(() => {
+    if (phase !== 'play' || taskPhase !== 'active') return;
+    const t = currentTask;
+    if (!t) return;
+    if (t.id === 'discover' && hasGoneOutside && discoveryQ !== null) {
+      completeTask();
+    }
+    if (t.id === 'energy' && houseWatts > 0 && solarPct > 0) {
+      // Keep active, user clicks next
+    }
+    // Recovery task auto-stages
+    if (t.id === 'recovery' && recoveryStep >= 1) {
+      if (solarPct >= 30 && solarPct < 50 && recoveryStage < 1) {
+        setRecoveryStage(1);
+        setRecoveryMsg('Solar energy is reducing pollution\u{2026}');
+      } else if (solarPct >= 50 && solarPct < 70 && recoveryStage < 2) {
+        setRecoveryStage(2);
+        setRecoveryMsg('Environment is recovering\u{2026}');
+      } else if (solarPct >= 70 && recoveryStage < 3) {
+        setRecoveryStage(3);
+        setRecoveryMsg('Clean energy is making a difference!');
+        setRecoveryStep(3);
+      }
+    }
+  }, [phase, taskPhase, hasGoneOutside, discoveryQ, houseWatts, solarPct, currentTask, recoveryStep, recoveryStage]);
+
+  const completeTask = useCallback(() => {
+    playSuccess();
+    setTasksPassed(p => p + 1);
+    setTaskPhase('complete');
+  }, []);
+
+  const advanceTask = useCallback(() => {
+    const next = taskIdx + 1;
+    if (next >= TASKS.length) {
+      setPhase('compare');
+    } else {
+      setTaskIdx(next);
+      setTaskPhase('objective');
+    }
+  }, [taskIdx]);
+
+  const handleQuizComplete = useCallback(result => {
+    setQuizResult(result);
+    const s = calculateL4Stars(effPct, solarPct, result.score, result.total);
+    setStars(s); setPhase('reward');
+  }, [effPct, solarPct]);
+
+  const handleFinish = useCallback(() => {
+    addCarbonCoins(LEVEL4_BADGE.coins + stars * 20);
+    completeLevel(4); unlockLevel(5); navigate('/hub');
+  }, [stars, addCarbonCoins, completeLevel, navigate]);
+
+  const handleRooftopReach = useCallback(() => {
+    if (!reachedRooftop) setReachedRooftop(true);
+  }, [reachedRooftop]);
+
+  // ═══ RENDER: LEVEL INTRO (Learn Before Play) ═══
+  if (showLevelIntro) {
+    return (
+      <LevelIntro
+        levelNumber={4}
+        levelTitle="Solar Revolution"
+        levelIcon="☀️"
+        objective="Install solar panels on your home's roof, optimize their angle for maximum sunlight, and discover how renewable energy can power your entire house while reducing pollution and electricity bills."
+        learningOutcome="By the end of this level, you will understand how solar energy works, how to store it in batteries for night use, and how clean energy can restore the environment and save money."
+        terms={[
+          { icon: '☀️', name: 'Solar Energy', definition: 'Energy captured from sunlight using solar panels. It is clean, free, and does not create any pollution or CO₂ emissions.', example: '6 solar panels can generate enough power for most homes' },
+          { icon: '🔋', name: 'Energy Storage', definition: 'Saving excess solar energy in batteries during the day so you can use it at night when there is no sunlight.', example: 'A battery charged at noon can power lights all night' },
+          { icon: '⚡', name: 'Clean Energy', definition: 'Energy that comes from natural sources like sunlight, wind, or water. It does not pollute the air or harm the environment.', example: 'Solar and wind are clean; coal and gas are not' },
+        ]}
+        onComplete={() => setShowLevelIntro(false)}
+      />
+    );
+  }
+
+  // ═══ RENDER: ENTRY ═══
+  if (phase === 'entry') {
+    return (<div className="l4-container"><div className="l4-intro-overlay">
+      <div className={`l4-intro-bg ${introBg}`}/>
+      <div className={`l4-intro-icon ${introStep>=2?'visible':''}`}>{L4_ICONS.sun}</div>
+      <h1 className={`l4-intro-title ${introStep>=3?'visible':''}`}>SOLAR REVOLUTION</h1>
+      <div className={`l4-intro-subtitle ${introStep>=3?'visible':''}`}>Level 4</div>
+      <div className={`l4-intro-dialogue ${introStep>=3?'visible':''}`}>
+        <div className="l4-intro-avatar">{'\u{1F9D1}\u{200D}\u{1F393}'}</div>
+        <p className="l4-intro-quote">"{ENTRY_DIALOGUE.join(' ')}"</p>
+      </div>
+      <button className={`l4-intro-start-btn ${introStep>=4?'visible':''}`} onClick={()=>{setPhase('play');setTaskPhase('objective')}}>Begin Level 4 {'\u{2192}'}</button>
+    </div></div>);
+  }
+
+  // ═══ RENDER: QUIZ ═══
+  if (phase === 'quiz') return <div className="l4-container"><Level4Quiz onComplete={handleQuizComplete}/></div>;
+
+  // ═══ RENDER: REWARD ═══
+  if (phase === 'reward' && quizResult) {
+    const coins = LEVEL4_BADGE.coins + stars * 20;
+    return (<div className="l4-container"><div className="l4-reward-overlay"><div className="l4-reward-card">
+      <div className="l4-reward-badge">{LEVEL4_BADGE.icon}</div>
+      <div className="l4-reward-title">{LEVEL4_BADGE.title}</div>
+      <div className="l4-reward-subtitle">{LEVEL4_BADGE.description}</div>
+      <div className="l4-reward-stars">{[1,2,3].map(s=><span key={s} className={`l4-reward-star ${s<=stars?'earned':'empty'}`} style={{animationDelay:`${s*0.3}s`}}>{L4_ICONS.star}</span>)}</div>
+      <div className="l4-reward-stats">
+        <div className="l4-reward-stat"><div className="l4-reward-stat-label">Efficiency</div><div className="l4-reward-stat-value">{effPct}%</div></div>
+        <div className="l4-reward-stat"><div className="l4-reward-stat-label">CO{'\u2082'} Saved</div><div className="l4-reward-stat-value">{co2Saved} kg</div></div>
+        <div className="l4-reward-stat"><div className="l4-reward-stat-label">Quiz</div><div className="l4-reward-stat-value">{quizResult.score}/{quizResult.total}</div></div>
+      </div>
+      <div className="l4-reward-final-msg">{FINAL_MESSAGE.map((m,i)=><div key={i} className="l4-reward-final-line">"{m}"</div>)}</div>
+      <div className="l4-reward-coins"><span>{L4_ICONS.coin}</span><span>+{coins} Carbon Coins</span></div>
+      <button className="l4-reward-btn" onClick={handleFinish}>Return to Hub {'\u{2192}'}</button>
+    </div></div></div>);
+  }
+
+  // ═══ RENDER: COMPARE (Enhanced Before vs After) ═══
+  if (phase === 'compare') {
+    const co2Reduction = LEVEL3_BEFORE.co2Month > 0 ? Math.round((co2Saved / LEVEL3_BEFORE.co2Month) * 100) : 0;
+    const billReduction = savings.pctSaved;
+    const afterCO2 = Math.max(LEVEL3_BEFORE.co2Month - co2Saved, 0);
+    const treesEquiv = Math.ceil(co2Saved * 12 / 22);
+    return (<div className="l4-container"><div className="l4-modal-overlay"><div className="l4-modal-card">
+      <div className="l4-modal-title">{L4_ICONS.chart} Before vs After Solar</div>
+      <div className="l4-compare-grid">
+        <div className="l4-compare-col before">
+          <div className="l4-compare-label">{L4_ICONS.cross} Before</div>
+          <div className="l4-compare-stat"><div className="l4-compare-stat-val">{LEVEL3_BEFORE.co2Month} kg</div><div className="l4-compare-stat-lbl">CO{'\u2082'}/month</div></div>
+          <div className="l4-compare-stat"><div className="l4-compare-stat-val">{'\u20B9'}{LEVEL3_BEFORE.billMonth}</div><div className="l4-compare-stat-lbl">Bill/month</div></div>
+          <div className="l4-compare-stat"><div className="l4-compare-stat-val">0%</div><div className="l4-compare-stat-lbl">Solar Usage</div></div>
+        </div>
+        <div className="l4-compare-col after">
+          <div className="l4-compare-label">{L4_ICONS.check} After Solar</div>
+          <div className="l4-compare-stat"><div className="l4-compare-stat-val">{afterCO2} kg</div><div className="l4-compare-stat-lbl">CO{'\u2082'}/month</div></div>
+          <div className="l4-compare-stat"><div className="l4-compare-stat-val">{'\u20B9'}{savings.after}</div><div className="l4-compare-stat-lbl">Bill/month</div></div>
+          <div className="l4-compare-stat"><div className="l4-compare-stat-val">{solarPct}%</div><div className="l4-compare-stat-lbl">Solar Usage</div></div>
+        </div>
+      </div>
+      <div className="l4-compare-savings">{L4_ICONS.sparkle} Saved {'\u20B9'}{savings.saved}/month ({billReduction}%)</div>
+      {/* Solar Impact Summary */}
+      <div className="l4-compare-impact">
+        <div className="l4-compare-impact-row"><span>{L4_ICONS.sun}</span><span>Solar Output: <strong>{monthlyKwh} kWh/month</strong></span></div>
+        <div className="l4-compare-impact-row"><span>{L4_ICONS.leaf}</span><span>CO{'\u2082'} Saved: <strong>{co2Saved} kg/month</strong> ({co2Reduction}% reduction)</span></div>
+        <div className="l4-compare-impact-row"><span>{L4_ICONS.money}</span><span>Bill Saved: <strong>{'\u20B9'}{savings.saved}/month</strong></span></div>
+        <div className="l4-compare-impact-row"><span>{L4_ICONS.zap}</span><span>Efficiency: <strong>{effPct}%</strong></span></div>
+        <div className="l4-compare-impact-row"><span>{'\u{1F333}'}</span><span>Equivalent to planting <strong>{treesEquiv} trees</strong>/year</span></div>
+      </div>
+      <div style={{marginTop:'8px',padding:'10px',background:'rgba(34,197,94,0.06)',border:'1px solid rgba(34,197,94,0.15)',borderRadius:'10px',fontSize:'13px',color:'#aaddbb',textAlign:'center',fontWeight:600}}>{L4_ICONS.leaf} Solar energy is the solution! Clean, free, and sustainable.</div>
+      <button className="l4-modal-btn" onClick={()=>setPhase('quiz')}>Take Final Quiz {'\u{2192}'}</button>
+    </div></div></div>);
+  }
+
+  // ═══ RENDER: TASK OBJECTIVE (briefing before each task) ═══
+  if (phase === 'play' && taskPhase === 'objective' && currentTask) {
+    return (<div className="l4-container"><div className="l4-modal-overlay"><div className="l4-modal-card">
+      <div style={{fontSize:'11px',color:'#888',textTransform:'uppercase',letterSpacing:'2px',marginBottom:'6px'}}>Task {taskIdx + 1} of {TASKS.length}</div>
+      <div className="l4-modal-title"><span style={{fontSize:'36px'}}>{currentTask.icon}</span> {currentTask.title}</div>
+      <div style={{fontSize:'16px',fontWeight:600,color:'#ffeedd',marginBottom:'8px',lineHeight:1.5}}>{L4_ICONS.target} {currentTask.objective}</div>
+      <div style={{fontSize:'13px',color:'#999',marginBottom:'12px'}}>{currentTask.desc}</div>
+      <div style={{padding:'8px 12px',background:'rgba(245,166,35,0.06)',borderRadius:'8px',fontSize:'12px',color:'#f5a623'}}>{L4_ICONS.bulb} {currentTask.hint}</div>
+      <button className="l4-modal-btn" onClick={()=>setTaskPhase('active')}>Start Task {'\u{2192}'}</button>
+    </div></div></div>);
+  }
+
+  // ═══ RENDER: TASK COMPLETE ═══
+  if (phase === 'play' && taskPhase === 'complete' && currentTask) {
+    const learnings = {
+      discover: ['Solar is 100% clean and renewable', 'Sunlight can be converted to electricity'],
+      install: ['Panel placement affects output', 'Shadows reduce efficiency'],
+      optimize: ['25\u00B0 tilt is best for India', 'Better placement = more energy'],
+      energy: ['Solar supplies power first', 'Reduce usage to minimize grid'],
+      daynight: ['Solar output peaks at noon', 'Plan heavy usage for peak sunlight'],
+      battery: ['Battery stores excess solar', 'Night usage can be solar-powered'],
+      recovery: ['Using solar energy reduces CO\u{2082} emissions', 'Cleaner energy helps restore the environment', 'Your choices directly impact the world'],
+      challenge: ['Smart usage maximizes solar', 'You can run a home on clean energy!'],
+    };
+    return (<div className="l4-container"><div className="l4-modal-overlay"><div className="l4-modal-card" style={{borderColor:'rgba(34,197,94,0.3)'}}>
+      <div style={{display:'flex',alignItems:'center',gap:'8px',fontFamily:"'Fredoka',sans-serif",fontSize:'18px',fontWeight:700,color:'#22c55e',marginBottom:'14px'}}>{L4_ICONS.check} Task Complete!</div>
+      <div style={{display:'flex',flexDirection:'column',gap:'8px'}}>
+        {(learnings[currentTask.id] || []).map((l,i) => (
+          <div key={i} style={{display:'flex',alignItems:'flex-start',gap:'8px',background:'rgba(34,197,94,0.06)',border:'1px solid rgba(34,197,94,0.15)',borderRadius:'10px',padding:'10px 12px',fontSize:'13px',color:'#aaddbb',lineHeight:1.5}}>
+            <span>{L4_ICONS.bulb}</span><span>{l}</span>
+          </div>
+        ))}
+      </div>
+      <button className="l4-modal-btn green" onClick={advanceTask}>{taskIdx+1 >= TASKS.length ? 'See Results' : 'Next Task'} {'\u{2192}'}</button>
+    </div></div></div>);
+  }
+
+  // ═══ RENDER: INSTALL TASK (modal overlay on 3D) ═══
+  if (phase === 'play' && taskPhase === 'active' && currentTask?.id === 'install') {
+    return (<div className="l4-container">
+      <div className="l4-canvas-wrapper">
+        <Canvas camera={{position:[-5,8,-14],fov:50}} gl={{antialias:false}} onCreated={({gl})=>{gl.setClearColor('#050a15');gl.toneMapping=1;gl.toneMappingExposure=1.0;gl.setPixelRatio(Math.min(window.devicePixelRatio,1.5))}}>
+          <Suspense fallback={null}><Level4Environment recoveryLevel={recoveryLevel} timeOfDay="noon" installedSlots={installedSlots} tiltAngle={tiltAngle} showSlotMarkers={true}/><House/></Suspense>
+        </Canvas>
+      </div>
+      <div style={{position:'absolute',inset:0,zIndex:35,display:'flex',alignItems:'center',justifyContent:'flex-end',padding:'16px 24px'}}>
+        <div className="l4-modal-card" style={{maxWidth:'380px',boxShadow:'0 0 40px rgba(0,0,0,0.8)'}}>
+          <div className="l4-modal-title">{L4_ICONS.wrench} Place Solar Panels on Roof</div>
+          <p style={{fontSize:'12px',color:'#aaa',marginBottom:'6px'}}>Click positions to place panels. Place at least 3!</p>
+          <div className="l4-grid-slots">
+            {ROOF_GRID_SLOTS.map(slot => {
+              const placed = installedSlots.includes(slot.id);
+              return (<div key={slot.id} className={`l4-grid-slot ${placed?'placed':''} ${slot.shadow>0.05?'shadow-warn':''}`} onClick={()=>toggleSlot(slot.id)}>
+                <div className="l4-grid-slot-icon">{placed ? L4_ICONS.panel : '\u{2795}'}</div>
+                <div className="l4-grid-slot-label">{slot.label}</div>
+                {slot.shadow > 0 && <div className="l4-grid-slot-shadow">{L4_ICONS.cloud} {Math.round(slot.shadow*100)}% shadow</div>}
+              </div>);
+            })}
+          </div>
+          <div style={{fontSize:'13px',color:'#f5a623',textAlign:'center'}}>{panelCount}/{MAX_PANELS} panels {' \u2022 '}{panelCount * PANEL_WATT_PEAK}W peak</div>
+          <button className="l4-modal-btn" disabled={panelCount<3} onClick={completeTask}>Done Installing {'\u{2192}'}</button>
+        </div>
+      </div>
+    </div>);
+  }
+
+  // ═══ RENDER: OPTIMIZE TASK ═══
+  if (phase === 'play' && taskPhase === 'active' && currentTask?.id === 'optimize') {
+    return (<div className="l4-container">
+      <div className="l4-canvas-wrapper">
+        <Canvas camera={{position:[-5,8,-14],fov:50}} gl={{antialias:false}} onCreated={({gl})=>{gl.setClearColor('#050a15');gl.toneMapping=1;gl.toneMappingExposure=1.0;gl.setPixelRatio(Math.min(window.devicePixelRatio,1.5))}}>
+          <Suspense fallback={null}><Level4Environment recoveryLevel={recoveryLevel} timeOfDay="noon" installedSlots={installedSlots} tiltAngle={tiltAngle}/><House/></Suspense>
+        </Canvas>
+      </div>
+      <div style={{position:'absolute',inset:0,zIndex:35,display:'flex',alignItems:'center',justifyContent:'flex-end',padding:'16px 24px'}}>
+        <div className="l4-modal-card" style={{maxWidth:'380px',boxShadow:'0 0 40px rgba(0,0,0,0.8)'}}>
+          <div className="l4-modal-title">{L4_ICONS.gear} Optimize Panel Angle</div>
+          <div className="l4-tilt-options">
+            {TILT_OPTIONS.map(t => (<div key={t.angle} className={`l4-tilt-option ${tiltAngle===t.angle?'selected':''} ${t.efficiency===1.0?'best':''}`} onClick={()=>selectTilt(t.angle,t.efficiency)}>
+              <div className="l4-tilt-label">{t.label}</div>
+              <div className="l4-tilt-eff">{Math.round(t.efficiency*100)}%</div>
+            </div>))}
+          </div>
+          <div className="l4-eff-gauge">
+            <div className="l4-eff-value" style={{color:effPct>=80?'#22c55e':'#f5a623'}}>{effPct}%</div>
+            <div className="l4-eff-label">Overall Efficiency</div>
+          </div>
+          {effPct >= 80 && <div style={{padding:'6px',background:'rgba(34,197,94,0.08)',borderRadius:'6px',fontSize:'12px',color:'#22c55e',textAlign:'center'}}>{L4_ICONS.check} Excellent!</div>}
+          <button className="l4-modal-btn" onClick={completeTask}>Confirm Optimization {'\u{2192}'}</button>
+        </div>
+      </div>
+    </div>);
+  }
+
+  // ═══ RENDER: RECOVERY TASK (Witness the World Recover) ═══
+  if (phase === 'play' && taskPhase === 'active' && currentTask?.id === 'recovery') {
+    const RECOVERY_FEEDBACK = [
+      { stage: 0, label: 'Damaged Environment', desc: 'The environment is still recovering\u{2026} your energy choices matter', icon: '\u{1F32A}\u{FE0F}' },
+      { stage: 1, label: 'Partial Recovery', desc: 'Sky becomes brighter, pollution reduces slightly', icon: '\u{1F324}\u{FE0F}' },
+      { stage: 2, label: 'Good Recovery', desc: 'Trees regain green color, clear sky appears, smoke disappears', icon: '\u{1F333}' },
+      { stage: 3, label: 'Full Recovery', desc: 'Fully clean environment! Bright sunlight, birds return', icon: '\u{1F31F}' },
+    ];
+    const currentFB = RECOVERY_FEEDBACK[recoveryStage] || RECOVERY_FEEDBACK[0];
+    const isComplete = recoveryStage >= 3;
+
+    return (<div className="l4-container">
+      <div className="l4-canvas-wrapper">
+        <Canvas camera={{position:[-5,6,1],fov:50}} gl={{antialias:false}}
+          onCreated={({gl})=>{gl.setClearColor('#050a15');gl.toneMapping=1;gl.toneMappingExposure=1.0;gl.setPixelRatio(Math.min(window.devicePixelRatio,1.5))}}>
+          <Suspense fallback={null}>
+            <Scene appStates={appStates} nearest={nearest} onRoom={handleRoomChange}
+              onNearest={id=>{setNearest(id);setProxLevels(getProximityLevels(l4PlayerState.x,l4PlayerState.z))}}
+              onInteract={handleInteract} camRef={camRef} proxLevels={proxLevels}
+              recovery={recoveryLevel} timeOfDay={timePeriod.id} slots={installedSlots} tilt={tiltAngle}
+              showMarkers={false} onRooftopReach={handleRooftopReach}/>
+          </Suspense>
+        </Canvas>
+      </div>
+
+      {/* HUD TOP */}
+      <div className="l4-hud-top">
+        <button className="l4-back-btn" onClick={()=>navigate('/hub')}>{'\u2190'} Back</button>
+        <div className="l4-hud-title">{L4_ICONS.globe} Witness the World Recover</div>
+        <div className="l4-hud-room">{ROOM_ICONS[currentRoom]||L4_ICONS.pin} {currentRoom}</div>
+      </div>
+
+      {/* TASK BAR */}
+      <div style={{position:'absolute',top:'55px',left:'50%',transform:'translateX(-50%)',zIndex:20,background:'rgba(5,10,20,0.95)',border:'1px solid rgba(34,197,94,0.25)',borderRadius:'12px',padding:'10px 18px',maxWidth:'480px',width:'92%',textAlign:'center'}}>
+        <div style={{fontSize:'10px',color:'#888',textTransform:'uppercase',letterSpacing:'1px'}}>Task {taskIdx+1}/{TASKS.length}</div>
+        <div style={{fontSize:'14px',fontWeight:700,color:'#22c55e'}}>{L4_ICONS.globe} Restore the Environment Using Solar Energy</div>
+        <div style={{fontSize:'12px',color:'#aaa',marginTop:'2px'}}>{L4_ICONS.target} {currentFB.desc}</div>
+      </div>
+
+      {/* RECOVERY STAGE INDICATOR */}
+      <div className="l4-recovery-stages">
+        {RECOVERY_FEEDBACK.map((fb, i) => (
+          <div key={i} className={`l4-recovery-stage-dot ${i <= recoveryStage ? 'active' : ''} ${i === recoveryStage ? 'current' : ''}`}>
+            <span className="l4-recovery-stage-icon">{fb.icon}</span>
+            <span className="l4-recovery-stage-label">{fb.label}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Step 1: Initial Observation */}
+      {recoveryStep === 0 && (
+        <div style={{position:'absolute',bottom:'120px',left:'50%',transform:'translateX(-50%)',zIndex:25,background:'rgba(5,10,20,0.95)',border:'1px solid rgba(245,166,35,0.3)',borderRadius:'14px',padding:'16px 24px',maxWidth:'400px',textAlign:'center',boxShadow:'0 0 30px rgba(0,0,0,0.5)'}}>
+          <div style={{fontSize:'28px',marginBottom:'8px'}}>{'\u{1F32A}\u{FE0F}'}</div>
+          <div style={{fontSize:'14px',fontWeight:700,color:'#f5a623',marginBottom:'6px'}}>Look Outside the Window</div>
+          <div style={{fontSize:'13px',color:'#ffeedd',marginBottom:'10px',lineHeight:1.5}}>The environment is still recovering\u{2026} your energy choices matter</div>
+          <div style={{fontSize:'11px',color:'#aaa',marginBottom:'10px'}}>Faded trees \u{2022} Dull sky \u{2022} Light pollution haze</div>
+          <button className="l4-modal-btn" style={{padding:'10px 20px',marginTop:'4px'}} onClick={()=>{setRecoveryStep(1);setRecoveryObserved(true)}}>I understand, let me fix this {'\u{2192}'}</button>
+        </div>
+      )}
+
+      {/* Step 2: Activate Solar - Show solar panel & appliance controls */}
+      {recoveryStep >= 1 && (
+        <div className="l4-solar-panel">
+          <div className="l4-solar-header"><span>{L4_ICONS.sun}</span><span>Solar Output</span></div>
+          <div className="l4-solar-bar-outer"><div className="l4-solar-bar-fill" style={{width:`${Math.min(currentSolarW/(panelCount*PANEL_WATT_PEAK||1)*100,100)}%`,backgroundColor:recoveryStage>=2?'#22c55e':'#f5a623',color:recoveryStage>=2?'#22c55e':'#f5a623'}}/></div>
+          <div className="l4-solar-output">
+            <span className="l4-solar-watts">{currentSolarW}W</span>
+            <span className="l4-solar-eff" style={{backgroundColor:effPct>=80?'rgba(34,197,94,0.15)':'rgba(245,166,35,0.15)',color:effPct>=80?'#22c55e':'#f5a623'}}>{effPct}% eff</span>
+          </div>
+          <div className="l4-solar-details"><span>{panelCount} panels</span><span>{dailyKwh} kWh/day</span></div>
+          {houseWatts > 0 && <div style={{marginTop:'6px'}}>
+            <div style={{fontSize:'10px',color:'#888',marginBottom:'2px'}}>Power Source</div>
+            <div className="l4-split-bar">
+              <div className="l4-split-solar" style={{width:`${solarPct}%`}}>{solarPct>10?`${solarPct}%`:''}</div>
+              <div className="l4-split-grid" style={{width:`${gridPct}%`}}>{gridPct>10?`Grid ${gridPct}%`:''}</div>
+            </div>
+          </div>}
+          {/* Recovery condition target */}
+          <div style={{marginTop:'8px',padding:'6px 10px',background:solarPct>=70?'rgba(34,197,94,0.1)':'rgba(245,166,35,0.06)',border:`1px solid ${solarPct>=70?'rgba(34,197,94,0.3)':'rgba(245,166,35,0.15)'}`,borderRadius:'8px',fontSize:'11px',color:solarPct>=70?'#22c55e':'#f5a623',textAlign:'center'}}>
+            {L4_ICONS.target} Solar Usage: {solarPct}% {solarPct>=70 ? L4_ICONS.check : '(need \u{2265}70%)'}
+          </div>
+        </div>
+      )}
+
+      {/* Step 2 instruction */}
+      {recoveryStep === 1 && (
+        <div style={{position:'absolute',bottom:'20px',left:'50%',transform:'translateX(-50%)',zIndex:25,background:'rgba(5,10,20,0.95)',border:'1px solid rgba(245,166,35,0.3)',borderRadius:'10px',padding:'10px 18px',maxWidth:'360px',textAlign:'center'}}>
+          <div style={{fontSize:'12px',fontWeight:700,color:'#f5a623',marginBottom:'4px'}}>{L4_ICONS.zap} Activate Solar System</div>
+          <div style={{fontSize:'11px',color:'#aaa'}}>Turn on appliances and let solar power do its magic. Achieve \u{2265}70% solar usage!</div>
+        </div>
+      )}
+
+      {/* LIVE FEEDBACK MESSAGE */}
+      {recoveryMsg && recoveryStep >= 1 && (
+        <div className="l4-recovery-live-msg" key={recoveryMsg}>
+          <span>{currentFB.icon}</span> {recoveryMsg}
+        </div>
+      )}
+
+      {/* Step 3 / 4: Environment recovered! */}
+      {isComplete && !showBeforeAfter && (
+        <div style={{position:'absolute',inset:0,zIndex:30,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',background:'rgba(10,40,20,0.4)',backdropFilter:'blur(2px)',gap:'12px',pointerEvents:'all'}}>
+          <div style={{fontSize:'64px',animation:'l4-pulse 2s ease infinite'}}>{L4_ICONS.globe}</div>
+          <div style={{fontFamily:"'Fredoka',sans-serif",fontSize:'28px',fontWeight:700,color:'#22c55e',textShadow:'0 0 20px rgba(34,197,94,0.5)',textAlign:'center'}}>{L4_ICONS.check} Environment Restored!</div>
+          <div style={{fontSize:'14px',color:'#aaddbb',textAlign:'center',maxWidth:'400px',lineHeight:1.6}}>Bright sunlight fills the scene. Green environment fully visible. Clean air returns.</div>
+          {/* Learning Output */}
+          <div style={{background:'rgba(5,10,20,0.9)',border:'1px solid rgba(34,197,94,0.3)',borderRadius:'14px',padding:'16px 20px',maxWidth:'420px',width:'90%',marginTop:'8px'}}>
+            <div style={{fontSize:'12px',fontWeight:700,color:'#f5a623',marginBottom:'8px',textTransform:'uppercase',letterSpacing:'1px'}}>{L4_ICONS.brain} What You Learned</div>
+            {['Using solar energy reduces CO\u{2082} emissions', 'Cleaner energy helps restore the environment', 'Your choices directly impact the world'].map((msg,i)=>(
+              <div key={i} style={{display:'flex',alignItems:'center',gap:'8px',padding:'6px 0',fontSize:'13px',color:'#aaddbb'}}>
+                <span>{L4_ICONS.bulb}</span><span>{msg}</span>
+              </div>
+            ))}
+          </div>
+          <div style={{display:'flex',gap:'10px',marginTop:'6px'}}>
+            <button className="l4-modal-btn" style={{padding:'10px 20px',width:'auto'}} onClick={()=>setShowBeforeAfter(true)}>Compare Before / After {'\u{1F50D}'}</button>
+            <button className="l4-modal-btn green" style={{padding:'10px 20px',width:'auto'}} onClick={completeTask}>Continue {'\u{2192}'}</button>
+          </div>
+        </div>
+      )}
+
+      {/* BEFORE / AFTER COMPARISON */}
+      {showBeforeAfter && (
+        <div className="l4-modal-overlay" onClick={()=>setShowBeforeAfter(false)}>
+          <div className="l4-modal-card" onClick={e=>e.stopPropagation()} style={{maxWidth:'480px'}}>
+            <div className="l4-modal-title">{L4_ICONS.globe} Before vs After</div>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'12px',marginBottom:'14px'}}>
+              <div style={{background:'rgba(239,68,68,0.08)',border:'1px solid rgba(239,68,68,0.2)',borderRadius:'12px',padding:'14px',textAlign:'center'}}>
+                <div style={{fontSize:'11px',fontWeight:700,color:'#ef4444',textTransform:'uppercase',letterSpacing:'1px',marginBottom:'10px'}}>{L4_ICONS.cross} Before</div>
+                <div style={{fontSize:'13px',color:'#ff8888',marginBottom:'4px'}}>{'\u{1F32B}\u{FE0F}'} Polluted sky</div>
+                <div style={{fontSize:'13px',color:'#ff8888',marginBottom:'4px'}}>{'\u{1F3DC}\u{FE0F}'} Dry trees</div>
+                <div style={{fontSize:'13px',color:'#ff8888'}}>{'\u{1F32B}\u{FE0F}'} Smoke</div>
+              </div>
+              <div style={{background:'rgba(34,197,94,0.08)',border:'1px solid rgba(34,197,94,0.2)',borderRadius:'12px',padding:'14px',textAlign:'center'}}>
+                <div style={{fontSize:'11px',fontWeight:700,color:'#22c55e',textTransform:'uppercase',letterSpacing:'1px',marginBottom:'10px'}}>{L4_ICONS.check} After</div>
+                <div style={{fontSize:'13px',color:'#66dd88',marginBottom:'4px'}}>{'\u{2600}\u{FE0F}'} Clear sky</div>
+                <div style={{fontSize:'13px',color:'#66dd88',marginBottom:'4px'}}>{'\u{1F333}'} Green trees</div>
+                <div style={{fontSize:'13px',color:'#66dd88'}}>{'\u{1F32C}\u{FE0F}'} Clean air</div>
+              </div>
+            </div>
+            <div style={{textAlign:'center',padding:'10px',background:'rgba(34,197,94,0.06)',borderRadius:'10px',fontSize:'13px',color:'#22c55e',fontWeight:600}}>
+              {L4_ICONS.sparkle} Solar energy restored the entire environment!
+            </div>
+            <button className="l4-modal-btn green" onClick={()=>{setShowBeforeAfter(false)}}>Got it! {'\u{2192}'}</button>
+          </div>
+        </div>
+      )}
+
+      {/* TIME PANEL */}
+      <div className="l4-time-panel">
+        <div className="l4-time-icon">{timePeriod.icon}</div>
+        <div className="l4-time-label">{timePeriod.label}</div>
+        <div className="l4-time-weather">{weather.icon} {weather.label}</div>
+      </div>
+
+      {/* PROGRESS */}
+      <div className="l4-progress-panel">
+        <div className="l4-progress-header">{L4_ICONS.target} Tasks</div>
+        <div className="l4-progress-bar-outer"><div className="l4-progress-bar-inner" style={{width:`${(taskIdx/TASKS.length)*100}%`}}/></div>
+        <div className="l4-progress-text">{tasksPassed} done / {TASKS.length} total</div>
+      </div>
+
+      <ControlsHelp/>
+    </div>);
+  }
+
+  // ═══ RENDER: QUIZ-only phases handled above ═══
+  if (phase !== 'play') return null;
+
+  // ═══ RENDER: 3D SCENE (discover, energy, daynight, battery, challenge) ═══
+  const batteryPct = Math.round((batteryCharge / BATTERY_CAPACITY_KWH) * 100);
+  const showTimeSlider = currentTask && ['daynight','battery','challenge'].includes(currentTask.id);
+  const showBattery = currentTask && ['battery','challenge'].includes(currentTask.id);
+  const showWeather = currentTask && ['daynight','challenge'].includes(currentTask.id);
+  const challengeMetSolar = solarPct >= 70;
+  const challengeMetGrid = gridWatts < 500;
+
+  return (<div className="l4-container">
+    <div className="l4-canvas-wrapper">
+      <Canvas camera={{position:[-5,6,1],fov:50}} gl={{antialias:false}}
+        onCreated={({gl})=>{gl.setClearColor('#050a15');gl.toneMapping=1;gl.toneMappingExposure=1.0;gl.setPixelRatio(Math.min(window.devicePixelRatio,1.5))}}>
+        <Suspense fallback={null}>
+          <Scene appStates={appStates} nearest={nearest} onRoom={handleRoomChange}
+            onNearest={id=>{setNearest(id);setProxLevels(getProximityLevels(l4PlayerState.x,l4PlayerState.z))}}
+            onInteract={handleInteract} camRef={camRef} proxLevels={proxLevels}
+            recovery={recoveryLevel} timeOfDay={timePeriod.id} slots={installedSlots} tilt={tiltAngle}
+            showMarkers={false} onRooftopReach={handleRooftopReach}/>
+        </Suspense>
+      </Canvas>
+    </div>
+
+    {/* HUD TOP */}
+    <div className="l4-hud-top">
+      <button className="l4-back-btn" onClick={()=>navigate('/hub')}>{'\u2190'} Back</button>
+      <div className="l4-hud-title">{L4_ICONS.sun} Solar Revolution</div>
+      <div className="l4-hud-room">{ROOM_ICONS[currentRoom]||L4_ICONS.pin} {currentRoom}</div>
+    </div>
+
+    {/* TASK BAR */}
+    <div style={{position:'absolute',top:'55px',left:'50%',transform:'translateX(-50%)',zIndex:20,background:'rgba(5,10,20,0.95)',border:'1px solid rgba(245,166,35,0.25)',borderRadius:'12px',padding:'10px 18px',maxWidth:'420px',width:'90%',textAlign:'center'}}>
+      <div style={{fontSize:'10px',color:'#888',textTransform:'uppercase',letterSpacing:'1px'}}>Task {taskIdx+1}/{TASKS.length}</div>
+      <div style={{fontSize:'14px',fontWeight:700,color:'#f5a623'}}>{currentTask?.icon} {currentTask?.title}</div>
+      <div style={{fontSize:'12px',color:'#aaa',marginTop:'2px'}}>{L4_ICONS.target} {currentTask?.objective}</div>
+      {currentTask?.id === 'discover' && <div style={{fontSize:'11px',color:'#88ccff',marginTop:'4px'}}>{L4_ICONS.check} Outside! {' \u2022 '} Q=Look Up, Z=Look Down</div>}
+    </div>
+
+    {/* SOLAR METER (after install) */}
+    {panelCount > 0 && (
+      <div className="l4-solar-panel">
+        <div className="l4-solar-header"><span>{L4_ICONS.sun}</span><span>Solar Output</span></div>
+        <div className="l4-solar-bar-outer"><div className="l4-solar-bar-fill" style={{width:`${Math.min(currentSolarW/(panelCount*PANEL_WATT_PEAK||1)*100,100)}%`,backgroundColor:'#f5a623',color:'#f5a623'}}/></div>
+        <div className="l4-solar-output">
+          <span className="l4-solar-watts">{currentSolarW}W</span>
+          <span className="l4-solar-eff" style={{backgroundColor:effPct>=80?'rgba(34,197,94,0.15)':'rgba(245,166,35,0.15)',color:effPct>=80?'#22c55e':'#f5a623'}}>{L4_ICONS.zap} {effPct}%</span>
+        </div>
+        <div className="l4-solar-details"><span>{panelCount} panels</span><span>{dailyKwh} kWh/day</span></div>
+        {houseWatts > 0 && <div style={{marginTop:'6px'}}>
+          <div style={{fontSize:'10px',color:'#888',marginBottom:'2px'}}>Power Source</div>
+          <div className="l4-split-bar">
+            <div className="l4-split-solar" style={{width:`${solarPct}%`}}>{solarPct>10?`${solarPct}%`:''}</div>
+            <div className="l4-split-grid" style={{width:`${gridPct}%`}}>{gridPct>10?`Grid ${gridPct}%`:''}</div>
+          </div>
+        </div>}
+      </div>
+    )}
+
+    {/* ☀️ SOLAR IMPACT SYSTEM (MAIN FEATURE — LIVE TICKER) */}
+    {panelCount > 0 && (['energy','daynight','battery','challenge','recovery'].includes(currentTask?.id)) && (
+      <>
+        {/* Live Solar Ticker Strip */}
+        <div className={`l4-solar-ticker ${impactPulse ? 'pulse' : ''}`}>
+          <span className="l4-solar-ticker-item">
+            <span className="l4-ticker-icon">{L4_ICONS.sun}</span>
+            <span className="l4-ticker-label">Solar:</span>
+            <span className="l4-ticker-val solar">{liveKwh} kWh</span>
+          </span>
+          <span className="l4-ticker-sep">|</span>
+          <span className="l4-solar-ticker-item">
+            <span className="l4-ticker-icon">{L4_ICONS.leaf}</span>
+            <span className="l4-ticker-label">CO{'\u2082'} Saved:</span>
+            <span className="l4-ticker-val co2">{liveCO2Saved} kg</span>
+          </span>
+          <span className="l4-ticker-sep">|</span>
+          <span className="l4-solar-ticker-item">
+            <span className="l4-ticker-icon">{L4_ICONS.money}</span>
+            <span className="l4-ticker-label">Saved:</span>
+            <span className="l4-ticker-val bill">{'\u20B9'}{liveBillSaved}/hr</span>
+          </span>
+        </div>
+
+        {/* Detailed Impact Panel */}
+        <div className="l4-impact-panel">
+          <div className="l4-impact-header">{L4_ICONS.sparkle} Solar Impact (Live)</div>
+          <div className="l4-impact-row">
+            <div className="l4-impact-item">
+              <div className={`l4-impact-val solar ${impactPulse ? 'animate' : ''}`}>{monthlyKwh}</div>
+              <div className="l4-impact-lbl">kWh/month</div>
+            </div>
+            <div className="l4-impact-item">
+              <div className={`l4-impact-val co2 ${impactPulse ? 'animate' : ''}`}>{co2Saved} kg</div>
+              <div className="l4-impact-lbl">{L4_ICONS.leaf} CO{'\u2082'} Saved</div>
+            </div>
+            <div className="l4-impact-item">
+              <div className={`l4-impact-val bill ${impactPulse ? 'animate' : ''}`}>{'\u20B9'}{savings.saved}</div>
+              <div className="l4-impact-lbl">{L4_ICONS.money} Bill Saved</div>
+            </div>
+          </div>
+          {/* Monthly summary line */}
+          <div className="l4-impact-summary">
+            {L4_ICONS.chart} Monthly: {monthlyKwh} kWh · {'\u20B9'}{savings.saved} saved · {co2Saved}kg CO{'\u2082'} reduced
+          </div>
+        </div>
+      </>
+    )}
+
+    {/* ⚡ EFFICIENCY SYSTEM (VISUAL FORMULA) */}
+    {panelCount > 0 && (['energy','daynight','battery','challenge','recovery'].includes(currentTask?.id)) && (
+      <div className="l4-efficiency-badge">
+        <span className="l4-eff-badge-icon">{L4_ICONS.zap}</span>
+        <span className="l4-eff-badge-text">Efficiency:</span>
+        <span className={`l4-eff-badge-val ${liveEfficiency >= 80 ? 'high' : liveEfficiency >= 50 ? 'med' : 'low'}`}>{liveEfficiency}%</span>
+        {houseWatts > 0 && (
+          <span className="l4-eff-formula">
+            ({solarUsed}W / {houseWatts}W) × 100
+          </span>
+        )}
+      </div>
+    )}
+
+    {/* 📊 BEFORE vs AFTER (INLINE — FIRST TIME COMPARISON) */}
+    {showInlineCompare && (
+      <div className="l4-inline-compare-overlay" onClick={() => setShowInlineCompare(false)}>
+        <div className="l4-inline-compare-card" onClick={e => e.stopPropagation()}>
+          <div className="l4-inline-compare-title">{L4_ICONS.chart} Before vs After Solar</div>
+          <div className="l4-inline-compare-grid">
+            <div className="l4-inline-col before">
+              <div className="l4-inline-col-label">{L4_ICONS.cross} Before</div>
+              <div className="l4-inline-stat">
+                <div className="l4-inline-stat-val">{'\u{1F32B}\u{FE0F}'} {LEVEL3_BEFORE.co2Month} kg</div>
+                <div className="l4-inline-stat-lbl">CO{'\u2082'}/month</div>
+              </div>
+              <div className="l4-inline-stat">
+                <div className="l4-inline-stat-val">{'\u{1F4B8}'} {'\u20B9'}{LEVEL3_BEFORE.billMonth}</div>
+                <div className="l4-inline-stat-lbl">Bill/month</div>
+              </div>
+              <div className="l4-inline-stat">
+                <div className="l4-inline-stat-val">{'\u{1F525}'} 0%</div>
+                <div className="l4-inline-stat-lbl">Solar Usage</div>
+              </div>
+            </div>
+            <div className="l4-inline-divider">
+              <span className="l4-inline-arrow">{'\u{2192}'}</span>
+            </div>
+            <div className="l4-inline-col after">
+              <div className="l4-inline-col-label">{L4_ICONS.check} After Solar</div>
+              <div className="l4-inline-stat">
+                <div className="l4-inline-stat-val">{'\u{1F33F}'} {Math.max(LEVEL3_BEFORE.co2Month - co2Saved, 0)} kg</div>
+                <div className="l4-inline-stat-lbl">CO{'\u2082'}/month</div>
+              </div>
+              <div className="l4-inline-stat">
+                <div className="l4-inline-stat-val">{'\u{1F4B0}'} {'\u20B9'}{savings.after}</div>
+                <div className="l4-inline-stat-lbl">Bill/month</div>
+              </div>
+              <div className="l4-inline-stat">
+                <div className="l4-inline-stat-val">{'\u{2600}\u{FE0F}'} {solarPct}%</div>
+                <div className="l4-inline-stat-lbl">Solar Usage</div>
+              </div>
+            </div>
+          </div>
+          <div className="l4-inline-savings">
+            {L4_ICONS.sparkle} You save {'\u20B9'}{savings.saved}/month ({savings.pctSaved}% reduction)
+          </div>
+          <div className="l4-inline-lesson">
+            {L4_ICONS.bulb} Solar energy is the solution — clean, renewable, and saves money!
+          </div>
+          <button className="l4-modal-btn green" style={{marginTop:'10px',padding:'10px 20px'}} onClick={() => setShowInlineCompare(false)}>Got it! {L4_ICONS.check}</button>
+        </div>
+      </div>
+    )}
+
+    {/* 💡 MINI INSIGHT SYSTEM (ENHANCED) */}
+    {panelCount > 0 && taskPhase === 'active' && (
+      <div className="l4-insight-ticker" key={`${solarPct}-${currentSolarW}-${timePeriod.id}-${gridWatts}`}>
+        <span className="l4-insight-icon">{L4_ICONS.bulb}</span>
+        <span className="l4-insight-text">
+          {solarPct >= 90 ? `🌟 You are using ${solarPct}% solar energy — Almost 100% clean power!`
+            : solarPct >= 70 ? `☀️ You are using ${solarPct}% solar energy — Excellent green usage!`
+            : solarPct >= 50 ? `⚡ Grid usage reduced! Solar at ${solarPct}% — Keep going!`
+            : solarPct >= 30 ? `🔋 Solar supplying ${solarPct}% power. Grid usage dropping!`
+            : solarPct > 0 ? `☀️ Solar active at ${solarPct}%. Use peak sunlight for more!`
+            : currentSolarW > 0 && houseWatts === 0 ? '🔌 Solar panels generating! Turn on appliances to use clean energy.'
+            : timePeriod.sunlight === 0 ? '🌙 No sunlight — Battery or grid powers the house at night.'
+            : gridWatts > 500 ? `⚠️ Grid usage high (${gridWatts}W). Shift heavy use to noon!`
+            : panelCount < 4 ? '📈 Add more panels for better solar coverage!'
+            : '☀️ Solar is powering your home cleanly!'}
+        </span>
+      </div>
+    )}
+
+    {/* BATTERY */}
+    {showBattery && (
+      <div className="l4-battery-panel">
+        <div className="l4-battery-header"><span>{L4_ICONS.battery}</span><span>Battery</span></div>
+        <div className="l4-battery-bar-outer"><div className="l4-battery-bar-fill" style={{width:`${batteryPct}%`}}/></div>
+        <div className="l4-battery-info"><span>{batteryCharge.toFixed(1)}/{BATTERY_CAPACITY_KWH} kWh</span><span>{excessSolar>0?'Charging':timePeriod.sunlight===0?'Discharging':'Idle'}</span></div>
+      </div>
+    )}
+
+    {/* TIME PANEL */}
+    <div className="l4-time-panel">
+      <div className="l4-time-icon">{timePeriod.icon}</div>
+      <div className="l4-time-label">{timePeriod.label}</div>
+      <div className="l4-time-weather">{weather.icon} {weather.label}</div>
+      {showTimeSlider && (<div style={{marginTop:'8px'}}>
+        <input type="range" className="l4-time-slider" min={0} max={TIME_PERIODS.length-1} value={timeIdx} onChange={e=>{
+          setTimeIdx(Number(e.target.value));
+          const tp = TIME_PERIODS[Number(e.target.value)];
+          if (tp.sunlight === 0 && batteryCharge > 0) setBatteryCharge(p => Math.max(p - 0.5, 0));
+          else if (excessSolar > 0) setBatteryCharge(p => Math.min(p + 0.3, BATTERY_CAPACITY_KWH));
+        }}/>
+        <div className="l4-time-periods">{TIME_PERIODS.map((tp,i)=><span key={tp.id} className={`l4-time-period ${i===timeIdx?'active':''}`} onClick={()=>setTimeIdx(i)}>{tp.icon}</span>)}</div>
+      </div>)}
+    </div>
+
+    {/* WEATHER */}
+    {showWeather && (
+      <div style={{position:'absolute',top:'110px',left:'50%',transform:'translateX(-50%)',zIndex:20,display:'flex',gap:'6px'}}>
+        {WEATHER_TYPES.map((w,i)=>(
+          <button key={w.id} onClick={()=>setWeatherIdx(i)} style={{padding:'5px 10px',borderRadius:'6px',border:`1px solid ${i===weatherIdx?'rgba(245,166,35,0.4)':'rgba(255,255,255,0.1)'}`,background:i===weatherIdx?'rgba(245,166,35,0.12)':'rgba(5,10,20,0.9)',color:'#ddd',fontSize:'11px',fontWeight:600,cursor:'pointer'}}>{w.icon} {w.label}</button>
+        ))}
+      </div>
+    )}
+
+    {/* CHALLENGE HUD */}
+    {currentTask?.id === 'challenge' && (
+      <div style={{position:'absolute',top:'145px',left:'50%',transform:'translateX(-50%)',zIndex:20,background:'rgba(5,10,20,0.95)',border:'2px solid rgba(245,166,35,0.3)',borderRadius:'10px',padding:'8px 14px',display:'flex',gap:'12px'}}>
+        <span style={{fontSize:'12px',color:challengeMetSolar?'#22c55e':'#ef4444',fontWeight:700}}>{L4_ICONS.sun} Solar {solarPct}% {challengeMetSolar?L4_ICONS.check:''}</span>
+        <span style={{fontSize:'12px',color:challengeMetGrid?'#22c55e':'#ef4444',fontWeight:700}}>{L4_ICONS.zap} Grid {gridWatts}W {challengeMetGrid?L4_ICONS.check:''}</span>
+      </div>
+    )}
+
+    {/* DISCOVERY QUESTION */}
+    {currentTask?.id === 'discover' && hasGoneOutside && discoveryQ === null && (
+      <div style={{position:'absolute',bottom:'80px',left:'50%',transform:'translateX(-50%)',zIndex:20,background:'rgba(5,10,20,0.95)',border:'1px solid rgba(245,166,35,0.3)',borderRadius:'12px',padding:'14px 20px',maxWidth:'340px',textAlign:'center'}}>
+        <div style={{fontSize:'13px',fontWeight:700,color:'#f5a623',marginBottom:'6px'}}>{L4_ICONS.bulb} Quick Question</div>
+        <div style={{fontSize:'13px',color:'#ffeedd',marginBottom:'8px'}}>Is solar energy clean energy?</div>
+        <div style={{display:'flex',gap:'8px'}}>
+          <button onClick={()=>setDiscoveryQ(true)} style={{flex:1,padding:'8px',borderRadius:'8px',border:'1px solid rgba(34,197,94,0.3)',background:'rgba(34,197,94,0.08)',color:'#22c55e',fontWeight:700,cursor:'pointer',fontSize:'13px'}}>Yes {L4_ICONS.check}</button>
+          <button onClick={()=>setDiscoveryQ(false)} style={{flex:1,padding:'8px',borderRadius:'8px',border:'1px solid rgba(239,68,68,0.3)',background:'rgba(239,68,68,0.08)',color:'#ef4444',fontWeight:700,cursor:'pointer',fontSize:'13px'}}>No {L4_ICONS.cross}</button>
+        </div>
+      </div>
+    )}
+
+    {/* COMPLETE TASK BUTTON (for tasks that need manual completion) */}
+    {taskPhase === 'active' && currentTask && ['energy','daynight','battery','challenge'].includes(currentTask.id) && currentTask.id !== 'recovery' && (
+      <div style={{position:'absolute',bottom:'20px',left:'50%',transform:'translateX(-50%)',zIndex:20}}>
+        <button className="l4-modal-btn" style={{padding:'10px 24px',width:'auto'}} onClick={completeTask}>Complete Task {'\u{2192}'}</button>
+      </div>
+    )}
+
+    {/* PROGRESS */}
+    <div className="l4-progress-panel">
+      <div className="l4-progress-header">{L4_ICONS.target} Tasks</div>
+      <div className="l4-progress-bar-outer"><div className="l4-progress-bar-inner" style={{width:`${(taskIdx/TASKS.length)*100}%`}}/></div>
+      <div className="l4-progress-text">{tasksPassed} done / {TASKS.length} total</div>
+    </div>
+
+    <ControlsHelp/>
+  </div>);
+}

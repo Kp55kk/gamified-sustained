@@ -10,9 +10,9 @@ import Particles from '../components/Particles';
 const levelData = [
   { id: 1, title: 'Energy Intro', icon: '\u{1F50B}', type: 'info', x: 20, y: 75, color: 'blue' },
   { id: 2, title: 'Energy Meter', icon: '\u{26A1}', type: 'activity', x: 50, y: 60, color: 'green' },
-  { id: 3, title: 'Vampire Power', icon: '\u{1F987}', type: 'challenge', x: 80, y: 45, color: 'purple' },
-  { id: 4, title: 'Solar Builder', icon: '\u{2600}\u{FE0F}', type: 'activity', x: 50, y: 30, color: 'amber' },
-  { id: 5, title: 'City Grid', icon: '\u{1F3D9}\u{FE0F}', type: 'boss', x: 20, y: 15, color: 'red' }
+  { id: 3, title: 'Carbon Crisis', icon: '\u{1F525}', type: 'challenge', x: 80, y: 45, color: 'red' },
+  { id: 4, title: 'Solar Revolution', icon: '\u{2600}\u{FE0F}', type: 'activity', x: 50, y: 30, color: 'amber' },
+  { id: 5, title: 'Smart Home', icon: '\u{1F3E0}', type: 'boss', x: 20, y: 15, color: 'green' }
 ];
 
 const HubScreen = () => {
@@ -64,23 +64,25 @@ const HubScreen = () => {
 
       {/* Map Area (Flex 1 to fill remaining space) */}
       <div className="flex-1 w-full relative overflow-hidden">
-         <svg className="absolute inset-0 w-full h-full z-0 pointer-events-none" preserveAspectRatio="none">
+         <svg className="absolute inset-0 w-full h-full z-0 pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none">
             {/* Background dashed path */}
             <motion.path
-               d="M 20% 75% L 50% 60% L 80% 45% L 50% 30% L 20% 15%"
+               d="M 20 75 L 50 60 L 80 45 L 50 30 L 20 15"
                fill="none"
                stroke="rgba(255,255,255,0.05)"
-               strokeWidth="6"
-               strokeDasharray="10, 10"
+               strokeWidth="1"
+               strokeDasharray="2, 2"
+               vectorEffect="non-scaling-stroke"
             />
             {/* Active filled path */}
             <motion.path
-               d="M 20% 75% L 50% 60% L 80% 45% L 50% 30% L 20% 15%"
+               d="M 20 75 L 50 60 L 80 45 L 50 30 L 20 15"
                fill="none"
                stroke="#22c55e"
-               strokeWidth="3"
+               strokeWidth="0.6"
                strokeLinecap="round"
                strokeLinejoin="round"
+               vectorEffect="non-scaling-stroke"
                initial={{ pathLength: 0 }}
                animate={{ pathLength: currentLevel / levelData.length }}
                transition={{ duration: 1.5, ease: "easeInOut" }}
