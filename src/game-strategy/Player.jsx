@@ -210,6 +210,7 @@ export const playerState = {
   x: -5,
   z: -6.5,
   nearestAppliance: null,
+  nearestWindow: null,
   cameraYaw: 0,
 };
 
@@ -271,9 +272,13 @@ export default function Player({ onRoomChange, onNearestApplianceChange, onInter
       if (['arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(k)) {
         e.preventDefault();
       }
-      // E to interact
-      if (k === 'e' && onInteract && playerState.nearestAppliance) {
-        onInteract(playerState.nearestAppliance);
+      // E to interact with appliances or windows
+      if (k === 'e' && onInteract) {
+        if (playerState.nearestAppliance) {
+          onInteract(playerState.nearestAppliance);
+        } else if (playerState.nearestWindow) {
+          onInteract('__window__' + playerState.nearestWindow);
+        }
       }
     };
     const onKeyUp = (e) => {

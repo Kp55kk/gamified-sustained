@@ -619,6 +619,135 @@ function RewardsDisplay({ stars }) {
   );
 }
 
+// ─── Ventilation Pop-up (Change 4) ───
+function VentilationPopup({ visible, onClose, t }) {
+  const [closing, setClosing] = useState(false);
+
+  useEffect(() => {
+    if (!visible) return;
+    const handleEsc = (e) => { if (e.key === 'Escape') handleClose(); };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [visible]);
+
+  const handleClose = () => {
+    setClosing(true);
+    setTimeout(() => { setClosing(false); onClose(); }, 200);
+  };
+
+  if (!visible) return null;
+
+  const vt = t?.ventilation || {};
+
+  return (
+    <div className={`popup-overlay-fullscreen ${closing ? 'closing' : ''}`} onClick={handleClose}>
+      <div className={`popup-card-fullscreen ${closing ? 'closing' : ''}`} onClick={(e) => e.stopPropagation()}>
+        <div className="popup-fs-deco popup-fs-deco-1" />
+        <div className="popup-fs-deco popup-fs-deco-2" />
+        <div className="popup-fs-deco popup-fs-deco-3" />
+        <button className="popup-fs-close" onClick={handleClose}>{ICONS.close}</button>
+        <div className="popup-fs-scroll">
+          <div className="popup-fs-icon-wrap">
+            <div className="popup-fs-icon">🪟</div>
+          </div>
+          <div className="popup-fs-name">{vt.title || '🪟 Natural Ventilation'}</div>
+
+          <div className="popup-fs-section">
+            <div className="popup-fs-description" style={{ fontSize: '14px', lineHeight: '1.7' }}>
+              {vt.intro || "Windows are not just for looking outside — they are your home's natural cooling system!"}
+            </div>
+          </div>
+
+          <div className="popup-fs-section">
+            <div className="popup-fs-section-label">💨 {vt.howItWorksTitle || 'How it works'}</div>
+            <div className="popup-fs-description" style={{ fontSize: '13px', lineHeight: '1.7' }}>
+              {vt.howItWorks || `• When you open windows on opposite sides of a room, air flows through naturally. This is called cross-ventilation.
+
+• Hot air rises and escapes through higher windows, while cool air enters from lower windows. This is called stack ventilation.
+
+• Good ventilation can reduce room temperature by 3-5°C without using any electricity!`}
+            </div>
+          </div>
+
+          <div className="popup-fs-section">
+            <div className="popup-fs-tip-box">
+              <div className="popup-fs-tip-label">🌱 {vt.sustainabilityTitle || 'Why it matters for sustainability'}</div>
+              <div className="popup-fs-tip-text" style={{ fontSize: '13px', lineHeight: '1.7' }}>
+                {vt.sustainability || `• A well-ventilated home needs less AC and less fan usage
+• Less AC = less electricity = less CO₂ emissions
+• A single AC uses 1500W. Good ventilation can replace AC usage for 3-4 months of the year in many Indian cities
+• That saves approximately 540 kWh and 383 kg of CO₂ per year!`}
+              </div>
+            </div>
+          </div>
+
+          <div className="popup-fs-section">
+            <div className="popup-fs-funfact-box">
+              <div className="popup-fs-funfact-label">{ICONS.think} {vt.funFactTitle || 'Fun fact'}</div>
+              <div className="popup-fs-funfact-text" style={{ fontSize: '13px', lineHeight: '1.7' }}>
+                {vt.funFact || "Traditional Indian homes (havelis) were designed with jaalis (lattice screens) and courtyards specifically for natural airflow — our ancestors were sustainability experts!"}
+              </div>
+            </div>
+          </div>
+
+          <div className="popup-fs-bottom-row">
+            <button className="popup-fs-close-btn" onClick={handleClose}>
+              {vt.gotIt || 'Got it!'} {ICONS.thumbsUp}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Watts Intro Overlay (FIX 1: truly full-screen, no card, no scroll) ───
+function WattsIntroOverlay({ visible, onClose, t }) {
+  if (!visible) return null;
+
+  const wt = t?.wattsIntro || {};
+
+  return (
+    <div className="watts-intro-overlay">
+      <div className="watts-intro-content">
+        <div className="watts-intro-title">{wt.title || '⚡ Before You Explore — What is a Watt?'}</div>
+
+        <p className="watts-intro-lead">
+          {wt.lead || "Every appliance in this house has a number next to it — like 75W or 1500W. That 'W' stands for Watt."}
+        </p>
+
+        <p className="watts-intro-explain">
+          {wt.analogy || "🚰 Think of a water tap — open it a little, water flows slowly. Open it fully, water gushes. Watts work the same way for electricity!"}
+        </p>
+
+        <p className="watts-intro-explain-highlight">
+          {wt.explain || "⚡ Watts = how FAST an appliance drinks electricity."}
+        </p>
+
+        <div className="watts-examples">
+          <div className="watts-example-item"><span className="watts-example-icon">💡</span><span>{wt.exLed || 'LED bulb sips slowly — just 10W'}</span></div>
+          <div className="watts-example-item"><span className="watts-example-icon">🌀</span><span>{wt.exFan || 'Ceiling fan drinks a bit more — 75W'}</span></div>
+          <div className="watts-example-item"><span className="watts-example-icon">❄️</span><span>{wt.exAc || 'AC gulps it down — 1500W!'}</span></div>
+        </div>
+
+        <div className="watts-color-categories">
+          <div className="watts-cat green"><span className="watts-cat-dot" style={{ background: '#22c55e' }} /><span>{wt.catGreen || '🟢 Under 100W = Sips electricity'}</span></div>
+          <div className="watts-cat amber"><span className="watts-cat-dot" style={{ background: '#f59e0b' }} /><span>{wt.catAmber || '🟡 100–500W = Drinks electricity'}</span></div>
+          <div className="watts-cat red"><span className="watts-cat-dot" style={{ background: '#ef4444' }} /><span>{wt.catRed || '🔴 Above 500W = Gulps electricity'}</span></div>
+        </div>
+
+        <p className="watts-intro-callout">
+          {wt.callout || "Now go explore the house and find out how hungry each appliance is!"}
+        </p>
+
+        <button className="watts-intro-btn" onClick={onClose}>
+          {wt.button || "Got it! Let's Explore →"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ─── Warm Evening Lighting (Fix 4: inviting Indian home feel) ───
 function WarmLighting() {
   const lightRef = useRef();
@@ -670,7 +799,7 @@ function CameraRefForwarder({ cameraRef }) {
 }
 
 // ─── 3D Scene Content ───
-function SceneContent({ onApplianceClick, onRoomChange, onNearestChange, onInteract, activeApplianceId, interactedAppliances, cameraRef }) {
+function SceneContent({ onApplianceClick, onWindowClick, onRoomChange, onNearestChange, onInteract, activeApplianceId, interactedAppliances, cameraRef }) {
   return (
     <>
       <WarmLighting />
@@ -678,6 +807,7 @@ function SceneContent({ onApplianceClick, onRoomChange, onNearestChange, onInter
       <House />
       <Appliances
         onApplianceClick={onApplianceClick}
+        onWindowClick={onWindowClick}
         activeApplianceId={activeApplianceId}
         interactedAppliances={interactedAppliances}
       />
@@ -732,6 +862,7 @@ export default function Level1() {
   const canvasRef = useRef(null);
 
   const [showLevelIntro, setShowLevelIntro] = useState(true);
+  const [showWattsIntro, setShowWattsIntro] = useState(false);
   const [activeAppliance, setActiveAppliance] = useState(null);
   const [currentRoom, setCurrentRoom] = useState('Living Room');
   const [nearestAppliance, setNearestAppliance] = useState(null);
@@ -774,8 +905,26 @@ export default function Level1() {
   // Speaking indicator
   const [isSpeaking, setIsSpeaking] = useState(false);
 
+  // Ventilation popup state
+  const [showVentilation, setShowVentilation] = useState(false);
+
   // Ambient music (disabled)
   useAmbientMusic();
+
+  // Watts intro — show once (after level intro closes)
+  useEffect(() => {
+    if (!showLevelIntro) {
+      const wattsShown = localStorage.getItem('sustainED_wattsIntroShown');
+      if (!wattsShown) {
+        setShowWattsIntro(true);
+      }
+    }
+  }, [showLevelIntro]);
+
+  const handleWattsIntroDismiss = useCallback(() => {
+    setShowWattsIntro(false);
+    localStorage.setItem('sustainED_wattsIntroShown', 'true');
+  }, []);
 
   // FIX 1: No pointer lock — removed pointer lock management entirely
 
@@ -796,7 +945,15 @@ export default function Level1() {
   }, [unlockedAchievements]);
 
   const handleInteract = useCallback((applianceId) => {
-    if (activeAppliance || showFullQuiz || showLevelComplete) return;
+    if (activeAppliance || showFullQuiz || showLevelComplete || showWattsIntro) return;
+
+    // Handle window interaction
+    if (applianceId && applianceId.startsWith('__window__')) {
+      playInteractSound();
+      setShowVentilation(true);
+      return;
+    }
+
     const data = APPLIANCE_DATA[applianceId];
     if (!data) return;
 
@@ -849,11 +1006,17 @@ export default function Level1() {
       }
       return next;
     });
-  }, [activeAppliance, showFullQuiz, showLevelComplete, triggerAchievement, t, langCode]);
+  }, [activeAppliance, showFullQuiz, showLevelComplete, showWattsIntro, triggerAchievement, t, langCode]);
 
   const handleApplianceClick = useCallback((applianceId) => {
     handleInteract(applianceId);
   }, [handleInteract]);
+
+  const handleWindowClick = useCallback(() => {
+    if (activeAppliance || showFullQuiz || showLevelComplete || showWattsIntro) return;
+    playInteractSound();
+    setShowVentilation(true);
+  }, [activeAppliance, showFullQuiz, showLevelComplete, showWattsIntro]);
 
   const handleCloseBubble = useCallback(() => {
     stopSpeech();
@@ -951,8 +1114,8 @@ export default function Level1() {
 
   return (
     <div className="level1-container">
-      {/* 3D Canvas */}
-      <div className={`canvas-wrapper ${isCinematic ? 'cinematic-blur' : ''}`}>
+      {/* 3D Canvas — hidden during watts intro */}
+      <div className={`canvas-wrapper ${isCinematic ? 'cinematic-blur' : ''}`} style={showWattsIntro ? { display: 'none' } : undefined}>
         <Canvas
           camera={{ position: [-5, 6, 1], fov: 50 }}
           gl={{ antialias: false }}
@@ -967,6 +1130,7 @@ export default function Level1() {
           <Suspense fallback={null}>
             <SceneContent
               onApplianceClick={handleApplianceClick}
+              onWindowClick={handleWindowClick}
               onRoomChange={handleRoomChange}
               onNearestChange={handleNearestChange}
               onInteract={handleInteract}
@@ -982,8 +1146,8 @@ export default function Level1() {
 
 
 
-      {/* HUD - hidden during quiz */}
-      {!showFullQuiz && !showLevelComplete && (
+      {/* HUD - hidden during quiz and watts intro */}
+      {!showFullQuiz && !showLevelComplete && !showWattsIntro && (
         <>
           <div className="level1-hud">
             <button className="hud-back-btn" onClick={() => { stopSpeech(); navigate('/hub'); }}>{t?.ui?.back || String.fromCharCode(8592) + ' Back'}</button>
@@ -1043,6 +1207,12 @@ export default function Level1() {
       {!showFullQuiz && !showLevelComplete && (
         <CoinRewardPopup visible={showCoinReward} applianceName={coinRewardName} points={10} />
       )}
+
+      {/* Ventilation Pop-up (window interaction) */}
+      <VentilationPopup visible={showVentilation} onClose={() => setShowVentilation(false)} t={t} />
+
+      {/* Watts Introduction Overlay */}
+      <WattsIntroOverlay visible={showWattsIntro} onClose={handleWattsIntroDismiss} t={t} />
 
       {/* Full Quiz */}
       {showFullQuiz && (
