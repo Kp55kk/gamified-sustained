@@ -594,6 +594,104 @@ export const ACHIEVEMENTS = [
   { id: 'energy_expert', title: 'Energy Expert', description: 'Earned 3 stars on the quiz!', icon: '\u{2B50}', trigger: 'quiz_3stars' },
 ];
 
+// ─── Level 1 Building Design — Task Interaction Positions ───
+export const LEVEL1_TASK_POSITIONS = {
+  // Task 1 — Install windows (Living Room wall, currently dark)
+  task_window_living: { pos: [-5, 1.8, -7.9], label: 'Install Window Here', room: 'Living Room', task: 1 },
+  // Task 2 — Cross ventilation (opposite wall from existing window)
+  task_ventilation: { pos: [-9.9, 1.8, -4], label: 'Place Window for Cross Ventilation', room: 'Living Room', task: 2 },
+  // Task 3 — Open curtains (bedroom window already has curtains)
+  task_curtains: { pos: [5, 1.8, -7.9], label: 'Open Curtains', room: 'Bedroom', task: 3 },
+  // Task 4 — Day/Night behavior (living room center)
+  task_daynight: { pos: [-5, 1.5, -4], label: 'Day/Night Controls', room: 'Living Room', task: 4 },
+  // Task 5 — Temperature action (bedroom, near AC)
+  task_temperature: { pos: [7, 1.5, -4], label: 'Temperature Check', room: 'Bedroom', task: 5 },
+};
+
+// ─── Level 1 Building Design Quiz (NEW) ───
+export const LEVEL1_QUIZ_QUESTIONS = [
+  {
+    id: 'l1q1',
+    difficulty: 1,
+    question: 'What is the primary benefit of adding windows to a dark room?',
+    options: ['Makes the room look bigger', 'Allows natural daylight — reduces need for artificial lighting', 'Increases room temperature', 'Makes walls stronger'],
+    correctIndex: 1,
+    explanation: 'Windows bring in natural daylight, reducing the need for electric lights during the daytime. This directly saves electricity.',
+  },
+  {
+    id: 'l1q2',
+    difficulty: 1,
+    question: 'What is cross ventilation?',
+    options: ['Opening one window only', 'Placing windows on opposite walls so air flows through naturally', 'Using fans on full speed', 'Closing all doors and windows'],
+    correctIndex: 1,
+    explanation: 'Cross ventilation is achieved by placing openings (windows/doors) on opposite sides of a room, allowing natural air flow without fans or AC.',
+  },
+  {
+    id: 'l1q3',
+    difficulty: 1,
+    question: 'How do curtains affect energy usage during daytime?',
+    options: ['Curtains have no effect on energy', 'Closed curtains block sunlight, forcing you to use electric lights', 'Open curtains increase electricity bills', 'Curtains generate electricity'],
+    correctIndex: 1,
+    explanation: 'When curtains are closed during daytime, natural light is blocked, and artificial lights must be turned on — wasting electricity.',
+  },
+  {
+    id: 'l1q4',
+    difficulty: 2,
+    question: 'During daytime with sunlight available, what should you do?',
+    options: ['Keep all lights ON for safety', 'Open windows and curtains, turn OFF unnecessary lights', 'Close all windows to keep room cool', 'Turn ON the AC immediately'],
+    correctIndex: 1,
+    explanation: 'During daytime, use natural resources! Open windows for fresh air, open curtains for sunlight, and turn off artificial lights.',
+  },
+  {
+    id: 'l1q5',
+    difficulty: 2,
+    question: 'At night, what actions help save energy?',
+    options: ['Keep all lights and fans ON', 'Turn ON only required lights, close curtains, use fan only if needed', 'Open all windows wide', 'Use maximum brightness for all bulbs'],
+    correctIndex: 1,
+    explanation: 'At night, only use the appliances you need. Close curtains for privacy and insulation, and use minimal lighting.',
+  },
+  {
+    id: 'l1q6',
+    difficulty: 2,
+    question: 'If outside temperature is 30°C and inside is 28°C, what should you try FIRST?',
+    options: ['Turn ON the AC immediately', 'Open windows for natural ventilation', 'Buy a new cooler', 'Close all doors'],
+    correctIndex: 1,
+    explanation: 'When the temperature difference is small, opening windows for natural ventilation works well. Use appliances only as a last resort!',
+  },
+  {
+    id: 'l1q7',
+    difficulty: 2,
+    question: 'What does good building design (ECBC concept) help reduce?',
+    options: ['Only water usage', 'Energy consumption without extra cost', 'The number of rooms', 'Nothing — it is just for appearance'],
+    correctIndex: 1,
+    explanation: 'Good building design (ECBC — Energy Conservation Building Code) reduces energy needs through natural light, ventilation, and smart window placement.',
+  },
+  {
+    id: 'l1q8',
+    difficulty: 3,
+    question: 'Cross ventilation works BEST when windows are placed...',
+    options: ['On the same wall, side by side', 'On opposite walls of the room', 'Only on the ceiling', 'Behind the furniture'],
+    correctIndex: 1,
+    explanation: 'Cross ventilation requires openings on opposite sides so air enters from one side and exits the other, creating a natural breeze.',
+  },
+  {
+    id: 'l1q9',
+    difficulty: 1,
+    question: 'Which natural resource can replace artificial lighting during daytime?',
+    options: ['Wind energy', 'Sunlight through windows', 'Rainwater', 'Sound waves'],
+    correctIndex: 1,
+    explanation: 'Sunlight entering through windows provides excellent illumination during the day, completely replacing the need for electric lights.',
+  },
+  {
+    id: 'l1q10',
+    difficulty: 3,
+    question: 'Before turning on the AC, what should you try?',
+    options: ['Nothing — AC is always needed', 'Open windows for ventilation, use a fan, check if natural cooling works', 'Close all windows and doors first', 'Turn on the heater to balance temperature'],
+    correctIndex: 1,
+    explanation: 'Always try natural methods first: open windows for cross ventilation, use fans, and only use AC when natural cooling is insufficient.',
+  },
+];
+
 // ─── Idle Chatter Lines ───
 export const IDLE_CHATTER = [
   "Hey! I'm over here, come talk to me!",

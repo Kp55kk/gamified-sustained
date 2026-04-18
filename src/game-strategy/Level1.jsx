@@ -1,29 +1,25 @@
 import React, { useState, useCallback, Suspense, useEffect, useRef } from 'react';
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
+import { Html } from '@react-three/drei';
 import { useNavigate } from 'react-router-dom';
 import * as THREE from 'three';
 import House from './House';
-import Appliances from './Appliances';
 import Player, { cameraMode, playerState } from './Player';
-import { APPLIANCE_DATA, APPLIANCE_POSITIONS, INTERACTABLE_IDS, QUIZ_QUESTIONS, ACHIEVEMENTS } from './applianceData';
+import Appliances from './Appliances';
+import { LEVEL1_TASK_POSITIONS, LEVEL1_QUIZ_QUESTIONS, APPLIANCE_DATA, INTERACTABLE_IDS } from './applianceData';
 import { useGame } from '../context/GameContext';
 import { getTranslation, getVoiceLocale } from '../translations/index';
 import LevelIntro from './LevelIntro';
 import './Level1.css';
 
-// ─── Speech Engine (ENGLISH ONLY — FIX 3) ───
+// ─── Speech Engine ───
 let isSpeakingGlobal = false;
 function speak(text, langCode = 'en', rate = 0.9, pitch = 1.05, onEnd) {
-  // FIX 3: Only play voiceover for English
-  if (langCode !== 'en') {
-    if (onEnd) onEnd();
-    return;
-  }
+  if (langCode !== 'en') { if (onEnd) onEnd(); return; }
   if ('speechSynthesis' in window) {
     window.speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(text);
-    u.rate = rate;
-    u.pitch = pitch;
+    u.rate = rate; u.pitch = pitch;
     u.lang = getVoiceLocale(langCode);
     isSpeakingGlobal = true;
     u.onend = () => { isSpeakingGlobal = false; if (onEnd) onEnd(); };
@@ -45,8 +41,7 @@ function getAudioCtx() {
 function playInteractSound() {
   try {
     const ctx = getAudioCtx();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
+    const osc = ctx.createOscillator(); const gain = ctx.createGain();
     osc.connect(gain); gain.connect(ctx.destination);
     osc.frequency.setValueAtTime(523, ctx.currentTime);
     osc.frequency.setValueAtTime(659, ctx.currentTime + 0.08);
@@ -59,8 +54,7 @@ function playInteractSound() {
 function playCorrectSound() {
   try {
     const ctx = getAudioCtx();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
+    const osc = ctx.createOscillator(); const gain = ctx.createGain();
     osc.connect(gain); gain.connect(ctx.destination);
     osc.frequency.setValueAtTime(523, ctx.currentTime);
     osc.frequency.setValueAtTime(784, ctx.currentTime + 0.15);
@@ -72,8 +66,7 @@ function playCorrectSound() {
 function playWrongSound() {
   try {
     const ctx = getAudioCtx();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
+    const osc = ctx.createOscillator(); const gain = ctx.createGain();
     osc.connect(gain); gain.connect(ctx.destination);
     osc.type = 'sawtooth';
     osc.frequency.setValueAtTime(200, ctx.currentTime);
@@ -83,766 +76,486 @@ function playWrongSound() {
     osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.4);
   } catch (e) {}
 }
-function playAchievementSound() {
+function playTaskCompleteSound() {
   try {
     const ctx = getAudioCtx();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.connect(gain); gain.connect(ctx.destination);
-    osc.type = 'triangle';
-    osc.frequency.setValueAtTime(440, ctx.currentTime);
-    osc.frequency.setValueAtTime(660, ctx.currentTime + 0.1);
-    osc.frequency.setValueAtTime(880, ctx.currentTime + 0.2);
-    osc.frequency.setValueAtTime(1100, ctx.currentTime + 0.3);
-    gain.gain.setValueAtTime(0.12, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6);
-    osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.6);
-  } catch (e) {}
-}
-function playCoinSound() {
-  try {
-    const ctx = getAudioCtx();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.connect(gain); gain.connect(ctx.destination);
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(987, ctx.currentTime);
-    osc.frequency.setValueAtTime(1319, ctx.currentTime + 0.08);
-    osc.frequency.setValueAtTime(1568, ctx.currentTime + 0.16);
-    gain.gain.setValueAtTime(0.18, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.45);
-    osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.45);
+    [523, 659, 784].forEach((freq, i) => {
+      const osc = ctx.createOscillator(); const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, ctx.currentTime + i * 0.12);
+      gain.gain.setValueAtTime(0.12, ctx.currentTime + i * 0.12);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.12 + 0.4);
+      osc.start(ctx.currentTime + i * 0.12); osc.stop(ctx.currentTime + i * 0.12 + 0.4);
+    });
   } catch (e) {}
 }
 function playLevelCompleteSound() {
   try {
     const ctx = getAudioCtx();
-    const notes = [523, 659, 784, 1047];
-    notes.forEach((freq, i) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
+    [523, 659, 784, 1047].forEach((freq, i) => {
+      const osc = ctx.createOscillator(); const gain = ctx.createGain();
       osc.connect(gain); gain.connect(ctx.destination);
       osc.frequency.setValueAtTime(freq, ctx.currentTime + i * 0.15);
       gain.gain.setValueAtTime(0.1, ctx.currentTime + i * 0.15);
       gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.15 + 0.5);
-      osc.start(ctx.currentTime + i * 0.15);
-      osc.stop(ctx.currentTime + i * 0.15 + 0.5);
+      osc.start(ctx.currentTime + i * 0.15); osc.stop(ctx.currentTime + i * 0.15 + 0.5);
     });
   } catch (e) {}
 }
 
-// ─── Ambient Music (disabled) ───
-function useAmbientMusic() {}
-
-// ─── JS Emoji Icons (replacing Unicode emoji) ───
+// ─── Icons ───
 const ICONS = {
-  bulb: '\u{1F4A1}',
-  brain: '\u{1F9E0}',
-  check: '\u{2705}',
-  cross: '\u{274C}',
-  star: '\u{2B50}',
-  fire: '\u{1F525}',
-  trophy: '\u{1F3C6}',
-  party: '\u{1F389}',
-  thumbsUp: '\u{1F44D}',
-  muscle: '\u{1F4AA}',
-  speaker: '\u{1F50A}',
-  house: '\u{1F3E0}',
-  pin: '\u{1F4CD}',
-  search: '\u{1F50D}',
-  grad: '\u{1F393}',
-  runner: '\u{1F3C3}',
-  zap: '\u{26A1}',
-  leaf: '\u{1F33F}',
-  info: '\u{2139}\u{FE0F}',
-  think: '\u{1F914}',
-  cry: '\u{1F622}',
-  wave: '\u{1F44B}',
-  couch: '\u{1F6CB}\u{FE0F}',
-  bed: '\u{1F6CF}\u{FE0F}',
-  cook: '\u{1F373}',
-  shower: '\u{1F6BF}',
-  close: '\u{2715}',
-  checkBox: '\u{2705}',
-  emptyBox: '\u{2B1C}',
-  mouse: '\u{1F5B1}\u{FE0F}',
-  coin: '\u{1FA99}',
-  sparkles: '\u{2728}',
-  gift: '\u{1F381}',
-  tada: '\u{1F389}',
+  bulb: '\u{1F4A1}', brain: '\u{1F9E0}', check: '\u{2705}', cross: '\u{274C}',
+  star: '\u{2B50}', fire: '\u{1F525}', trophy: '\u{1F3C6}', party: '\u{1F389}',
+  thumbsUp: '\u{1F44D}', muscle: '\u{1F4AA}', zap: '\u{26A1}', leaf: '\u{1F33F}',
+  house: '\u{1F3E0}', sun: '\u{2600}\u{FE0F}', moon: '\u{1F319}',
+  wind: '\u{1F32C}\u{FE0F}', thermometer: '\u{1F321}\u{FE0F}',
+  teacher: '\u{1F468}\u{200D}\u{1F3EB}', sparkles: '\u{2728}',
 };
 
-// ─── Flash Card (Memory Boost) ───
-function FlashCard({ appliance, visible, t }) {
-  if (!visible || !appliance) return null;
-  const at = t?.appliances?.[appliance.id];
+// ─── Task Definitions (Phase 1) ───
+const TASKS = [
+  { id: 1, title: 'Add Windows — Let the Light In', icon: '🪟', objective: 'Walk to the living room wall and press E to install a window', markerId: 'task_window_living',
+    popup: { title: '☀️ Daylight Enters!', message: 'Sunlight is now lighting the room — artificial lighting is not required during daytime!', learning: 'Windows reduce electricity usage during daytime' }},
+  { id: 2, title: 'Cross Ventilation — Fresh Air Flow', icon: '🌬️', objective: 'Place a window on the opposite wall for cross ventilation', markerId: 'task_ventilation',
+    popup: { title: '🌬️ Fresh Air Flow!', message: 'Air now flows naturally through opposite openings. The room feels cooler without any fan!', learning: 'Cross ventilation improves comfort naturally' }},
+  { id: 3, title: 'Open Curtains — Use Daylight', icon: '🌞', objective: 'Walk to the bedroom window and press E to open the curtains', markerId: 'task_curtains',
+    popup: { title: '☀️ Sunlight Fills the Room!', message: 'The curtains are open — natural light replaces artificial lighting. Lights turn OFF automatically!', learning: 'Curtains affect energy usage — use natural light whenever possible' }},
+  { id: 4, title: 'Day vs Night — Smart Behavior', icon: '🌗', objective: 'Walk to the living room center and press E to learn day vs night actions', markerId: 'task_daynight',
+    popup: { title: '🌞🌙 Day vs Night', message: 'During DAY: Open windows, open curtains, turn OFF lights.\nDuring NIGHT: Turn ON only required lights, close curtains, use fan if needed.', learning: 'Day and night need different energy actions' }},
+  { id: 5, title: 'Temperature Action — Ventilate First', icon: '🌡️', objective: 'Walk to the bedroom and press E to check temperature', markerId: 'task_temperature',
+    popup: { title: '🌡️ Natural Cooling Works!', message: 'Outside: 30°C | Inside: 28°C — Opening the window provides natural cooling. No need for AC!', learning: 'Use ventilation before appliances' }},
+];
+
+// ═══ 3D TASK MARKER ═══
+function TaskMarker3D({ position, label, isActive, isCompleted, taskNumber, hideLabel }) {
+  const markerRef = useRef();
+  const ringRef = useRef();
+  useFrame(() => {
+    if (!markerRef.current) return;
+    const t = performance.now() * 0.003;
+    markerRef.current.position.y = position[1] + Math.sin(t) * 0.15;
+    if (ringRef.current) { ringRef.current.scale.setScalar(1 + Math.sin(t * 2) * 0.15); ringRef.current.rotation.y += 0.02; }
+  });
+  if (isCompleted || !isActive) return null;
   return (
-    <div className="flash-card">
-      <div className="flash-card-inner">
-        <span className="flash-icon">{appliance.icon}</span>
-        <div className="flash-info">
-          <strong>{at?.name || appliance.name}</strong>
-          <span>{appliance.wattage}W {ICONS.zap} {appliance.annualKwh} kWh/yr</span>
-          <span className="flash-fact">{ICONS.bulb} {at?.funFact || appliance.funFact || appliance.description?.slice(0, 80) + '...'}</span>
+    <group ref={markerRef} position={position}>
+      <mesh><sphereGeometry args={[0.2, 16, 16]} /><meshStandardMaterial color="#22c55e" emissive="#22c55e" emissiveIntensity={1.5} transparent opacity={0.8} /></mesh>
+      <mesh ref={ringRef}><torusGeometry args={[0.35, 0.03, 8, 32]} /><meshStandardMaterial color="#22c55e" emissive="#22c55e" emissiveIntensity={0.8} transparent opacity={0.5} /></mesh>
+      <pointLight intensity={0.8} distance={4} color="#22c55e" />
+      {!hideLabel && (
+        <Html position={[0, 0.8, 0]} center>
+          <div className="task-marker-label">
+            <div className="task-marker-number">Task {taskNumber}</div>
+            <div className="task-marker-text">{label}</div>
+            <div className="task-marker-hint">Press <span className="task-key">E</span></div>
+          </div>
+        </Html>
+      )}
+    </group>
+  );
+}
+
+// ═══ AIRFLOW PARTICLES ═══
+function AirflowParticles({ visible }) {
+  const groupRef = useRef();
+  const particlesRef = useRef([]);
+  useEffect(() => {
+    if (visible) particlesRef.current = Array.from({ length: 20 }, () => ({ x: -9.5 + Math.random() * 0.5, y: 1.0 + Math.random() * 1.5, z: -6 + Math.random() * 4, speed: 0.02 + Math.random() * 0.03 }));
+  }, [visible]);
+  useFrame(() => {
+    if (!visible || !groupRef.current) return;
+    const ch = groupRef.current.children;
+    particlesRef.current.forEach((p, i) => { p.x += p.speed; if (p.x > -3) p.x = -9.5; if (ch[i]) ch[i].position.set(p.x, p.y + Math.sin(performance.now() * 0.002 + i) * 0.1, p.z); });
+  });
+  if (!visible) return null;
+  return (<group ref={groupRef}>{Array.from({ length: 20 }).map((_, i) => (<mesh key={i} position={[-9.5, 1.5, -4]}><sphereGeometry args={[0.04, 6, 6]} /><meshStandardMaterial color="#87CEEB" emissive="#87CEEB" emissiveIntensity={0.8} transparent opacity={0.5} /></mesh>))}</group>);
+}
+
+// ═══ CURTAIN MESH ═══
+function CurtainMesh({ isOpen }) {
+  const leftRef = useRef(); const rightRef = useRef();
+  useFrame(() => {
+    if (leftRef.current && rightRef.current) {
+      const tl = isOpen ? 4.0 : 4.65; leftRef.current.position.x += (tl - leftRef.current.position.x) * 0.05;
+      const tr = isOpen ? 6.0 : 5.35; rightRef.current.position.x += (tr - rightRef.current.position.x) * 0.05;
+      const sc = isOpen ? 0.3 : 1; leftRef.current.scale.x += (sc - leftRef.current.scale.x) * 0.05; rightRef.current.scale.x += (sc - rightRef.current.scale.x) * 0.05;
+    }
+  });
+  return (<group>
+    <mesh ref={leftRef} position={[4.65, 1.8, -7.85]}><boxGeometry args={[0.7, 1.4, 0.05]} /><meshStandardMaterial color="#8B4513" roughness={0.8} side={THREE.DoubleSide} /></mesh>
+    <mesh ref={rightRef} position={[5.35, 1.8, -7.85]}><boxGeometry args={[0.7, 1.4, 0.05]} /><meshStandardMaterial color="#8B4513" roughness={0.8} side={THREE.DoubleSide} /></mesh>
+    <mesh position={[5, 2.55, -7.85]}><cylinderGeometry args={[0.02, 0.02, 1.8, 8]} /><meshStandardMaterial color="#b8860b" metalness={0.7} roughness={0.3} /></mesh>
+  </group>);
+}
+
+// ═══ WALL COVER ═══
+function WallCover({ position, size, visible }) {
+  const ref = useRef();
+  useFrame(() => { if (!ref.current) return; const t = visible ? 1 : 0; ref.current.material.opacity += (t - ref.current.material.opacity) * 0.05; ref.current.visible = ref.current.material.opacity > 0.01; });
+  return (<mesh ref={ref} position={position}><boxGeometry args={size} /><meshStandardMaterial color="#f5f0e8" roughness={0.85} transparent opacity={1} /></mesh>);
+}
+
+// ═══ SUNLIGHT BEAM ═══
+function SunlightBeam({ position, visible }) {
+  const ref = useRef();
+  useFrame(() => { if (!ref.current) return; const t = visible ? 0.15 : 0; ref.current.material.opacity += (t - ref.current.material.opacity) * 0.03; ref.current.visible = ref.current.material.opacity > 0.005; });
+  if (!visible && (!ref.current || ref.current.material.opacity < 0.01)) return null;
+  return (<mesh ref={ref} position={position} rotation={[-0.3, 0, 0]}><coneGeometry args={[1.5, 3, 16, 1, true]} /><meshBasicMaterial color="#fffde0" transparent opacity={0} side={THREE.DoubleSide} /></mesh>);
+}
+
+// ═══ DYNAMIC LIGHTING ═══
+function DynamicLighting({ windowsInstalled, curtainsOpen, timeOfDay }) {
+  const ambientRef = useRef(); const sunRef = useRef(); const hemiRef = useRef(); const windowLightRef = useRef();
+  useFrame(() => {
+    const isDay = timeOfDay === 'day'; const hasW = windowsInstalled > 0; const hasC = curtainsOpen;
+    let tA = 0.15; if (hasW && isDay) tA = 0.35; if (hasC && isDay) tA = 0.5; if (!isDay) tA = 0.12;
+    let tS = 0.3; if (hasW && isDay) tS = 0.8; if (hasC && isDay) tS = 1.2; if (!isDay) tS = 0.05;
+    if (ambientRef.current) { ambientRef.current.intensity += (tA - ambientRef.current.intensity) * 0.03; ambientRef.current.color.set(isDay ? '#ffe8cc' : '#1a1a3e'); }
+    if (sunRef.current) { sunRef.current.intensity += (tS - sunRef.current.intensity) * 0.03; }
+    if (hemiRef.current) hemiRef.current.intensity = tA * 0.7;
+    if (windowLightRef.current) { const tw = hasW && isDay ? 1.5 : 0; windowLightRef.current.intensity += (tw - windowLightRef.current.intensity) * 0.03; }
+  });
+  return (<>
+    <ambientLight ref={ambientRef} intensity={0.15} color="#ffe8cc" />
+    <directionalLight ref={sunRef} position={[8, 10, 10]} intensity={0.3} color="#ffd699" />
+    <hemisphereLight ref={hemiRef} args={['#ffecd2', '#b97a20', 0.1]} />
+    <pointLight ref={windowLightRef} position={[-5, 2, -6]} intensity={0} distance={15} color="#fffbe6" />
+    <pointLight position={[-8, 4, -5]} intensity={0.15} color="#ffeedd" distance={20} />
+  </>);
+}
+
+// ═══ ARTIFICIAL LIGHTS ═══
+function ArtificialLights({ lightsOn }) {
+  return (<>
+    <pointLight position={[-3, 2.9, -6]} intensity={lightsOn ? 1.0 : 0} distance={7} color="#ffe4a0" />
+    <pointLight position={[-7, 2.85, 4]} intensity={lightsOn ? 0.6 : 0} distance={6} color="#ffe0b0" />
+    <pointLight position={[5, 2.8, -5]} intensity={lightsOn ? 0.8 : 0} distance={6} color="#ffe4a0" />
+  </>);
+}
+
+// ═══ Camera Ref Forwarder ═══
+function CameraRefForwarder({ cameraRef }) {
+  const { camera } = useThree();
+  useEffect(() => { cameraRef.current = camera; }, [camera, cameraRef]);
+  return null;
+}
+
+// ═══ 3D SCENE CONTENT ═══
+function SceneContent({
+  cameraRef, onInteract, onRoomChange, onNearestChange,
+  currentTask, completedTasks, windowsInstalled, curtainsOpen, timeOfDay,
+  showAirflow, lightsOn, hideLabels, phase, activeApplianceId, interactedAppliances,
+  onApplianceClick, onWindowClick
+}) {
+  const taskIdList = React.useMemo(() => {
+    if (phase !== 'building' || currentTask > 5) return [];
+    const activeTask = TASKS.find(t => t.id === currentTask);
+    return activeTask ? [activeTask.markerId] : [];
+  }, [currentTask, phase]);
+
+  // In appliance phase, use the full interactable IDs list
+  const applianceIdList = phase === 'appliances' ? INTERACTABLE_IDS : taskIdList;
+
+  return (
+    <>
+      <DynamicLighting windowsInstalled={windowsInstalled} curtainsOpen={curtainsOpen} timeOfDay={timeOfDay} />
+      <ArtificialLights lightsOn={lightsOn} />
+      <CameraRefForwarder cameraRef={cameraRef} />
+      <House />
+      <WallCover position={[-5, 1.8, -7.95]} size={[1.5, 1.4, 0.2]} visible={!completedTasks.has(1)} />
+      <WallCover position={[-9.95, 1.8, -4]} size={[0.2, 1.4, 1.5]} visible={!completedTasks.has(2)} />
+      <SunlightBeam position={[-5, 1, -6]} visible={completedTasks.has(1) && timeOfDay === 'day'} />
+      <SunlightBeam position={[-8, 1, -4]} visible={completedTasks.has(2) && timeOfDay === 'day'} />
+      <SunlightBeam position={[5, 1, -6]} visible={curtainsOpen && timeOfDay === 'day'} />
+      <CurtainMesh isOpen={curtainsOpen} />
+      <AirflowParticles visible={showAirflow} />
+
+      {/* Phase 1: Task markers */}
+      {phase === 'building' && TASKS.map(task => {
+        const pos = LEVEL1_TASK_POSITIONS[task.markerId];
+        if (!pos) return null;
+        return <TaskMarker3D key={task.id} position={pos.pos} label={task.objective} isActive={currentTask === task.id} isCompleted={completedTasks.has(task.id)} taskNumber={task.id} hideLabel={hideLabels} />;
+      })}
+
+      {/* Phase 2: Appliances */}
+      {phase === 'appliances' && (
+        <Appliances
+          onApplianceClick={onApplianceClick}
+          onWindowClick={onWindowClick}
+          activeApplianceId={activeApplianceId}
+          interactedAppliances={interactedAppliances}
+        />
+      )}
+
+      <Player onRoomChange={onRoomChange} onNearestApplianceChange={onNearestChange} onInteract={onInteract} applianceIdList={applianceIdList} />
+    </>
+  );
+}
+
+// ═══ HUD COMPONENTS ═══
+function BuildingTaskHUD({ currentTask, completedTasks }) {
+  return (
+    <div className="building-task-hud">
+      {TASKS.map(task => (
+        <div key={task.id} className={`task-step ${completedTasks.has(task.id) ? 'done' : ''} ${currentTask === task.id ? 'active' : ''}`}>
+          <div className="task-step-circle">{completedTasks.has(task.id) ? '✓' : task.id}</div>
+          <div className="task-step-label">{task.icon}</div>
         </div>
-      </div>
+      ))}
     </div>
   );
 }
 
-// ─── Achievement Toast ───
-function AchievementToast({ achievement, visible, t }) {
-  if (!visible || !achievement) return null;
-  const at = t?.achievements?.[achievement.id];
+function TaskObjective({ task }) {
+  if (!task) return null;
   return (
-    <div className="achievement-toast">
-      <div className="achievement-icon">{achievement.icon}</div>
-      <div className="achievement-info">
-        <div className="achievement-label">{t?.achievements?.unlocked || `${ICONS.trophy} Achievement Unlocked!`}</div>
-        <div className="achievement-title">{at?.title || achievement.title}</div>
-        <div className="achievement-desc">{at?.description || achievement.description}</div>
+    <div className="task-objective-banner">
+      <div className="task-objective-icon">{task.icon}</div>
+      <div className="task-objective-info">
+        <div className="task-objective-title">{task.title}</div>
+        <div className="task-objective-text">{task.objective}</div>
       </div>
     </div>
   );
 }
 
-// ─── Category color mapping for pills ───
-const CATEGORY_COLORS = {
-  'Cooling': { bg: '#dbeafe', color: '#2563eb' },
-  'Lighting': { bg: '#fef9c3', color: '#a16207' },
-  'Electronics': { bg: '#e0e7ff', color: '#4338ca' },
-  'Heating': { bg: '#fee2e2', color: '#dc2626' },
-  'Heating/Cooking': { bg: '#fee2e2', color: '#dc2626' },
-  'Cooling/Preservation': { bg: '#dbeafe', color: '#2563eb' },
-  'Motors/Laundry': { bg: '#ede9fe', color: '#7c3aed' },
-  'Motors/Cooking': { bg: '#ede9fe', color: '#7c3aed' },
-  'Electronics/Comms': { bg: '#e0e7ff', color: '#4338ca' },
-  'Electronics/Entertainment': { bg: '#e0e7ff', color: '#4338ca' },
-  'Electronics/Charging': { bg: '#e0e7ff', color: '#4338ca' },
-};
+function EnergyMeter({ energyLevel }) {
+  const pct = Math.max(0, Math.min(100, energyLevel));
+  const color = pct > 70 ? '#ef4444' : pct > 40 ? '#f59e0b' : '#22c55e';
+  return (
+    <div className="energy-meter">
+      <div className="energy-meter-label">⚡ Energy Usage</div>
+      <div className="energy-meter-bar"><div className="energy-meter-fill" style={{ width: `${pct}%`, background: color }} /></div>
+      <div className="energy-meter-value" style={{ color }}>{pct}%</div>
+    </div>
+  );
+}
 
-// ─── Coin Reward Popup ───
-function CoinRewardPopup({ visible, applianceName, points }) {
+function TemperatureDisplay({ visible, indoor, outdoor }) {
   if (!visible) return null;
   return (
-    <div className="coin-reward-popup">
-      <div className="coin-reward-inner">
-        <div className="coin-reward-coin">{ICONS.coin}</div>
-        <div className="coin-reward-sparkles">{ICONS.sparkles}</div>
-        <div className="coin-reward-text">+{points} Coins!</div>
-        <div className="coin-reward-sub">You discovered <strong>{applianceName}</strong>!</div>
-      </div>
+    <div className="temp-display">
+      <div className="temp-badge outdoor"><span className="temp-icon">🌡️</span><span className="temp-label">Outside</span><span className="temp-value">{outdoor}°C</span></div>
+      <div className="temp-badge indoor"><span className="temp-icon">🏠</span><span className="temp-label">Inside</span><span className="temp-value">{indoor}°C</span></div>
     </div>
   );
 }
 
-// ─── Points Display (Top of Screen) ───
-function PointsDisplay({ points, totalDiscovered, total }) {
+// ═══ APPLIANCE DISCOVERY HUD (Phase 2) ═══
+function ApplianceDiscoveryHUD({ found, total }) {
   return (
-    <div className="points-display">
-      <div className="points-display-coin">{ICONS.coin}</div>
-      <div className="points-display-info">
-        <div className="points-display-value">{points}</div>
-        <div className="points-display-label">Points</div>
-      </div>
-      <div className="points-display-divider" />
-      <div className="points-display-info">
-        <div className="points-display-value">{totalDiscovered}/{total}</div>
-        <div className="points-display-label">Found</div>
+    <div className="appliance-hud">
+      <span className="appliance-hud-icon">🔍</span>
+      <span className="appliance-hud-text">Appliances Found:</span>
+      <span className="appliance-hud-count">{found} / {total}</span>
+    </div>
+  );
+}
+
+// ═══ APPLIANCE INFO POPUP (Phase 2) ═══
+function ApplianceInfoPopup({ applianceId, onClose }) {
+  if (!applianceId) return null;
+  const data = APPLIANCE_DATA[applianceId];
+  if (!data) return null;
+  return (
+    <div className="appliance-info-popup" onClick={onClose}>
+      <div className="appliance-info-card" onClick={e => e.stopPropagation()}>
+        <div className="appliance-info-header">
+          <div className="appliance-info-icon">{data.icon}</div>
+          <div className="appliance-info-meta">
+            <div className="appliance-info-name">{data.name}</div>
+            <div className="appliance-info-room">{data.room}</div>
+          </div>
+        </div>
+        <div className="appliance-info-stats">
+          <div className="appliance-stat"><div className="appliance-stat-value">{data.wattage}W</div><div className="appliance-stat-label">Wattage</div></div>
+          <div className="appliance-stat"><div className="appliance-stat-value">{data.avgUsage || '~2h'}</div><div className="appliance-stat-label">Avg Usage</div></div>
+          <div className="appliance-stat"><div className="appliance-stat-value">{data.starRating || '⭐⭐⭐'}</div><div className="appliance-stat-label">Rating</div></div>
+        </div>
+        <div className="appliance-info-desc">{data.description}</div>
+        {data.savingTip && (
+          <div className="appliance-info-tip">
+            <span className="appliance-info-tip-icon">💡</span>
+            <span className="appliance-info-tip-text">{data.savingTip}</span>
+          </div>
+        )}
+        <button className="appliance-info-close-btn" onClick={onClose}>Got it! →</button>
       </div>
     </div>
   );
 }
 
-// ─── Full-Screen Appliance Popup (Kid-Friendly, Colorful) ───
-function ApplianceTooltip({ appliance, onClose, t, langCode }) {
-  const [isSpeaking, setIsSpeaking] = useState(false);
-  const [closing, setClosing] = useState(false);
+// ═══ POPUP OVERLAYS ═══
+function TaskPopup({ visible, popup, onClose }) {
+  if (!visible || !popup) return null;
+  return (
+    <div className="task-popup-overlay" onClick={onClose}>
+      <div className="task-popup-card" onClick={e => e.stopPropagation()}>
+        <div className="task-popup-sparkle">✨</div>
+        <h2 className="task-popup-title">{popup.title}</h2>
+        <p className="task-popup-message">{popup.message}</p>
+        <div className="task-popup-learning">
+          <span className="task-popup-learning-icon">🧠</span>
+          <span className="task-popup-learning-text">{popup.learning}</span>
+        </div>
+        <button className="task-popup-btn" onClick={onClose}>Continue →</button>
+      </div>
+    </div>
+  );
+}
 
-  const data = appliance ? (APPLIANCE_DATA[appliance.id] || appliance) : null;
-  const at = appliance ? t?.appliances?.[appliance.id] : null;
+function TeacherMessage({ visible, title, message, onClose }) {
+  if (!visible) return null;
+  return (
+    <div className="teacher-overlay">
+      <div className="teacher-card">
+        <div className="teacher-avatar">{ICONS.teacher}</div>
+        <div className="teacher-content"><h3 className="teacher-title">{title}</h3><p className="teacher-text">{message}</p></div>
+        <button className="teacher-btn" onClick={onClose}>Got it! →</button>
+      </div>
+    </div>
+  );
+}
 
-  // ESC to close
+function ECBCPopup({ visible, onClose }) {
+  if (!visible) return null;
+  return (
+    <div className="task-popup-overlay" onClick={onClose}>
+      <div className="task-popup-card ecbc-card" onClick={e => e.stopPropagation()}>
+        <div className="task-popup-sparkle">🏗️</div>
+        <h2 className="task-popup-title">🏗️ ECBC — Smart Building Design</h2>
+        <p className="task-popup-message"><strong>Energy Conservation Building Code</strong><br /><br />Good building design saves energy without extra cost:</p>
+        <div className="ecbc-points">
+          <div className="ecbc-point">🪟 Windows bring natural light</div>
+          <div className="ecbc-point">🌬️ Airflow reduces fan usage</div>
+          <div className="ecbc-point">☀️ Sunlight replaces electricity</div>
+          <div className="ecbc-point">🌡️ Ventilation reduces AC need</div>
+        </div>
+        <div className="task-popup-learning"><span className="task-popup-learning-icon">💡</span><span className="task-popup-learning-text">"Windows, airflow, and sunlight reduce electricity use"</span></div>
+        <button className="task-popup-btn" onClick={onClose}>Continue →</button>
+      </div>
+    </div>
+  );
+}
+
+function BeforeAfterCutscene({ visible, onComplete }) {
+  const [phase, setPhase] = useState('before');
   useEffect(() => {
-    if (!appliance) return;
-    const handleEsc = (e) => { if (e.key === 'Escape') handleClose(); };
-    window.addEventListener('keydown', handleEsc);
-    return () => window.removeEventListener('keydown', handleEsc);
-  }, [appliance]);
-
-  const handleClose = () => {
-    setClosing(true);
-    setTimeout(() => { setClosing(false); onClose(); }, 200);
-  };
-
-  if (!appliance || !data) return null;
-
-  const catColors = CATEGORY_COLORS[data.category] || { bg: '#f1f5f9', color: '#475569' };
-  const description = at?.display_text || data.description || '';
-  const funFact = at?.funFact || data.funFact || '';
-  const energyTip = at?.energyTip || data.researchNote || '';
-  const annualKwh = data.annualKwh || String.fromCharCode(8212);
-  const co2PerYear = data.co2PerYear || String.fromCharCode(8212);
-
-  const usageLine = data.usePerDay && data.daysPerYear
-    ? `${data.usePerDay} ${ICONS.zap} ${data.daysPerYear} ${t?.ui?.daysUsed || 'days/yr'}`
-    : data.usePerDay || '';
-
-  // Full voiceover
-  const handleReplay = () => {
-    if (langCode !== 'en') return;
-    setIsSpeaking(true);
-    const fullVoice = `${data.name}. ${data.wattage} watts. ${usageLine}. ${at?.voice_text || data.description}`;
-    speak(fullVoice, langCode, 0.85, data.voicePitch || 1.05, () => setIsSpeaking(false));
-  };
-
+    if (!visible) { setPhase('before'); return; }
+    const t1 = setTimeout(() => setPhase('after'), 3500);
+    const t2 = setTimeout(() => setPhase('done'), 7000);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  }, [visible]);
+  useEffect(() => { if (phase === 'done' && visible) onComplete(); }, [phase, visible, onComplete]);
+  if (!visible) return null;
   return (
-    <div className={`popup-overlay-fullscreen ${closing ? 'closing' : ''}`} onClick={handleClose}>
-      <div
-        className={`popup-card-fullscreen ${closing ? 'closing' : ''}`}
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Floating decorative elements */}
-        <div className="popup-fs-deco popup-fs-deco-1" />
-        <div className="popup-fs-deco popup-fs-deco-2" />
-        <div className="popup-fs-deco popup-fs-deco-3" />
-
-        {/* Close button */}
-        <button className="popup-fs-close" onClick={handleClose}>{ICONS.close}</button>
-
-        {/* Scrollable content */}
-        <div className="popup-fs-scroll">
-          {/* ── Section 1: Identity ── */}
-          <div className="popup-fs-icon-wrap">
-            <div className="popup-fs-icon">{data.icon || ICONS.zap}</div>
-          </div>
-          <div className="popup-fs-name">{at?.name || data.name}</div>
-          <div className="popup-fs-category" style={{ background: catColors.bg, color: catColors.color }}>
-            {data.category}
-          </div>
-
-          {/* ── Section 2: Power & Usage ── */}
-          <div className="popup-fs-section">
-            <div className="popup-fs-section-label">{ICONS.zap} POWER & USAGE</div>
-            <div className="popup-fs-wattage">{data.wattage}W</div>
-            {usageLine && <div className="popup-fs-usage">{usageLine}</div>}
-          </div>
-
-          {/* ── Section 3: About ── */}
-          {description && (
-            <div className="popup-fs-section">
-              <div className="popup-fs-section-label">{ICONS.info} ABOUT</div>
-              <div className="popup-fs-description">{description}</div>
-            </div>
-          )}
-
-          {/* ── Section 4: Energy Impact ── */}
-          <div className="popup-fs-section">
-            <div className="popup-fs-section-label">{ICONS.leaf} ENERGY IMPACT</div>
-            <div className="popup-fs-stats-row">
-              <div className="popup-fs-stat">
-                <div className="popup-fs-stat-value">{annualKwh}</div>
-                <div className="popup-fs-stat-label">{t?.ui?.annualUsage || 'kWh/year'}</div>
-              </div>
-              <div className="popup-fs-stat">
-                <div className="popup-fs-stat-value">{co2PerYear}</div>
-                <div className="popup-fs-stat-label">{t?.ui?.co2Emissions || 'kg CO\u2082/yr'}</div>
-              </div>
-            </div>
-          </div>
-
-          {/* ── Section 5: Energy Saving Tip ── */}
-          {energyTip && (
-            <div className="popup-fs-section">
-              <div className="popup-fs-tip-box">
-                <div className="popup-fs-tip-label">{ICONS.bulb} {t?.ui?.energySavingTip || 'Energy Saving Tip'}</div>
-                <div className="popup-fs-tip-text">{energyTip}</div>
-              </div>
-            </div>
-          )}
-
-          {/* ── Section 6: Fun Fact ── */}
-          {funFact && (
-            <div className="popup-fs-section">
-              <div className="popup-fs-funfact-box">
-                <div className="popup-fs-funfact-label">{ICONS.think} {t?.ui?.didYouKnow || 'Did You Know?'}</div>
-                <div className="popup-fs-funfact-text">{funFact}</div>
-              </div>
-            </div>
-          )}
-
-          {/* ── Bottom row ── */}
-          <div className="popup-fs-bottom-row">
-            {langCode === 'en' && (
-              <button
-                className={`popup-fs-speaker ${isSpeaking ? 'speaking' : ''}`}
-                onClick={handleReplay}
-              >
-                {ICONS.speaker} Listen
-              </button>
-            )}
-            <button className="popup-fs-close-btn" onClick={handleClose}>
-              Got it! {ICONS.thumbsUp}
-            </button>
-          </div>
-        </div>
+    <div className="cutscene-overlay">
+      <div className={`cutscene-content ${phase}`}>
+        {phase === 'before' && (<div className="cutscene-panel before"><div className="cutscene-label">❌ BEFORE</div><div className="cutscene-items"><div className="cutscene-item">🌑 Dark house</div><div className="cutscene-item">🚫 No airflow</div><div className="cutscene-item">💡 Lights always ON</div><div className="cutscene-item">📈 High energy usage</div></div></div>)}
+        {phase === 'after' && (<div className="cutscene-panel after"><div className="cutscene-label">✅ AFTER</div><div className="cutscene-items"><div className="cutscene-item">☀️ Bright house</div><div className="cutscene-item">🌬️ Natural airflow</div><div className="cutscene-item">💡 Lights OFF</div><div className="cutscene-item">📉 Comfortable & efficient</div></div></div>)}
       </div>
     </div>
   );
 }
 
-// ─── Room icons (JS strings) ───
-const ROOM_ICONS = {
-  'Living Room': ICONS.couch,
-  'Bedroom': ICONS.bed,
-  'Kitchen': ICONS.cook,
-  'Bathroom': ICONS.shower,
-};
-
-// ─── Room Entry Banner (Fix 4: small elegant pill, slides down, fades out in 2s) ───
-function RoomEntryBanner({ room, visible, t }) {
-  if (!visible || !room) return null;
-  const rt = t?.rooms?.[room];
-  const icon = ROOM_ICONS[room] || ICONS.pin;
+// ═══ PHASE TRANSITION (Building → Appliances) ═══
+function PhaseTransition({ visible, onStart }) {
+  if (!visible) return null;
   return (
-    <div className="room-entry-banner">
-      <span className="room-entry-icon">{icon}</span>
-      <span className="room-entry-text">{rt?.name?.replace('📍 ', '') || room}</span>
-    </div>
-  );
-}
-
-// ─── Arjun Thought Bubble ───
-function ThoughtBubble({ text, visible }) {
-  if (!visible || !text) return null;
-  return (
-    <div className="thought-bubble">
-      <div className="thought-bubble-content">{text}</div>
-      <div className="thought-bubble-tail">
-        <div className="thought-tail-dot" />
-        <div className="thought-tail-dot small" />
+    <div className="phase-transition-overlay">
+      <div className="phase-transition-card">
+        <div className="phase-transition-icon">🔍</div>
+        <h2 className="phase-transition-title">Phase 2: Discover Your Appliances</h2>
+        <p className="phase-transition-text">
+          Your house is now well-designed! Next, walk around and discover all the appliances in your home.
+          Press E near each appliance to learn its wattage, usage, and saving tips.
+        </p>
+        <button className="phase-transition-btn" onClick={onStart}>Start Exploring →</button>
       </div>
     </div>
   );
 }
 
-// ─── Progress Checklist Panel ───
-function ChecklistPanel({ interacted, isOpen, onToggle, t }) {
-  const count = interacted.size;
-  const total = INTERACTABLE_IDS.length;
-
-  return (
-    <div className={`checklist-panel ${isOpen ? 'open' : ''}`}>
-      <button className="checklist-toggle" onClick={onToggle}>
-        {isOpen ? '▶' : '◀'} {count}/{total}
-      </button>
-      {isOpen && (
-        <div className="checklist-content">
-          <h3 className="checklist-title">{t?.ui?.homeAuditMission || `${ICONS.house} Home Audit Mission`}</h3>
-          <div className="progress-bar-container">
-            <div className="progress-bar-fill" style={{ width: `${(count / total) * 100}%` }} />
-            <span className="progress-text">{count} / {total} {t?.ui?.appliances || 'Appliances'}</span>
-          </div>
-          <div className="checklist-items">
-            {INTERACTABLE_IDS.map((id) => {
-              const data = APPLIANCE_DATA[id];
-              if (!data) return null;
-              const done = interacted.has(id);
-              const at = t?.appliances?.[id];
-              return (
-                <div key={id} className={`checklist-item ${done ? 'done' : ''}`}>
-                  <span className="check-mark">{done ? ICONS.checkBox : ICONS.emptyBox}</span>
-                  <span className="check-icon">{data.icon}</span>
-                  <span className="check-name">{at?.name || data.name}</span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ─── Full Quiz Modal (post-completion) ───
-function FullQuizModal({ questions, onComplete, t }) {
+// ═══ QUIZ WITH NEXT BUTTON ═══
+function BuildingQuizModal({ questions, onComplete }) {
   const [currentIdx, setCurrentIdx] = useState(0);
   const [score, setScore] = useState(0);
   const [answered, setAnswered] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(null);
-  const [consecutiveWrong, setConsecutiveWrong] = useState(0);
-  const [consecutiveCorrect, setConsecutiveCorrect] = useState(0);
-  const [orderedQuestions, setOrderedQuestions] = useState([]);
-
-  useEffect(() => {
-    const sorted = [...questions].sort((a, b) => (a.difficulty || 1) - (b.difficulty || 1));
-    setOrderedQuestions(sorted);
-  }, [questions]);
-
+  const [orderedQuestions] = useState(() => [...questions].sort((a, b) => (a.difficulty || 1) - (b.difficulty || 1)));
   if (orderedQuestions.length === 0) return null;
   const question = orderedQuestions[currentIdx];
   if (!question) return null;
-
   const total = orderedQuestions.length;
-
-  const handleAnswer = (idx) => {
-    if (answered) return;
-    setSelectedIndex(idx);
-    setAnswered(true);
-
-    const isCorrect = idx === question.correctIndex;
-    if (isCorrect) {
-      playCorrectSound();
-      setScore(s => s + 1);
-      setConsecutiveCorrect(c => c + 1);
-      setConsecutiveWrong(0);
-    } else {
-      playWrongSound();
-      setConsecutiveWrong(c => c + 1);
-      setConsecutiveCorrect(0);
-
-      if (consecutiveWrong >= 1) {
-        setOrderedQuestions(prev => {
-          const done = prev.slice(0, currentIdx + 1);
-          const remaining = prev.slice(currentIdx + 1).sort((a, b) => (a.difficulty || 1) - (b.difficulty || 1));
-          return [...done, ...remaining];
-        });
-      }
-    }
-
-    setTimeout(() => {
-      setAnswered(false);
-      setSelectedIndex(null);
-      if (currentIdx + 1 >= total) {
-        const finalScore = isCorrect ? score + 1 : score;
-        onComplete(finalScore, total);
-      } else {
-        setCurrentIdx(i => i + 1);
-      }
-    }, 2500);
-  };
-
+  const handleAnswer = (idx) => { if (answered) return; setSelectedIndex(idx); setAnswered(true); if (idx === question.correctIndex) { playCorrectSound(); setScore(s => s + 1); } else playWrongSound(); };
+  const handleNext = () => { if (currentIdx + 1 >= total) onComplete(score + (selectedIndex === question.correctIndex ? 0 : 0), total); else { setAnswered(false); setSelectedIndex(null); setCurrentIdx(i => i + 1); } };
   return (
     <div className="quiz-overlay">
       <div className="quiz-modal full-quiz">
-        <div className="quiz-header">
-          <span className="quiz-icon">{ICONS.brain}</span>
-          <h3>{t?.quiz?.title || 'Energy Knowledge Quiz'}</h3>
-        </div>
-        <div className="quiz-progress-bar">
-          <div className="quiz-progress-fill" style={{ width: `${((currentIdx + 1) / total) * 100}%` }} />
-          <span className="quiz-progress-text">{t?.quiz?.question || 'Question'} {currentIdx + 1} / {total}</span>
-        </div>
+        <div className="quiz-header"><span className="quiz-icon">{ICONS.brain}</span><h3>Building Design Quiz</h3></div>
+        <div className="quiz-progress-bar"><div className="quiz-progress-fill" style={{ width: `${((currentIdx + 1) / total) * 100}%` }} /><span className="quiz-progress-text">Question {currentIdx + 1} / {total}</span></div>
         <p className="quiz-question">{question.question}</p>
         <div className="quiz-options">
           {question.options.map((opt, i) => {
             let cls = 'quiz-option';
-            if (answered) {
-              if (i === question.correctIndex) cls += ' correct';
-              else if (i === selectedIndex) cls += ' wrong';
-            }
-            return (
-              <button key={i} className={cls} onClick={() => handleAnswer(i)} disabled={answered}>
-                {String.fromCharCode(65 + i)}. {opt}
-              </button>
-            );
+            if (answered) { if (i === question.correctIndex) cls += ' correct'; else if (i === selectedIndex) cls += ' wrong'; }
+            return <button key={i} className={cls} onClick={() => handleAnswer(i)} disabled={answered}>{String.fromCharCode(65 + i)}. {opt}</button>;
           })}
         </div>
-        {answered && (
-          <div className={`quiz-feedback ${selectedIndex === question.correctIndex ? 'correct' : 'wrong'}`}>
-            {selectedIndex === question.correctIndex
-              ? (t?.quiz?.correct || `${ICONS.check} Correct!`)
-              : `${t?.quiz?.wrongPrefix || `${ICONS.cross} Wrong! The answer is`} ${String.fromCharCode(65 + question.correctIndex)}.`}
-            <p className="quiz-explanation">{question.explanation}</p>
-          </div>
-        )}
+        {answered && (<div className={`quiz-feedback ${selectedIndex === question.correctIndex ? 'correct' : 'wrong'}`}>{selectedIndex === question.correctIndex ? `${ICONS.check} Correct!` : `${ICONS.cross} Wrong! The answer is ${String.fromCharCode(65 + question.correctIndex)}.`}<p className="quiz-explanation">{question.explanation}</p></div>)}
+        {answered && <button className="quiz-next-btn" onClick={handleNext}>{currentIdx + 1 >= total ? 'Finish Quiz →' : 'Next Question →'}</button>}
       </div>
     </div>
   );
 }
 
-// ─── Level Completed Screen ───
-function LevelCompleteScreen({ score, total, stars, onContinue, t }) {
+// ═══ LEVEL COMPLETE SCREEN ═══
+function LevelCompleteScreen({ score, total, stars, appliancesFound, onContinue }) {
   const pct = Math.round((score / total) * 100);
-
   return (
     <div className="level-complete-overlay">
       <div className="level-complete-modal">
-        <div className="confetti-container">
-          {Array.from({ length: 30 }).map((_, i) => (
-            <div key={i} className="confetti-piece" style={{
-              '--delay': `${Math.random() * 2}s`,
-              '--x': `${Math.random() * 100}%`,
-              '--rotation': `${Math.random() * 360}deg`,
-              '--color': ['#22c55e', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'][i % 6],
-            }} />
-          ))}
-        </div>
+        <div className="confetti-container">{Array.from({ length: 30 }).map((_, i) => (<div key={i} className="confetti-piece" style={{ '--delay': `${Math.random() * 2}s`, '--x': `${Math.random() * 100}%`, '--rotation': `${Math.random() * 360}deg`, '--color': ['#22c55e', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'][i % 6] }} />))}</div>
         <div className="lc-celebration">{ICONS.party}</div>
-        <h2 className="lc-title">{t?.rewards?.levelCompleted || 'Level Completed!'}</h2>
-        <p className="lc-subtitle">{t?.rewards?.homeAuditComplete || 'Home Energy Audit Complete'}</p>
-
-        <div className="lc-stars">
-          {[1, 2, 3].map(s => (
-            <span key={s} className={`lc-star ${s <= stars ? 'earned' : 'empty'}`}
-              style={{ animationDelay: `${s * 0.3}s` }}>
-              {ICONS.star}
-            </span>
-          ))}
-        </div>
-
-        <div className="lc-score">
-          <div className="lc-score-number">{score}/{total}</div>
-          <div className="lc-score-label">{t?.rewards?.correctAnswers || 'Correct Answers'} ({pct}%)</div>
-        </div>
-
-        <div className="lc-rating-label">
-          {stars === 3 && (t?.rewards?.outstanding || `${ICONS.trophy} Outstanding! You're an Energy Expert!`)}
-          {stars === 2 && (t?.rewards?.greatWork || `${ICONS.thumbsUp} Great Work! Keep learning!`)}
-          {stars === 1 && (t?.rewards?.goodEffort || `${ICONS.muscle} Good effort! Try again to improve!`)}
-        </div>
-
-        <button className="lc-continue-btn" onClick={onContinue}>
-          {t?.rewards?.continue || 'Continue →'}
-        </button>
+        <h2 className="lc-title">Level 1 Complete!</h2>
+        <p className="lc-subtitle">Building & Natural Design + Appliance Discovery</p>
+        <div className="lc-stars">{[1, 2, 3].map(s => (<span key={s} className={`lc-star ${s <= stars ? 'earned' : 'empty'}`} style={{ animationDelay: `${s * 0.3}s` }}>{ICONS.star}</span>))}</div>
+        <div className="lc-score"><div className="lc-score-number">{score}/{total}</div><div className="lc-score-label">Quiz Answers ({pct}%)</div></div>
+        <div className="lc-rating-label">{stars === 3 ? `${ICONS.trophy} Outstanding!` : stars === 2 ? `${ICONS.thumbsUp} Great Work!` : `${ICONS.muscle} Good effort!`}</div>
+        <div className="lc-learning-summary"><h4>🧠 What You Learned:</h4><ul>
+          <li>House design affects energy consumption</li>
+          <li>Natural light reduces electricity need</li>
+          <li>Ventilation reduces fan and AC usage</li>
+          <li>Discovered {appliancesFound} home appliances & their wattage</li>
+        </ul></div>
+        <button className="lc-continue-btn" onClick={onContinue}>Continue →</button>
       </div>
     </div>
   );
 }
 
-// ─── Stars & Badge Display ───
-function RewardsDisplay({ stars }) {
-  return (
-    <div className="stars-display">
-      {ICONS.star.repeat(Math.min(stars, 20))} {stars > 0 && <span className="star-count">{stars}</span>}
-    </div>
-  );
-}
-
-// ─── Ventilation Pop-up (Change 4) ───
-function VentilationPopup({ visible, onClose, t }) {
-  const [closing, setClosing] = useState(false);
-
-  useEffect(() => {
-    if (!visible) return;
-    const handleEsc = (e) => { if (e.key === 'Escape') handleClose(); };
-    window.addEventListener('keydown', handleEsc);
-    return () => window.removeEventListener('keydown', handleEsc);
-  }, [visible]);
-
-  const handleClose = () => {
-    setClosing(true);
-    setTimeout(() => { setClosing(false); onClose(); }, 200);
-  };
-
-  if (!visible) return null;
-
-  const vt = t?.ventilation || {};
-
-  return (
-    <div className={`popup-overlay-fullscreen ${closing ? 'closing' : ''}`} onClick={handleClose}>
-      <div className={`popup-card-fullscreen ${closing ? 'closing' : ''}`} onClick={(e) => e.stopPropagation()}>
-        <div className="popup-fs-deco popup-fs-deco-1" />
-        <div className="popup-fs-deco popup-fs-deco-2" />
-        <div className="popup-fs-deco popup-fs-deco-3" />
-        <button className="popup-fs-close" onClick={handleClose}>{ICONS.close}</button>
-        <div className="popup-fs-scroll">
-          <div className="popup-fs-icon-wrap">
-            <div className="popup-fs-icon">🪟</div>
-          </div>
-          <div className="popup-fs-name">{vt.title || '🪟 Natural Ventilation'}</div>
-
-          <div className="popup-fs-section">
-            <div className="popup-fs-description" style={{ fontSize: '14px', lineHeight: '1.7' }}>
-              {vt.intro || "Windows are not just for looking outside — they are your home's natural cooling system!"}
-            </div>
-          </div>
-
-          <div className="popup-fs-section">
-            <div className="popup-fs-section-label">💨 {vt.howItWorksTitle || 'How it works'}</div>
-            <div className="popup-fs-description" style={{ fontSize: '13px', lineHeight: '1.7' }}>
-              {vt.howItWorks || `• When you open windows on opposite sides of a room, air flows through naturally. This is called cross-ventilation.
-
-• Hot air rises and escapes through higher windows, while cool air enters from lower windows. This is called stack ventilation.
-
-• Good ventilation can reduce room temperature by 3-5°C without using any electricity!`}
-            </div>
-          </div>
-
-          <div className="popup-fs-section">
-            <div className="popup-fs-tip-box">
-              <div className="popup-fs-tip-label">🌱 {vt.sustainabilityTitle || 'Why it matters for sustainability'}</div>
-              <div className="popup-fs-tip-text" style={{ fontSize: '13px', lineHeight: '1.7' }}>
-                {vt.sustainability || `• A well-ventilated home needs less AC and less fan usage
-• Less AC = less electricity = less CO₂ emissions
-• A single AC uses 1500W. Good ventilation can replace AC usage for 3-4 months of the year in many Indian cities
-• That saves approximately 540 kWh and 383 kg of CO₂ per year!`}
-              </div>
-            </div>
-          </div>
-
-          <div className="popup-fs-section">
-            <div className="popup-fs-funfact-box">
-              <div className="popup-fs-funfact-label">{ICONS.think} {vt.funFactTitle || 'Fun fact'}</div>
-              <div className="popup-fs-funfact-text" style={{ fontSize: '13px', lineHeight: '1.7' }}>
-                {vt.funFact || "Traditional Indian homes (havelis) were designed with jaalis (lattice screens) and courtyards specifically for natural airflow — our ancestors were sustainability experts!"}
-              </div>
-            </div>
-          </div>
-
-          <div className="popup-fs-bottom-row">
-            <button className="popup-fs-close-btn" onClick={handleClose}>
-              {vt.gotIt || 'Got it!'} {ICONS.thumbsUp}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── Watts Intro Overlay (FIX 1: truly full-screen, no card, no scroll) ───
-function WattsIntroOverlay({ visible, onClose, t }) {
-  if (!visible) return null;
-
-  const wt = t?.wattsIntro || {};
-
-  return (
-    <div className="watts-intro-overlay">
-      <div className="watts-intro-content">
-        <div className="watts-intro-title">{wt.title || '⚡ Before You Explore — What is a Watt?'}</div>
-
-        <p className="watts-intro-lead">
-          {wt.lead || "Every appliance in this house has a number next to it — like 75W or 1500W. That 'W' stands for Watt."}
-        </p>
-
-        <p className="watts-intro-explain">
-          {wt.analogy || "🚰 Think of a water tap — open it a little, water flows slowly. Open it fully, water gushes. Watts work the same way for electricity!"}
-        </p>
-
-        <p className="watts-intro-explain-highlight">
-          {wt.explain || "⚡ Watts = how FAST an appliance drinks electricity."}
-        </p>
-
-        <div className="watts-examples">
-          <div className="watts-example-item"><span className="watts-example-icon">💡</span><span>{wt.exLed || 'LED bulb sips slowly — just 10W'}</span></div>
-          <div className="watts-example-item"><span className="watts-example-icon">🌀</span><span>{wt.exFan || 'Ceiling fan drinks a bit more — 75W'}</span></div>
-          <div className="watts-example-item"><span className="watts-example-icon">❄️</span><span>{wt.exAc || 'AC gulps it down — 1500W!'}</span></div>
-        </div>
-
-        <div className="watts-color-categories">
-          <div className="watts-cat green"><span className="watts-cat-dot" style={{ background: '#22c55e' }} /><span>{wt.catGreen || '🟢 Under 100W = Sips electricity'}</span></div>
-          <div className="watts-cat amber"><span className="watts-cat-dot" style={{ background: '#f59e0b' }} /><span>{wt.catAmber || '🟡 100–500W = Drinks electricity'}</span></div>
-          <div className="watts-cat red"><span className="watts-cat-dot" style={{ background: '#ef4444' }} /><span>{wt.catRed || '🔴 Above 500W = Gulps electricity'}</span></div>
-        </div>
-
-        <p className="watts-intro-callout">
-          {wt.callout || "Now go explore the house and find out how hungry each appliance is!"}
-        </p>
-
-        <button className="watts-intro-btn" onClick={onClose}>
-          {wt.button || "Got it! Let's Explore →"}
-        </button>
-      </div>
-    </div>
-  );
-}
-
-// ─── Warm Evening Lighting (Fix 4: inviting Indian home feel) ───
-function WarmLighting() {
-  const lightRef = useRef();
-  const ambientRef = useRef();
-  const hemiRef = useRef();
-
-  useEffect(() => {
-    let frame;
-    const cycle = () => {
-      const t = (Date.now() % 600000) / 600000; // slower cycle
-      // Warm evening: higher baseline, subtle variation
-      const brightness = 0.45 + Math.sin(t * Math.PI * 2) * 0.08;
-      const warmth = 1.0 + Math.sin(t * Math.PI * 2) * 0.15;
-      if (ambientRef.current) ambientRef.current.intensity = brightness;
-      if (lightRef.current) {
-        lightRef.current.intensity = warmth;
-        // Sun low on horizon for evening feel
-        const angle = t * Math.PI * 2;
-        lightRef.current.position.set(8 * Math.cos(angle), 8 + 2 * Math.sin(angle), 10 * Math.sin(angle));
-      }
-      if (hemiRef.current) hemiRef.current.intensity = brightness * 0.7;
-      frame = requestAnimationFrame(cycle);
-    };
-    cycle();
-    return () => cancelAnimationFrame(frame);
-  }, []);
-
-  return (
-    <>
-      {/* Warm amber ambient */}
-      <ambientLight ref={ambientRef} intensity={0.45} color="#ffe8cc" />
-      {/* Warm golden directional (sunset feel) */}
-      <directionalLight ref={lightRef} position={[8, 10, 10]} intensity={1.0} color="#ffd699" />
-      {/* Warm hemisphere: golden sky, brown ground */}
-      <hemisphereLight ref={hemiRef} args={['#ffecd2', '#b97a20', 0.35]} />
-      {/* Fill light from opposite side for softer shadows */}
-      <pointLight position={[-8, 4, -5]} intensity={0.3} color="#ffeedd" distance={20} />
-    </>
-  );
-}
-
-// ─── Camera Ref Forwarder (to pass camera ref out of Canvas) ───
-function CameraRefForwarder({ cameraRef }) {
-  const { camera } = useThree();
-  useEffect(() => {
-    cameraRef.current = camera;
-  }, [camera, cameraRef]);
-  return null;
-}
-
-// ─── 3D Scene Content ───
-function SceneContent({ onApplianceClick, onWindowClick, onRoomChange, onNearestChange, onInteract, activeApplianceId, interactedAppliances, cameraRef }) {
-  return (
-    <>
-      <WarmLighting />
-      <CameraRefForwarder cameraRef={cameraRef} />
-      <House />
-      <Appliances
-        onApplianceClick={onApplianceClick}
-        onWindowClick={onWindowClick}
-        activeApplianceId={activeApplianceId}
-        interactedAppliances={interactedAppliances}
-      />
-      <Player
-        onRoomChange={onRoomChange}
-        onNearestApplianceChange={onNearestChange}
-        onInteract={onInteract}
-      />
-    </>
-  );
-}
-
-// ─── L1 Controls Help (Fix 6: ? button matching Level 2) ───
-function L1ControlsHelp({ t }) {
+// ═══ CONTROLS HELP ═══
+function L1ControlsHelp() {
   const [show, setShow] = useState(false);
   const [auto, setAuto] = useState(false);
-  useEffect(() => { if (!auto) { setShow(true); setAuto(true); const timer = setTimeout(() => setShow(false), 3000); return () => clearTimeout(timer); } }, []);
-  useEffect(() => { if (!show) return; const h = (e) => { if (e.key === 'Escape') setShow(false); }; window.addEventListener('keydown', h); return () => window.removeEventListener('keydown', h); }, [show]);
-  const l2t = t?.level2 || {};
+  useEffect(() => { if (!auto) { setShow(true); setAuto(true); const t = setTimeout(() => setShow(false), 3000); return () => clearTimeout(t); } }, []);
   return (
     <>
       <button className="l1-help-btn" onClick={() => setShow(true)}>?</button>
       {show && (
         <div className="l1-controls-overlay" onClick={() => setShow(false)}>
           <div className="l1-controls-card" onClick={e => e.stopPropagation()}>
-            <div className="l1-controls-title">{ICONS.star} {l2t.controls || 'Controls'}</div>
+            <div className="l1-controls-title">{ICONS.star} Controls</div>
             <div className="l1-controls-list">
-              <div className="l1-ctrl-row"><span className="l1-ctrl-keys"><span className="l1-key">W</span> / <span className="l1-key">{"\u2191"}</span></span><span>{l2t.moveForward || 'Move Forward'}</span></div>
-              <div className="l1-ctrl-row"><span className="l1-ctrl-keys"><span className="l1-key">S</span> / <span className="l1-key">{"\u2193"}</span></span><span>{l2t.moveBackward || 'Move Backward'}</span></div>
-              <div className="l1-ctrl-row"><span className="l1-ctrl-keys"><span className="l1-key">A</span> / <span className="l1-key">{"\u2190"}</span></span><span>{l2t.turnLeft || 'Turn Left'}</span></div>
-              <div className="l1-ctrl-row"><span className="l1-ctrl-keys"><span className="l1-key">D</span> / <span className="l1-key">{"\u2192"}</span></span><span>{l2t.turnRight || 'Turn Right'}</span></div>
-              <div className="l1-ctrl-row"><span className="l1-ctrl-keys"><span className="l1-key">E</span></span><span>{l2t.interactAppliance || 'Interact with Appliance'}</span></div>
-              <div className="l1-ctrl-row"><span className="l1-ctrl-keys"><span className="l1-key">ESC</span></span><span>{l2t.exitMenu || 'Exit to Menu'}</span></div>
+              <div className="l1-ctrl-row"><span className="l1-ctrl-keys"><span className="l1-key">W</span> / <span className="l1-key">↑</span></span><span>Move Forward</span></div>
+              <div className="l1-ctrl-row"><span className="l1-ctrl-keys"><span className="l1-key">S</span> / <span className="l1-key">↓</span></span><span>Move Backward</span></div>
+              <div className="l1-ctrl-row"><span className="l1-ctrl-keys"><span className="l1-key">A</span> / <span className="l1-key">←</span></span><span>Turn Left</span></div>
+              <div className="l1-ctrl-row"><span className="l1-ctrl-keys"><span className="l1-key">D</span> / <span className="l1-key">→</span></span><span>Turn Right</span></div>
+              <div className="l1-ctrl-row"><span className="l1-ctrl-keys"><span className="l1-key">E</span></span><span>Interact</span></div>
             </div>
-            <button className="l1-controls-got-it" onClick={() => setShow(false)}>{l2t.gotIt || 'Got it!'}</button>
+            <button className="l1-controls-got-it" onClick={() => setShow(false)}>Got it!</button>
           </div>
         </div>
       )}
@@ -850,397 +563,260 @@ function L1ControlsHelp({ t }) {
   );
 }
 
-// ─── Main Level 1 Component ───
+// ═══════════════════════════════════════════════════
+//  MAIN LEVEL 1 COMPONENT
+// ═══════════════════════════════════════════════════
 export default function Level1() {
   const navigate = useNavigate();
   const { selectedLanguage, completeLevel, unlockLevel, addCarbonCoins } = useGame();
-  const langCode = selectedLanguage || 'en';
-  const t = getTranslation(langCode);
-
-  // Camera and canvas refs for tooltip positioning
   const cameraRef = useRef(null);
-  const canvasRef = useRef(null);
 
+  // ─── PHASE: 'intro' → 'building' → 'transition' → 'appliances' → 'quiz' → 'complete' ───
   const [showLevelIntro, setShowLevelIntro] = useState(true);
-  const [showWattsIntro, setShowWattsIntro] = useState(false);
-  const [activeAppliance, setActiveAppliance] = useState(null);
-  const [currentRoom, setCurrentRoom] = useState('Living Room');
-  const [nearestAppliance, setNearestAppliance] = useState(null);
-  const [interacted, setInteracted] = useState(new Set());
-  const [checklistOpen, setChecklistOpen] = useState(false);
-  const [isCinematic, setIsCinematic] = useState(false);
+  const [showTeacherIntro, setShowTeacherIntro] = useState(false);
+  const [phase, setPhase] = useState('building'); // 'building' | 'appliances'
 
-  // Flash card state
-  const [flashCard, setFlashCard] = useState(null);
-  const [showFlash, setShowFlash] = useState(false);
+  // Phase 1: Building Tasks state
+  const [currentTask, setCurrentTask] = useState(1);
+  const [completedTasks, setCompletedTasks] = useState(new Set());
+  const [showTaskPopup, setShowTaskPopup] = useState(false);
+  const [currentPopup, setCurrentPopup] = useState(null);
+  const [showECBC, setShowECBC] = useState(false);
+  const [showCutscene, setShowCutscene] = useState(false);
+  const [showTeacherEnd, setShowTeacherEnd] = useState(false);
 
-  // Quiz states
-  const [showFullQuiz, setShowFullQuiz] = useState(false);
-  const [quizCompleted, setQuizCompleted] = useState(false);
+  // Phase 2: Appliance Discovery state
+  const [showPhaseTransition, setShowPhaseTransition] = useState(false);
+  const [activeApplianceId, setActiveApplianceId] = useState(null);
+  const [interactedAppliances, setInteractedAppliances] = useState(new Set());
+  const [showApplianceInfo, setShowApplianceInfo] = useState(false);
+
+  // End state
+  const [showQuiz, setShowQuiz] = useState(false);
+  const [showLevelComplete, setShowLevelComplete] = useState(false);
   const [quizScore, setQuizScore] = useState(0);
   const [quizTotal, setQuizTotal] = useState(0);
   const [finalStars, setFinalStars] = useState(0);
-  const [showLevelComplete, setShowLevelComplete] = useState(false);
 
-  // Rewards
-  const [stars, setStars] = useState(0);
-  const [totalPoints, setTotalPoints] = useState(0);
+  // House state
+  const [windowsInstalled, setWindowsInstalled] = useState(0);
+  const [curtainsOpen, setCurtainsOpen] = useState(false);
+  const [timeOfDay, setTimeOfDay] = useState('day');
+  const [showAirflow, setShowAirflow] = useState(false);
+  const [lightsOn, setLightsOn] = useState(true);
+  const [energyLevel, setEnergyLevel] = useState(100);
+  const [currentRoom, setCurrentRoom] = useState('Living Room');
 
-  // Coin reward popup
-  const [showCoinReward, setShowCoinReward] = useState(false);
-  const [coinRewardName, setCoinRewardName] = useState('');
-
-  // Achievements
-  const [unlockedAchievements, setUnlockedAchievements] = useState(new Set());
-  const [currentAchievement, setCurrentAchievement] = useState(null);
-  const [showAchievement, setShowAchievement] = useState(false);
-
-  // Room entry voiceover state
-  const [visitedRooms, setVisitedRooms] = useState(new Set());
-  const [roomBanner, setRoomBanner] = useState(null);
-  const [showRoomBanner, setShowRoomBanner] = useState(false);
-  const [thoughtText, setThoughtText] = useState(null);
-  const [showThought, setShowThought] = useState(false);
-
-  // Speaking indicator
-  const [isSpeaking, setIsSpeaking] = useState(false);
-
-  // Ventilation popup state
-  const [showVentilation, setShowVentilation] = useState(false);
-
-  // Ambient music (disabled)
-  useAmbientMusic();
-
-  // Watts intro — show once (after level intro closes)
+  // Teacher intro after level intro
   useEffect(() => {
-    if (!showLevelIntro) {
-      const wattsShown = localStorage.getItem('sustainED_wattsIntroShown');
-      if (!wattsShown) {
-        setShowWattsIntro(true);
-      }
-    }
+    if (!showLevelIntro && !showTeacherIntro && currentTask === 1 && completedTasks.size === 0) setShowTeacherIntro(true);
   }, [showLevelIntro]);
 
-  const handleWattsIntroDismiss = useCallback(() => {
-    setShowWattsIntro(false);
-    localStorage.setItem('sustainED_wattsIntroShown', 'true');
+  // Update energy from completed tasks
+  useEffect(() => {
+    let e = 100;
+    if (completedTasks.has(1)) e -= 20;
+    if (completedTasks.has(2)) e -= 20;
+    if (completedTasks.has(3)) e -= 15;
+    if (completedTasks.has(4)) e -= 15;
+    if (completedTasks.has(5)) e -= 15;
+    setEnergyLevel(Math.max(15, e));
+  }, [completedTasks]);
+
+  // Update lights
+  useEffect(() => {
+    if (timeOfDay === 'day' && (windowsInstalled > 0 || curtainsOpen)) setLightsOn(false);
+    else if (timeOfDay === 'night') setLightsOn(true);
+  }, [windowsInstalled, curtainsOpen, timeOfDay]);
+
+  // ─── PHASE 1: BUILDING TASK INTERACTION ───
+  const handleBuildingInteract = useCallback((interactedId) => {
+    if (showTaskPopup || showECBC || showCutscene || showTeacherIntro || showTeacherEnd) return;
+    const activeTask = TASKS.find(t => t.id === currentTask);
+    if (!activeTask || interactedId !== activeTask.markerId) return;
+
+    playInteractSound(); playTaskCompleteSound();
+
+    switch (currentTask) {
+      case 1: setWindowsInstalled(w => w + 1); break;
+      case 2: setWindowsInstalled(w => w + 1); setShowAirflow(true); break;
+      case 3: setCurtainsOpen(true); break;
+      case 4: setTimeOfDay('night'); setTimeout(() => setTimeOfDay('day'), 2000); break;
+      case 5: break;
+    }
+
+    setCompletedTasks(prev => { const next = new Set(prev); next.add(currentTask); return next; });
+    setCurrentPopup(activeTask.popup);
+    setShowTaskPopup(true);
+  }, [currentTask, showTaskPopup, showECBC, showCutscene, showTeacherIntro, showTeacherEnd]);
+
+  // ─── PHASE 2: APPLIANCE INTERACTION ───
+  const handleApplianceInteract = useCallback((applianceId) => {
+    if (showApplianceInfo || showQuiz || showLevelComplete) return;
+    // Handle window interactions
+    if (applianceId.startsWith('__window__')) return;
+
+    playInteractSound();
+    setActiveApplianceId(applianceId);
+    setShowApplianceInfo(true);
+
+    setInteractedAppliances(prev => {
+      const next = new Set(prev);
+      next.add(applianceId);
+      return next;
+    });
+  }, [showApplianceInfo, showQuiz, showLevelComplete]);
+
+  // Main interaction dispatcher
+  const handleInteract = useCallback((id) => {
+    if (phase === 'building') handleBuildingInteract(id);
+    else if (phase === 'appliances') handleApplianceInteract(id);
+  }, [phase, handleBuildingInteract, handleApplianceInteract]);
+
+  // ─── FLOW HANDLERS ───
+  const handleTaskPopupClose = useCallback(() => {
+    setShowTaskPopup(false); setCurrentPopup(null);
+    if (currentTask < 5) setCurrentTask(t => t + 1);
+    else setShowECBC(true); // All building tasks done
+  }, [currentTask]);
+
+  const handleECBCClose = useCallback(() => { setShowECBC(false); setShowCutscene(true); }, []);
+  const handleCutsceneComplete = useCallback(() => { setShowCutscene(false); setShowTeacherEnd(true); }, []);
+
+  const handleTeacherEndClose = useCallback(() => {
+    setShowTeacherEnd(false);
+    setShowPhaseTransition(true); // Show Phase 2 transition
   }, []);
 
-  // FIX 1: No pointer lock — removed pointer lock management entirely
+  const handlePhaseStart = useCallback(() => {
+    setShowPhaseTransition(false);
+    setPhase('appliances');
+  }, []);
 
-  // Achievement checker
-  const triggerAchievement = useCallback((triggerId) => {
-    const achievement = ACHIEVEMENTS.find(a => a.trigger === triggerId);
-    if (!achievement || unlockedAchievements.has(achievement.id)) return;
+  const handleApplianceInfoClose = useCallback(() => {
+    setShowApplianceInfo(false);
+    setActiveApplianceId(null);
 
-    setUnlockedAchievements(prev => {
-      const next = new Set(prev);
-      next.add(achievement.id);
-      return next;
-    });
-    playAchievementSound();
-    setCurrentAchievement(achievement);
-    setShowAchievement(true);
-    setTimeout(() => setShowAchievement(false), 4000);
-  }, [unlockedAchievements]);
-
-  const handleInteract = useCallback((applianceId) => {
-    if (activeAppliance || showFullQuiz || showLevelComplete || showWattsIntro) return;
-
-    // Handle window interaction
-    if (applianceId && applianceId.startsWith('__window__')) {
-      playInteractSound();
-      setShowVentilation(true);
-      return;
+    // Check if all appliances discovered
+    if (interactedAppliances.size >= INTERACTABLE_IDS.length - 1) {
+      // Small delay then quiz
+      setTimeout(() => setShowQuiz(true), 500);
     }
-
-    const data = APPLIANCE_DATA[applianceId];
-    if (!data) return;
-
-    playInteractSound();
-    setActiveAppliance(data);
-
-    // Speak using voice_text from translation, fallback to English description
-    const at = t?.appliances?.[applianceId];
-    const voiceText = at?.voice_text || data.description;
-    setIsSpeaking(true);
-    speak(voiceText, langCode, data.voiceRate || 0.9, data.voicePitch || 1.05, () => setIsSpeaking(false));
-
-    // Cinematic camera zoom
-    const pos = APPLIANCE_POSITIONS?.[applianceId];
-    if (pos) {
-      cameraMode.cinematic = true;
-      cameraMode.targetX = pos.pos[0];
-      cameraMode.targetY = pos.pos[1];
-      cameraMode.targetZ = pos.pos[2];
-    }
-    setIsCinematic(true);
-
-    // Mark as interacted
-    setInteracted(prev => {
-      const next = new Set(prev);
-      const wasNew = !next.has(applianceId);
-      next.add(applianceId);
-
-      if (wasNew) {
-        setStars(s => s + 1);
-        // Award 10 coins for first discovery
-        setTotalPoints(p => p + 10);
-        playCoinSound();
-        setCoinRewardName(data.name);
-        setShowCoinReward(true);
-        setTimeout(() => setShowCoinReward(false), 2200);
-
-        const newCount = next.size;
-
-        if (newCount === 1) triggerAchievement('interact_1');
-        if (newCount === 3) triggerAchievement('interact_3');
-        if (newCount === 6) triggerAchievement('interact_6');
-        if (newCount === 9) triggerAchievement('interact_9');
-        if (newCount === 12) triggerAchievement('interact_12');
-        if (newCount === 15) triggerAchievement('interact_15');
-
-        if (newCount >= INTERACTABLE_IDS.length) {
-          setTimeout(() => setShowFullQuiz(true), 2000);
-        }
-      }
-      return next;
-    });
-  }, [activeAppliance, showFullQuiz, showLevelComplete, showWattsIntro, triggerAchievement, t, langCode]);
-
-  const handleApplianceClick = useCallback((applianceId) => {
-    handleInteract(applianceId);
-  }, [handleInteract]);
-
-  const handleWindowClick = useCallback(() => {
-    if (activeAppliance || showFullQuiz || showLevelComplete || showWattsIntro) return;
-    playInteractSound();
-    setShowVentilation(true);
-  }, [activeAppliance, showFullQuiz, showLevelComplete, showWattsIntro]);
-
-  const handleCloseBubble = useCallback(() => {
-    stopSpeech();
-    setIsSpeaking(false);
-    const closedAppliance = activeAppliance;
-    setActiveAppliance(null);
-
-    cameraMode.cinematic = false;
-    setIsCinematic(false);
-
-    if (closedAppliance) {
-      setFlashCard(closedAppliance);
-      setShowFlash(true);
-      setTimeout(() => setShowFlash(false), 3500);
-    }
-  }, [activeAppliance]);
+  }, [interactedAppliances]);
 
   const handleQuizComplete = useCallback((score, total) => {
-    setQuizScore(score);
-    setQuizTotal(total);
-    setShowFullQuiz(false);
-    setQuizCompleted(true);
-
+    setQuizScore(score); setQuizTotal(total); setShowQuiz(false);
     const pct = (score / total) * 100;
-    let earnedStars = 1;
-    if (pct >= 90) earnedStars = 3;
-    else if (pct >= 60) earnedStars = 2;
-    setFinalStars(earnedStars);
-
-    if (pct === 100) triggerAchievement('quiz_perfect');
-    if (earnedStars >= 3) triggerAchievement('quiz_3stars');
-
+    setFinalStars(pct >= 90 ? 3 : pct >= 60 ? 2 : 1);
     playLevelCompleteSound();
     setTimeout(() => setShowLevelComplete(true), 500);
-  }, [triggerAchievement]);
-
-  // Room change handler with entry voiceover
-  const handleRoomChange = useCallback((room) => {
-    setCurrentRoom(prev => {
-      if (prev !== room) {
-        // Check if room is being visited for the first time
-        if (!visitedRooms.has(room)) {
-          setVisitedRooms(vr => {
-            const next = new Set(vr);
-            next.add(room);
-            return next;
-          });
-
-          // Show room banner (2 seconds)
-          setRoomBanner(room);
-          setShowRoomBanner(true);
-          setTimeout(() => setShowRoomBanner(false), 2000);
-
-          // Room entry voiceover
-          const rt = t?.rooms?.[room];
-          if (rt) {
-            // Show thought bubble
-            setThoughtText(rt.display_text);
-            setShowThought(true);
-
-            // Speak the room voice text
-            speak(rt.voice_text || rt.display_text, langCode, 0.9, 1.0, () => {
-              setTimeout(() => setShowThought(false), 1000);
-            });
-          }
-        }
-        return room;
-      }
-      return prev;
-    });
-  }, [visitedRooms, t, langCode]);
-
-  const handleNearestChange = useCallback((id) => {
-    setNearestAppliance(id);
   }, []);
+
+  const handleRoomChange = useCallback((room) => setCurrentRoom(room), []);
+  const handleNearestChange = useCallback(() => {}, []);
+  const handleApplianceClick = useCallback((id) => handleApplianceInteract(id), [handleApplianceInteract]);
+
+  // Determine if any overlay is active (for hiding 3D labels)
+  const anyOverlayActive = showTeacherIntro || showTeacherEnd || showTaskPopup || showQuiz || showLevelComplete || showCutscene || showECBC || showPhaseTransition || showApplianceInfo;
 
   // ─── LEVEL INTRO ───
   if (showLevelIntro) {
     return (
       <LevelIntro
-        levelNumber={1}
-        levelTitle="Home Energy Audit"
-        levelIcon="🏠"
-        objective="Walk through your virtual home and discover the appliances that power your daily life. Learn how each device works, what it does, and how much electricity it uses."
-        learningOutcome="By the end of this level, you will understand what household appliances are, how to interact with them, and why knowing about them matters for energy awareness."
+        levelNumber={1} levelTitle="Building & Natural Design" levelIcon="🏠"
+        objective="Improve a dark, poorly ventilated house using natural methods — then discover all your home appliances."
+        learningOutcome="You will understand how smart house design saves energy, then learn about every appliance's wattage and saving tips."
         terms={[
-          { icon: '🧩', name: 'Appliance', definition: 'A device in your home that uses electricity to perform a task — like a fan, TV, or fridge.', example: 'A ceiling fan is an appliance that cools the room' },
-          { icon: '🎮', name: 'Interaction', definition: 'When you do something with an object in the game — like walking up to it and pressing a button to learn about it.', example: 'Press E near an appliance to interact' },
-          { icon: '🟢', name: 'Activation', definition: 'Turning something ON so it starts working and begins using electricity.', example: 'When you turn ON the AC, it starts consuming 1500W' },
+          { icon: '🪟', name: 'Natural Light', definition: 'Sunlight entering through windows replaces the need for artificial electric lights.', example: 'Opening a window during daytime lights up the room without electricity' },
+          { icon: '🌬️', name: 'Cross Ventilation', definition: 'Natural air flow by placing openings on opposite sides of a room.', example: 'Window + door on opposite walls = fresh air flows through' },
+          { icon: '🏗️', name: 'ECBC', definition: 'Energy Conservation Building Code — design buildings that use less energy.', example: 'A well-designed house needs less AC, fans, and lights' },
         ]}
         onComplete={() => setShowLevelIntro(false)}
       />
     );
   }
 
+  const activeTask = TASKS.find(t => t.id === currentTask);
+
   return (
     <div className="level1-container">
-      {/* 3D Canvas — hidden during watts intro */}
-      <div className={`canvas-wrapper ${isCinematic ? 'cinematic-blur' : ''}`} style={showWattsIntro ? { display: 'none' } : undefined}>
+      <div className="canvas-wrapper">
         <Canvas
-          camera={{ position: [-5, 6, 1], fov: 50 }}
-          gl={{ antialias: false }}
-          onCreated={({ gl }) => {
-            canvasRef.current = gl.domElement;
-            gl.setClearColor('#f5deb3');
-            gl.toneMapping = 1;
-            gl.toneMappingExposure = 1.1;
-            gl.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
-          }}
+          camera={{ position: [-5, 6, 1], fov: 50 }} gl={{ antialias: false }}
+          onCreated={({ gl }) => { gl.setClearColor('#1a1a2e'); gl.toneMapping = 1; gl.toneMappingExposure = 1.1; gl.setPixelRatio(Math.min(window.devicePixelRatio, 1.5)); }}
         >
           <Suspense fallback={null}>
             <SceneContent
-              onApplianceClick={handleApplianceClick}
-              onWindowClick={handleWindowClick}
-              onRoomChange={handleRoomChange}
-              onNearestChange={handleNearestChange}
-              onInteract={handleInteract}
-              activeApplianceId={activeAppliance?.id}
-              interactedAppliances={interacted}
-              cameraRef={cameraRef}
+              cameraRef={cameraRef} onInteract={handleInteract} onRoomChange={handleRoomChange} onNearestChange={handleNearestChange}
+              currentTask={currentTask} completedTasks={completedTasks} windowsInstalled={windowsInstalled} curtainsOpen={curtainsOpen}
+              timeOfDay={timeOfDay} showAirflow={showAirflow} lightsOn={lightsOn} hideLabels={anyOverlayActive}
+              phase={phase} activeApplianceId={activeApplianceId} interactedAppliances={interactedAppliances}
+              onApplianceClick={handleApplianceClick} onWindowClick={() => {}}
             />
           </Suspense>
         </Canvas>
-        {/* Vignette overlay */}
         <div className="vignette-overlay" />
       </div>
 
-
-
-      {/* HUD - hidden during quiz and watts intro */}
-      {!showFullQuiz && !showLevelComplete && !showWattsIntro && (
+      {/* HUD — hidden during overlays */}
+      {!anyOverlayActive && (
         <>
           <div className="level1-hud">
-            <button className="hud-back-btn" onClick={() => { stopSpeech(); navigate('/hub'); }}>{t?.ui?.back || String.fromCharCode(8592) + ' Back'}</button>
-            <div className="hud-room-name">{t?.rooms?.[currentRoom]?.name || `${ICONS.pin} ${currentRoom}`}</div>
-            <div className="hud-instructions">{t?.ui?.homeAuditMission || `${ICONS.house} Home Audit Mission`}</div>
+            <button className="hud-back-btn" onClick={() => { stopSpeech(); navigate('/hub'); }}>← Back</button>
+            <div className="hud-room-name">📍 {currentRoom}</div>
+            <div className="hud-instructions">{phase === 'building' ? '🏠 Building Design' : '🔍 Appliance Discovery'}</div>
           </div>
 
-          {/* Points Display */}
-          <PointsDisplay points={totalPoints} totalDiscovered={interacted.size} total={INTERACTABLE_IDS.length} />
+          {/* Phase 1 HUD */}
+          {phase === 'building' && (
+            <>
+              <BuildingTaskHUD currentTask={currentTask} completedTasks={completedTasks} />
+              {activeTask && currentTask <= 5 && <TaskObjective task={activeTask} />}
+              <EnergyMeter energyLevel={energyLevel} />
+              <TemperatureDisplay visible={currentTask >= 5} indoor={28} outdoor={30} />
+            </>
+          )}
 
-          {/* Stars */}
-          <RewardsDisplay stars={stars} />
-
-          {/* Progress Checklist */}
-          <ChecklistPanel
-            interacted={interacted}
-            isOpen={checklistOpen}
-            onToggle={() => setChecklistOpen(o => !o)}
-            t={t}
-          />
-
-
+          {/* Phase 2 HUD */}
+          {phase === 'appliances' && (
+            <>
+              <ApplianceDiscoveryHUD found={interactedAppliances.size} total={INTERACTABLE_IDS.length} />
+              <div className="task-objective-banner">
+                <div className="task-objective-icon">🔍</div>
+                <div className="task-objective-info">
+                  <div className="task-objective-title">Discover All Appliances</div>
+                  <div className="task-objective-text">Walk near each appliance and press E to learn about it</div>
+                </div>
+              </div>
+            </>
+          )}
         </>
       )}
 
-      {/* Room Entry Banner - hidden during quiz */}
-      {!showFullQuiz && !showLevelComplete && (
-        <RoomEntryBanner room={roomBanner} visible={showRoomBanner} t={t} />
-      )}
+      {/* Phase 1 Overlays */}
+      <TeacherMessage visible={showTeacherIntro} title="Welcome to Building Design!" message="Before we use any appliances, let's improve this house using natural methods. A good house reduces energy needs! Walk to the glowing markers and press E to complete each task." onClose={() => setShowTeacherIntro(false)} />
+      <TaskPopup visible={showTaskPopup} popup={currentPopup} onClose={handleTaskPopupClose} />
+      <ECBCPopup visible={showECBC} onClose={handleECBCClose} />
+      <BeforeAfterCutscene visible={showCutscene} onComplete={handleCutsceneComplete} />
+      <TeacherMessage visible={showTeacherEnd} title="House Design Complete!" message="Now your house is bright, well-ventilated, and comfortable — all without extra electricity! Next, let's discover what appliances you have and learn to use them wisely." onClose={handleTeacherEndClose} />
 
-      {/* Arjun Thought Bubble - hidden during quiz */}
-      {!showFullQuiz && !showLevelComplete && (
-        <ThoughtBubble text={thoughtText} visible={showThought} />
-      )}
+      {/* Phase Transition */}
+      <PhaseTransition visible={showPhaseTransition} onStart={handlePhaseStart} />
 
-      {/* Screen-Centered Appliance Popup - hidden during quiz */}
-      {!showFullQuiz && !showLevelComplete && (
-        <ApplianceTooltip
-          appliance={activeAppliance}
-          onClose={handleCloseBubble}
-          t={t}
-          langCode={langCode}
-        />
-      )}
+      {/* Phase 2 Overlays */}
+      {showApplianceInfo && <ApplianceInfoPopup applianceId={activeApplianceId} onClose={handleApplianceInfoClose} />}
 
-      {/* Memory Flash Card - hidden during quiz */}
-      {!showFullQuiz && !showLevelComplete && (
-        <FlashCard appliance={flashCard} visible={showFlash} t={t} />
-      )}
+      {/* Quiz */}
+      {showQuiz && <BuildingQuizModal questions={LEVEL1_QUIZ_QUESTIONS} onComplete={handleQuizComplete} />}
 
-      {/* Achievement Toast - hidden during quiz */}
-      {!showFullQuiz && !showLevelComplete && (
-        <AchievementToast achievement={currentAchievement} visible={showAchievement} t={t} />
-      )}
-
-      {/* Coin Reward Popup */}
-      {!showFullQuiz && !showLevelComplete && (
-        <CoinRewardPopup visible={showCoinReward} applianceName={coinRewardName} points={10} />
-      )}
-
-      {/* Ventilation Pop-up (window interaction) */}
-      <VentilationPopup visible={showVentilation} onClose={() => setShowVentilation(false)} t={t} />
-
-      {/* Watts Introduction Overlay */}
-      <WattsIntroOverlay visible={showWattsIntro} onClose={handleWattsIntroDismiss} t={t} />
-
-      {/* Full Quiz */}
-      {showFullQuiz && (
-        <FullQuizModal
-          questions={QUIZ_QUESTIONS}
-          onComplete={handleQuizComplete}
-          t={t}
-        />
-      )}
-
-      {/* Level Complete Screen */}
+      {/* Level Complete */}
       {showLevelComplete && (
-        <LevelCompleteScreen
-          score={quizScore}
-          total={quizTotal}
-          stars={finalStars}
-          onContinue={() => {
-            // Mark Level 1 complete and unlock Level 2
-            completeLevel(1);
-            unlockLevel(2);
-            addCarbonCoins(finalStars * 20 + quizScore * 5);
-            navigate('/hub');
-          }}
-          t={t}
+        <LevelCompleteScreen score={quizScore} total={quizTotal} stars={finalStars} appliancesFound={interactedAppliances.size}
+          onContinue={() => { completeLevel(1); unlockLevel(2); addCarbonCoins(finalStars * 20 + quizScore * 5); navigate('/hub'); }}
         />
       )}
-      {/* Help Button (Fix 6) */}
-      <L1ControlsHelp t={t} />
+
+      <L1ControlsHelp />
     </div>
   );
 }
