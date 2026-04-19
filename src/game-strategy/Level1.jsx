@@ -344,12 +344,47 @@ function TemperatureDisplay({ visible, indoor, outdoor }) {
 }
 
 // ═══ APPLIANCE DISCOVERY HUD (Phase 2) ═══
-function ApplianceDiscoveryHUD({ found, total }) {
+function ApplianceDiscoveryHUD({ found, total, points, stars }) {
   return (
-    <div className="appliance-hud">
-      <span className="appliance-hud-icon">🔍</span>
-      <span className="appliance-hud-text">Appliances Found:</span>
-      <span className="appliance-hud-count">{found} / {total}</span>
+    <>
+      {/* Star rating - top left */}
+      <div className="ad-stars-badge">
+        {[1, 2, 3, 4, 5].map(s => (
+          <span key={s} className={`ad-star ${s <= stars ? 'earned' : 'empty'}`}>⭐</span>
+        ))}
+        <span className="ad-stars-count">{stars}</span>
+      </div>
+
+      {/* Points + Found counter - top center */}
+      <div className="ad-score-pill">
+        <span className="ad-coin-icon">🪙</span>
+        <div className="ad-score-section">
+          <span className="ad-score-value">{points}</span>
+          <span className="ad-score-label">POINTS</span>
+        </div>
+        <div className="ad-score-divider" />
+        <div className="ad-score-section">
+          <span className="ad-score-value">{found}/{total}</span>
+          <span className="ad-score-label">FOUND</span>
+        </div>
+      </div>
+    </>
+  );
+}
+
+// ═══ APPLIANCE BOTTOM INFO TOAST (Phase 2) ═══
+function ApplianceInfoToast({ applianceId }) {
+  if (!applianceId) return null;
+  const data = APPLIANCE_DATA[applianceId];
+  if (!data) return null;
+  return (
+    <div className="appliance-toast">
+      <div className="appliance-toast-icon">{data.icon}</div>
+      <div className="appliance-toast-content">
+        <div className="appliance-toast-name">{data.name}</div>
+        <div className="appliance-toast-stats">{data.wattage}W ⚡ {data.annualKwh} kWh/yr</div>
+        <div className="appliance-toast-tip">💡 {data.funFact}</div>
+      </div>
     </div>
   );
 }
@@ -359,29 +394,95 @@ function ApplianceInfoPopup({ applianceId, onClose }) {
   if (!applianceId) return null;
   const data = APPLIANCE_DATA[applianceId];
   if (!data) return null;
+
+  // Calculate energy impact
+  const annualKwh = typeof data.annualKwh === 'string' ? parseInt(data.annualKwh) : (data.annualKwh || 0);
+  const co2 = typeof data.co2PerYear === 'string' ? data.co2PerYear : (data.co2PerYear || '—');
+  const monthlyKwh = typeof data.monthlyKwh === 'string' ? data.monthlyKwh : (data.monthlyKwh || '—');
+
   return (
-    <div className="appliance-info-popup" onClick={onClose}>
-      <div className="appliance-info-card" onClick={e => e.stopPropagation()}>
-        <div className="appliance-info-header">
-          <div className="appliance-info-icon">{data.icon}</div>
-          <div className="appliance-info-meta">
-            <div className="appliance-info-name">{data.name}</div>
-            <div className="appliance-info-room">{data.room}</div>
+    <div className="ai-popup-overlay" onClick={onClose}>
+      <div className="ai-popup-card" onClick={e => e.stopPropagation()}>
+        {/* Close button */}
+        <button className="ai-popup-close" onClick={onClose}>✕</button>
+
+        {/* Icon badge */}
+        <div className="ai-popup-icon-wrapper">
+          <div className="ai-popup-icon">{data.icon}</div>
+        </div>
+
+        {/* Title & Category */}
+        <h2 className="ai-popup-name">{data.name}</h2>
+        <div className="ai-popup-category">{data.category}</div>
+
+        {/* Dotted divider */}
+        <div className="ai-popup-divider" />
+
+        {/* Power & Usage */}
+        <div className="ai-popup-section-title">⚡ POWER & USAGE</div>
+        <div className="ai-popup-wattage">{data.wattage}W</div>
+        <div className="ai-popup-usage-row">
+          <span>{data.usePerDay || '—'}</span>
+          <span className="ai-popup-usage-sep">⚡</span>
+          <span>{data.daysPerYear ? `${data.daysPerYear} days/yr` : '365 days/yr'}</span>
+        </div>
+
+        {/* Dotted divider */}
+        <div className="ai-popup-divider" />
+
+        {/* About */}
+        <div className="ai-popup-section-title">ℹ️ ABOUT</div>
+        <div className="ai-popup-about">
+          <div className="ai-popup-about-border" />
+          <p className="ai-popup-about-text">
+            Hey there! I'm the {data.name} {data.icon} — {data.description}
+          </p>
+        </div>
+
+        {/* Dotted divider */}
+        <div className="ai-popup-divider" />
+
+        {/* Energy Impact */}
+        <div className="ai-popup-section-title">⚡ ENERGY IMPACT</div>
+        <div className="ai-popup-impact-grid">
+          <div className="ai-popup-impact-item">
+            <div className="ai-popup-impact-value">{monthlyKwh}</div>
+            <div className="ai-popup-impact-label">kWh/month</div>
+          </div>
+          <div className="ai-popup-impact-item">
+            <div className="ai-popup-impact-value">{annualKwh}</div>
+            <div className="ai-popup-impact-label">kWh/year</div>
+          </div>
+          <div className="ai-popup-impact-item">
+            <div className="ai-popup-impact-value">{co2}</div>
+            <div className="ai-popup-impact-label">kg CO₂/yr</div>
           </div>
         </div>
-        <div className="appliance-info-stats">
-          <div className="appliance-stat"><div className="appliance-stat-value">{data.wattage}W</div><div className="appliance-stat-label">Wattage</div></div>
-          <div className="appliance-stat"><div className="appliance-stat-value">{data.avgUsage || '~2h'}</div><div className="appliance-stat-label">Avg Usage</div></div>
-          <div className="appliance-stat"><div className="appliance-stat-value">{data.starRating || '⭐⭐⭐'}</div><div className="appliance-stat-label">Rating</div></div>
-        </div>
-        <div className="appliance-info-desc">{data.description}</div>
-        {data.savingTip && (
-          <div className="appliance-info-tip">
-            <span className="appliance-info-tip-icon">💡</span>
-            <span className="appliance-info-tip-text">{data.savingTip}</span>
+
+        {/* Fun Fact */}
+        {data.funFact && (
+          <div className="ai-popup-funfact">
+            <span className="ai-popup-funfact-icon">💡</span>
+            <span className="ai-popup-funfact-text">{data.funFact}</span>
           </div>
         )}
-        <button className="appliance-info-close-btn" onClick={onClose}>Got it! →</button>
+
+        {/* Hidden Consumer Badge */}
+        {data.hiddenConsumer && (
+          <div className="ai-popup-hidden-badge">
+            <span>👁️</span> Hidden Energy Consumer — {data.standbyPower} standby
+          </div>
+        )}
+
+        {/* BEE Rating */}
+        {data.beeRated && data.beeRated !== 'No' && (
+          <div className="ai-popup-bee-badge">
+            ⭐ BEE Rated: {data.beeRated}
+          </div>
+        )}
+
+        {/* Got it button */}
+        <button className="ai-popup-btn" onClick={onClose}>Got it! →</button>
       </div>
     </div>
   );
@@ -574,7 +675,7 @@ export default function Level1() {
   // ─── PHASE: 'intro' → 'building' → 'transition' → 'appliances' → 'quiz' → 'complete' ───
   const [showLevelIntro, setShowLevelIntro] = useState(true);
   const [showTeacherIntro, setShowTeacherIntro] = useState(false);
-  const [phase, setPhase] = useState('building'); // 'building' | 'appliances'
+  const [phase, setPhase] = useState('appliances'); // 'building' | 'appliances' // TEMP: testing phase 2
 
   // Phase 1: Building Tasks state
   const [currentTask, setCurrentTask] = useState(1);
@@ -590,6 +691,17 @@ export default function Level1() {
   const [activeApplianceId, setActiveApplianceId] = useState(null);
   const [interactedAppliances, setInteractedAppliances] = useState(new Set());
   const [showApplianceInfo, setShowApplianceInfo] = useState(false);
+  const [nearbyApplianceId, setNearbyApplianceId] = useState(null);
+
+  // Track nearest appliance for bottom toast
+  useEffect(() => {
+    if (phase !== 'appliances') return;
+    const interval = setInterval(() => {
+      const nearest = playerState.nearestAppliance;
+      setNearbyApplianceId(nearest && !nearest.startsWith('__window__') ? nearest : null);
+    }, 200);
+    return () => clearInterval(interval);
+  }, [phase]);
 
   // End state
   const [showQuiz, setShowQuiz] = useState(false);
@@ -780,14 +892,20 @@ export default function Level1() {
           {/* Phase 2 HUD */}
           {phase === 'appliances' && (
             <>
-              <ApplianceDiscoveryHUD found={interactedAppliances.size} total={INTERACTABLE_IDS.length} />
-              <div className="task-objective-banner">
+              <ApplianceDiscoveryHUD
+                found={interactedAppliances.size}
+                total={INTERACTABLE_IDS.length}
+                points={interactedAppliances.size * 20}
+                stars={Math.min(5, Math.floor(interactedAppliances.size / 3))}
+              />
+              <div className="task-objective-banner appliance-objective">
                 <div className="task-objective-icon">🔍</div>
                 <div className="task-objective-info">
                   <div className="task-objective-title">Discover All Appliances</div>
                   <div className="task-objective-text">Walk near each appliance and press E to learn about it</div>
                 </div>
               </div>
+              <ApplianceInfoToast applianceId={!showApplianceInfo ? nearbyApplianceId : null} />
             </>
           )}
         </>

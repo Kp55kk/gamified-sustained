@@ -3182,35 +3182,173 @@ button {
   cursor: pointer;
 }
 
-/* ─── Phase 2: Appliance Discovery HUD ─── */
-.appliance-hud {
+/* ─── Phase 2: Appliance Discovery — Star Rating Badge ─── */
+.ad-stars-badge {
   position: absolute;
-  top: 55px;
+  top: 50px;
+  left: 16px;
+  z-index: 150;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 14px;
+  border-radius: 14px;
+  background: rgba(15, 23, 42, 0.92);
+  border: 1px solid rgba(255, 215, 0, 0.3);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  animation: fadeIn 0.4s ease;
+}
+
+.ad-star {
+  font-size: 16px;
+  transition: all 0.3s ease;
+}
+.ad-star.empty {
+  opacity: 0.2;
+  filter: grayscale(1);
+}
+.ad-star.earned {
+  animation: starPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+.ad-stars-count {
+  font-family: 'Fredoka', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  color: #ffd700;
+  margin-left: 6px;
+}
+
+/* ─── Phase 2: Score Pill (Points + Found) ─── */
+.ad-score-pill {
+  position: absolute;
+  top: 50px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 150;
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 18px;
-  border-radius: 20px;
-  background: rgba(5, 10, 21, 0.9);
-  border: 1px solid rgba(59, 130, 246, 0.3);
+  padding: 8px 20px;
+  border-radius: 24px;
+  background: linear-gradient(135deg, rgba(99, 52, 207, 0.9), rgba(139, 92, 246, 0.85));
+  border: 2px solid rgba(139, 92, 246, 0.5);
   backdrop-filter: blur(12px);
+  box-shadow: 0 4px 24px rgba(139, 92, 246, 0.3), 0 0 40px rgba(139, 92, 246, 0.08);
+  animation: fadeIn 0.4s ease;
 }
 
-.appliance-hud-icon { font-size: 18px; }
-.appliance-hud-text {
+.ad-coin-icon {
+  font-size: 22px;
+  animation: coinBounce 2s ease-in-out infinite;
+}
+
+@keyframes coinBounce {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-3px) rotate(10deg); }
+}
+
+.ad-score-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+}
+
+.ad-score-value {
   font-family: 'Fredoka', sans-serif;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1.1;
+}
+
+.ad-score-label {
+  font-family: 'Nunito', sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.65);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.ad-score-divider {
+  width: 1px;
+  height: 28px;
+  background: rgba(255, 255, 255, 0.25);
+  margin: 0 4px;
+}
+
+/* ─── Phase 2: Bottom Info Toast ─── */
+.appliance-toast {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  z-index: 150;
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  max-width: 440px;
+  padding: 16px 20px;
+  border-radius: 18px;
+  background: rgba(10, 15, 30, 0.92);
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  backdrop-filter: blur(16px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 24px rgba(99, 102, 241, 0.08);
+  animation: toastSlideUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes toastSlideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.appliance-toast-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  background: rgba(99, 102, 241, 0.15);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  flex-shrink: 0;
+}
+
+.appliance-toast-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.appliance-toast-name {
+  font-family: 'Fredoka', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
   color: #fff;
 }
-.appliance-hud-count {
-  font-family: 'Fredoka', sans-serif;
-  font-size: 14px;
-  font-weight: 700;
-  color: #3b82f6;
+
+.appliance-toast-stats {
+  font-family: 'Nunito', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  color: #94a3b8;
+}
+
+.appliance-toast-tip {
+  font-family: 'Nunito', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  color: #f59e0b;
+  line-height: 1.4;
+}
+
+/* ─── Appliance Objective Banner Override ─── */
+.appliance-objective {
+  bottom: auto;
+  top: auto;
 }
 
 /* ─── Phase Transition Overlay ─── */
@@ -3271,125 +3409,332 @@ button {
   box-shadow: 0 8px 24px rgba(59, 130, 246, 0.45);
 }
 
-/* ─── Appliance Info Popup (Phase 2 style) ─── */
-.appliance-info-popup {
+/* ═══════════════════════════════════════════════════════════════
+   LIGHT-THEMED APPLIANCE INFO POPUP (Phase 2)
+   ═══════════════════════════════════════════════════════════════ */
+
+.ai-popup-overlay {
   position: fixed;
   inset: 0;
   z-index: 10000;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(5, 10, 21, 0.85);
-  backdrop-filter: blur(8px);
+  background: rgba(120, 100, 150, 0.35);
+  backdrop-filter: blur(12px);
   animation: fadeIn 0.3s ease;
 }
-.appliance-info-card {
+
+.ai-popup-card {
+  position: relative;
   max-width: 440px;
-  width: 90%;
-  padding: 28px 24px;
-  border-radius: 24px;
-  background: linear-gradient(135deg, #0f172a, #1e293b);
-  border: 1px solid rgba(59, 130, 246, 0.3);
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-  animation: bubblePop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  width: 92%;
+  max-height: 85vh;
+  overflow-y: auto;
+  padding: 32px 28px 24px;
+  border-radius: 28px;
+  background: linear-gradient(180deg, #fff 0%, #faf7ff 40%, #fff3f0 100%);
+  border: none;
+  box-shadow:
+    0 20px 80px rgba(120, 80, 200, 0.2),
+    0 8px 30px rgba(0, 0, 0, 0.08),
+    0 0 0 1px rgba(200, 180, 230, 0.25);
+  animation: aiPopupIn 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+  text-align: center;
 }
-.appliance-info-header {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  margin-bottom: 14px;
+
+/* Bottom gradient border effect */
+.ai-popup-card::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 5px;
+  border-radius: 0 0 28px 28px;
+  background: linear-gradient(90deg, #7c3aed, #ec4899, #f97316, #eab308);
 }
-.appliance-info-icon {
-  width: 52px;
-  height: 52px;
-  border-radius: 14px;
+
+@keyframes aiPopupIn {
+  from { 
+    transform: scale(0.85) translateY(20px); 
+    opacity: 0; 
+  }
+  to { 
+    transform: scale(1) translateY(0); 
+    opacity: 1; 
+  }
+}
+
+/* Scrollbar styling */
+.ai-popup-card::-webkit-scrollbar {
+  width: 6px;
+}
+.ai-popup-card::-webkit-scrollbar-track {
+  background: transparent;
+}
+.ai-popup-card::-webkit-scrollbar-thumb {
+  background: rgba(124, 58, 237, 0.2);
+  border-radius: 3px;
+}
+
+/* Close Button */
+.ai-popup-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: rgba(0, 0, 0, 0.04);
+  color: #9ca3af;
+  font-size: 16px;
+  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 28px;
-  background: rgba(59, 130, 246, 0.12);
-  border: 1px solid rgba(59, 130, 246, 0.25);
+  transition: all 0.2s;
+  z-index: 2;
 }
-.appliance-info-meta { display: flex; flex-direction: column; gap: 2px; }
-.appliance-info-name {
-  font-family: 'Fredoka', sans-serif;
-  font-size: 18px;
-  font-weight: 700;
-  color: #fff;
+.ai-popup-close:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.2);
 }
-.appliance-info-room {
-  font-family: 'Nunito', sans-serif;
-  font-size: 11px;
-  color: #64748b;
-  text-transform: uppercase;
-  letter-spacing: 1.5px;
-}
-.appliance-info-stats {
+
+/* Icon Wrapper */
+.ai-popup-icon-wrapper {
   display: flex;
-  gap: 8px;
+  justify-content: center;
   margin-bottom: 14px;
 }
-.appliance-stat {
-  flex: 1;
-  padding: 10px;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.04);
-  text-align: center;
-}
-.appliance-stat-value {
-  font-family: 'Fredoka', sans-serif;
-  font-size: 18px;
-  font-weight: 700;
-  color: #3b82f6;
-}
-.appliance-stat-label {
-  font-family: 'Nunito', sans-serif;
-  font-size: 10px;
-  color: #64748b;
-  text-transform: uppercase;
-}
-.appliance-info-desc {
-  font-family: 'Nunito', sans-serif;
-  font-size: 13px;
-  line-height: 1.6;
-  color: #94a3b8;
-  margin-bottom: 14px;
-  padding-left: 12px;
-  border-left: 3px solid #3b82f6;
-}
-.appliance-info-tip {
+
+.ai-popup-icon {
+  width: 72px;
+  height: 72px;
+  border-radius: 20px;
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 12px 14px;
-  border-radius: 12px;
-  background: rgba(34, 197, 94, 0.1);
-  border: 1px solid rgba(34, 197, 94, 0.2);
-  margin-bottom: 16px;
+  justify-content: center;
+  font-size: 36px;
+  background: linear-gradient(135deg, #e0e7ff, #ede9fe);
+  border: 2px solid rgba(124, 58, 237, 0.15);
+  box-shadow: 0 4px 16px rgba(124, 58, 237, 0.12);
 }
-.appliance-info-tip-icon { font-size: 20px; flex-shrink: 0; }
-.appliance-info-tip-text {
+
+/* Name & Category */
+.ai-popup-name {
+  font-family: 'Fredoka', sans-serif;
+  font-size: 24px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 8px;
+}
+
+.ai-popup-category {
+  display: inline-block;
+  padding: 5px 16px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #fff;
+  font-family: 'Fredoka', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* Dotted Divider */
+.ai-popup-divider {
+  margin: 18px 0;
+  border: none;
+  border-top: 2px dotted rgba(0, 0, 0, 0.08);
+}
+
+/* Section Title */
+.ai-popup-section-title {
+  font-family: 'Fredoka', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: #7c3aed;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  margin-bottom: 10px;
+}
+
+/* Power & Usage */
+.ai-popup-wattage {
+  font-family: 'Fredoka', sans-serif;
+  font-size: 48px;
+  font-weight: 700;
+  color: #10b981;
+  line-height: 1;
+  margin-bottom: 6px;
+  text-shadow: 0 2px 12px rgba(16, 185, 129, 0.15);
+}
+
+.ai-popup-usage-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-family: 'Nunito', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.ai-popup-usage-sep {
+  color: #f59e0b;
+  font-size: 12px;
+}
+
+/* About Section */
+.ai-popup-about {
+  position: relative;
+  display: flex;
+  gap: 0;
+  text-align: left;
+  padding: 16px 20px;
+  border-radius: 16px;
+  background: rgba(241, 245, 249, 0.8);
+  border: 1px solid rgba(0, 0, 0, 0.04);
+}
+
+.ai-popup-about-border {
+  position: absolute;
+  left: 0;
+  top: 12px;
+  bottom: 12px;
+  width: 4px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, #7c3aed, #ec4899);
+}
+
+.ai-popup-about-text {
+  font-family: 'Nunito', sans-serif;
+  font-size: 14px;
+  line-height: 1.7;
+  color: #475569;
+  margin: 0;
+  padding-left: 12px;
+}
+
+/* Energy Impact Grid */
+.ai-popup-impact-grid {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.ai-popup-impact-item {
+  flex: 1;
+  padding: 12px 8px;
+  border-radius: 14px;
+  background: rgba(99, 102, 241, 0.06);
+  border: 1px solid rgba(99, 102, 241, 0.1);
+  text-align: center;
+}
+
+.ai-popup-impact-value {
+  font-family: 'Fredoka', sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: #4f46e5;
+  line-height: 1.1;
+}
+
+.ai-popup-impact-label {
+  font-family: 'Nunito', sans-serif;
+  font-size: 10px;
+  font-weight: 600;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 2px;
+}
+
+/* Fun Fact */
+.ai-popup-funfact {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(252, 211, 77, 0.12), rgba(251, 191, 36, 0.1));
+  border: 1px solid rgba(251, 191, 36, 0.2);
+  margin-top: 14px;
+  margin-bottom: 10px;
+}
+
+.ai-popup-funfact-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.ai-popup-funfact-text {
   font-family: 'Nunito', sans-serif;
   font-size: 12px;
   font-weight: 600;
-  color: #22c55e;
+  color: #92400e;
+  text-align: left;
+  line-height: 1.5;
 }
-.appliance-info-close-btn {
-  width: 100%;
-  padding: 12px;
-  border: none;
+
+/* Hidden Consumer Badge */
+.ai-popup-hidden-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 14px;
   border-radius: 12px;
-  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.08), rgba(220, 38, 38, 0.06));
+  border: 1px solid rgba(239, 68, 68, 0.15);
+  font-family: 'Nunito', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  color: #dc2626;
+  margin-bottom: 8px;
+}
+
+/* BEE Rating Badge */
+.ai-popup-bee-badge {
+  padding: 8px 14px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.08), rgba(22, 163, 74, 0.06));
+  border: 1px solid rgba(34, 197, 94, 0.15);
+  font-family: 'Nunito', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  color: #16a34a;
+  margin-bottom: 14px;
+}
+
+/* Got It Button */
+.ai-popup-btn {
+  width: 100%;
+  padding: 14px;
+  margin-top: 8px;
+  border: none;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #7c3aed, #6d28d9);
   color: #fff;
   font-family: 'Fredoka', sans-serif;
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+  transition: all 0.25s;
+  box-shadow: 0 4px 16px rgba(124, 58, 237, 0.35);
 }
-.appliance-info-close-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+
+.ai-popup-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 28px rgba(124, 58, 237, 0.45);
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+}
+
+.ai-popup-btn:active {
+  transform: scale(0.98);
 }
 
