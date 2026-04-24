@@ -6,7 +6,7 @@ import * as THREE from 'three';
 import House from './House';
 import Player, { cameraMode, playerState } from './Player';
 import Appliances from './Appliances';
-import { LEVEL1_TASK_POSITIONS, LEVEL1_QUIZ_QUESTIONS, APPLIANCE_DATA, INTERACTABLE_IDS } from './applianceData';
+import { LEVEL1_TASK_POSITIONS, LEVEL1_QUIZ_QUESTIONS, QUIZ_QUESTIONS, APPLIANCE_DATA, INTERACTABLE_IDS } from './applianceData';
 import { useGame } from '../context/GameContext';
 import { getTranslation, getVoiceLocale } from '../translations/index';
 import LevelIntro from './LevelIntro';
@@ -389,74 +389,94 @@ function ApplianceInfoToast({ applianceId }) {
   );
 }
 
-// ═══ APPLIANCE INFO POPUP (Phase 2) ═══
-function ApplianceInfoPopup({ applianceId, onClose }) {
+// ═══ APPLIANCE INFO POPUP (Phase 2) — with Voiceover — Compact UI ═══
+function ApplianceInfoPopup({ applianceId, onClose, langCode }) {
+  // Voiceover: speak appliance description when popup opens
+  useEffect(() => {
+    if (applianceId) {
+      const data = APPLIANCE_DATA[applianceId];
+      if (data && data.description) {
+        speak(
+          `${data.name}. ${data.description}`,
+          langCode || 'en',
+          data.voiceRate || 0.9,
+          data.voicePitch || 1.05
+        );
+      }
+    }
+    return () => stopSpeech();
+  }, [applianceId, langCode]);
+
   if (!applianceId) return null;
   const data = APPLIANCE_DATA[applianceId];
   if (!data) return null;
 
-  // Calculate energy impact
   const annualKwh = typeof data.annualKwh === 'string' ? parseInt(data.annualKwh) : (data.annualKwh || 0);
   const co2 = typeof data.co2PerYear === 'string' ? data.co2PerYear : (data.co2PerYear || '—');
   const monthlyKwh = typeof data.monthlyKwh === 'string' ? data.monthlyKwh : (data.monthlyKwh || '—');
 
+  const handleClose = () => { stopSpeech(); onClose(); };
+
   return (
-    <div className="ai-popup-overlay" onClick={onClose}>
+    <div className="ai-popup-overlay" onClick={handleClose}>
       <div className="ai-popup-card" onClick={e => e.stopPropagation()}>
-        {/* Close button */}
-        <button className="ai-popup-close" onClick={onClose}>✕</button>
+        <button className="ai-popup-close" onClick={handleClose}>✕</button>
 
-        {/* Icon badge */}
-        <div className="ai-popup-icon-wrapper">
+        {/* Header: Icon + Name + Category inline */}
+        <div className="ai-popup-header">
           <div className="ai-popup-icon">{data.icon}</div>
+          <div className="ai-popup-header-info">
+            <h2 className="ai-popup-name">{data.name}</h2>
+            <div className="ai-popup-category">{data.category}</div>
+          </div>
         </div>
 
-        {/* Title & Category */}
-        <h2 className="ai-popup-name">{data.name}</h2>
-        <div className="ai-popup-category">{data.category}</div>
-
-        {/* Dotted divider */}
-        <div className="ai-popup-divider" />
-
-        {/* Power & Usage */}
-        <div className="ai-popup-section-title">⚡ POWER & USAGE</div>
-        <div className="ai-popup-wattage">{data.wattage}W</div>
-        <div className="ai-popup-usage-row">
-          <span>{data.usePerDay || '—'}</span>
-          <span className="ai-popup-usage-sep">⚡</span>
-          <span>{data.daysPerYear ? `${data.daysPerYear} days/yr` : '365 days/yr'}</span>
+        {/* Power stats in a compact row */}
+        <div className="ai-popup-power-row">
+          <div className="ai-popup-power-main">
+            <span className="ai-popup-wattage">{data.wattage}W</span>
+          </div>
+          <div className="ai-popup-power-details">
+            <span>{data.usePerDay || '—'}</span>
+            <span className="ai-popup-power-dot">•</span>
+            <span>{data.daysPerYear ? `${data.daysPerYear} days/yr` : '365 days/yr'}</span>
+          </div>
         </div>
 
-        {/* Dotted divider */}
-        <div className="ai-popup-divider" />
-
-        {/* About */}
-        <div className="ai-popup-section-title">ℹ️ ABOUT</div>
-        <div className="ai-popup-about">
-          <div className="ai-popup-about-border" />
-          <p className="ai-popup-about-text">
-            Hey there! I'm the {data.name} {data.icon} — {data.description}
-          </p>
-        </div>
-
-        {/* Dotted divider */}
-        <div className="ai-popup-divider" />
-
-        {/* Energy Impact */}
-        <div className="ai-popup-section-title">⚡ ENERGY IMPACT</div>
+        {/* Energy Impact — compact 3-column */}
         <div className="ai-popup-impact-grid">
           <div className="ai-popup-impact-item">
             <div className="ai-popup-impact-value">{monthlyKwh}</div>
-            <div className="ai-popup-impact-label">kWh/month</div>
+            <div className="ai-popup-impact-label">kWh/mo</div>
           </div>
           <div className="ai-popup-impact-item">
             <div className="ai-popup-impact-value">{annualKwh}</div>
-            <div className="ai-popup-impact-label">kWh/year</div>
+            <div className="ai-popup-impact-label">kWh/yr</div>
           </div>
           <div className="ai-popup-impact-item">
             <div className="ai-popup-impact-value">{co2}</div>
             <div className="ai-popup-impact-label">kg CO₂/yr</div>
           </div>
+        </div>
+
+        {/* About — compact */}
+        <div className="ai-popup-about">
+          <div className="ai-popup-about-border" />
+          <p className="ai-popup-about-text">{data.description}</p>
+        </div>
+
+        {/* Badges row */}
+        <div className="ai-popup-badges">
+          {data.hiddenConsumer && (
+            <div className="ai-popup-hidden-badge">
+              <span>👁️</span> Hidden Consumer — {data.standbyPower}
+            </div>
+          )}
+          {data.beeRated && data.beeRated !== 'No' && (
+            <div className="ai-popup-bee-badge">
+              ⭐ BEE: {data.beeRated}
+            </div>
+          )}
         </div>
 
         {/* Fun Fact */}
@@ -467,32 +487,54 @@ function ApplianceInfoPopup({ applianceId, onClose }) {
           </div>
         )}
 
-        {/* Hidden Consumer Badge */}
-        {data.hiddenConsumer && (
-          <div className="ai-popup-hidden-badge">
-            <span>👁️</span> Hidden Energy Consumer — {data.standbyPower} standby
-          </div>
-        )}
-
-        {/* BEE Rating */}
-        {data.beeRated && data.beeRated !== 'No' && (
-          <div className="ai-popup-bee-badge">
-            ⭐ BEE Rated: {data.beeRated}
-          </div>
-        )}
-
-        {/* Got it button */}
-        <button className="ai-popup-btn" onClick={onClose}>Got it! →</button>
+        <button className="ai-popup-btn" onClick={handleClose}>Got it! →</button>
       </div>
     </div>
   );
 }
 
+// ═══ APPLIANCE TRACKER TABLE (Phase 2 HUD) ═══
+function ApplianceTracker({ interactedAppliances, showTracker, onToggle }) {
+  return (
+    <>
+      <button className="tracker-toggle-btn" onClick={onToggle}>
+        📋 {interactedAppliances.size}/{INTERACTABLE_IDS.length}
+      </button>
+      {showTracker && (
+        <div className="tracker-panel">
+          <div className="tracker-title">Appliance Checklist</div>
+          <div className="tracker-grid">
+            {INTERACTABLE_IDS.map(id => {
+              const data = APPLIANCE_DATA[id];
+              const found = interactedAppliances.has(id);
+              return (
+                <div key={id} className={`tracker-item ${found ? 'found' : ''}`}>
+                  <span className="tracker-icon">{data?.icon || '❓'}</span>
+                  <span className="tracker-name">{data?.name || id}</span>
+                  <span className="tracker-status">{found ? '✅' : '❌'}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
 // ═══ POPUP OVERLAYS ═══
-function TaskPopup({ visible, popup, onClose }) {
+function TaskPopup({ visible, popup, onClose, langCode }) {
+  // Voiceover: speak popup message when visible
+  useEffect(() => {
+    if (visible && popup) {
+      speak(`${popup.title}. ${popup.message}. ${popup.learning}`, langCode || 'en', 0.9, 1.05);
+    }
+    return () => { if (!visible) stopSpeech(); };
+  }, [visible, popup, langCode]);
+
   if (!visible || !popup) return null;
   return (
-    <div className="task-popup-overlay" onClick={onClose}>
+    <div className="task-popup-overlay" onClick={() => { stopSpeech(); onClose(); }}>
       <div className="task-popup-card" onClick={e => e.stopPropagation()}>
         <div className="task-popup-sparkle">✨</div>
         <h2 className="task-popup-title">{popup.title}</h2>
@@ -501,7 +543,7 @@ function TaskPopup({ visible, popup, onClose }) {
           <span className="task-popup-learning-icon">🧠</span>
           <span className="task-popup-learning-text">{popup.learning}</span>
         </div>
-        <button className="task-popup-btn" onClick={onClose}>Continue →</button>
+        <button className="task-popup-btn" onClick={() => { stopSpeech(); onClose(); }}>Continue →</button>
       </div>
     </div>
   );
@@ -580,7 +622,7 @@ function PhaseTransition({ visible, onStart }) {
 }
 
 // ═══ QUIZ WITH NEXT BUTTON ═══
-function BuildingQuizModal({ questions, onComplete }) {
+function BuildingQuizModal({ questions, title, onComplete }) {
   const [currentIdx, setCurrentIdx] = useState(0);
   const [score, setScore] = useState(0);
   const [answered, setAnswered] = useState(false);
@@ -595,7 +637,7 @@ function BuildingQuizModal({ questions, onComplete }) {
   return (
     <div className="quiz-overlay">
       <div className="quiz-modal full-quiz">
-        <div className="quiz-header"><span className="quiz-icon">{ICONS.brain}</span><h3>Building Design Quiz</h3></div>
+        <div className="quiz-header"><span className="quiz-icon">{ICONS.brain}</span><h3>{title || 'Knowledge Quiz'}</h3></div>
         <div className="quiz-progress-bar"><div className="quiz-progress-fill" style={{ width: `${((currentIdx + 1) / total) * 100}%` }} /><span className="quiz-progress-text">Question {currentIdx + 1} / {total}</span></div>
         <p className="quiz-question">{question.question}</p>
         <div className="quiz-options">
@@ -675,7 +717,7 @@ export default function Level1() {
   // ─── PHASE: 'intro' → 'building' → 'transition' → 'appliances' → 'quiz' → 'complete' ───
   const [showLevelIntro, setShowLevelIntro] = useState(true);
   const [showTeacherIntro, setShowTeacherIntro] = useState(false);
-  const [phase, setPhase] = useState('appliances'); // 'building' | 'appliances' // TEMP: testing phase 2
+  const [phase, setPhase] = useState('building'); // 'building' | 'appliances'
 
   // Phase 1: Building Tasks state
   const [currentTask, setCurrentTask] = useState(1);
@@ -703,12 +745,16 @@ export default function Level1() {
     return () => clearInterval(interval);
   }, [phase]);
 
-  // End state
-  const [showQuiz, setShowQuiz] = useState(false);
+  // End state — separate quizzes for Phase 1 and Phase 2
+  const [showPhase1Quiz, setShowPhase1Quiz] = useState(false);
+  const [showPhase2Quiz, setShowPhase2Quiz] = useState(false);
   const [showLevelComplete, setShowLevelComplete] = useState(false);
-  const [quizScore, setQuizScore] = useState(0);
-  const [quizTotal, setQuizTotal] = useState(0);
+  const [phase1Score, setPhase1Score] = useState(0);
+  const [phase1Total, setPhase1Total] = useState(0);
+  const [phase2Score, setPhase2Score] = useState(0);
+  const [phase2Total, setPhase2Total] = useState(0);
   const [finalStars, setFinalStars] = useState(0);
+  const [showApplianceTracker, setShowApplianceTracker] = useState(false);
 
   // House state
   const [windowsInstalled, setWindowsInstalled] = useState(0);
@@ -764,7 +810,7 @@ export default function Level1() {
 
   // ─── PHASE 2: APPLIANCE INTERACTION ───
   const handleApplianceInteract = useCallback((applianceId) => {
-    if (showApplianceInfo || showQuiz || showLevelComplete) return;
+    if (showApplianceInfo || showPhase2Quiz || showLevelComplete) return;
     // Handle window interactions
     if (applianceId.startsWith('__window__')) return;
 
@@ -777,7 +823,7 @@ export default function Level1() {
       next.add(applianceId);
       return next;
     });
-  }, [showApplianceInfo, showQuiz, showLevelComplete]);
+  }, [showApplianceInfo, showPhase2Quiz, showLevelComplete]);
 
   // Main interaction dispatcher
   const handleInteract = useCallback((id) => {
@@ -795,9 +841,17 @@ export default function Level1() {
   const handleECBCClose = useCallback(() => { setShowECBC(false); setShowCutscene(true); }, []);
   const handleCutsceneComplete = useCallback(() => { setShowCutscene(false); setShowTeacherEnd(true); }, []);
 
+  // After building tasks → show Phase 1 quiz
   const handleTeacherEndClose = useCallback(() => {
     setShowTeacherEnd(false);
-    setShowPhaseTransition(true); // Show Phase 2 transition
+    setShowPhase1Quiz(true); // Phase 1 Quiz
+  }, []);
+
+  // After Phase 1 quiz → show phase transition
+  const handlePhase1QuizComplete = useCallback((score, total) => {
+    setPhase1Score(score); setPhase1Total(total);
+    setShowPhase1Quiz(false);
+    setTimeout(() => setShowPhaseTransition(true), 500);
   }, []);
 
   const handlePhaseStart = useCallback(() => {
@@ -809,27 +863,30 @@ export default function Level1() {
     setShowApplianceInfo(false);
     setActiveApplianceId(null);
 
-    // Check if all appliances discovered
-    if (interactedAppliances.size >= INTERACTABLE_IDS.length - 1) {
-      // Small delay then quiz
-      setTimeout(() => setShowQuiz(true), 500);
+    // Check if ALL appliances discovered (must be exactly all)
+    if (interactedAppliances.size >= INTERACTABLE_IDS.length) {
+      setTimeout(() => setShowPhase2Quiz(true), 500);
     }
   }, [interactedAppliances]);
 
-  const handleQuizComplete = useCallback((score, total) => {
-    setQuizScore(score); setQuizTotal(total); setShowQuiz(false);
-    const pct = (score / total) * 100;
+  // After Phase 2 quiz → level complete
+  const handlePhase2QuizComplete = useCallback((score, total) => {
+    setPhase2Score(score); setPhase2Total(total);
+    setShowPhase2Quiz(false);
+    const totalScore = phase1Score + score;
+    const totalQuestions = phase1Total + total;
+    const pct = (totalScore / totalQuestions) * 100;
     setFinalStars(pct >= 90 ? 3 : pct >= 60 ? 2 : 1);
     playLevelCompleteSound();
     setTimeout(() => setShowLevelComplete(true), 500);
-  }, []);
+  }, [phase1Score, phase1Total]);
 
   const handleRoomChange = useCallback((room) => setCurrentRoom(room), []);
   const handleNearestChange = useCallback(() => {}, []);
   const handleApplianceClick = useCallback((id) => handleApplianceInteract(id), [handleApplianceInteract]);
 
   // Determine if any overlay is active (for hiding 3D labels)
-  const anyOverlayActive = showTeacherIntro || showTeacherEnd || showTaskPopup || showQuiz || showLevelComplete || showCutscene || showECBC || showPhaseTransition || showApplianceInfo;
+  const anyOverlayActive = showTeacherIntro || showTeacherEnd || showTaskPopup || showPhase1Quiz || showPhase2Quiz || showLevelComplete || showCutscene || showECBC || showPhaseTransition || showApplianceInfo;
 
   // ─── LEVEL INTRO ───
   if (showLevelIntro) {
@@ -901,10 +958,15 @@ export default function Level1() {
               <div className="task-objective-banner appliance-objective">
                 <div className="task-objective-icon">🔍</div>
                 <div className="task-objective-info">
-                  <div className="task-objective-title">Discover All Appliances</div>
+                  <div className="task-objective-title">Discover All Appliances ({interactedAppliances.size}/{INTERACTABLE_IDS.length})</div>
                   <div className="task-objective-text">Walk near each appliance and press E to learn about it</div>
                 </div>
               </div>
+              <ApplianceTracker
+                interactedAppliances={interactedAppliances}
+                showTracker={showApplianceTracker}
+                onToggle={() => setShowApplianceTracker(s => !s)}
+              />
               <ApplianceInfoToast applianceId={!showApplianceInfo ? nearbyApplianceId : null} />
             </>
           )}
@@ -913,7 +975,7 @@ export default function Level1() {
 
       {/* Phase 1 Overlays */}
       <TeacherMessage visible={showTeacherIntro} title="Welcome to Building Design!" message="Before we use any appliances, let's improve this house using natural methods. A good house reduces energy needs! Walk to the glowing markers and press E to complete each task." onClose={() => setShowTeacherIntro(false)} />
-      <TaskPopup visible={showTaskPopup} popup={currentPopup} onClose={handleTaskPopupClose} />
+      <TaskPopup visible={showTaskPopup} popup={currentPopup} onClose={handleTaskPopupClose} langCode={selectedLanguage} />
       <ECBCPopup visible={showECBC} onClose={handleECBCClose} />
       <BeforeAfterCutscene visible={showCutscene} onComplete={handleCutsceneComplete} />
       <TeacherMessage visible={showTeacherEnd} title="House Design Complete!" message="Now your house is bright, well-ventilated, and comfortable — all without extra electricity! Next, let's discover what appliances you have and learn to use them wisely." onClose={handleTeacherEndClose} />
@@ -922,15 +984,18 @@ export default function Level1() {
       <PhaseTransition visible={showPhaseTransition} onStart={handlePhaseStart} />
 
       {/* Phase 2 Overlays */}
-      {showApplianceInfo && <ApplianceInfoPopup applianceId={activeApplianceId} onClose={handleApplianceInfoClose} />}
+      {showApplianceInfo && <ApplianceInfoPopup applianceId={activeApplianceId} onClose={handleApplianceInfoClose} langCode={selectedLanguage} />}
 
-      {/* Quiz */}
-      {showQuiz && <BuildingQuizModal questions={LEVEL1_QUIZ_QUESTIONS} onComplete={handleQuizComplete} />}
+      {/* Phase 1 Quiz — Building Design */}
+      {showPhase1Quiz && <BuildingQuizModal questions={LEVEL1_QUIZ_QUESTIONS} title="Building Design Quiz" onComplete={handlePhase1QuizComplete} />}
+
+      {/* Phase 2 Quiz — Appliance Discovery */}
+      {showPhase2Quiz && <BuildingQuizModal questions={QUIZ_QUESTIONS} title="Appliance Discovery Quiz" onComplete={handlePhase2QuizComplete} />}
 
       {/* Level Complete */}
       {showLevelComplete && (
-        <LevelCompleteScreen score={quizScore} total={quizTotal} stars={finalStars} appliancesFound={interactedAppliances.size}
-          onContinue={() => { completeLevel(1); unlockLevel(2); addCarbonCoins(finalStars * 20 + quizScore * 5); navigate('/hub'); }}
+        <LevelCompleteScreen score={phase1Score + phase2Score} total={phase1Total + phase2Total} stars={finalStars} appliancesFound={interactedAppliances.size}
+          onContinue={() => { completeLevel(1); unlockLevel(2); addCarbonCoins(finalStars * 20 + (phase1Score + phase2Score) * 5); navigate('/hub'); }}
         />
       )}
 
