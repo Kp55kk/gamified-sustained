@@ -7,6 +7,7 @@ import House from './House';
 import Player, { cameraMode, playerState } from './Player';
 import Appliances from './Appliances';
 import { LEVEL1_TASK_POSITIONS, LEVEL1_QUIZ_QUESTIONS, QUIZ_QUESTIONS, APPLIANCE_DATA, INTERACTABLE_IDS } from './applianceData';
+import { WINDOW_POSITIONS } from './House';
 import { useGame } from '../context/GameContext';
 import { getTranslation, getVoiceLocale } from '../translations/index';
 import LevelIntro from './LevelIntro';
@@ -242,6 +243,113 @@ function CameraRefForwarder({ cameraRef }) {
   return null;
 }
 
+// ═══ CINEMATIC DRONE CAMERA ═══
+function CinematicCamera({ active, onComplete }) {
+  const { camera } = useThree();
+  const progress = useRef(0);
+  const startPos = new THREE.Vector3(0, 45, 45);
+  const endPos = new THREE.Vector3(-12, 8, -2);
+  const lookTarget = new THREE.Vector3(0, 1, 0);
+  const completed = useRef(false);
+
+  useEffect(() => {
+    if (active) {
+      progress.current = 0;
+      completed.current = false;
+      camera.position.copy(startPos);
+      camera.lookAt(lookTarget);
+    }
+  }, [active]);
+
+  useFrame((_, delta) => {
+    if (!active || completed.current) return;
+    progress.current += delta / 10;
+    const t = Math.min(progress.current, 1);
+    const ease = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+    camera.position.lerpVectors(startPos, endPos, ease);
+    camera.lookAt(lookTarget);
+    if (t >= 1 && !completed.current) {
+      completed.current = true;
+      onComplete();
+    }
+  });
+  return null;
+}
+
+// ═══ ENVIRONMENT TREES ═══
+function EnvironmentTrees() {
+  const trees = React.useMemo(() => [
+    [-16, 0, -12], [-20, 0, -5], [-18, 0, 5], [-22, 0, 10],
+    [-15, 0, 14], [15, 0, -14], [18, 0, -8], [20, 0, 3],
+    [16, 0, 12], [22, 0, 8], [-12, 0, -16], [12, 0, -16],
+    [-14, 0, 16], [14, 0, 16], [0, 0, 18],
+  ], []);
+  return (
+    <group>
+      {trees.map((pos, i) => {
+        const s = 0.8 + (i % 5) * 0.15;
+        return (
+          <group key={i} position={pos} scale={[s, s, s]}>
+            <mesh position={[0, 1.2, 0]}>
+              <cylinderGeometry args={[0.15, 0.25, 2.4, 6]} />
+              <meshStandardMaterial color="#5a3a1a" roughness={0.9} />
+            </mesh>
+            <mesh position={[0, 3.0, 0]}>
+              <coneGeometry args={[1.5, 2.5, 6]} />
+              <meshStandardMaterial color="#2d5a1e" roughness={0.8} />
+            </mesh>
+            <mesh position={[0, 3.8, 0]}>
+              <coneGeometry args={[1.1, 2.0, 6]} />
+              <meshStandardMaterial color="#3a7a2a" roughness={0.8} />
+            </mesh>
+            <mesh position={[0, 4.4, 0]}>
+              <coneGeometry args={[0.7, 1.5, 6]} />
+              <meshStandardMaterial color="#4a8a3a" roughness={0.8} />
+            </mesh>
+          </group>
+        );
+      })}
+    </group>
+  );
+}
+
+// ═══ CINEMATIC OVERLAY ═══
+function CinematicOverlay({ visible, textPhase }) {
+  if (!visible) return null;
+  return (
+    <div className="cinematic-overlay">
+      <div className={`cinematic-text ${textPhase}`}>
+        {textPhase === 'welcome' && (
+          <div className="cinematic-welcome">
+            <div className="cinematic-emoji">🏠</div>
+            <h1 className="cinematic-title">Welcome Home</h1>
+            <p className="cinematic-subtitle">Your sustainable journey begins here</p>
+          </div>
+        )}
+        {textPhase === 'entering' && (
+          <div className="cinematic-entering">
+            <p className="cinematic-entering-text">Entering your home…</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ═══ CATEGORY COLOR HELPER ═══
+function getCategoryColor(cat) {
+  const c = { 'Cooling':'#0ea5e9','Lighting':'#f59e0b','Electronics':'#8b5cf6','Heating':'#ef4444','Heating/Cooking':'#f97316','Motors/Cooking':'#ec4899','Motors/Laundry':'#6366f1','Electronics/Comms':'#14b8a6','Electronics/Entertainment':'#a855f7','Electronics/Charging':'#22c55e','Cooling/Preservation':'#06b6d4' };
+  return c[cat] || '#6366f1';
+}
+
+// ═══ TRACKER ROOM GROUPS ═══
+const TRACKER_ROOMS = [
+  { name: 'Living Room', icon: '🛋️', ids: ['ceiling_fan', 'led_bulb', 'tv_smart', 'wifi_router', 'set_top_box'] },
+  { name: 'Bedroom', icon: '🛏️', ids: ['ac_1_5ton', 'phone_charger', 'table_fan'] },
+  { name: 'Kitchen', icon: '🍳', ids: ['fridge', 'induction', 'microwave', 'mixer_grinder', 'led_tube'] },
+  { name: 'Bathroom', icon: '🚿', ids: ['geyser', 'washing_machine'] },
+];
+
 // ═══ 3D SCENE CONTENT ═══
 function SceneContent({
   cameraRef, onInteract, onRoomChange, onNearestChange,
@@ -264,6 +372,7 @@ function SceneContent({
       <ArtificialLights lightsOn={lightsOn} />
       <CameraRefForwarder cameraRef={cameraRef} />
       <House />
+      <EnvironmentTrees />
       <WallCover position={[-5, 1.8, -7.95]} size={[1.5, 1.4, 0.2]} visible={!completedTasks.has(1)} />
       <WallCover position={[-9.95, 1.8, -4]} size={[0.2, 1.4, 1.5]} visible={!completedTasks.has(2)} />
       <SunlightBeam position={[-5, 1, -6]} visible={completedTasks.has(1) && timeOfDay === 'day'} />
@@ -286,6 +395,7 @@ function SceneContent({
           onWindowClick={onWindowClick}
           activeApplianceId={activeApplianceId}
           interactedAppliances={interactedAppliances}
+          hideLabels={hideLabels}
         />
       )}
 
@@ -389,22 +499,19 @@ function ApplianceInfoToast({ applianceId }) {
   );
 }
 
-// ═══ APPLIANCE INFO POPUP (Phase 2) — with Voiceover — Compact UI ═══
-function ApplianceInfoPopup({ applianceId, onClose, langCode }) {
-  // Voiceover: speak appliance description when popup opens
+// ═══ APPLIANCE INFO POPUP (Phase 2) — Redesigned Premium UI ═══
+function ApplianceInfoPopup({ applianceId, onClose, langCode, interactedCount, totalCount }) {
+  const [isSpeaking, setIsSpeaking] = useState(false);
+
   useEffect(() => {
     if (applianceId) {
       const data = APPLIANCE_DATA[applianceId];
       if (data && data.description) {
-        speak(
-          `${data.name}. ${data.description}`,
-          langCode || 'en',
-          data.voiceRate || 0.9,
-          data.voicePitch || 1.05
-        );
+        speak(`${data.name}. ${data.description}`, langCode || 'en', data.voiceRate || 0.9, data.voicePitch || 1.05, () => setIsSpeaking(false));
+        setIsSpeaking(true);
       }
     }
-    return () => stopSpeech();
+    return () => { stopSpeech(); setIsSpeaking(false); };
   }, [applianceId, langCode]);
 
   if (!applianceId) return null;
@@ -414,111 +521,151 @@ function ApplianceInfoPopup({ applianceId, onClose, langCode }) {
   const annualKwh = typeof data.annualKwh === 'string' ? parseInt(data.annualKwh) : (data.annualKwh || 0);
   const co2 = typeof data.co2PerYear === 'string' ? data.co2PerYear : (data.co2PerYear || '—');
   const monthlyKwh = typeof data.monthlyKwh === 'string' ? data.monthlyKwh : (data.monthlyKwh || '—');
+  const progressPct = totalCount > 0 ? Math.round((interactedCount / totalCount) * 100) : 0;
+  const wattVal = typeof data.wattage === 'string' ? parseInt(data.wattage) : data.wattage;
+  const wattColor = isNaN(wattVal) ? '#f59e0b' : wattVal < 100 ? '#22c55e' : wattVal <= 500 ? '#f59e0b' : '#ef4444';
+  const wattBg = isNaN(wattVal) ? 'rgba(245,158,11,0.08)' : wattVal < 100 ? 'rgba(34,197,94,0.08)' : wattVal <= 500 ? 'rgba(245,158,11,0.08)' : 'rgba(239,68,68,0.08)';
 
-  const handleClose = () => { stopSpeech(); onClose(); };
+  const handleClose = () => { stopSpeech(); setIsSpeaking(false); onClose(); };
+  const toggleSpeak = () => {
+    if (isSpeaking) { stopSpeech(); setIsSpeaking(false); }
+    else { speak(`${data.name}. ${data.description}`, langCode || 'en', data.voiceRate || 0.9, data.voicePitch || 1.05, () => setIsSpeaking(false)); setIsSpeaking(true); }
+  };
 
   return (
-    <div className="ai-popup-overlay" onClick={handleClose}>
-      <div className="ai-popup-card" onClick={e => e.stopPropagation()}>
-        <button className="ai-popup-close" onClick={handleClose}>✕</button>
+    <div className="aip-overlay" onClick={handleClose}>
+      <div className="aip-card" onClick={e => e.stopPropagation()}>
+        <button className="aip-close" onClick={handleClose}>✕</button>
 
-        {/* Header: Icon + Name + Category inline */}
-        <div className="ai-popup-header">
-          <div className="ai-popup-icon">{data.icon}</div>
-          <div className="ai-popup-header-info">
-            <h2 className="ai-popup-name">{data.name}</h2>
-            <div className="ai-popup-category">{data.category}</div>
+        {/* ── Header: Icon + Name + Category ── */}
+        <div className="aip-header">
+          <div className="aip-icon-wrap"><span className="aip-icon">{data.icon}</span></div>
+          <div className="aip-header-info">
+            <h2 className="aip-name">{data.name}</h2>
+            <div className="aip-category" style={{ background: getCategoryColor(data.category) }}>{data.category}</div>
           </div>
         </div>
 
-        {/* Power stats in a compact row */}
-        <div className="ai-popup-power-row">
-          <div className="ai-popup-power-main">
-            <span className="ai-popup-wattage">{data.wattage}W</span>
+        {/* ── Wattage + Usage Row ── */}
+        <div className="aip-power-row" style={{ borderColor: wattColor + '30', background: wattBg }}>
+          <div className="aip-wattage" style={{ color: wattColor }}>⚡ {data.wattage}W</div>
+          <div className="aip-usage">{data.usePerDay || '—'} • {data.daysPerYear ? `${data.daysPerYear} days/yr` : '365 days/yr'}</div>
+        </div>
+
+        {/* ── Stats grid ── */}
+        <div className="aip-stats">
+          <div className="aip-stat">
+            <div className="aip-stat-icon">📊</div>
+            <div className="aip-stat-value">{monthlyKwh}</div>
+            <div className="aip-stat-label">KWH/MO</div>
           </div>
-          <div className="ai-popup-power-details">
-            <span>{data.usePerDay || '—'}</span>
-            <span className="ai-popup-power-dot">•</span>
-            <span>{data.daysPerYear ? `${data.daysPerYear} days/yr` : '365 days/yr'}</span>
+          <div className="aip-stat">
+            <div className="aip-stat-icon">📅</div>
+            <div className="aip-stat-value">{annualKwh}</div>
+            <div className="aip-stat-label">KWH/YR</div>
+          </div>
+          <div className="aip-stat">
+            <div className="aip-stat-icon">🌍</div>
+            <div className="aip-stat-value">{co2}</div>
+            <div className="aip-stat-label">KG CO₂/YR</div>
           </div>
         </div>
 
-        {/* Energy Impact — compact 3-column */}
-        <div className="ai-popup-impact-grid">
-          <div className="ai-popup-impact-item">
-            <div className="ai-popup-impact-value">{monthlyKwh}</div>
-            <div className="ai-popup-impact-label">kWh/mo</div>
-          </div>
-          <div className="ai-popup-impact-item">
-            <div className="ai-popup-impact-value">{annualKwh}</div>
-            <div className="ai-popup-impact-label">kWh/yr</div>
-          </div>
-          <div className="ai-popup-impact-item">
-            <div className="ai-popup-impact-value">{co2}</div>
-            <div className="ai-popup-impact-label">kg CO₂/yr</div>
-          </div>
+        {/* ── About This Appliance ── */}
+        <div className="aip-section">
+          <div className="aip-section-title">📖 About</div>
+          <p className="aip-desc-text">{data.description}</p>
         </div>
 
-        {/* About — compact */}
-        <div className="ai-popup-about">
-          <div className="ai-popup-about-border" />
-          <p className="ai-popup-about-text">{data.description}</p>
-        </div>
-
-        {/* Badges row */}
-        <div className="ai-popup-badges">
-          {data.hiddenConsumer && (
-            <div className="ai-popup-hidden-badge">
-              <span>👁️</span> Hidden Consumer — {data.standbyPower}
+        {/* ── Energy Saving Tip ── */}
+        {(data.energySavingTip || data.funFact) && (
+          <div className="aip-tip-box">
+            <div className="aip-tip-header">
+              <span className="aip-tip-icon">💡</span>
+              <span className="aip-tip-title">Energy Saving Tip</span>
             </div>
-          )}
-          {data.beeRated && data.beeRated !== 'No' && (
-            <div className="ai-popup-bee-badge">
-              ⭐ BEE: {data.beeRated}
-            </div>
-          )}
-        </div>
-
-        {/* Fun Fact */}
-        {data.funFact && (
-          <div className="ai-popup-funfact">
-            <span className="ai-popup-funfact-icon">💡</span>
-            <span className="ai-popup-funfact-text">{data.funFact}</span>
+            <p className="aip-tip-text">{data.energySavingTip || data.funFact}</p>
           </div>
         )}
 
-        <button className="ai-popup-btn" onClick={handleClose}>Got it! →</button>
+        {/* ── Badges ── */}
+        <div className="aip-badges">
+          {data.hiddenConsumer && <span className="aip-badge aip-badge-hidden">👁️ Hidden Consumer — {data.standbyPower}</span>}
+          {data.beeRated && data.beeRated !== 'No' && <span className="aip-badge aip-badge-bee">⭐ BEE: {data.beeRated}</span>}
+        </div>
+
+        {/* ── Fun Fact (separate from tip) ── */}
+        {data.funFact && data.energySavingTip && (
+          <div className="aip-funfact">
+            <span className="aip-funfact-icon">🎯</span>
+            <span className="aip-funfact-text">{data.funFact}</span>
+          </div>
+        )}
+
+        {/* ── Progress ── */}
+        <div className="aip-progress-section">
+          <span className="aip-progress-label">Discovery Progress: {interactedCount}/{totalCount}</span>
+          <div className="aip-progress"><div className="aip-progress-fill" style={{ width: `${progressPct}%` }} /></div>
+        </div>
+
+        {/* ── Bottom Row ── */}
+        <div className="aip-bottom-row">
+          <button className={`aip-speaker ${isSpeaking ? 'speaking' : ''}`} onClick={toggleSpeak}>
+            {isSpeaking ? '🔊 Speaking...' : '🔈 Listen'}
+          </button>
+          <button className="aip-btn" onClick={handleClose}>Got it! →</button>
+        </div>
       </div>
     </div>
   );
 }
 
-// ═══ APPLIANCE TRACKER TABLE (Phase 2 HUD) ═══
-function ApplianceTracker({ interactedAppliances, showTracker, onToggle }) {
+// ═══ APPLIANCE SIDE TRACKER (Phase 2 HUD — Always visible table) ═══
+function ApplianceSideTracker({ interactedAppliances }) {
+  const [collapsed, setCollapsed] = useState(false);
+  const found = interactedAppliances.size;
+  const total = INTERACTABLE_IDS.length;
   return (
-    <>
-      <button className="tracker-toggle-btn" onClick={onToggle}>
-        📋 {interactedAppliances.size}/{INTERACTABLE_IDS.length}
+    <div className={`side-tracker ${collapsed ? 'collapsed' : ''}`}>
+      <button className="side-tracker-toggle" onClick={() => setCollapsed(c => !c)}>
+        {collapsed ? '◀' : '▶'} <span className="side-tracker-toggle-label">📋 {found}/{total}</span>
       </button>
-      {showTracker && (
-        <div className="tracker-panel">
-          <div className="tracker-title">Appliance Checklist</div>
-          <div className="tracker-grid">
-            {INTERACTABLE_IDS.map(id => {
-              const data = APPLIANCE_DATA[id];
-              const found = interactedAppliances.has(id);
-              return (
-                <div key={id} className={`tracker-item ${found ? 'found' : ''}`}>
-                  <span className="tracker-icon">{data?.icon || '❓'}</span>
-                  <span className="tracker-name">{data?.name || id}</span>
-                  <span className="tracker-status">{found ? '✅' : '❌'}</span>
-                </div>
-              );
-            })}
+      {!collapsed && (
+        <div className="side-tracker-body">
+          <div className="side-tracker-header">
+            <span className="side-tracker-title">Appliance Checklist</span>
+            <span className="side-tracker-count">{found}/{total}</span>
           </div>
+          <div className="side-tracker-progress"><div className="side-tracker-progress-fill" style={{ width: `${(found / total) * 100}%` }} /></div>
+          {TRACKER_ROOMS.map(room => {
+            const roomFound = room.ids.filter(id => interactedAppliances.has(id)).length;
+            return (
+              <div key={room.name} className="side-tracker-room">
+                <div className="side-tracker-room-header">
+                  <span>{room.icon} {room.name}</span>
+                  <span className="side-tracker-room-count">{roomFound}/{room.ids.length}</span>
+                </div>
+                <table className="side-tracker-table">
+                  <tbody>
+                    {room.ids.map(id => {
+                      const d = APPLIANCE_DATA[id];
+                      const done = interactedAppliances.has(id);
+                      return (
+                        <tr key={id} className={done ? 'found' : ''}>
+                          <td className="st-icon">{d?.icon || '❓'}</td>
+                          <td className="st-name">{d?.name?.split('(')[0]?.trim() || id}</td>
+                          <td className="st-status">{done ? '✅' : '⬜'}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            );
+          })}
         </div>
       )}
-    </>
+    </div>
   );
 }
 
@@ -603,19 +750,93 @@ function BeforeAfterCutscene({ visible, onComplete }) {
   );
 }
 
+// ═══ WINDOW INFO POPUP (Phase 2) ═══
+const WINDOW_INFO = {
+  bedroom_window_back: {
+    title: 'Bedroom Window (Back)',
+    message: "This window faces the back of the house. During daytime, it lets in natural light so you don't need electric lights. At night, keep curtains closed for privacy and insulation.",
+    learning: 'Windows provide free lighting during the day, reducing electricity usage by up to 30%.',
+    tip: 'Opening this window with one on the opposite wall creates cross ventilation — natural cooling without a fan!',
+  },
+  bedroom_window_front: {
+    title: 'Bedroom Window (Front)',
+    message: 'This front-facing window brings in morning or afternoon sunlight depending on your house orientation. Together with the back window, it enables cross ventilation.',
+    learning: 'Cross ventilation through opposite windows can reduce indoor temperature by 2-4 degrees C naturally.',
+    tip: 'Use light-colored curtains to filter harsh sunlight while still keeping the room bright.',
+  },
+  kitchen_window_back: {
+    title: 'Kitchen Window',
+    message: "The kitchen window is essential for removing cooking heat, smoke, and odors naturally. It also brings in light so you don't need tube lights during the day.",
+    learning: 'A well-ventilated kitchen reduces the need for exhaust fans and keeps the cooking area comfortable.',
+    tip: 'Keep the kitchen window open while cooking to let hot air and smoke escape naturally.',
+  },
+  bathroom_window: {
+    title: 'Bathroom Window',
+    message: 'This frosted glass window provides privacy while letting in diffused light and allowing moisture to escape. It prevents mold growth and reduces the need for exhaust fans.',
+    learning: 'Natural ventilation in bathrooms saves electricity on exhaust fans and prevents moisture damage.',
+    tip: 'Keep the bathroom window slightly open after showers to let steam escape naturally.',
+  },
+};
+
+function WindowInfoPopup({ windowId, onClose }) {
+  if (!windowId) return null;
+  const info = WINDOW_INFO[windowId];
+  if (!info) return null;
+
+  return (
+    <div className="aip-overlay" onClick={onClose}>
+      <div className="aip-card" onClick={e => e.stopPropagation()} style={{ maxWidth: '500px' }}>
+        <button className="aip-close" onClick={onClose}>&#x2715;</button>
+
+        <div className="aip-header">
+          <div className="aip-icon-wrap" style={{ background: 'linear-gradient(135deg, #e0f2fe, #bae6fd, #e0f7fa)' }}>
+            <span className="aip-icon">&#x1FA9F;</span>
+          </div>
+          <div className="aip-header-info">
+            <h2 className="aip-name">{info.title}</h2>
+            <div className="aip-category" style={{ background: '#0ea5e9' }}>Building Design</div>
+          </div>
+        </div>
+
+        <div className="aip-section">
+          <div className="aip-section-title">&#x1F4D6; About This Window</div>
+          <p className="aip-desc-text">{info.message}</p>
+        </div>
+
+        <div className="aip-tip-box">
+          <div className="aip-tip-header">
+            <span className="aip-tip-icon">&#x1F9E0;</span>
+            <span className="aip-tip-title">What You Should Know</span>
+          </div>
+          <p className="aip-tip-text">{info.learning}</p>
+        </div>
+
+        <div className="aip-funfact">
+          <span className="aip-funfact-icon">&#x1F4A1;</span>
+          <span className="aip-funfact-text">{info.tip}</span>
+        </div>
+
+        <div className="aip-bottom-row">
+          <button className="aip-btn" onClick={onClose}>Got it! &#x2192;</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ═══ PHASE TRANSITION (Building → Appliances) ═══
 function PhaseTransition({ visible, onStart }) {
   if (!visible) return null;
   return (
     <div className="phase-transition-overlay">
       <div className="phase-transition-card">
-        <div className="phase-transition-icon">🔍</div>
+        <div className="phase-transition-icon">&#x1F50D;</div>
         <h2 className="phase-transition-title">Phase 2: Discover Your Appliances</h2>
         <p className="phase-transition-text">
           Your house is now well-designed! Next, walk around and discover all the appliances in your home.
           Press E near each appliance to learn its wattage, usage, and saving tips.
         </p>
-        <button className="phase-transition-btn" onClick={onStart}>Start Exploring →</button>
+        <button className="phase-transition-btn" onClick={onStart}>Start Exploring &#x2192;</button>
       </div>
     </div>
   );
@@ -714,8 +935,10 @@ export default function Level1() {
   const { selectedLanguage, completeLevel, unlockLevel, addCarbonCoins } = useGame();
   const cameraRef = useRef(null);
 
-  // ─── PHASE: 'intro' → 'building' → 'transition' → 'appliances' → 'quiz' → 'complete' ───
+  // ─── PHASE: 'intro' → 'cinematic' → 'building' → 'transition' → 'appliances' → 'quiz' → 'complete' ───
   const [showLevelIntro, setShowLevelIntro] = useState(true);
+  const [showCinematic, setShowCinematic] = useState(false);
+  const [cinematicText, setCinematicText] = useState('none');
   const [showTeacherIntro, setShowTeacherIntro] = useState(false);
   const [phase, setPhase] = useState('building'); // 'building' | 'appliances'
 
@@ -734,6 +957,8 @@ export default function Level1() {
   const [interactedAppliances, setInteractedAppliances] = useState(new Set());
   const [showApplianceInfo, setShowApplianceInfo] = useState(false);
   const [nearbyApplianceId, setNearbyApplianceId] = useState(null);
+  const [showWindowInfo, setShowWindowInfo] = useState(false);
+  const [activeWindowId, setActiveWindowId] = useState(null);
 
   // Track nearest appliance for bottom toast
   useEffect(() => {
@@ -754,7 +979,6 @@ export default function Level1() {
   const [phase2Score, setPhase2Score] = useState(0);
   const [phase2Total, setPhase2Total] = useState(0);
   const [finalStars, setFinalStars] = useState(0);
-  const [showApplianceTracker, setShowApplianceTracker] = useState(false);
 
   // House state
   const [windowsInstalled, setWindowsInstalled] = useState(0);
@@ -765,10 +989,32 @@ export default function Level1() {
   const [energyLevel, setEnergyLevel] = useState(100);
   const [currentRoom, setCurrentRoom] = useState('Living Room');
 
-  // Teacher intro after level intro
+  // Teacher intro after cinematic completes
   useEffect(() => {
-    if (!showLevelIntro && !showTeacherIntro && currentTask === 1 && completedTasks.size === 0) setShowTeacherIntro(true);
-  }, [showLevelIntro]);
+    if (!showLevelIntro && !showCinematic && !showTeacherIntro && currentTask === 1 && completedTasks.size === 0) setShowTeacherIntro(true);
+  }, [showLevelIntro, showCinematic]);
+
+  // Cinematic text sequence
+  useEffect(() => {
+    if (!showCinematic) { setCinematicText('none'); return; }
+    setCinematicText('welcome');
+    const t1 = setTimeout(() => setCinematicText('entering'), 4500);
+    const t2 = setTimeout(() => setCinematicText('none'), 8500);
+    // Play ambient chime
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      [262, 330, 392, 523].forEach((freq, i) => {
+        const osc = ctx.createOscillator(); const gain = ctx.createGain();
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, ctx.currentTime + i * 0.4);
+        gain.gain.setValueAtTime(0.04, ctx.currentTime + i * 0.4);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.4 + 1.5);
+        osc.start(ctx.currentTime + i * 0.4); osc.stop(ctx.currentTime + i * 0.4 + 1.5);
+      });
+    } catch (e) {}
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  }, [showCinematic]);
 
   // Update energy from completed tasks
   useEffect(() => {
@@ -810,9 +1056,18 @@ export default function Level1() {
 
   // ─── PHASE 2: APPLIANCE INTERACTION ───
   const handleApplianceInteract = useCallback((applianceId) => {
-    if (showApplianceInfo || showPhase2Quiz || showLevelComplete) return;
-    // Handle window interactions
-    if (applianceId.startsWith('__window__')) return;
+    if (showApplianceInfo || showPhase2Quiz || showLevelComplete || showWindowInfo) return;
+    // Handle window interactions — show educational popup
+    if (applianceId.startsWith('__window__')) {
+      const windowId = applianceId.replace('__window__', '');
+      const windowData = WINDOW_POSITIONS[windowId];
+      if (windowData) {
+        playInteractSound();
+        setActiveWindowId(windowId);
+        setShowWindowInfo(true);
+      }
+      return;
+    }
 
     playInteractSound();
     setActiveApplianceId(applianceId);
@@ -823,7 +1078,7 @@ export default function Level1() {
       next.add(applianceId);
       return next;
     });
-  }, [showApplianceInfo, showPhase2Quiz, showLevelComplete]);
+  }, [showApplianceInfo, showPhase2Quiz, showLevelComplete, showWindowInfo]);
 
   // Main interaction dispatcher
   const handleInteract = useCallback((id) => {
@@ -886,7 +1141,7 @@ export default function Level1() {
   const handleApplianceClick = useCallback((id) => handleApplianceInteract(id), [handleApplianceInteract]);
 
   // Determine if any overlay is active (for hiding 3D labels)
-  const anyOverlayActive = showTeacherIntro || showTeacherEnd || showTaskPopup || showPhase1Quiz || showPhase2Quiz || showLevelComplete || showCutscene || showECBC || showPhaseTransition || showApplianceInfo;
+  const anyOverlayActive = showCinematic || showTeacherIntro || showTeacherEnd || showTaskPopup || showPhase1Quiz || showPhase2Quiz || showLevelComplete || showCutscene || showECBC || showPhaseTransition || showApplianceInfo || showWindowInfo;
 
   // ─── LEVEL INTRO ───
   if (showLevelIntro) {
@@ -900,7 +1155,7 @@ export default function Level1() {
           { icon: '🌬️', name: 'Cross Ventilation', definition: 'Natural air flow by placing openings on opposite sides of a room.', example: 'Window + door on opposite walls = fresh air flows through' },
           { icon: '🏗️', name: 'ECBC', definition: 'Energy Conservation Building Code — design buildings that use less energy.', example: 'A well-designed house needs less AC, fans, and lights' },
         ]}
-        onComplete={() => setShowLevelIntro(false)}
+        onComplete={() => { setShowLevelIntro(false); setShowCinematic(true); }}
       />
     );
   }
@@ -922,6 +1177,7 @@ export default function Level1() {
               phase={phase} activeApplianceId={activeApplianceId} interactedAppliances={interactedAppliances}
               onApplianceClick={handleApplianceClick} onWindowClick={() => {}}
             />
+            {showCinematic && <CinematicCamera active={showCinematic} onComplete={() => setShowCinematic(false)} />}
           </Suspense>
         </Canvas>
         <div className="vignette-overlay" />
@@ -962,16 +1218,15 @@ export default function Level1() {
                   <div className="task-objective-text">Walk near each appliance and press E to learn about it</div>
                 </div>
               </div>
-              <ApplianceTracker
-                interactedAppliances={interactedAppliances}
-                showTracker={showApplianceTracker}
-                onToggle={() => setShowApplianceTracker(s => !s)}
-              />
+              <ApplianceSideTracker interactedAppliances={interactedAppliances} />
               <ApplianceInfoToast applianceId={!showApplianceInfo ? nearbyApplianceId : null} />
             </>
           )}
         </>
       )}
+
+      {/* Cinematic Overlay */}
+      <CinematicOverlay visible={showCinematic} textPhase={cinematicText} />
 
       {/* Phase 1 Overlays */}
       <TeacherMessage visible={showTeacherIntro} title="Welcome to Building Design!" message="Before we use any appliances, let's improve this house using natural methods. A good house reduces energy needs! Walk to the glowing markers and press E to complete each task." onClose={() => setShowTeacherIntro(false)} />
@@ -984,7 +1239,8 @@ export default function Level1() {
       <PhaseTransition visible={showPhaseTransition} onStart={handlePhaseStart} />
 
       {/* Phase 2 Overlays */}
-      {showApplianceInfo && <ApplianceInfoPopup applianceId={activeApplianceId} onClose={handleApplianceInfoClose} langCode={selectedLanguage} />}
+      {showApplianceInfo && <ApplianceInfoPopup applianceId={activeApplianceId} onClose={handleApplianceInfoClose} langCode={selectedLanguage} interactedCount={interactedAppliances.size} totalCount={INTERACTABLE_IDS.length} />}
+      {showWindowInfo && <WindowInfoPopup windowId={activeWindowId} onClose={() => { setShowWindowInfo(false); setActiveWindowId(null); }} />}
 
       {/* Phase 1 Quiz — Building Design */}
       {showPhase1Quiz && <BuildingQuizModal questions={LEVEL1_QUIZ_QUESTIONS} title="Building Design Quiz" onComplete={handlePhase1QuizComplete} />}

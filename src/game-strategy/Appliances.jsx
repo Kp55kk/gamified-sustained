@@ -189,15 +189,35 @@ function LEDBulb({ onClick, active }) {
   const p = APPLIANCE_POSITIONS.led_bulb;
   return (
     <group position={p.pos} onClick={onClick}>
-      <mesh>
-        <sphereGeometry args={[0.12, 16, 16]} />
-        <meshStandardMaterial color="#fff8dc" emissive="#ffdd57" emissiveIntensity={1.8} />
-      </mesh>
-      <mesh position={[0, 0.08, 0]}>
-        <cylinderGeometry args={[0.04, 0.07, 0.06]} />
+      {/* Screw base */}
+      <mesh position={[0, 0.12, 0]}>
+        <cylinderGeometry args={[0.04, 0.05, 0.08, 12]} />
         <meshStandardMaterial color="#b0b0b0" metalness={0.7} roughness={0.2} />
       </mesh>
-      <pointLight position={[0, -0.2, 0]} intensity={1.0} distance={7} color="#ffe4a0" />
+      {/* Base collar */}
+      <mesh position={[0, 0.08, 0]}>
+        <cylinderGeometry args={[0.055, 0.04, 0.03, 12]} />
+        <meshStandardMaterial color="#a0a0a0" metalness={0.6} roughness={0.3} />
+      </mesh>
+      {/* Bulb body - pear/teardrop shape using multiple segments */}
+      <mesh position={[0, 0.03, 0]}>
+        <cylinderGeometry args={[0.06, 0.09, 0.08, 12]} />
+        <meshStandardMaterial color="#fff8dc" emissive="#ffdd57" emissiveIntensity={1.2} transparent opacity={0.9} />
+      </mesh>
+      <mesh position={[0, -0.04, 0]}>
+        <sphereGeometry args={[0.1, 16, 12, 0, Math.PI * 2, 0, Math.PI / 2]} />
+        <meshStandardMaterial color="#fff8dc" emissive="#ffdd57" emissiveIntensity={1.5} transparent opacity={0.9} />
+      </mesh>
+      <mesh position={[0, -0.04, 0]}>
+        <sphereGeometry args={[0.1, 16, 12, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2]} />
+        <meshStandardMaterial color="#fff8dc" emissive="#ffdd57" emissiveIntensity={1.8} transparent opacity={0.85} />
+      </mesh>
+      {/* Internal filament glow */}
+      <mesh position={[0, -0.02, 0]}>
+        <sphereGeometry args={[0.04, 8, 8]} />
+        <meshStandardMaterial color="#ffcc00" emissive="#ffaa00" emissiveIntensity={3.0} />
+      </mesh>
+      <pointLight position={[0, -0.1, 0]} intensity={1.0} distance={7} color="#ffe4a0" />
     </group>
   );
 }
@@ -526,7 +546,7 @@ function TableFan({ onClick, active }) {
   });
 
   return (
-    <group position={pos} rotation={rot} onClick={onClick}>
+    <group position={pos} rotation={rot} onClick={onClick} scale={[1.8, 1.8, 1.8]}>
       {/* Base */}
       <mesh castShadow position={[0, 0, 0]}>
         <cylinderGeometry args={[0.15, 0.17, 0.05, 16]} />
@@ -704,7 +724,7 @@ function SingleApplianceLabel({ activeId, onWindowInteract }) {
 }
 
 // ─── Main Appliances Component ───
-export default function Appliances({ onApplianceClick, onWindowClick, activeApplianceId, interactedAppliances }) {
+export default function Appliances({ onApplianceClick, onWindowClick, activeApplianceId, interactedAppliances, hideLabels }) {
   const handleClick = (applianceId) => (e) => {
     e.stopPropagation();
     onApplianceClick(applianceId);
@@ -786,7 +806,7 @@ export default function Appliances({ onApplianceClick, onWindowClick, activeAppl
       <GuidanceArrow interacted={interactedAppliances} />
 
       {/* Single appliance label — only nearest within 2.5 units (includes windows) */}
-      <SingleApplianceLabel activeId={activeApplianceId} onWindowInteract={onWindowClick} />
+      {!hideLabels && <SingleApplianceLabel activeId={activeApplianceId} onWindowInteract={onWindowClick} />}
     </group>
   );
 }
