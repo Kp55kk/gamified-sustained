@@ -50,7 +50,7 @@ function playInteractSound() {
     gain.gain.setValueAtTime(0.15, ctx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
     osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.4);
-  } catch (e) {}
+  } catch (e) { }
 }
 function playCorrectSound() {
   try {
@@ -62,7 +62,7 @@ function playCorrectSound() {
     gain.gain.setValueAtTime(0.12, ctx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
     osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.5);
-  } catch (e) {}
+  } catch (e) { }
 }
 function playWrongSound() {
   try {
@@ -75,7 +75,7 @@ function playWrongSound() {
     gain.gain.setValueAtTime(0.1, ctx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
     osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.4);
-  } catch (e) {}
+  } catch (e) { }
 }
 function playTaskCompleteSound() {
   try {
@@ -89,7 +89,7 @@ function playTaskCompleteSound() {
       gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.12 + 0.4);
       osc.start(ctx.currentTime + i * 0.12); osc.stop(ctx.currentTime + i * 0.12 + 0.4);
     });
-  } catch (e) {}
+  } catch (e) { }
 }
 function playLevelCompleteSound() {
   try {
@@ -102,7 +102,7 @@ function playLevelCompleteSound() {
       gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.15 + 0.5);
       osc.start(ctx.currentTime + i * 0.15); osc.stop(ctx.currentTime + i * 0.15 + 0.5);
     });
-  } catch (e) {}
+  } catch (e) { }
 }
 
 // ─── Icons ───
@@ -117,16 +117,26 @@ const ICONS = {
 
 // ─── Task Definitions (Phase 1) ───
 const TASKS = [
-  { id: 1, title: 'Add Windows — Let the Light In', icon: '🪟', objective: 'Walk to the living room wall and press E to install a window', markerId: 'task_window_living',
-    popup: { title: '☀️ Daylight Enters!', message: 'Sunlight is now lighting the room — artificial lighting is not required during daytime!', learning: 'Windows reduce electricity usage during daytime' }},
-  { id: 2, title: 'Cross Ventilation — Fresh Air Flow', icon: '🌬️', objective: 'Place a window on the opposite wall for cross ventilation', markerId: 'task_ventilation',
-    popup: { title: '🌬️ Fresh Air Flow!', message: 'Air now flows naturally through opposite openings. The room feels cooler without any fan!', learning: 'Cross ventilation improves comfort naturally' }},
-  { id: 3, title: 'Open Curtains — Use Daylight', icon: '🌞', objective: 'Walk to the bedroom window and press E to open the curtains', markerId: 'task_curtains',
-    popup: { title: '☀️ Sunlight Fills the Room!', message: 'The curtains are open — natural light replaces artificial lighting. Lights turn OFF automatically!', learning: 'Curtains affect energy usage — use natural light whenever possible' }},
-  { id: 4, title: 'Day vs Night — Smart Behavior', icon: '🌗', objective: 'Walk to the living room center and press E to learn day vs night actions', markerId: 'task_daynight',
-    popup: { title: '🌞🌙 Day vs Night', message: 'During DAY: Open windows, open curtains, turn OFF lights.\nDuring NIGHT: Turn ON only required lights, close curtains, use fan if needed.', learning: 'Day and night need different energy actions' }},
-  { id: 5, title: 'Temperature Action — Ventilate First', icon: '🌡️', objective: 'Walk to the bedroom and press E to check temperature', markerId: 'task_temperature',
-    popup: { title: '🌡️ Natural Cooling Works!', message: 'Outside: 30°C | Inside: 28°C — Opening the window provides natural cooling. No need for AC!', learning: 'Use ventilation before appliances' }},
+  {
+    id: 1, title: 'Add Windows — Let the Light In', icon: '🪟', objective: 'Walk to the living room wall and press E to install a window', markerId: 'task_window_living',
+    popup: { title: '☀️ Daylight Enters!', message: 'Sunlight is now lighting the room — artificial lighting is not required during daytime!', learning: 'Windows reduce electricity usage during daytime' }
+  },
+  {
+    id: 2, title: 'Cross Ventilation — Fresh Air Flow', icon: '🌬️', objective: 'Place a window on the opposite wall for cross ventilation', markerId: 'task_ventilation',
+    popup: { title: '🌬️ Fresh Air Flow!', message: 'Air now flows naturally through opposite openings. The room feels cooler without any fan!', learning: 'Cross ventilation improves comfort naturally' }
+  },
+  {
+    id: 3, title: 'Open Curtains — Use Daylight', icon: '🌞', objective: 'Walk to the bedroom window and press E to open the curtains', markerId: 'task_curtains',
+    popup: { title: '☀️ Sunlight Fills the Room!', message: 'The curtains are open — natural light replaces artificial lighting. Lights turn OFF automatically!', learning: 'Curtains affect energy usage — use natural light whenever possible' }
+  },
+  {
+    id: 4, title: 'Day vs Night — Smart Behavior', icon: '🌗', objective: 'Walk to the living room center and press E to learn day vs night actions', markerId: 'task_daynight',
+    popup: { title: '🌞🌙 Day vs Night', message: 'During DAY: Open windows, open curtains, turn OFF lights.\nDuring NIGHT: Turn ON only required lights, close curtains, use fan if needed.', learning: 'Day and night need different energy actions' }
+  },
+  {
+    id: 5, title: 'Temperature Action — Ventilate First', icon: '🌡️', objective: 'Walk to the bedroom and press E to check temperature', markerId: 'task_temperature',
+    popup: { title: '🌡️ Natural Cooling Works!', message: 'Outside: 30°C | Inside: 28°C — Opening the window provides natural cooling. No need for AC!', learning: 'Use ventilation before appliances' }
+  },
 ];
 
 // ═══ 3D TASK MARKER ═══
@@ -338,7 +348,7 @@ function CinematicOverlay({ visible, textPhase }) {
 
 // ═══ CATEGORY COLOR HELPER ═══
 function getCategoryColor(cat) {
-  const c = { 'Cooling':'#0ea5e9','Lighting':'#f59e0b','Electronics':'#8b5cf6','Heating':'#ef4444','Heating/Cooking':'#f97316','Motors/Cooking':'#ec4899','Motors/Laundry':'#6366f1','Electronics/Comms':'#14b8a6','Electronics/Entertainment':'#a855f7','Electronics/Charging':'#22c55e','Cooling/Preservation':'#06b6d4' };
+  const c = { 'Cooling': '#0ea5e9', 'Lighting': '#f59e0b', 'Electronics': '#8b5cf6', 'Heating': '#ef4444', 'Heating/Cooking': '#f97316', 'Motors/Cooking': '#ec4899', 'Motors/Laundry': '#6366f1', 'Electronics/Comms': '#14b8a6', 'Electronics/Entertainment': '#a855f7', 'Electronics/Charging': '#22c55e', 'Cooling/Preservation': '#06b6d4' };
   return c[cat] || '#6366f1';
 }
 
@@ -374,7 +384,7 @@ function SceneContent({
       <House />
       <EnvironmentTrees />
       <WallCover position={[-5, 1.8, -7.95]} size={[1.5, 1.4, 0.2]} visible={!completedTasks.has(1)} />
-      <WallCover position={[-9.95, 1.8, -4]} size={[0.2, 1.4, 1.5]} visible={!completedTasks.has(2)} />
+      <WallCover position={[-9.95, 1.8, -4.75]} size={[0.2, 1.4, 1.5]} visible={!completedTasks.has(2)} />
       <SunlightBeam position={[-5, 1, -6]} visible={completedTasks.has(1) && timeOfDay === 'day'} />
       <SunlightBeam position={[-8, 1, -4]} visible={completedTasks.has(2) && timeOfDay === 'day'} />
       <SunlightBeam position={[5, 1, -6]} visible={curtainsOpen && timeOfDay === 'day'} />
@@ -588,11 +598,7 @@ function ApplianceInfoPopup({ applianceId, onClose, langCode, interactedCount, t
           </div>
         )}
 
-        {/* ── Badges ── */}
-        <div className="aip-badges">
-          {data.hiddenConsumer && <span className="aip-badge aip-badge-hidden">👁️ Hidden Consumer — {data.standbyPower}</span>}
-          {data.beeRated && data.beeRated !== 'No' && <span className="aip-badge aip-badge-bee">⭐ BEE: {data.beeRated}</span>}
-        </div>
+
 
         {/* ── Fun Fact (separate from tip) ── */}
         {data.funFact && data.energySavingTip && (
@@ -1012,7 +1018,7 @@ export default function Level1() {
         gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.4 + 1.5);
         osc.start(ctx.currentTime + i * 0.4); osc.stop(ctx.currentTime + i * 0.4 + 1.5);
       });
-    } catch (e) {}
+    } catch (e) { }
     return () => { clearTimeout(t1); clearTimeout(t2); };
   }, [showCinematic]);
 
@@ -1137,7 +1143,7 @@ export default function Level1() {
   }, [phase1Score, phase1Total]);
 
   const handleRoomChange = useCallback((room) => setCurrentRoom(room), []);
-  const handleNearestChange = useCallback(() => {}, []);
+  const handleNearestChange = useCallback(() => { }, []);
   const handleApplianceClick = useCallback((id) => handleApplianceInteract(id), [handleApplianceInteract]);
 
   // Determine if any overlay is active (for hiding 3D labels)
@@ -1175,7 +1181,7 @@ export default function Level1() {
               currentTask={currentTask} completedTasks={completedTasks} windowsInstalled={windowsInstalled} curtainsOpen={curtainsOpen}
               timeOfDay={timeOfDay} showAirflow={showAirflow} lightsOn={lightsOn} hideLabels={anyOverlayActive}
               phase={phase} activeApplianceId={activeApplianceId} interactedAppliances={interactedAppliances}
-              onApplianceClick={handleApplianceClick} onWindowClick={() => {}}
+              onApplianceClick={handleApplianceClick} onWindowClick={() => { }}
             />
             {showCinematic && <CinematicCamera active={showCinematic} onComplete={() => setShowCinematic(false)} />}
           </Suspense>
