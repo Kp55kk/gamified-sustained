@@ -2,6 +2,7 @@ import React, { useRef, useState, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 import { APPLIANCE_POSITIONS, APPLIANCE_DATA, INTERACTABLE_IDS, IDLE_CHATTER } from './applianceData';
+import { WINDOW_POSITIONS } from './House';
 import { playerState } from './Player';
 import * as THREE from 'three';
 
@@ -24,7 +25,14 @@ function getApplianceRoom(id) {
   return APPLIANCE_DATA[id]?.room || 'Living Room';
 }
 
-
+// ─── Watt color helper (used in labels) ───
+function getWattColor(wattage) {
+  const w = typeof wattage === 'string' ? parseInt(wattage) : wattage;
+  if (isNaN(w)) return '#fff';
+  if (w < 100) return '#22c55e';   // Green
+  if (w <= 500) return '#f59e0b';  // Amber
+  return '#ef4444';                 // Red
+}
 
 
 // ─── Glow Effect Wrapper ───
@@ -61,6 +69,40 @@ function GlowAppliance({ children, id, activeId, interacted }) {
         />
       </mesh>
     </group>
+  );
+}
+
+// ─── Window Glow Effect ───
+function WindowGlow({ windowId, position }) {
+  const glowRef = useRef();
+
+  useFrame(() => {
+    if (!glowRef.current) return;
+    const dx = playerState.x - position[0];
+    const dz = playerState.z - position[2];
+    const dist = Math.sqrt(dx * dx + dz * dz);
+    const t = performance.now() * 0.003;
+
+    if (dist < 2.5) {
+      glowRef.current.visible = true;
+      glowRef.current.material.emissiveIntensity = 0.2 + Math.sin(t * 2) * 0.1;
+    } else {
+      glowRef.current.visible = false;
+    }
+  });
+
+  return (
+    <mesh ref={glowRef} position={position} visible={false}>
+      <sphereGeometry args={[0.5, 16, 16]} />
+      <meshStandardMaterial
+        color="#87CEEB"
+        emissive="#87CEEB"
+        emissiveIntensity={0}
+        transparent
+        opacity={0.1}
+        side={THREE.DoubleSide}
+      />
+    </mesh>
   );
 }
 
@@ -147,15 +189,35 @@ function LEDBulb({ onClick, active }) {
   const p = APPLIANCE_POSITIONS.led_bulb;
   return (
     <group position={p.pos} onClick={onClick}>
-      <mesh>
-        <sphereGeometry args={[0.12, 16, 16]} />
-        <meshStandardMaterial color="#fff8dc" emissive="#ffdd57" emissiveIntensity={1.8} />
-      </mesh>
-      <mesh position={[0, 0.08, 0]}>
-        <cylinderGeometry args={[0.04, 0.07, 0.06]} />
+      {/* Screw base */}
+      <mesh position={[0, 0.12, 0]}>
+        <cylinderGeometry args={[0.04, 0.05, 0.08, 12]} />
         <meshStandardMaterial color="#b0b0b0" metalness={0.7} roughness={0.2} />
       </mesh>
-      <pointLight position={[0, -0.2, 0]} intensity={1.0} distance={7} color="#ffe4a0" />
+      {/* Base collar */}
+      <mesh position={[0, 0.08, 0]}>
+        <cylinderGeometry args={[0.055, 0.04, 0.03, 12]} />
+        <meshStandardMaterial color="#a0a0a0" metalness={0.6} roughness={0.3} />
+      </mesh>
+      {/* Bulb body - pear/teardrop shape using multiple segments */}
+      <mesh position={[0, 0.03, 0]}>
+        <cylinderGeometry args={[0.06, 0.09, 0.08, 12]} />
+        <meshStandardMaterial color="#fff8dc" emissive="#ffdd57" emissiveIntensity={1.2} transparent opacity={0.9} />
+      </mesh>
+      <mesh position={[0, -0.04, 0]}>
+        <sphereGeometry args={[0.1, 16, 12, 0, Math.PI * 2, 0, Math.PI / 2]} />
+        <meshStandardMaterial color="#fff8dc" emissive="#ffdd57" emissiveIntensity={1.5} transparent opacity={0.9} />
+      </mesh>
+      <mesh position={[0, -0.04, 0]}>
+        <sphereGeometry args={[0.1, 16, 12, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2]} />
+        <meshStandardMaterial color="#fff8dc" emissive="#ffdd57" emissiveIntensity={1.8} transparent opacity={0.85} />
+      </mesh>
+      {/* Internal filament glow */}
+      <mesh position={[0, -0.02, 0]}>
+        <sphereGeometry args={[0.04, 8, 8]} />
+        <meshStandardMaterial color="#ffcc00" emissive="#ffaa00" emissiveIntensity={3.0} />
+      </mesh>
+      <pointLight position={[0, -0.1, 0]} intensity={1.0} distance={7} color="#ffe4a0" />
     </group>
   );
 }
@@ -484,7 +546,7 @@ function TableFan({ onClick, active }) {
   });
 
   return (
-    <group position={pos} rotation={rot} onClick={onClick}>
+    <group position={pos} rotation={rot} onClick={onClick} scale={[1.8, 1.8, 1.8]}>
       {/* Base */}
       <mesh castShadow position={[0, 0, 0]}>
         <cylinderGeometry args={[0.15, 0.17, 0.05, 16]} />
@@ -575,7 +637,7 @@ function GuidanceArrow({ interacted }) {
   );
 }
 
-// ─── Single-Appliance Label System (minimal: name pill + Press E pill) ───
+// ─── Single-Appliance Label System (with watt color-coding) ───
 const LABEL_OFFSETS = {
   ceiling_fan: 0.3, tv_smart: 0.7, ac_1_5ton: 0.35, fridge: 1.1,
   washing_machine: 0.65, geyser: 0.5, wifi_router: 0.3, set_top_box: 0.2,
@@ -583,32 +645,75 @@ const LABEL_OFFSETS = {
   led_tube: 0.3, table_fan: 0.55, led_bulb: 0.2,
 };
 
-function SingleApplianceLabel({ activeId }) {
+function SingleApplianceLabel({ activeId, onWindowInteract }) {
   const [nearestId, setNearestId] = useState(null);
+  const [nearestType, setNearestType] = useState('appliance'); // 'appliance' or 'window'
+
   useFrame(() => {
-    // Only show label for the SINGLE nearest appliance within 2.5 units
-    let best = null, bestDist = 2.5;
+    let best = null, bestDist = 2.5, bestType = 'appliance';
+
+    // Check appliances
     for (const id of INTERACTABLE_IDS) {
       const ap = APPLIANCE_POSITIONS[id];
       if (!ap) continue;
       const dx = playerState.x - ap.pos[0], dz = playerState.z - ap.pos[2];
       const dist = Math.sqrt(dx * dx + dz * dz);
-      if (dist < bestDist) { bestDist = dist; best = id; }
+      if (dist < bestDist) { bestDist = dist; best = id; bestType = 'appliance'; }
     }
+
+    // Check windows
+    if (WINDOW_POSITIONS) {
+      for (const [wid, wp] of Object.entries(WINDOW_POSITIONS)) {
+        const dx = playerState.x - wp.pos[0], dz = playerState.z - wp.pos[2];
+        const dist = Math.sqrt(dx * dx + dz * dz);
+        if (dist < bestDist) { bestDist = dist; best = wid; bestType = 'window'; }
+      }
+    }
+
     setNearestId(best);
+    setNearestType(bestType);
+
+    // Update playerState for window nearest tracking
+    if (bestType === 'window') {
+      playerState.nearestWindow = best;
+    } else {
+      playerState.nearestWindow = null;
+    }
   });
 
-  if (!nearestId || activeId === nearestId) return null;
+  if (!nearestId) return null;
+
+  // Window label
+  if (nearestType === 'window') {
+    const wp = WINDOW_POSITIONS[nearestId];
+    if (!wp) return null;
+    return (
+      <Html position={[wp.pos[0], wp.pos[1] + 0.8, wp.pos[2]]} center>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', pointerEvents: 'none' }}>
+          <div style={{ background: 'rgba(0,0,0,0.7)', color: '#fff', padding: '4px 12px', borderRadius: '8px', fontSize: '12px', fontFamily: 'Nunito, sans-serif', fontWeight: 600, whiteSpace: 'nowrap' }}>
+            🪟 {wp.label}
+          </div>
+          <div style={{ background: 'rgba(34,197,94,0.85)', color: '#fff', padding: '3px 10px', borderRadius: '6px', fontSize: '11px', fontFamily: 'Nunito, sans-serif', fontWeight: 600, whiteSpace: 'nowrap' }}>
+            Press <span style={{ background: 'rgba(255,255,255,0.3)', padding: '1px 5px', borderRadius: '3px', fontWeight: 700 }}>E</span> to learn
+          </div>
+        </div>
+      </Html>
+    );
+  }
+
+  // Appliance label
+  if (activeId === nearestId) return null;
   const pos = APPLIANCE_POSITIONS[nearestId]?.pos;
   const data = APPLIANCE_DATA[nearestId];
   if (!pos || !data) return null;
   const yOffset = LABEL_OFFSETS[nearestId] || 0.5;
+  const wattColor = getWattColor(data.wattage);
 
   return (
     <Html position={[pos[0], pos[1] + yOffset, pos[2]]} center>
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', pointerEvents: 'none' }}>
         <div style={{ background: 'rgba(0,0,0,0.7)', color: '#fff', padding: '4px 12px', borderRadius: '8px', fontSize: '12px', fontFamily: 'Nunito, sans-serif', fontWeight: 600, whiteSpace: 'nowrap' }}>
-          {data.icon} {data.name}
+          {data.icon} {data.name} <span style={{ color: wattColor, fontWeight: 700 }}>{data.wattage}W</span>
         </div>
         <div style={{ background: 'rgba(34,197,94,0.85)', color: '#fff', padding: '3px 10px', borderRadius: '6px', fontSize: '11px', fontFamily: 'Nunito, sans-serif', fontWeight: 600, whiteSpace: 'nowrap' }}>
           Press <span style={{ background: 'rgba(255,255,255,0.3)', padding: '1px 5px', borderRadius: '3px', fontWeight: 700 }}>E</span>
@@ -619,7 +724,7 @@ function SingleApplianceLabel({ activeId }) {
 }
 
 // ─── Main Appliances Component ───
-export default function Appliances({ onApplianceClick, activeApplianceId, interactedAppliances }) {
+export default function Appliances({ onApplianceClick, onWindowClick, activeApplianceId, interactedAppliances, hideLabels }) {
   const handleClick = (applianceId) => (e) => {
     e.stopPropagation();
     onApplianceClick(applianceId);
@@ -692,11 +797,16 @@ export default function Appliances({ onApplianceClick, activeApplianceId, intera
         <TableFan onClick={handleClick('table_fan')} active={activeApplianceId === 'table_fan'} />
       </GlowAppliance>
 
+      {/* Window Glow Effects */}
+      {WINDOW_POSITIONS && Object.entries(WINDOW_POSITIONS).map(([wid, wp]) => (
+        <WindowGlow key={wid} windowId={wid} position={wp.pos} />
+      ))}
+
       {/* Guidance Arrow */}
       <GuidanceArrow interacted={interactedAppliances} />
 
-      {/* Single appliance label — only nearest within 2.5 units */}
-      <SingleApplianceLabel activeId={activeApplianceId} />
+      {/* Single appliance label — only nearest within 2.5 units (includes windows) */}
+      {!hideLabels && <SingleApplianceLabel activeId={activeApplianceId} onWindowInteract={onWindowClick} />}
     </group>
   );
 }

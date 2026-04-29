@@ -58,6 +58,114 @@ function DoorFrame({ position, rotation = [0, 0, 0], isEntrance = false }) {
   );
 }
 
+// ─── Transparent Glass Door (visual only, no collision) ───
+function GlassDoor({ position, rotation = [0, 0, 0], height = 2.2, width = 1.0 }) {
+  return (
+    <group position={position} rotation={rotation}>
+      {/* Glass pane */}
+      <mesh position={[0, height / 2, 0]}>
+        <planeGeometry args={[width, height]} />
+        <meshStandardMaterial
+          color="#88bbdd"
+          transparent
+          opacity={0.15}
+          side={THREE.DoubleSide}
+          roughness={0.05}
+        />
+      </mesh>
+      {/* Door frame - top */}
+      <mesh position={[0, height, 0]}>
+        <boxGeometry args={[width + 0.06, 0.05, 0.04]} />
+        <meshStandardMaterial color="#8B6914" roughness={0.5} />
+      </mesh>
+      {/* Door frame - bottom */}
+      <mesh position={[0, 0.02, 0]}>
+        <boxGeometry args={[width + 0.06, 0.05, 0.04]} />
+        <meshStandardMaterial color="#8B6914" roughness={0.5} />
+      </mesh>
+      {/* Door frame - left */}
+      <mesh position={[-(width / 2 + 0.01), height / 2, 0]}>
+        <boxGeometry args={[0.05, height, 0.04]} />
+        <meshStandardMaterial color="#8B6914" roughness={0.5} />
+      </mesh>
+      {/* Door frame - right */}
+      <mesh position={[(width / 2 + 0.01), height / 2, 0]}>
+        <boxGeometry args={[0.05, height, 0.04]} />
+        <meshStandardMaterial color="#8B6914" roughness={0.5} />
+      </mesh>
+      {/* Door handle */}
+      <mesh position={[width / 2 - 0.15, height / 2, 0.03]}>
+        <sphereGeometry args={[0.04, 8, 8]} />
+        <meshStandardMaterial color="#c0c0c0" metalness={0.8} roughness={0.15} />
+      </mesh>
+    </group>
+  );
+}
+
+// ─── Window Component (Indian style with vertical grille bars) ───
+// name prop used for interaction identification
+function HouseWindow({ position, rotation = [0, 0, 0], width = 1.5, height = 1.2, isFrosted = false, name = 'window' }) {
+  const frameThickness = 0.05;
+  const glassColor = isFrosted ? '#c8dde8' : '#87CEEB';
+  const glassOpacity = isFrosted ? 0.5 : 0.3;
+  const innerW = width - frameThickness * 2;
+  const innerH = height - frameThickness * 2;
+
+  return (
+    <group position={position} rotation={rotation} userData={{ isWindow: true, windowName: name }}>
+      {/* Window frame - outer border */}
+      {/* Top frame */}
+      <mesh position={[0, height / 2 - frameThickness / 2, 0]}>
+        <boxGeometry args={[width, frameThickness, WALL_THICKNESS + 0.06]} />
+        <meshStandardMaterial color="#6b4520" roughness={0.5} />
+      </mesh>
+      {/* Bottom frame */}
+      <mesh position={[0, -height / 2 + frameThickness / 2, 0]}>
+        <boxGeometry args={[width, frameThickness, WALL_THICKNESS + 0.06]} />
+        <meshStandardMaterial color="#6b4520" roughness={0.5} />
+      </mesh>
+      {/* Left frame */}
+      <mesh position={[-width / 2 + frameThickness / 2, 0, 0]}>
+        <boxGeometry args={[frameThickness, height, WALL_THICKNESS + 0.06]} />
+        <meshStandardMaterial color="#6b4520" roughness={0.5} />
+      </mesh>
+      {/* Right frame */}
+      <mesh position={[width / 2 - frameThickness / 2, 0, 0]}>
+        <boxGeometry args={[frameThickness, height, WALL_THICKNESS + 0.06]} />
+        <meshStandardMaterial color="#6b4520" roughness={0.5} />
+      </mesh>
+
+      {/* Glass pane */}
+      <mesh position={[0, 0, 0.02]}>
+        <planeGeometry args={[innerW, innerH]} />
+        <meshStandardMaterial
+          color={glassColor}
+          transparent
+          opacity={glassOpacity}
+          roughness={isFrosted ? 0.8 : 0.05}
+          side={THREE.DoubleSide}
+        />
+      </mesh>
+
+      {/* Vertical grille bars (2 bars - Indian window style) */}
+      <mesh position={[-innerW / 6, 0, 0.04]}>
+        <boxGeometry args={[0.02, innerH, 0.02]} />
+        <meshStandardMaterial color="#444" metalness={0.4} roughness={0.4} />
+      </mesh>
+      <mesh position={[innerW / 6, 0, 0.04]}>
+        <boxGeometry args={[0.02, innerH, 0.02]} />
+        <meshStandardMaterial color="#444" metalness={0.4} roughness={0.4} />
+      </mesh>
+
+      {/* Window sill */}
+      <mesh position={[0, -height / 2 - 0.03, 0.06]}>
+        <boxGeometry args={[width + 0.1, 0.04, 0.12]} />
+        <meshStandardMaterial color="#5a3a15" roughness={0.6} />
+      </mesh>
+    </group>
+  );
+}
+
 // Baseboard trim along wall base
 function Baseboard({ position, size }) {
   return (
@@ -84,15 +192,15 @@ function Roof() {
     // Right slope: (hw, 0, -hd) to (0, peak, -hd) to (0, peak, hd) to (hw, 0, hd)
     const vertices = new Float32Array([
       // Left slope (2 triangles)
-      -hw, baseY, -hd,   0, peakY, -hd,   0, peakY, hd,
-      -hw, baseY, -hd,   0, peakY, hd,   -hw, baseY, hd,
+      -hw, baseY, -hd, 0, peakY, -hd, 0, peakY, hd,
+      -hw, baseY, -hd, 0, peakY, hd, -hw, baseY, hd,
       // Right slope (2 triangles)
-       hw, baseY, -hd,   0, peakY, hd,    0, peakY, -hd,
-       hw, baseY, -hd,   hw, baseY, hd,   0, peakY, hd,
+      hw, baseY, -hd, 0, peakY, hd, 0, peakY, -hd,
+      hw, baseY, -hd, hw, baseY, hd, 0, peakY, hd,
       // Front gable triangle
-      -hw, baseY, -hd,   hw, baseY, -hd,  0, peakY, -hd,
+      -hw, baseY, -hd, hw, baseY, -hd, 0, peakY, -hd,
       // Back gable triangle
-      -hw, baseY, hd,    0, peakY, hd,    hw, baseY, hd,
+      -hw, baseY, hd, 0, peakY, hd, hw, baseY, hd,
     ]);
 
     const geo = new THREE.BufferGeometry();
@@ -384,32 +492,13 @@ function DiningTable() {
   );
 }
 
-// Kitchen Window
-function KitchenWindow() {
-  return (
-    <group position={[-5, 1.8, 7.9]}>
-      {/* Window frame */}
-      <mesh>
-        <boxGeometry args={[1.6, 1.2, 0.1]} />
-        <meshStandardMaterial color="#8B6914" roughness={0.6} />
-      </mesh>
-      {/* Window glass */}
-      <mesh position={[0, 0, 0.03]}>
-        <planeGeometry args={[1.4, 1.0]} />
-        <meshStandardMaterial color="#87CEEB" transparent opacity={0.4} roughness={0.05} />
-      </mesh>
-      {/* Window cross bars */}
-      <mesh position={[0, 0, 0.06]}>
-        <boxGeometry args={[1.4, 0.04, 0.03]} />
-        <meshStandardMaterial color="#8B6914" roughness={0.6} />
-      </mesh>
-      <mesh position={[0, 0, 0.06]}>
-        <boxGeometry args={[0.04, 1.0, 0.03]} />
-        <meshStandardMaterial color="#8B6914" roughness={0.6} />
-      </mesh>
-    </group>
-  );
-}
+// Window positions data exported for interaction system
+export const WINDOW_POSITIONS = {
+  bedroom_window_back: { pos: [5, 1.8, -8], label: 'Bedroom Window (Back)' },
+  bedroom_window_front: { pos: [2.5, 1.8, -8], label: 'Bedroom Window (Front)' },
+  kitchen_window_back: { pos: [-5, 2.1, 8], label: 'Kitchen Window' },
+  bathroom_window: { pos: [10, 2.1, 4], label: 'Bathroom Window' },
+};
 
 export default function House() {
   return (
@@ -440,25 +529,111 @@ export default function House() {
       </mesh>
 
       {/* ─── OUTER WALLS ─── */}
-      {/* Front wall (z = -8) - fully solid, no door */}
-      <WallBox position={[0, WALL_HEIGHT / 2, -8]} size={[20, WALL_HEIGHT, WALL_THICKNESS]} />
+      {/* Front wall (z = -8) - 2 bedroom windows + 1 living room window */}
+      {/* Section x=[-10, -5.75] -> center -7.875, width 4.25 */}
+      <WallBox position={[-7.875, WALL_HEIGHT / 2, -8]} size={[4.25, WALL_HEIGHT, WALL_THICKNESS]} />
+      {/* Section x=[-4.25, 1.75] -> center -1.25, width 6 */}
+      <WallBox position={[-1.25, WALL_HEIGHT / 2, -8]} size={[6, WALL_HEIGHT, WALL_THICKNESS]} />
+      {/* Above living room window (x=-5) */}
+      <WallBox position={[-5, 2.5, -8]} size={[1.5, 1.0, WALL_THICKNESS]} />
+      {/* Below living room window (x=-5) */}
+      <WallBox position={[-5, 0.6, -8]} size={[1.5, 1.2, WALL_THICKNESS]} />
+      {/* Between two bedroom front windows: x=[3.25, 4.25] -> center 3.75, width 1.0 */}
+      <WallBox position={[3.75, WALL_HEIGHT / 2, -8]} size={[1.0, WALL_HEIGHT, WALL_THICKNESS]} />
+      {/* Right of second window: x=[5.75, 10] -> center 7.875, width 4.25 */}
+      <WallBox position={[7.875, WALL_HEIGHT / 2, -8]} size={[4.25, WALL_HEIGHT, WALL_THICKNESS]} />
+      {/* Above bedroom window 1 (x=2.5) */}
+      <WallBox position={[2.5, 2.5, -8]} size={[1.5, 1.0, WALL_THICKNESS]} />
+      {/* Below bedroom window 1 (x=2.5) */}
+      <WallBox position={[2.5, 0.6, -8]} size={[1.5, 1.2, WALL_THICKNESS]} />
+      {/* Above bedroom window 2 (x=5) */}
+      <WallBox position={[5, 2.5, -8]} size={[1.5, 1.0, WALL_THICKNESS]} />
+      {/* Below bedroom window 2 (x=5) */}
+      <WallBox position={[5, 0.6, -8]} size={[1.5, 1.2, WALL_THICKNESS]} />
 
-      {/* Back wall (z = 8) — gap at x=[-2, 2] for backyard door */}
-      <WallBox position={[-6, WALL_HEIGHT / 2, 8]} size={[8, WALL_HEIGHT, WALL_THICKNESS]} />
+      {/* Back wall (z = 8) — gap at x=[-2, 2] for backyard door, kitchen window at x=-5 */}
+      {/* Left section: x=[-10, -5.75] -> center -7.875, width 4.25 */}
+      <WallBox position={[-7.875, WALL_HEIGHT / 2, 8]} size={[4.25, WALL_HEIGHT, WALL_THICKNESS]} />
+      {/* Between kitchen window and door gap: x=[-4.25, -2] -> center -3.125, width 2.25 */}
+      <WallBox position={[-3.125, WALL_HEIGHT / 2, 8]} size={[2.25, WALL_HEIGHT, WALL_THICKNESS]} />
+      {/* Above kitchen window (x=-5, bottom at 1.5, height 1.2 -> top at 2.7) */}
+      <WallBox position={[-5, 2.85, 8]} size={[1.5, 0.3, WALL_THICKNESS]} />
+      {/* Below kitchen window */}
+      <WallBox position={[-5, 0.75, 8]} size={[1.5, 1.5, WALL_THICKNESS]} />
+      {/* Right of back door: x=[2, 10] -> center 6, width 8 */}
       <WallBox position={[6, WALL_HEIGHT / 2, 8]} size={[8, WALL_HEIGHT, WALL_THICKNESS]} />
       {/* Above back door */}
       <WallBox position={[0, 2.7, 8]} size={[4, 0.6, WALL_THICKNESS]} />
       <DoorFrame position={[0, 0, 8]} />
 
-      {/* Left wall (x = -10) — door gap at z = [-3.5, -0.5] near WiFi router */}
-      <WallBox position={[-10, WALL_HEIGHT / 2, -5.75]} size={[WALL_THICKNESS, WALL_HEIGHT, 4.5]} />
+      {/* Left wall (x = -10) — door gap at z = [-3.5, -0.5], window at z=-4.75 (1.5 wide) */}
+      {/* Section z=[-8, -5.5] -> center z=-6.75, depth 2.5 */}
+      <WallBox position={[-10, WALL_HEIGHT / 2, -6.75]} size={[WALL_THICKNESS, WALL_HEIGHT, 2.5]} />
+      {/* Section z=[-4, -3.5] -> center z=-3.75, depth 0.5 */}
+      <WallBox position={[-10, WALL_HEIGHT / 2, -3.75]} size={[WALL_THICKNESS, WALL_HEIGHT, 0.5]} />
+      {/* Above left wall window */}
+      <WallBox position={[-10, 2.5, -4.75]} size={[WALL_THICKNESS, 1.0, 1.5]} />
+      {/* Below left wall window */}
+      <WallBox position={[-10, 0.6, -4.75]} size={[WALL_THICKNESS, 1.2, 1.5]} />
       <WallBox position={[-10, WALL_HEIGHT / 2, 4.25]} size={[WALL_THICKNESS, WALL_HEIGHT, 7.5]} />
       {/* Above left wall door */}
       <WallBox position={[-10, 2.7, -2]} size={[WALL_THICKNESS, 0.6, 3]} />
       <DoorFrame position={[-10, 0, -2]} rotation={[0, Math.PI / 2, 0]} isEntrance={true} />
 
-      {/* Right wall (x = 10) */}
-      <WallBox position={[10, WALL_HEIGHT / 2, 0]} size={[WALL_THICKNESS, WALL_HEIGHT, 16]} />
+      {/* Right wall (x = 10) - solid for bedroom, split for bathroom window only */}
+      {/* Bedroom section: z=[-8, 0] -> fully solid (no window here, AC is on this wall) */}
+      <WallBox position={[10, WALL_HEIGHT / 2, -4]} size={[WALL_THICKNESS, WALL_HEIGHT, 8]} />
+
+      {/* Bathroom section of right wall: z=[0, 8], window at z=4, 1.2 wide -> gap z=[3.4, 4.6] */}
+      {/* Section z=[0, 3.4] -> center z=1.7, depth 3.4 */}
+      <WallBox position={[10, WALL_HEIGHT / 2, 1.7]} size={[WALL_THICKNESS, WALL_HEIGHT, 3.4]} />
+      {/* Section z=[4.6, 8] -> center z=6.3, depth 3.4 */}
+      <WallBox position={[10, WALL_HEIGHT / 2, 6.3]} size={[WALL_THICKNESS, WALL_HEIGHT, 3.4]} />
+      {/* Above bathroom window (window bottom=1.35, top=2.25) -> above piece from 2.25 to 3.0 */}
+      <WallBox position={[10, 2.625, 4]} size={[WALL_THICKNESS, 0.75, 1.2]} />
+      {/* Below bathroom window -> from 0 to 1.35 */}
+      <WallBox position={[10, 0.675, 4]} size={[WALL_THICKNESS, 1.35, 1.2]} />
+
+      {/* ─── WINDOWS ─── */}
+      {/* Living Room - Front wall window (z=-8, centered at x=-5) */}
+      <HouseWindow
+        position={[-5, 1.8, -7.9]}
+        width={1.5} height={1.2}
+        name="livingroom_window_front"
+      />
+      {/* Living Room - Left wall window (x=-10, centered at z=-4.75) */}
+      <HouseWindow
+        position={[-9.9, 1.8, -4.75]}
+        rotation={[0, Math.PI / 2, 0]}
+        width={1.5} height={1.2}
+        name="livingroom_window_left"
+      />
+      {/* Bedroom - Back wall window 1 (z=-8, centered at x=5) */}
+      <HouseWindow
+        position={[5, 1.8, -7.9]}
+        width={1.5} height={1.2}
+        name="bedroom_window_back"
+      />
+      {/* Bedroom - Front wall window 2 (z=-8, centered at x=2.5) - moved from side wall to avoid AC overlap */}
+      <HouseWindow
+        position={[2.5, 1.8, -7.9]}
+        width={1.5} height={1.2}
+        name="bedroom_window_front"
+      />
+      {/* Kitchen - Back wall window (z=8, centered at x=-5, higher up) */}
+      <HouseWindow
+        position={[-5, 2.1, 7.9]}
+        width={1.5} height={1.2}
+        name="kitchen_window_back"
+      />
+      {/* Bathroom - Right wall window (x=10, centered at z=4, 1.2x0.9, frosted) */}
+      <HouseWindow
+        position={[9.9, 1.8, 4]}
+        rotation={[0, Math.PI / 2, 0]}
+        width={1.2} height={0.9}
+        isFrosted={true}
+        name="bathroom_window"
+      />
 
       {/* ─── BASEBOARDS (outer walls) ─── */}
       <Baseboard position={[0, 0.06, -7.9]} size={[20, 0.12, 0.05]} />
@@ -468,37 +643,51 @@ export default function House() {
       <Baseboard position={[9.9, 0.06, 0]} size={[0.05, 0.12, 16]} />
 
       {/* ─── INNER WALLS ─── */}
-      {/* Horizontal middle wall (z = 0) */}
-      {/* Left section: x = [-10, -6] */}
-      <WallBox position={[-8, WALL_HEIGHT / 2, 0]} size={[4, WALL_HEIGHT, WALL_THICKNESS]} color={WALL_COLOR_INNER} />
-      {/* Living→Kitchen door gap at x=[-6,-4], above door */}
-      <WallBox position={[-5, 2.7, 0]} size={[2, 0.6, WALL_THICKNESS]} color={WALL_COLOR_INNER} />
+      {/* Horizontal middle wall (z = 0) — FIX 4: proper doorway sizing, no gaps */}
+      {/* Left section: x = [-10, -5.5] = wall left of living→kitchen door */}
+      <WallBox position={[-7.75, WALL_HEIGHT / 2, 0]} size={[4.5, WALL_HEIGHT, WALL_THICKNESS]} color={WALL_COLOR_INNER} />
+      {/* Living→Kitchen door gap at x=[-5.5,-4.5] (1.0 wide), above door fill to ceiling */}
+      <WallBox position={[-5, 2.6, 0]} size={[1.0, 0.8, WALL_THICKNESS]} color={WALL_COLOR_INNER} />
       <DoorFrame position={[-5, 0, 0]} />
-      {/* Middle section: x = [-4, 4] */}
-      <WallBox position={[0, WALL_HEIGHT / 2, 0]} size={[8, WALL_HEIGHT, WALL_THICKNESS]} color={WALL_COLOR_INNER} />
-      {/* Bedroom→Bathroom door gap at x=[4,6], above door */}
-      <WallBox position={[5, 2.7, 0]} size={[2, 0.6, WALL_THICKNESS]} color={WALL_COLOR_INNER} />
+      {/* Right of living→kitchen door to bedroom→bathroom door: x=[-4.5, 4.5] */}
+      <WallBox position={[0, WALL_HEIGHT / 2, 0]} size={[9, WALL_HEIGHT, WALL_THICKNESS]} color={WALL_COLOR_INNER} />
+      {/* Bedroom→Bathroom door gap at x=[4.5,5.5] (1.0 wide), above door */}
+      <WallBox position={[5, 2.6, 0]} size={[1.0, 0.8, WALL_THICKNESS]} color={WALL_COLOR_INNER} />
       <DoorFrame position={[5, 0, 0]} />
-      {/* Right section: x = [6, 10] */}
-      <WallBox position={[8, WALL_HEIGHT / 2, 0]} size={[4, WALL_HEIGHT, WALL_THICKNESS]} color={WALL_COLOR_INNER} />
+      {/* Right section: x = [5.5, 10] */}
+      <WallBox position={[7.75, WALL_HEIGHT / 2, 0]} size={[4.5, WALL_HEIGHT, WALL_THICKNESS]} color={WALL_COLOR_INNER} />
 
-      {/* Vertical middle wall - front (x = 0, z = [-8, 0]) - UNCHANGED */}
-      {/* Top section: z = [-8, -5] */}
-      <WallBox position={[0, WALL_HEIGHT / 2, -6.5]} size={[WALL_THICKNESS, WALL_HEIGHT, 3]} color={WALL_COLOR_INNER} />
-      {/* Living→Bedroom door gap at z=[-5,-3], above door */}
-      <WallBox position={[0, 2.7, -4]} size={[WALL_THICKNESS, 0.6, 2]} color={WALL_COLOR_INNER} />
+      {/* Vertical middle wall - front (x = 0, z = [-8, 0]) */}
+      {/* Top section: z = [-8, -4.5] */}
+      <WallBox position={[0, WALL_HEIGHT / 2, -6.25]} size={[WALL_THICKNESS, WALL_HEIGHT, 3.5]} color={WALL_COLOR_INNER} />
+      {/* Living→Bedroom door gap at z=[-4.5,-3.5] (1.0 wide), above door */}
+      <WallBox position={[0, 2.6, -4]} size={[WALL_THICKNESS, 0.8, 1.0]} color={WALL_COLOR_INNER} />
       <DoorFrame position={[0, 0, -4]} rotation={[0, Math.PI / 2, 0]} />
-      {/* Bottom section: z = [-3, 0] */}
-      <WallBox position={[0, WALL_HEIGHT / 2, -1.5]} size={[WALL_THICKNESS, WALL_HEIGHT, 3]} color={WALL_COLOR_INNER} />
+      {/* Bottom section: z = [-3.5, 0] */}
+      <WallBox position={[0, WALL_HEIGHT / 2, -1.75]} size={[WALL_THICKNESS, WALL_HEIGHT, 3.5]} color={WALL_COLOR_INNER} />
 
-      {/* Vertical middle wall - back (x = 4, z = [0, 8]) - MOVED from x=0 to x=4 */}
-      {/* Top section: z = [0, 3] */}
-      <WallBox position={[4, WALL_HEIGHT / 2, 1.5]} size={[WALL_THICKNESS, WALL_HEIGHT, 3]} color={WALL_COLOR_INNER} />
-      {/* Kitchen→Bathroom door gap at z=[3,5], above door */}
-      <WallBox position={[4, 2.7, 4]} size={[WALL_THICKNESS, 0.6, 2]} color={WALL_COLOR_INNER} />
+      {/* Vertical middle wall - back (x = 4, z = [0, 8]) */}
+      {/* Top section: z = [0, 3.5] */}
+      <WallBox position={[4, WALL_HEIGHT / 2, 1.75]} size={[WALL_THICKNESS, WALL_HEIGHT, 3.5]} color={WALL_COLOR_INNER} />
+      {/* Kitchen→Bathroom door gap at z=[3.5,4.5] (1.0 wide), above door */}
+      <WallBox position={[4, 2.6, 4]} size={[WALL_THICKNESS, 0.8, 1.0]} color={WALL_COLOR_INNER} />
       <DoorFrame position={[4, 0, 4]} rotation={[0, Math.PI / 2, 0]} />
-      {/* Bottom section: z = [5, 8] */}
-      <WallBox position={[4, WALL_HEIGHT / 2, 6.5]} size={[WALL_THICKNESS, WALL_HEIGHT, 3]} color={WALL_COLOR_INNER} />
+      {/* Bottom section: z = [4.5, 8] */}
+      <WallBox position={[4, WALL_HEIGHT / 2, 6.25]} size={[WALL_THICKNESS, WALL_HEIGHT, 3.5]} color={WALL_COLOR_INNER} />
+
+      {/* ─── TRANSPARENT GLASS DOORS ON ALL DOORWAYS (1.0w x 2.2h, light blue-grey) ─── */}
+      {/* Living→Kitchen doorway (z=0, x=-5) */}
+      <GlassDoor position={[-5, 0, 0.02]} width={1.0} height={2.2} />
+      {/* Living→Bedroom doorway (x=0, z=-4) */}
+      <GlassDoor position={[0.02, 0, -4]} rotation={[0, Math.PI / 2, 0]} width={1.0} height={2.2} />
+      {/* Bedroom→Bathroom doorway (z=0, x=5) */}
+      <GlassDoor position={[5, 0, 0.02]} width={1.0} height={2.2} />
+      {/* Kitchen→Bathroom doorway (x=4, z=4) */}
+      <GlassDoor position={[4.02, 0, 4]} rotation={[0, Math.PI / 2, 0]} width={1.0} height={2.2} />
+      {/* Back door (z=8, x=0) */}
+      <GlassDoor position={[0, 0, 7.98]} width={1.0} height={2.2} />
+      {/* Left entrance door (x=-10, z=-2) */}
+      <GlassDoor position={[-9.98, 0, -2]} rotation={[0, Math.PI / 2, 0]} width={1.0} height={2.2} />
 
       {/* ─── BASIC FURNITURE ─── */}
       {/* Living Room - Sofa */}
@@ -570,7 +759,6 @@ export default function House() {
       <Dishwasher />
       <LargeFridge />
       <DiningTable />
-      <KitchenWindow />
 
       {/* Bathroom - Toilet */}
       <group position={[7, 0, 6]}>

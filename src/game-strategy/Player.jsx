@@ -1,7 +1,8 @@
 import React, { useRef, useEffect } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
-import { APPLIANCE_POSITIONS, INTERACTABLE_IDS } from './applianceData';
+import { APPLIANCE_POSITIONS, INTERACTABLE_IDS, LEVEL1_TASK_POSITIONS } from './applianceData';
+import { PHASE1_TASK_POSITIONS } from './level1Phase1Data';
 
 // ════════════════════════════════════════════════════════════
 //  WALL COLLISION DATA — ONLY WALLS, NOT DOORWAYS/APPLIANCES
@@ -117,7 +118,8 @@ function getNearestAppliance(px, pz, idList) {
   let minDist = INTERACTION_RADIUS;
   const ids = idList || INTERACTABLE_IDS;
   for (const id of ids) {
-    const ap = APPLIANCE_POSITIONS[id];
+    // Check both appliance positions and task positions
+    const ap = APPLIANCE_POSITIONS[id] || (LEVEL1_TASK_POSITIONS && LEVEL1_TASK_POSITIONS[id]) || (PHASE1_TASK_POSITIONS && PHASE1_TASK_POSITIONS[id]);
     if (!ap) continue;
     const dx = px - ap.pos[0];
     const dz = pz - ap.pos[2];
@@ -210,6 +212,7 @@ export const playerState = {
   x: -5,
   z: -6.5,
   nearestAppliance: null,
+  nearestWindow: null,
   cameraYaw: 0,
 };
 
@@ -271,9 +274,13 @@ export default function Player({ onRoomChange, onNearestApplianceChange, onInter
       if (['arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(k)) {
         e.preventDefault();
       }
-      // E to interact
-      if (k === 'e' && onInteract && playerState.nearestAppliance) {
-        onInteract(playerState.nearestAppliance);
+      // E to interact with appliances or windows
+      if (k === 'e' && onInteract) {
+        if (playerState.nearestAppliance) {
+          onInteract(playerState.nearestAppliance);
+        } else if (playerState.nearestWindow) {
+          onInteract('__window__' + playerState.nearestWindow);
+        }
       }
     };
     const onKeyUp = (e) => {

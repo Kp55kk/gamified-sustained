@@ -445,5 +445,32 @@
     "heroMode": "HERO MODE ACTIVATED!",
     "calculated": "CALCULATED!",
     "rankEm": "RANK 'EM!"
+  },
+  "ventilation": {
+    "title": "🪟 Natural Ventilation",
+    "intro": "Windows are not just for looking outside — they are your home's natural cooling system!",
+    "howItWorksTitle": "How it works",
+    "howItWorks": "• When you open windows on opposite sides of a room, air flows through naturally. This is called cross-ventilation.\n\n• Hot air rises and escapes through higher windows, while cool air enters from lower windows. This is called stack ventilation.\n\n• Good ventilation can reduce room temperature by 3-5°C without using any electricity!",
+    "sustainabilityTitle": "Why it matters for sustainability",
+    "sustainability": "• A well-ventilated home needs less AC and less fan usage\n• Less AC = less electricity = less CO₂ emissions\n• A single AC uses 1500W. Good ventilation can replace AC usage for 3-4 months of the year in many Indian cities\n• That saves approximately 540 kWh and 383 kg of CO₂ per year!",
+    "funFactTitle": "Fun fact",
+    "funFact": "Traditional Indian homes (havelis) were designed with jaalis (lattice screens) and courtyards specifically for natural airflow — our ancestors were sustainability experts!",
+    "gotIt": "Got it!"
+  },
+  "wattsIntro": {
+    "title": "⚡ Before You Explore — What is a Watt?",
+    "lead": "Every appliance in this house has a number next to it — like 75W or 1500W. That 'W' stands for Watt.",
+    "analogy": "🚰 Imagine a water tap. When you open it a little, water flows slowly. When you open it fully, water gushes out fast. Watts work the same way for electricity!",
+    "explain": "⚡ Watts tell you how FAST an appliance drinks electricity.",
+    "exLed": "A small LED bulb sips slowly — just 10W",
+    "exFan": "A ceiling fan drinks a bit more — 75W",
+    "exAc": "An AC gulps it down — 1500W!",
+    "remember": "The higher the Watts, the more electricity it uses every second it's running.",
+    "sub": "In this level, you'll see the Watt number on every appliance. Just remember:",
+    "catGreen": "🟢 Low Watts (under 100W) = Sips electricity",
+    "catAmber": "🟡 Medium Watts (100-500W) = Drinks electricity",
+    "catRed": "🔴 High Watts (above 500W) = Gulps electricity",
+    "callout": "Now go explore the house and find out how hungry each appliance is!",
+    "button": "Got it! Let's Explore →"
   }
 }
