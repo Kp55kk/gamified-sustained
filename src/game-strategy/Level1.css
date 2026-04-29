@@ -3836,7 +3836,7 @@ button {
 
 .aip-name {
   font-family: 'Fredoka', sans-serif;
-  font-size: 22px;
+  font-size: 26px;
   font-weight: 700;
   color: #1e1b4b;
   margin: 0;
@@ -3848,7 +3848,7 @@ button {
   padding: 3px 12px;
   border-radius: 10px;
   font-family: 'Fredoka', sans-serif;
-  font-size: 10px;
+  font-size: 13px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 1px;
@@ -3869,14 +3869,14 @@ button {
 
 .aip-wattage {
   font-family: 'Fredoka', sans-serif;
-  font-size: 28px;
+  font-size: 34px;
   font-weight: 700;
   line-height: 1;
 }
 
 .aip-usage {
   font-family: 'Nunito', sans-serif;
-  font-size: 12px;
+  font-size: 15px;
   font-weight: 600;
   color: #64748b;
 }
@@ -3898,13 +3898,13 @@ button {
 }
 
 .aip-stat-icon {
-  font-size: 16px;
+  font-size: 20px;
   margin-bottom: 2px;
 }
 
 .aip-stat-value {
   font-family: 'Fredoka', sans-serif;
-  font-size: 18px;
+  font-size: 22px;
   font-weight: 700;
   color: #4f46e5;
   line-height: 1.2;
@@ -3912,7 +3912,7 @@ button {
 
 .aip-stat-label {
   font-family: 'Nunito', sans-serif;
-  font-size: 8px;
+  font-size: 11px;
   font-weight: 700;
   color: #94a3b8;
   text-transform: uppercase;
@@ -3931,7 +3931,7 @@ button {
 
 .aip-section-title {
   font-family: 'Fredoka', sans-serif;
-  font-size: 13px;
+  font-size: 16px;
   font-weight: 700;
   color: #7c3aed;
   margin-bottom: 6px;
@@ -3939,7 +3939,7 @@ button {
 
 .aip-desc-text {
   font-family: 'Nunito', sans-serif;
-  font-size: 12px;
+  font-size: 15px;
   line-height: 1.6;
   color: #475569;
   margin: 0;
@@ -3965,14 +3965,14 @@ button {
 
 .aip-tip-title {
   font-family: 'Fredoka', sans-serif;
-  font-size: 13px;
+  font-size: 16px;
   font-weight: 700;
   color: #16a34a;
 }
 
 .aip-tip-text {
   font-family: 'Nunito', sans-serif;
-  font-size: 12px;
+  font-size: 15px;
   font-weight: 600;
   color: #166534;
   line-height: 1.5;
@@ -4027,7 +4027,7 @@ button {
 
 .aip-funfact-text {
   font-family: 'Nunito', sans-serif;
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 600;
   color: #92400e;
   line-height: 1.5;
@@ -4040,7 +4040,7 @@ button {
 
 .aip-progress-label {
   font-family: 'Nunito', sans-serif;
-  font-size: 10px;
+  font-size: 13px;
   font-weight: 700;
   color: #94a3b8;
   text-transform: uppercase;
@@ -4077,7 +4077,7 @@ button {
   background: linear-gradient(135deg, #3b82f6, #2563eb);
   color: #fff;
   font-family: 'Fredoka', sans-serif;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
@@ -4105,7 +4105,7 @@ button {
   background: linear-gradient(135deg, #7c3aed, #6d28d9);
   color: #fff;
   font-family: 'Fredoka', sans-serif;
-  font-size: 15px;
+  font-size: 17px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.25s;

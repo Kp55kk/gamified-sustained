@@ -192,15 +192,15 @@ function Roof() {
     // Right slope: (hw, 0, -hd) to (0, peak, -hd) to (0, peak, hd) to (hw, 0, hd)
     const vertices = new Float32Array([
       // Left slope (2 triangles)
-      -hw, baseY, -hd,   0, peakY, -hd,   0, peakY, hd,
-      -hw, baseY, -hd,   0, peakY, hd,   -hw, baseY, hd,
+      -hw, baseY, -hd, 0, peakY, -hd, 0, peakY, hd,
+      -hw, baseY, -hd, 0, peakY, hd, -hw, baseY, hd,
       // Right slope (2 triangles)
-       hw, baseY, -hd,   0, peakY, hd,    0, peakY, -hd,
-       hw, baseY, -hd,   hw, baseY, hd,   0, peakY, hd,
+      hw, baseY, -hd, 0, peakY, hd, 0, peakY, -hd,
+      hw, baseY, -hd, hw, baseY, hd, 0, peakY, hd,
       // Front gable triangle
-      -hw, baseY, -hd,   hw, baseY, -hd,  0, peakY, -hd,
+      -hw, baseY, -hd, hw, baseY, -hd, 0, peakY, -hd,
       // Back gable triangle
-      -hw, baseY, hd,    0, peakY, hd,    hw, baseY, hd,
+      -hw, baseY, hd, 0, peakY, hd, hw, baseY, hd,
     ]);
 
     const geo = new THREE.BufferGeometry();
@@ -529,9 +529,15 @@ export default function House() {
       </mesh>
 
       {/* ─── OUTER WALLS ─── */}
-      {/* Front wall (z = -8) - 2 bedroom windows: one at x=5 (1.5w), one at x=2.5 (1.5w) */}
-      {/* Section x=[-10, 1.75] -> center -4.125, width 11.75 */}
-      <WallBox position={[-4.125, WALL_HEIGHT / 2, -8]} size={[11.75, WALL_HEIGHT, WALL_THICKNESS]} />
+      {/* Front wall (z = -8) - 2 bedroom windows + 1 living room window */}
+      {/* Section x=[-10, -5.75] -> center -7.875, width 4.25 */}
+      <WallBox position={[-7.875, WALL_HEIGHT / 2, -8]} size={[4.25, WALL_HEIGHT, WALL_THICKNESS]} />
+      {/* Section x=[-4.25, 1.75] -> center -1.25, width 6 */}
+      <WallBox position={[-1.25, WALL_HEIGHT / 2, -8]} size={[6, WALL_HEIGHT, WALL_THICKNESS]} />
+      {/* Above living room window (x=-5) */}
+      <WallBox position={[-5, 2.5, -8]} size={[1.5, 1.0, WALL_THICKNESS]} />
+      {/* Below living room window (x=-5) */}
+      <WallBox position={[-5, 0.6, -8]} size={[1.5, 1.2, WALL_THICKNESS]} />
       {/* Between two bedroom front windows: x=[3.25, 4.25] -> center 3.75, width 1.0 */}
       <WallBox position={[3.75, WALL_HEIGHT / 2, -8]} size={[1.0, WALL_HEIGHT, WALL_THICKNESS]} />
       {/* Right of second window: x=[5.75, 10] -> center 7.875, width 4.25 */}
@@ -560,8 +566,15 @@ export default function House() {
       <WallBox position={[0, 2.7, 8]} size={[4, 0.6, WALL_THICKNESS]} />
       <DoorFrame position={[0, 0, 8]} />
 
-      {/* Left wall (x = -10) — door gap at z = [-3.5, -0.5] near WiFi router */}
-      <WallBox position={[-10, WALL_HEIGHT / 2, -5.75]} size={[WALL_THICKNESS, WALL_HEIGHT, 4.5]} />
+      {/* Left wall (x = -10) — door gap at z = [-3.5, -0.5], window at z=-4.75 (1.5 wide) */}
+      {/* Section z=[-8, -5.5] -> center z=-6.75, depth 2.5 */}
+      <WallBox position={[-10, WALL_HEIGHT / 2, -6.75]} size={[WALL_THICKNESS, WALL_HEIGHT, 2.5]} />
+      {/* Section z=[-4, -3.5] -> center z=-3.75, depth 0.5 */}
+      <WallBox position={[-10, WALL_HEIGHT / 2, -3.75]} size={[WALL_THICKNESS, WALL_HEIGHT, 0.5]} />
+      {/* Above left wall window */}
+      <WallBox position={[-10, 2.5, -4.75]} size={[WALL_THICKNESS, 1.0, 1.5]} />
+      {/* Below left wall window */}
+      <WallBox position={[-10, 0.6, -4.75]} size={[WALL_THICKNESS, 1.2, 1.5]} />
       <WallBox position={[-10, WALL_HEIGHT / 2, 4.25]} size={[WALL_THICKNESS, WALL_HEIGHT, 7.5]} />
       {/* Above left wall door */}
       <WallBox position={[-10, 2.7, -2]} size={[WALL_THICKNESS, 0.6, 3]} />
@@ -582,6 +595,19 @@ export default function House() {
       <WallBox position={[10, 0.675, 4]} size={[WALL_THICKNESS, 1.35, 1.2]} />
 
       {/* ─── WINDOWS ─── */}
+      {/* Living Room - Front wall window (z=-8, centered at x=-5) */}
+      <HouseWindow
+        position={[-5, 1.8, -7.9]}
+        width={1.5} height={1.2}
+        name="livingroom_window_front"
+      />
+      {/* Living Room - Left wall window (x=-10, centered at z=-4.75) */}
+      <HouseWindow
+        position={[-9.9, 1.8, -4.75]}
+        rotation={[0, Math.PI / 2, 0]}
+        width={1.5} height={1.2}
+        name="livingroom_window_left"
+      />
       {/* Bedroom - Back wall window 1 (z=-8, centered at x=5) */}
       <HouseWindow
         position={[5, 1.8, -7.9]}
