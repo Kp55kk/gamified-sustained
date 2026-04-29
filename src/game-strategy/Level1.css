@@ -4276,3 +4276,136 @@ button {
   text-align: center;
   font-size: 11px;
 }
+
+/* ═══ PHASE 1 — NEW INTERACTIVE COMPONENTS ═══ */
+
+/* System Prompt */
+.system-prompt-overlay { position:fixed; inset:0; z-index:500; display:flex; align-items:center; justify-content:center; background:rgba(5,10,21,0.7); backdrop-filter:blur(6px); animation:fadeIn 0.3s ease; }
+.system-prompt-card { max-width:420px; width:90%; padding:32px 28px; border-radius:24px; background:linear-gradient(135deg,#0f172a,#1e293b); border:2px solid rgba(34,197,94,0.4); box-shadow:0 20px 60px rgba(0,0,0,0.5),0 0 40px rgba(34,197,94,0.15); text-align:center; animation:bubblePop 0.4s cubic-bezier(0.34,1.56,0.64,1); }
+.system-prompt-icon { font-size:48px; margin-bottom:16px; }
+.system-prompt-text { font-family:'Nunito',sans-serif; font-size:18px; font-weight:600; color:#e2e8f0; line-height:1.6; margin-bottom:24px; }
+.system-prompt-btn { padding:12px 32px; border:none; border-radius:14px; background:linear-gradient(135deg,#22c55e,#16a34a); color:#fff; font-family:'Fredoka',sans-serif; font-size:15px; font-weight:600; cursor:pointer; transition:all 0.2s; box-shadow:0 4px 16px rgba(34,197,94,0.3); }
+.system-prompt-btn:hover { transform:translateY(-2px); box-shadow:0 6px 24px rgba(34,197,94,0.4); }
+
+/* Task Step Indicator */
+.task-step-indicator { position:absolute; bottom:120px; left:50%; transform:translateX(-50%); z-index:120; padding:16px 20px; border-radius:16px; background:rgba(5,10,21,0.92); border:1px solid rgba(34,197,94,0.3); backdrop-filter:blur(12px); min-width:340px; animation:fadeIn 0.3s ease; }
+.task-step-title { font-family:'Fredoka',sans-serif; font-size:13px; font-weight:600; color:#22c55e; margin-bottom:10px; text-transform:uppercase; letter-spacing:1px; }
+.task-step-list { display:flex; flex-direction:column; gap:8px; }
+.task-step-item { display:flex; align-items:center; gap:10px; padding:8px 12px; border-radius:10px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); transition:all 0.3s; }
+.task-step-item.active { background:rgba(34,197,94,0.15); border-color:rgba(34,197,94,0.4); }
+.task-step-item.done { background:rgba(34,197,94,0.08); border-color:rgba(34,197,94,0.2); opacity:0.7; }
+.task-step-num { width:24px; height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:'Fredoka',sans-serif; font-size:12px; font-weight:700; color:#fff; background:rgba(255,255,255,0.1); flex-shrink:0; }
+.task-step-item.active .task-step-num { background:#22c55e; }
+.task-step-item.done .task-step-num { background:rgba(34,197,94,0.4); color:#22c55e; }
+.task-step-text { font-family:'Nunito',sans-serif; font-size:13px; color:#cbd5e1; }
+.task-step-item.active .task-step-text { color:#fff; font-weight:600; }
+
+/* AC Temperature Dial */
+.ac-dial-overlay { position:fixed; inset:0; z-index:500; display:flex; align-items:center; justify-content:center; background:rgba(5,10,21,0.7); backdrop-filter:blur(6px); animation:fadeIn 0.3s ease; }
+.ac-dial-card { max-width:440px; width:90%; padding:28px; border-radius:24px; background:linear-gradient(135deg,#0f172a,#1e293b); border:1px solid rgba(100,149,237,0.3); box-shadow:0 20px 60px rgba(0,0,0,0.5); animation:bubblePop 0.4s cubic-bezier(0.34,1.56,0.64,1); }
+.ac-dial-header { text-align:center; margin-bottom:24px; }
+.ac-dial-icon { font-size:40px; }
+.ac-dial-title { font-family:'Fredoka',sans-serif; font-size:22px; font-weight:700; color:#fff; margin:8px 0 4px; }
+.ac-dial-subtitle { font-family:'Nunito',sans-serif; font-size:13px; color:#94a3b8; }
+.ac-dial-options { display:flex; gap:12px; }
+.ac-dial-option { flex:1; padding:20px 12px; border-radius:16px; border:2px solid; cursor:pointer; text-align:center; transition:all 0.3s; }
+.ac-dial-option:hover { transform:translateY(-4px); box-shadow:0 8px 24px rgba(0,0,0,0.3); }
+.ac-dial-opt-temp { font-family:'Fredoka',sans-serif; font-size:28px; font-weight:700; color:#fff; }
+.ac-dial-opt-icon { font-size:32px; margin:8px 0; }
+.ac-dial-opt-impact { font-family:'Nunito',sans-serif; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; }
+
+/* Micro Feedback Toast */
+.micro-feedback-toast { position:fixed; bottom:60px; left:50%; transform:translateX(-50%); z-index:600; padding:12px 28px; border-radius:16px; font-family:'Fredoka',sans-serif; font-size:15px; font-weight:600; animation:mfSlide 0.4s cubic-bezier(0.34,1.56,0.64,1); pointer-events:none; white-space:nowrap; }
+.mf-success { background:rgba(34,197,94,0.9); color:#fff; box-shadow:0 4px 20px rgba(34,197,94,0.4); }
+.mf-warning { background:rgba(245,158,11,0.9); color:#fff; box-shadow:0 4px 20px rgba(245,158,11,0.4); }
+.mf-error { background:rgba(239,68,68,0.9); color:#fff; box-shadow:0 4px 20px rgba(239,68,68,0.4); }
+.mf-info { background:rgba(59,130,246,0.9); color:#fff; box-shadow:0 4px 20px rgba(59,130,246,0.4); }
+@keyframes mfSlide { from { transform:translateX(-50%) translateY(20px); opacity:0; } to { transform:translateX(-50%) translateY(0); opacity:1; } }
+
+/* Decision Score Badge */
+.decision-score-badge { display:inline-block; padding:6px 16px; border-radius:20px; background:linear-gradient(135deg,#22c55e,#16a34a); color:#fff; font-family:'Fredoka',sans-serif; font-size:14px; font-weight:700; margin-top:12px; box-shadow:0 2px 12px rgba(34,197,94,0.3); }
+
+/* Temperature Strategy UI */
+.temp-strategy-overlay { position:fixed; inset:0; z-index:500; display:flex; align-items:center; justify-content:center; background:rgba(5,10,21,0.7); backdrop-filter:blur(6px); animation:fadeIn 0.3s ease; }
+.temp-strategy-card { max-width:440px; width:90%; padding:28px; border-radius:24px; background:linear-gradient(135deg,#0f172a,#1e293b); border:1px solid rgba(245,158,11,0.3); box-shadow:0 20px 60px rgba(0,0,0,0.5); animation:bubblePop 0.4s cubic-bezier(0.34,1.56,0.64,1); text-align:center; }
+.temp-strategy-title { font-family:'Fredoka',sans-serif; font-size:20px; font-weight:700; color:#fff; margin-bottom:16px; }
+.temp-strategy-temps { display:flex; gap:12px; justify-content:center; margin-bottom:16px; }
+.temp-strategy-badge { padding:10px 18px; border-radius:12px; font-family:'Nunito',sans-serif; font-size:14px; color:#e2e8f0; }
+.temp-strategy-badge.indoor { background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.3); }
+.temp-strategy-badge.outdoor { background:rgba(59,130,246,0.15); border:1px solid rgba(59,130,246,0.3); }
+.temp-strategy-question { font-family:'Nunito',sans-serif; font-size:16px; color:#cbd5e1; margin-bottom:16px; }
+.temp-strategy-actions { display:flex; gap:12px; }
+.temp-strategy-btn { flex:1; padding:14px; border:2px solid rgba(255,255,255,0.15); border-radius:14px; background:rgba(255,255,255,0.05); color:#fff; font-family:'Fredoka',sans-serif; font-size:15px; font-weight:600; cursor:pointer; transition:all 0.2s; }
+.temp-strategy-btn:hover { transform:translateY(-2px); }
+.temp-strategy-btn.window:hover { background:rgba(34,197,94,0.2); border-color:rgba(34,197,94,0.5); }
+.temp-strategy-btn.ac:hover { background:rgba(59,130,246,0.2); border-color:rgba(59,130,246,0.5); }
+
+/* Combined Challenge UI */
+.combined-challenge-overlay { position:fixed; inset:0; z-index:500; display:flex; align-items:center; justify-content:center; background:rgba(5,10,21,0.7); backdrop-filter:blur(6px); animation:fadeIn 0.3s ease; }
+.combined-challenge-card { max-width:480px; width:92%; padding:28px; border-radius:24px; background:linear-gradient(135deg,#0f172a,#1e293b); border:1px solid rgba(239,68,68,0.3); box-shadow:0 20px 60px rgba(0,0,0,0.5); animation:bubblePop 0.4s cubic-bezier(0.34,1.56,0.64,1); }
+.combined-challenge-title { font-family:'Fredoka',sans-serif; font-size:20px; font-weight:700; color:#fff; margin-bottom:6px; text-align:center; }
+.combined-challenge-desc { font-family:'Nunito',sans-serif; font-size:12px; color:#94a3b8; text-align:center; margin-bottom:20px; }
+.combined-challenge-questions { display:flex; flex-direction:column; gap:12px; margin-bottom:20px; }
+.combined-q { padding:12px; border-radius:12px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); }
+.combined-q-text { font-family:'Nunito',sans-serif; font-size:14px; color:#e2e8f0; margin-bottom:8px; }
+.combined-q-options { display:flex; gap:8px; }
+.combined-q-btn { flex:1; padding:8px; border:1px solid rgba(255,255,255,0.15); border-radius:10px; background:rgba(255,255,255,0.05); color:#cbd5e1; font-family:'Nunito',sans-serif; font-size:12px; font-weight:600; cursor:pointer; transition:all 0.2s; }
+.combined-q-btn.selected { background:rgba(34,197,94,0.2); border-color:#22c55e; color:#22c55e; }
+.combined-q-btn:hover:not(.selected) { background:rgba(255,255,255,0.1); }
+.combined-submit-btn { width:100%; padding:12px; border:none; border-radius:14px; background:linear-gradient(135deg,#22c55e,#16a34a); color:#fff; font-family:'Fredoka',sans-serif; font-size:15px; font-weight:600; cursor:pointer; transition:all 0.2s; }
+.combined-submit-btn:disabled { opacity:0.4; cursor:not-allowed; }
+.combined-submit-btn:hover:not(:disabled) { transform:translateY(-2px); box-shadow:0 6px 20px rgba(34,197,94,0.4); }
+
+/* Habit Reinforcement UI */
+.habit-overlay { position:fixed; inset:0; z-index:500; display:flex; align-items:center; justify-content:center; background:rgba(5,10,21,0.7); backdrop-filter:blur(6px); animation:fadeIn 0.3s ease; }
+.habit-card { max-width:420px; width:90%; padding:28px; border-radius:24px; background:linear-gradient(135deg,#0f172a,#1e293b); border:1px solid rgba(139,92,246,0.3); box-shadow:0 20px 60px rgba(0,0,0,0.5); animation:bubblePop 0.4s cubic-bezier(0.34,1.56,0.64,1); text-align:center; }
+.habit-header { display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:14px; }
+.habit-icon { font-size:32px; }
+.habit-title { font-family:'Fredoka',sans-serif; font-size:20px; font-weight:700; color:#fff; }
+.habit-desc { font-family:'Nunito',sans-serif; font-size:14px; color:#cbd5e1; line-height:1.6; margin-bottom:20px; }
+.habit-actions { display:flex; gap:12px; }
+.habit-btn { flex:1; padding:14px; border:2px solid rgba(255,255,255,0.15); border-radius:14px; background:rgba(255,255,255,0.05); color:#fff; font-family:'Fredoka',sans-serif; font-size:14px; font-weight:600; cursor:pointer; transition:all 0.2s; }
+.habit-btn:hover { transform:translateY(-2px); }
+.habit-btn.correct:hover { background:rgba(34,197,94,0.2); border-color:rgba(34,197,94,0.5); }
+.habit-btn.wrong:hover { background:rgba(239,68,68,0.15); border-color:rgba(239,68,68,0.4); }
+
+/* Day/Night Cycle UI */
+.daynight-overlay { position:fixed; inset:0; z-index:500; display:flex; align-items:center; justify-content:center; background:rgba(5,10,21,0.5); backdrop-filter:blur(4px); animation:fadeIn 0.3s ease; }
+.daynight-card { max-width:420px; width:90%; padding:28px; border-radius:24px; box-shadow:0 20px 60px rgba(0,0,0,0.5); animation:bubblePop 0.4s cubic-bezier(0.34,1.56,0.64,1); text-align:center; }
+.daynight-card.day { background:linear-gradient(135deg,#1e3a5f,#2d4a7c); border:2px solid rgba(250,204,21,0.4); }
+.daynight-card.night { background:linear-gradient(135deg,#0f172a,#1a1a2e); border:2px solid rgba(139,92,246,0.4); }
+.daynight-header { display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:16px; }
+.daynight-icon { font-size:36px; }
+.daynight-title { font-family:'Fredoka',sans-serif; font-size:18px; font-weight:700; color:#fff; }
+.daynight-cycle { padding:4px 10px; border-radius:8px; background:rgba(255,255,255,0.1); font-family:'Nunito',sans-serif; font-size:11px; color:#94a3b8; }
+.daynight-instructions { display:flex; flex-direction:column; gap:8px; margin-bottom:20px; }
+.daynight-inst { padding:10px 14px; border-radius:10px; background:rgba(255,255,255,0.06); font-family:'Nunito',sans-serif; font-size:14px; color:#e2e8f0; text-align:left; }
+.daynight-btn { width:100%; padding:12px; border:none; border-radius:14px; background:linear-gradient(135deg,#22c55e,#16a34a); color:#fff; font-family:'Fredoka',sans-serif; font-size:15px; font-weight:600; cursor:pointer; transition:all 0.2s; }
+.daynight-btn:hover { transform:translateY(-2px); box-shadow:0 6px 20px rgba(34,197,94,0.4); }
+
+/* Performance Summary */
+.performance-overlay { position:fixed; inset:0; z-index:500; display:flex; align-items:center; justify-content:center; background:rgba(5,10,21,0.8); backdrop-filter:blur(8px); animation:fadeIn 0.3s ease; }
+.performance-card { max-width:460px; width:92%; padding:32px; border-radius:28px; background:linear-gradient(135deg,#0f172a,#1e293b); border:2px solid rgba(34,197,94,0.3); box-shadow:0 20px 60px rgba(0,0,0,0.5),0 0 40px rgba(34,197,94,0.1); animation:bubblePop 0.5s cubic-bezier(0.34,1.56,0.64,1); text-align:center; }
+.performance-header { margin-bottom:16px; }
+.performance-icon { font-size:48px; }
+.performance-title { font-family:'Fredoka',sans-serif; font-size:24px; font-weight:700; color:#fff; margin:8px 0 4px; }
+.performance-rating { font-family:'Nunito',sans-serif; font-size:16px; color:#22c55e; font-weight:700; }
+.performance-stars { font-size:28px; letter-spacing:8px; margin-bottom:20px; }
+.performance-star.empty { opacity:0.3; }
+.performance-metrics { display:flex; flex-direction:column; gap:12px; margin-bottom:20px; }
+.perf-metric { display:flex; align-items:center; gap:10px; }
+.perf-metric-label { font-family:'Nunito',sans-serif; font-size:13px; color:#94a3b8; width:140px; text-align:left; flex-shrink:0; }
+.perf-metric-bar { flex:1; height:12px; border-radius:6px; background:rgba(255,255,255,0.08); overflow:hidden; }
+.perf-metric-fill { height:100%; border-radius:6px; transition:width 1s ease; }
+.perf-metric-fill.natural { background:linear-gradient(90deg,#22c55e,#16a34a); }
+.perf-metric-fill.appliance { background:linear-gradient(90deg,#f59e0b,#d97706); }
+.perf-metric-fill.efficiency { background:linear-gradient(90deg,#3b82f6,#2563eb); }
+.perf-metric-value { font-family:'Fredoka',sans-serif; font-size:13px; color:#fff; width:40px; text-align:right; }
+.performance-score { font-family:'Fredoka',sans-serif; font-size:18px; color:#facc15; margin-bottom:16px; }
+.performance-learnings { text-align:left; margin-bottom:20px; }
+.performance-learnings h4 { font-family:'Fredoka',sans-serif; font-size:14px; color:#22c55e; margin:0 0 8px; }
+.performance-learnings ul { margin:0; padding-left:20px; }
+.performance-learnings li { font-family:'Nunito',sans-serif; font-size:12px; color:#94a3b8; line-height:1.8; }
+.performance-btn { width:100%; padding:14px; border:none; border-radius:14px; background:linear-gradient(135deg,#22c55e,#16a34a); color:#fff; font-family:'Fredoka',sans-serif; font-size:16px; font-weight:600; cursor:pointer; transition:all 0.2s; box-shadow:0 4px 16px rgba(34,197,94,0.3); }
+.performance-btn:hover { transform:translateY(-2px); box-shadow:0 6px 24px rgba(34,197,94,0.4); }
+

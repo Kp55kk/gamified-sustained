@@ -2,6 +2,7 @@ import React, { useRef, useEffect } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { APPLIANCE_POSITIONS, INTERACTABLE_IDS, LEVEL1_TASK_POSITIONS } from './applianceData';
+import { PHASE1_TASK_POSITIONS } from './level1Phase1Data';
 
 // ════════════════════════════════════════════════════════════
 //  WALL COLLISION DATA — ONLY WALLS, NOT DOORWAYS/APPLIANCES
@@ -118,7 +119,7 @@ function getNearestAppliance(px, pz, idList) {
   const ids = idList || INTERACTABLE_IDS;
   for (const id of ids) {
     // Check both appliance positions and task positions
-    const ap = APPLIANCE_POSITIONS[id] || (LEVEL1_TASK_POSITIONS && LEVEL1_TASK_POSITIONS[id]);
+    const ap = APPLIANCE_POSITIONS[id] || (LEVEL1_TASK_POSITIONS && LEVEL1_TASK_POSITIONS[id]) || (PHASE1_TASK_POSITIONS && PHASE1_TASK_POSITIONS[id]);
     if (!ap) continue;
     const dx = px - ap.pos[0];
     const dz = pz - ap.pos[2];

@@ -11,6 +11,10 @@ import { WINDOW_POSITIONS } from './House';
 import { useGame } from '../context/GameContext';
 import { getTranslation, getVoiceLocale } from '../translations/index';
 import LevelIntro from './LevelIntro';
+import {
+  PHASE1_TASKS, PHASE1_TASK_POSITIONS, AC_TEMP_OPTIONS, MICRO_FEEDBACK,
+  calculateIndoorTemp, isComfortable, calculatePerformance, CUTSCENE_DATA, LEARNING_OUTCOMES
+} from './level1Phase1Data';
 import './Level1.css';
 
 // ─── Speech Engine ───
@@ -115,19 +119,21 @@ const ICONS = {
   teacher: '\u{1F468}\u{200D}\u{1F3EB}', sparkles: '\u{2728}',
 };
 
-// ─── Task Definitions (Phase 1) ───
-const TASKS = [
-  { id: 1, title: 'Add Windows — Let the Light In', icon: '🪟', objective: 'Walk to the living room wall and press E to install a window', markerId: 'task_window_living',
-    popup: { title: '☀️ Daylight Enters!', message: 'Sunlight is now lighting the room — artificial lighting is not required during daytime!', learning: 'Windows reduce electricity usage during daytime' }},
-  { id: 2, title: 'Cross Ventilation — Fresh Air Flow', icon: '🌬️', objective: 'Place a window on the opposite wall for cross ventilation', markerId: 'task_ventilation',
-    popup: { title: '🌬️ Fresh Air Flow!', message: 'Air now flows naturally through opposite openings. The room feels cooler without any fan!', learning: 'Cross ventilation improves comfort naturally' }},
-  { id: 3, title: 'Open Curtains — Use Daylight', icon: '🌞', objective: 'Walk to the bedroom window and press E to open the curtains', markerId: 'task_curtains',
-    popup: { title: '☀️ Sunlight Fills the Room!', message: 'The curtains are open — natural light replaces artificial lighting. Lights turn OFF automatically!', learning: 'Curtains affect energy usage — use natural light whenever possible' }},
-  { id: 4, title: 'Day vs Night — Smart Behavior', icon: '🌗', objective: 'Walk to the living room center and press E to learn day vs night actions', markerId: 'task_daynight',
-    popup: { title: '🌞🌙 Day vs Night', message: 'During DAY: Open windows, open curtains, turn OFF lights.\nDuring NIGHT: Turn ON only required lights, close curtains, use fan if needed.', learning: 'Day and night need different energy actions' }},
-  { id: 5, title: 'Temperature Action — Ventilate First', icon: '🌡️', objective: 'Walk to the bedroom and press E to check temperature', markerId: 'task_temperature',
-    popup: { title: '🌡️ Natural Cooling Works!', message: 'Outside: 30°C | Inside: 28°C — Opening the window provides natural cooling. No need for AC!', learning: 'Use ventilation before appliances' }},
-];
+// ─── Task Definitions (Phase 1) — 7-Task Decision System ───
+const TASKS = PHASE1_TASKS.map(t => ({
+  id: t.id,
+  title: t.title,
+  icon: t.icon,
+  shortTitle: t.shortTitle,
+  objective: t.systemPrompt,
+  markerId: `phase1_task_${t.id}`,
+  popup: {
+    title: t.comfortableResult?.title || t.correctResult?.title || t.sufficientResult?.title || `✅ Task ${t.id} Complete`,
+    message: t.comfortableResult?.message || t.correctResult?.message || t.sufficientResult?.message || t.learning || '',
+    learning: t.comfortableResult?.learning || t.correctResult?.learning || t.sufficientResult?.learning || t.learning || '',
+  },
+  data: t, // full task data for multi-step logic
+}));
 
 // ═══ 3D TASK MARKER ═══
 function TaskMarker3D({ position, label, isActive, isCompleted, taskNumber, hideLabel }) {
@@ -174,7 +180,7 @@ function AirflowParticles({ visible }) {
   return (<group ref={groupRef}>{Array.from({ length: 20 }).map((_, i) => (<mesh key={i} position={[-9.5, 1.5, -4]}><sphereGeometry args={[0.04, 6, 6]} /><meshStandardMaterial color="#87CEEB" emissive="#87CEEB" emissiveIntensity={0.8} transparent opacity={0.5} /></mesh>))}</group>);
 }
 
-// ═══ CURTAIN MESH ═══
+// ═══ CURTAIN MESH (legacy) ═══
 function CurtainMesh({ isOpen }) {
   const leftRef = useRef(); const rightRef = useRef();
   useFrame(() => {
@@ -189,6 +195,92 @@ function CurtainMesh({ isOpen }) {
     <mesh ref={rightRef} position={[5.35, 1.8, -7.85]}><boxGeometry args={[0.7, 1.4, 0.05]} /><meshStandardMaterial color="#8B4513" roughness={0.8} side={THREE.DoubleSide} /></mesh>
     <mesh position={[5, 2.55, -7.85]}><cylinderGeometry args={[0.02, 0.02, 1.8, 8]} /><meshStandardMaterial color="#b8860b" metalness={0.7} roughness={0.3} /></mesh>
   </group>);
+}
+
+// ═══ REALISTIC CURTAIN ═══
+function RealisticCurtain({ isOpen }) {
+  const leftPanels = useRef([]); const rightPanels = useRef([]);
+  const FOLDS = 5; // number of fold segments per side
+  const CURTAIN_WIDTH = 0.7; // total width of each curtain panel
+  const foldWidth = CURTAIN_WIDTH / FOLDS;
+
+  useFrame(() => {
+    // Smooth animation — panels slide to sides and bunch up when open
+    for (let i = 0; i < FOLDS; i++) {
+      const leftPanel = leftPanels.current[i];
+      const rightPanel = rightPanels.current[i];
+      if (!leftPanel || !rightPanel) continue;
+
+      // Calculate target positions
+      const centerX = 5; // window center X
+      const spreadClosed = (i - FOLDS / 2 + 0.5) * foldWidth;
+
+      if (isOpen) {
+        // Bunch up to the sides
+        const leftTarget = centerX - 0.85 - i * 0.04;
+        const rightTarget = centerX + 0.85 + i * 0.04;
+        leftPanel.position.x += (leftTarget - leftPanel.position.x) * 0.04;
+        rightPanel.position.x += (rightTarget - rightPanel.position.x) * 0.04;
+        // Scrunch scale
+        const scaleTarget = 0.3 + i * 0.05;
+        leftPanel.scale.x += (scaleTarget - leftPanel.scale.x) * 0.04;
+        rightPanel.scale.x += (scaleTarget - rightPanel.scale.x) * 0.04;
+      } else {
+        // Spread evenly across window
+        const leftTarget = centerX - CURTAIN_WIDTH / 2 + i * foldWidth;
+        const rightTarget = centerX + i * foldWidth;
+        leftPanel.position.x += (leftTarget - leftPanel.position.x) * 0.04;
+        rightPanel.position.x += (rightTarget - rightPanel.position.x) * 0.04;
+        leftPanel.scale.x += (1 - leftPanel.scale.x) * 0.04;
+        rightPanel.scale.x += (1 - rightPanel.scale.x) * 0.04;
+      }
+    }
+  });
+
+  return (
+    <group>
+      {/* Curtain rod */}
+      <mesh position={[5, 2.58, -7.84]} rotation={[0, 0, Math.PI / 2]}>
+        <cylinderGeometry args={[0.025, 0.025, 1.9, 8]} />
+        <meshStandardMaterial color="#b8860b" metalness={0.8} roughness={0.2} />
+      </mesh>
+      {/* Rod finials */}
+      <mesh position={[4.05, 2.58, -7.84]}><sphereGeometry args={[0.04, 8, 8]} /><meshStandardMaterial color="#b8860b" metalness={0.8} roughness={0.2} /></mesh>
+      <mesh position={[5.95, 2.58, -7.84]}><sphereGeometry args={[0.04, 8, 8]} /><meshStandardMaterial color="#b8860b" metalness={0.8} roughness={0.2} /></mesh>
+
+      {/* Left curtain folds */}
+      {Array.from({ length: FOLDS }).map((_, i) => (
+        <mesh
+          key={`l${i}`}
+          ref={el => { leftPanels.current[i] = el; }}
+          position={[5 - CURTAIN_WIDTH / 2 + i * foldWidth, 1.82, -7.84]}
+        >
+          <boxGeometry args={[foldWidth - 0.01, 1.5, 0.03]} />
+          <meshStandardMaterial
+            color={i % 2 === 0 ? '#8B2500' : '#A0522D'}
+            roughness={0.85}
+            side={THREE.DoubleSide}
+          />
+        </mesh>
+      ))}
+
+      {/* Right curtain folds */}
+      {Array.from({ length: FOLDS }).map((_, i) => (
+        <mesh
+          key={`r${i}`}
+          ref={el => { rightPanels.current[i] = el; }}
+          position={[5 + i * foldWidth, 1.82, -7.84]}
+        >
+          <boxGeometry args={[foldWidth - 0.01, 1.5, 0.03]} />
+          <meshStandardMaterial
+            color={i % 2 === 0 ? '#8B2500' : '#A0522D'}
+            roughness={0.85}
+            side={THREE.DoubleSide}
+          />
+        </mesh>
+      ))}
+    </group>
+  );
 }
 
 // ═══ WALL COVER ═══
@@ -355,16 +447,35 @@ function SceneContent({
   cameraRef, onInteract, onRoomChange, onNearestChange,
   currentTask, completedTasks, windowsInstalled, curtainsOpen, timeOfDay,
   showAirflow, lightsOn, hideLabels, phase, activeApplianceId, interactedAppliances,
-  onApplianceClick, onWindowClick
+  onApplianceClick, onWindowClick, taskSubPhase, taskStep
 }) {
+  // During 'steps' phase, use the step-specific marker ID so the marker moves to the step location
   const taskIdList = React.useMemo(() => {
-    if (phase !== 'building' || currentTask > 5) return [];
+    if (phase !== 'building' || currentTask > 7) return [];
     const activeTask = TASKS.find(t => t.id === currentTask);
-    return activeTask ? [activeTask.markerId] : [];
-  }, [currentTask, phase]);
+    if (!activeTask) return [];
+
+    // If in steps phase and the step has a position, use step-specific ID
+    if (taskSubPhase === 'steps') {
+      const stepKey = `phase1_task_${currentTask}_step_${taskStep}`;
+      if (PHASE1_TASK_POSITIONS[stepKey]) return [stepKey];
+    }
+    return [activeTask.markerId];
+  }, [currentTask, phase, taskSubPhase, taskStep]);
 
   // In appliance phase, use the full interactable IDs list
   const applianceIdList = phase === 'appliances' ? INTERACTABLE_IDS : taskIdList;
+
+  // Determine the active marker position (step-specific or main task)
+  const getMarkerPos = (task) => {
+    if (task.id === currentTask && taskSubPhase === 'steps') {
+      const stepKey = `phase1_task_${currentTask}_step_${taskStep}`;
+      const stepPos = PHASE1_TASK_POSITIONS[stepKey];
+      if (stepPos) return stepPos.pos;
+    }
+    const pos = PHASE1_TASK_POSITIONS[task.markerId];
+    return pos ? pos.pos : null;
+  };
 
   return (
     <>
@@ -373,19 +484,24 @@ function SceneContent({
       <CameraRefForwarder cameraRef={cameraRef} />
       <House />
       <EnvironmentTrees />
-      <WallCover position={[-5, 1.8, -7.95]} size={[1.5, 1.4, 0.2]} visible={!completedTasks.has(1)} />
-      <WallCover position={[-9.95, 1.8, -4]} size={[0.2, 1.4, 1.5]} visible={!completedTasks.has(2)} />
-      <SunlightBeam position={[-5, 1, -6]} visible={completedTasks.has(1) && timeOfDay === 'day'} />
-      <SunlightBeam position={[-8, 1, -4]} visible={completedTasks.has(2) && timeOfDay === 'day'} />
+
+      {/* Window covers — disappear when windows are opened */}
+      <WallCover position={[-5, 1.8, -7.95]} size={[1.5, 1.4, 0.2]} visible={windowsInstalled < 1} />
+
+      <SunlightBeam position={[-5, 1, -6]} visible={windowsInstalled > 0 && timeOfDay === 'day'} />
+      <SunlightBeam position={[-8, 1, -4]} visible={windowsInstalled > 1 && timeOfDay === 'day'} />
       <SunlightBeam position={[5, 1, -6]} visible={curtainsOpen && timeOfDay === 'day'} />
-      <CurtainMesh isOpen={curtainsOpen} />
+      <RealisticCurtain isOpen={curtainsOpen} />
       <AirflowParticles visible={showAirflow} />
 
-      {/* Phase 1: Task markers */}
+      {/* Phase 1: Task markers — position follows current step */}
       {phase === 'building' && TASKS.map(task => {
-        const pos = LEVEL1_TASK_POSITIONS[task.markerId];
-        if (!pos) return null;
-        return <TaskMarker3D key={task.id} position={pos.pos} label={task.objective} isActive={currentTask === task.id} isCompleted={completedTasks.has(task.id)} taskNumber={task.id} hideLabel={hideLabels} />;
+        const markerPos = getMarkerPos(task);
+        if (!markerPos) return null;
+        const stepLabel = (task.id === currentTask && taskSubPhase === 'steps')
+          ? task.data?.steps?.[taskStep]?.instruction || task.objective
+          : task.objective;
+        return <TaskMarker3D key={task.id} position={markerPos} label={stepLabel} isActive={currentTask === task.id} isCompleted={completedTasks.has(task.id)} taskNumber={task.id} hideLabel={hideLabels} />;
       })}
 
       {/* Phase 2: Appliances */}
@@ -927,6 +1043,301 @@ function L1ControlsHelp() {
   );
 }
 
+// ═══ SYSTEM PROMPT (Decision Interrupt) ═══
+function SystemPrompt({ visible, message, onDismiss }) {
+  if (!visible) return null;
+  return (
+    <div className="system-prompt-overlay" onClick={onDismiss}>
+      <div className="system-prompt-card" onClick={e => e.stopPropagation()}>
+        <div className="system-prompt-icon">🧠</div>
+        <div className="system-prompt-text">{message}</div>
+        <button className="system-prompt-btn" onClick={onDismiss}>I understand →</button>
+      </div>
+    </div>
+  );
+}
+
+// ═══ TASK STEP INDICATOR ═══
+function TaskStepIndicator({ steps, currentStep, taskTitle }) {
+  if (!steps || steps.length === 0) return null;
+  return (
+    <div className="task-step-indicator">
+      <div className="task-step-title">{taskTitle}</div>
+      <div className="task-step-list">
+        {steps.map((step, i) => (
+          <div key={step.id} className={`task-step-item ${i < currentStep ? 'done' : i === currentStep ? 'active' : ''}`}>
+            <div className="task-step-num">{i < currentStep ? '✓' : i + 1}</div>
+            <div className="task-step-text">{step.icon} {step.instruction}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ═══ AC TEMPERATURE DIAL ═══
+function ACTemperatureDial({ visible, onSelect }) {
+  if (!visible) return null;
+  return (
+    <div className="ac-dial-overlay">
+      <div className="ac-dial-card">
+        <div className="ac-dial-header">
+          <span className="ac-dial-icon">❄️</span>
+          <h3 className="ac-dial-title">Set AC Temperature</h3>
+          <p className="ac-dial-subtitle">Choose wisely — temperature setting affects energy consumption!</p>
+        </div>
+        <div className="ac-dial-options">
+          {AC_TEMP_OPTIONS.map(opt => (
+            <button key={opt.temp} className={`ac-dial-option ac-dial-${opt.status}`}
+              style={{ borderColor: opt.borderColor, background: opt.bgColor }}
+              onClick={() => onSelect(opt)}>
+              <div className="ac-dial-opt-temp">{opt.label}</div>
+              <div className="ac-dial-opt-icon">{opt.icon}</div>
+              <div className="ac-dial-opt-impact" style={{ color: opt.color }}>{opt.energyImpact}</div>
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ═══ MICRO FEEDBACK TOAST ═══
+function MicroFeedbackToast({ feedback, visible }) {
+  if (!visible || !feedback) return null;
+  const typeClass = feedback.type === 'success' ? 'mf-success' : feedback.type === 'warning' ? 'mf-warning' : feedback.type === 'error' ? 'mf-error' : 'mf-info';
+  return (
+    <div className={`micro-feedback-toast ${typeClass}`}>
+      <span className="mf-text">{feedback.text}</span>
+    </div>
+  );
+}
+
+// ═══ DECISION POINT MODAL ═══
+function DecisionPointModal({ visible, resultData, onContinue }) {
+  if (!visible || !resultData) return null;
+  return (
+    <div className="task-popup-overlay" onClick={onContinue}>
+      <div className="task-popup-card decision-result-card" onClick={e => e.stopPropagation()}>
+        <div className="task-popup-sparkle">✨</div>
+        <h2 className="task-popup-title">{resultData.title}</h2>
+        <p className="task-popup-message">{resultData.message}</p>
+        <div className="task-popup-learning">
+          <span className="task-popup-learning-icon">🧠</span>
+          <span className="task-popup-learning-text">{resultData.learning}</span>
+        </div>
+        {resultData.scoreDisplay !== undefined && (
+          <div className="decision-score-badge">+{resultData.scoreDisplay} points</div>
+        )}
+        <button className="task-popup-btn" onClick={onContinue}>Continue →</button>
+      </div>
+    </div>
+  );
+}
+
+// ═══ TEMPERATURE STRATEGY UI (Task 5) ═══
+function TemperatureStrategyUI({ visible, cases, currentCase, onAction, result }) {
+  if (!visible) return null;
+  const c = cases?.[currentCase];
+  if (!c && !result) return null;
+
+  if (result) {
+    return (
+      <div className="task-popup-overlay">
+        <div className="task-popup-card" onClick={e => e.stopPropagation()}>
+          <div className="task-popup-sparkle">{result.correct ? '✅' : '⚠️'}</div>
+          <h2 className="task-popup-title">{result.correct ? 'Correct Decision!' : 'Not the Best Choice'}</h2>
+          <p className="task-popup-message">{result.explanation}</p>
+          <div className="task-popup-learning">
+            <span className="task-popup-learning-icon">🧠</span>
+            <span className="task-popup-learning-text">{result.correct ? 'Great thinking!' : 'Remember: compare temperatures first!'}</span>
+          </div>
+          <button className="task-popup-btn" onClick={result.onContinue}>Continue →</button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="temp-strategy-overlay">
+      <div className="temp-strategy-card">
+        <h3 className="temp-strategy-title">🌡️ {c.label}</h3>
+        <div className="temp-strategy-temps">
+          <div className="temp-strategy-badge indoor">🏠 Indoor: <strong>{c.indoorTemp}°C</strong></div>
+          <div className="temp-strategy-badge outdoor">🌡️ Outdoor: <strong>{c.outdoorTemp}°C</strong></div>
+        </div>
+        <p className="temp-strategy-question">What's the best action?</p>
+        <div className="temp-strategy-actions">
+          <button className="temp-strategy-btn window" onClick={() => onAction('openWindow')}>
+            🪟 Open Window
+          </button>
+          <button className="temp-strategy-btn ac" onClick={() => onAction('useAC')}>
+            ❄️ Use AC
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ═══ COMBINED CHALLENGE UI (Task 6) ═══
+function CombinedChallengeUI({ visible, decisions, answers, onAnswer, onSubmit, submitted, result }) {
+  if (!visible) return null;
+
+  if (submitted && result) {
+    return (
+      <div className="task-popup-overlay">
+        <div className="task-popup-card" onClick={e => e.stopPropagation()}>
+          <div className="task-popup-sparkle">{result.icon}</div>
+          <h2 className="task-popup-title">{result.label}</h2>
+          <p className="task-popup-message">{result.feedback}</p>
+          <div className="decision-score-badge">+{result.score} points</div>
+          <button className="task-popup-btn" onClick={onSubmit}>Continue →</button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="combined-challenge-overlay">
+      <div className="combined-challenge-card">
+        <h3 className="combined-challenge-title">🔥 Combined Decision Challenge</h3>
+        <p className="combined-challenge-desc">Daytime • Medium heat (30°C) • Medium room • Outdoor: 28°C</p>
+        <div className="combined-challenge-questions">
+          {decisions.map((d, i) => (
+            <div key={d.id} className="combined-q">
+              <div className="combined-q-text">{d.question}</div>
+              <div className="combined-q-options">
+                {d.options.map(opt => (
+                  <button key={opt} className={`combined-q-btn ${answers[d.id] === opt ? 'selected' : ''}`}
+                    onClick={() => onAnswer(d.id, opt)}>
+                    {opt === 'yes' ? '✅ Yes' : opt === 'no' ? '❌ No' : '🔄 Optional'}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+        <button className="combined-submit-btn" onClick={onSubmit}
+          disabled={Object.keys(answers).length < decisions.length}>
+          Submit Decisions →
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ═══ HABIT REINFORCEMENT UI (Task 7) ═══
+function HabitReinforcementUI({ visible, situation, onAction, result }) {
+  if (!visible) return null;
+
+  if (result) {
+    return (
+      <div className="task-popup-overlay">
+        <div className="task-popup-card" onClick={e => e.stopPropagation()}>
+          <div className="task-popup-sparkle">{result.correct ? '✅' : '⚠️'}</div>
+          <h2 className="task-popup-title">{result.correct ? 'Correct!' : 'Think Again!'}</h2>
+          <p className="task-popup-message">{result.explanation}</p>
+          <button className="task-popup-btn" onClick={result.onContinue}>Next →</button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!situation) return null;
+  return (
+    <div className="habit-overlay">
+      <div className="habit-card">
+        <div className="habit-header">
+          <span className="habit-icon">{situation.icon}</span>
+          <h3 className="habit-title">{situation.title}</h3>
+        </div>
+        <p className="habit-desc">{situation.description}</p>
+        <div className="habit-actions">
+          <button className="habit-btn correct" onClick={() => onAction(situation.correctAction)}>
+            {situation.correctLabel}
+          </button>
+          <button className="habit-btn wrong" onClick={() => onAction(situation.wrongAction)}>
+            {situation.wrongLabel}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ═══ DAY/NIGHT CYCLE UI (Task 4) ═══
+function DayNightCycleUI({ visible, phase, cycle, totalCycles, actions, onAction }) {
+  if (!visible) return null;
+  const isDay = phase === 'day';
+  const data = isDay ? actions?.dayActions : actions?.nightActions;
+  if (!data) return null;
+
+  return (
+    <div className="daynight-overlay">
+      <div className={`daynight-card ${isDay ? 'day' : 'night'}`}>
+        <div className="daynight-header">
+          <span className="daynight-icon">{isDay ? '🌞' : '🌙'}</span>
+          <h3 className="daynight-title">{data.title}</h3>
+          <span className="daynight-cycle">Cycle {cycle}/{totalCycles}</span>
+        </div>
+        <div className="daynight-instructions">
+          {data.instructions.map((inst, i) => (
+            <div key={i} className="daynight-inst">{inst}</div>
+          ))}
+        </div>
+        <button className="daynight-btn" onClick={onAction}>
+          {isDay ? 'Apply Day Actions →' : 'Apply Night Actions →'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ═══ PERFORMANCE SUMMARY ═══
+function PerformanceSummary({ visible, data, onContinue }) {
+  if (!visible || !data) return null;
+  return (
+    <div className="performance-overlay">
+      <div className="performance-card">
+        <div className="performance-header">
+          <span className="performance-icon">📊</span>
+          <h2 className="performance-title">Phase 1 Performance</h2>
+          <p className="performance-rating">{data.rating}</p>
+        </div>
+        <div className="performance-stars">
+          {[1, 2, 3].map(s => (
+            <span key={s} className={`performance-star ${s <= data.stars ? 'earned' : 'empty'}`}>⭐</span>
+          ))}
+        </div>
+        <div className="performance-metrics">
+          <div className="perf-metric">
+            <div className="perf-metric-label">🌿 Natural Usage</div>
+            <div className="perf-metric-bar"><div className="perf-metric-fill natural" style={{ width: `${data.naturalUsage}%` }} /></div>
+            <div className="perf-metric-value">{data.naturalUsage}%</div>
+          </div>
+          <div className="perf-metric">
+            <div className="perf-metric-label">⚡ Appliance Usage</div>
+            <div className="perf-metric-bar"><div className="perf-metric-fill appliance" style={{ width: `${data.applianceUsage}%` }} /></div>
+            <div className="perf-metric-value">{data.applianceUsage}%</div>
+          </div>
+          <div className="perf-metric">
+            <div className="perf-metric-label">🎯 Efficiency Score</div>
+            <div className="perf-metric-bar"><div className="perf-metric-fill efficiency" style={{ width: `${data.efficiencyScore}%` }} /></div>
+            <div className="perf-metric-value">{data.efficiencyScore}%</div>
+          </div>
+        </div>
+        <div className="performance-score">Score: {data.totalScore}/{data.maxScore}</div>
+        <div className="performance-learnings">
+          <h4>🧠 What You Learned:</h4>
+          <ul>{LEARNING_OUTCOMES.map((l, i) => <li key={i}>{l}</li>)}</ul>
+        </div>
+        <button className="performance-btn" onClick={onContinue}>Continue to Quiz →</button>
+      </div>
+    </div>
+  );
+}
+
 // ═══════════════════════════════════════════════════
 //  MAIN LEVEL 1 COMPONENT
 // ═══════════════════════════════════════════════════
@@ -942,7 +1353,7 @@ export default function Level1() {
   const [showTeacherIntro, setShowTeacherIntro] = useState(false);
   const [phase, setPhase] = useState('building'); // 'building' | 'appliances'
 
-  // Phase 1: Building Tasks state
+  // Phase 1: Building Tasks state — NEW 7-task decision system
   const [currentTask, setCurrentTask] = useState(1);
   const [completedTasks, setCompletedTasks] = useState(new Set());
   const [showTaskPopup, setShowTaskPopup] = useState(false);
@@ -950,6 +1361,40 @@ export default function Level1() {
   const [showECBC, setShowECBC] = useState(false);
   const [showCutscene, setShowCutscene] = useState(false);
   const [showTeacherEnd, setShowTeacherEnd] = useState(false);
+
+  // Phase 1: Multi-step task state
+  const [taskSubPhase, setTaskSubPhase] = useState('idle'); // 'idle' | 'prompt' | 'steps' | 'ac_dial' | 'decision' | 'special'
+  const [taskStep, setTaskStep] = useState(0);
+  const [indoorTemp, setIndoorTemp] = useState(29);
+  const [outdoorTemp, setOutdoorTemp] = useState(27);
+  const [windowOpen, setWindowOpen] = useState(false);
+  const [curtainOpenState, setCurtainOpenState] = useState(false);
+  const [fanOn, setFanOn] = useState(false);
+  const [acOn, setAcOn] = useState(false);
+  const [acTemp, setAcTemp] = useState(null);
+  const [taskScores, setTaskScores] = useState([]);
+  const [microFeedback, setMicroFeedback] = useState(null);
+  const [showMicroFeedback, setShowMicroFeedback] = useState(false);
+  const [showPerformance, setShowPerformance] = useState(false);
+  const [performanceData, setPerformanceData] = useState(null);
+
+  // Phase 1: Special task UIs
+  const [showACDial, setShowACDial] = useState(false);
+  const [showTempStrategy, setShowTempStrategy] = useState(false);
+  const [tempStrategyCase, setTempStrategyCase] = useState(0);
+  const [tempStrategyResult, setTempStrategyResult] = useState(null);
+  const [showCombinedChallenge, setShowCombinedChallenge] = useState(false);
+  const [combinedAnswers, setCombinedAnswers] = useState({});
+  const [combinedSubmitted, setCombinedSubmitted] = useState(false);
+  const [combinedResult, setCombinedResult] = useState(null);
+  const [showHabitUI, setShowHabitUI] = useState(false);
+  const [habitSitIdx, setHabitSitIdx] = useState(0);
+  const [habitResult, setHabitResult] = useState(null);
+  const [showDayNightCycle, setShowDayNightCycle] = useState(false);
+  const [dayNightPhase, setDayNightPhase] = useState('day');
+  const [dayNightCycle, setDayNightCycle] = useState(1);
+  const [showSystemPrompt, setShowSystemPrompt] = useState(false);
+  const [systemPromptMsg, setSystemPromptMsg] = useState('');
 
   // Phase 2: Appliance Discovery state
   const [showPhaseTransition, setShowPhaseTransition] = useState(false);
@@ -1016,14 +1461,16 @@ export default function Level1() {
     return () => { clearTimeout(t1); clearTimeout(t2); };
   }, [showCinematic]);
 
-  // Update energy from completed tasks
+  // Update energy from completed tasks (7 tasks)
   useEffect(() => {
     let e = 100;
-    if (completedTasks.has(1)) e -= 20;
-    if (completedTasks.has(2)) e -= 20;
-    if (completedTasks.has(3)) e -= 15;
-    if (completedTasks.has(4)) e -= 15;
-    if (completedTasks.has(5)) e -= 15;
+    if (completedTasks.has(1)) e -= 15;
+    if (completedTasks.has(2)) e -= 15;
+    if (completedTasks.has(3)) e -= 12;
+    if (completedTasks.has(4)) e -= 12;
+    if (completedTasks.has(5)) e -= 10;
+    if (completedTasks.has(6)) e -= 10;
+    if (completedTasks.has(7)) e -= 8;
     setEnergyLevel(Math.max(15, e));
   }, [completedTasks]);
 
@@ -1032,52 +1479,316 @@ export default function Level1() {
     if (timeOfDay === 'day' && (windowsInstalled > 0 || curtainsOpen)) setLightsOn(false);
     else if (timeOfDay === 'night') setLightsOn(true);
   }, [windowsInstalled, curtainsOpen, timeOfDay]);
+  // Micro feedback helper
+  const showMicroFeedbackBrief = useCallback((fb) => {
+    setMicroFeedback(fb);
+    setShowMicroFeedback(true);
+    setTimeout(() => setShowMicroFeedback(false), 3000);
+  }, []);
 
-  // ─── PHASE 1: BUILDING TASK INTERACTION ───
-  const handleBuildingInteract = useCallback((interactedId) => {
-    if (showTaskPopup || showECBC || showCutscene || showTeacherIntro || showTeacherEnd) return;
-    const activeTask = TASKS.find(t => t.id === currentTask);
-    if (!activeTask || interactedId !== activeTask.markerId) return;
-
-    playInteractSound(); playTaskCompleteSound();
-
-    switch (currentTask) {
-      case 1: setWindowsInstalled(w => w + 1); break;
-      case 2: setWindowsInstalled(w => w + 1); setShowAirflow(true); break;
-      case 3: setCurtainsOpen(true); break;
-      case 4: setTimeOfDay('night'); setTimeout(() => setTimeOfDay('day'), 2000); break;
-      case 5: break;
-    }
-
+  // Advance to next task
+  const advanceTask = useCallback((score) => {
+    setTaskScores(prev => [...prev, score]);
     setCompletedTasks(prev => { const next = new Set(prev); next.add(currentTask); return next; });
-    setCurrentPopup(activeTask.popup);
-    setShowTaskPopup(true);
-  }, [currentTask, showTaskPopup, showECBC, showCutscene, showTeacherIntro, showTeacherEnd]);
+    setTaskSubPhase('idle');
+    setTaskStep(0);
+    setWindowOpen(false);
+    setCurtainOpenState(false);
+    if (currentTask < 7) {
+      setCurrentTask(t => t + 1);
+      // Set scenario for next task
+      const nextData = PHASE1_TASKS.find(t => t.id === currentTask + 1);
+      if (nextData?.scenario) {
+        if (nextData.scenario.indoorTemp) setIndoorTemp(nextData.scenario.indoorTemp);
+        if (nextData.scenario.outdoorTemp) setOutdoorTemp(nextData.scenario.outdoorTemp);
+      }
+    } else {
+      // All 7 tasks done → show performance then cutscene
+      const allScores = [...taskScores, score];
+      const perfData = calculatePerformance(allScores);
+      setPerformanceData(perfData);
+      setShowPerformance(true);
+    }
+  }, [currentTask, taskScores]);
 
-  // ─── PHASE 2: APPLIANCE INTERACTION ───
-  const handleApplianceInteract = useCallback((applianceId) => {
-    if (showApplianceInfo || showPhase2Quiz || showLevelComplete || showWindowInfo) return;
-    // Handle window interactions — show educational popup
-    if (applianceId.startsWith('__window__')) {
-      const windowId = applianceId.replace('__window__', '');
-      const windowData = WINDOW_POSITIONS[windowId];
-      if (windowData) {
-        playInteractSound();
-        setActiveWindowId(windowId);
-        setShowWindowInfo(true);
+  // ─── PHASE 1: BUILDING TASK INTERACTION (MULTI-STEP) ───
+  const handleBuildingInteract = useCallback((interactedId) => {
+    if (showTaskPopup || showECBC || showCutscene || showTeacherIntro || showTeacherEnd ||
+        showSystemPrompt || showACDial || showTempStrategy || showCombinedChallenge ||
+        showHabitUI || showDayNightCycle || showPerformance) return;
+
+    const activeTask = TASKS.find(t => t.id === currentTask);
+    if (!activeTask) return;
+    // Accept both main task marker and step-specific markers
+    const stepKey = `phase1_task_${currentTask}_step_${taskStep}`;
+    const validId = interactedId === activeTask.markerId || interactedId === stepKey;
+    if (!validId) return;
+    const taskData = activeTask.data;
+
+    playInteractSound();
+
+    // Tasks 1-3: Multi-step action tasks (prompt → steps → decision)
+    if (currentTask <= 3) {
+      if (taskSubPhase === 'idle') {
+        // Show system prompt first
+        setSystemPromptMsg(taskData.systemPrompt);
+        setShowSystemPrompt(true);
+        setTaskSubPhase('prompt');
+        // Set scenario temps
+        if (taskData.scenario?.indoorTemp) setIndoorTemp(taskData.scenario.indoorTemp);
+        if (taskData.scenario?.outdoorTemp) setOutdoorTemp(taskData.scenario.outdoorTemp);
+        if (taskData.scenario?.windowStart === 'open') setWindowOpen(true);
+        if (taskData.scenario?.curtainStart === 'open') setCurtainOpenState(true);
+        return;
+      }
+      if (taskSubPhase === 'steps') {
+        const steps = taskData.steps || [];
+        if (taskStep < steps.length) {
+          const step = steps[taskStep];
+          // Execute action
+          if (step.action === 'openWindow') { setWindowOpen(true); setWindowsInstalled(w => w + 1); setShowAirflow(true); }
+          if (step.action === 'closeWindow') { setWindowOpen(false); }
+          if (step.action === 'openCurtain') { setCurtainOpenState(true); setCurtainsOpen(true); }
+          if (step.action === 'closeCurtain') { setCurtainOpenState(false); setCurtainsOpen(false); }
+          playTaskCompleteSound();
+          setTaskStep(s => s + 1);
+
+          // If all steps done → evaluate decision
+          if (taskStep + 1 >= steps.length) {
+            if (currentTask === 2 && taskData.acTempRequired) {
+              // AC task → show temp dial
+              setShowACDial(true);
+              setTaskSubPhase('ac_dial');
+            } else {
+              // Evaluate result
+              setTimeout(() => {
+                const newTemp = calculateIndoorTemp(
+                  taskData.scenario.indoorTemp || indoorTemp,
+                  taskData.scenario.outdoorTemp || outdoorTemp,
+                  windowOpen || steps.some(s => s.action === 'openWindow'),
+                  curtainOpenState || steps.some(s => s.action === 'openCurtain'),
+                  taskData.scenario.roomSize || 'medium'
+                );
+                setIndoorTemp(newTemp);
+                const comfortable = isComfortable(newTemp);
+
+                let resultData;
+                if (currentTask === 3) {
+                  // Daylight task
+                  resultData = taskData.sufficientResult || taskData.insufficientResult;
+                  resultData = { ...resultData, message: resultData.message, scoreDisplay: resultData.score || 15 };
+                } else if (comfortable) {
+                  resultData = { ...taskData.comfortableResult, message: taskData.comfortableResult.message.replace('{{temp}}', newTemp), scoreDisplay: taskData.comfortableResult.score };
+                } else {
+                  resultData = { ...taskData.warmResult, message: taskData.warmResult.message.replace('{{temp}}', newTemp), scoreDisplay: taskData.warmResult.score };
+                }
+                showMicroFeedbackBrief(resultData.feedback || MICRO_FEEDBACK.efficientDecision);
+                setCurrentPopup(resultData);
+                setShowTaskPopup(true);
+                setTaskSubPhase('decision');
+              }, 500);
+            }
+          }
+        }
+        return;
       }
       return;
     }
 
+    // Task 4: Day/Night Cycle
+    if (currentTask === 4) {
+      if (taskSubPhase === 'idle') {
+        setSystemPromptMsg(taskData.systemPrompt);
+        setShowSystemPrompt(true);
+        setTaskSubPhase('prompt');
+        return;
+      }
+      return;
+    }
+
+    // Task 5: Temperature Strategy
+    if (currentTask === 5) {
+      if (taskSubPhase === 'idle') {
+        setShowTempStrategy(true);
+        setTempStrategyCase(0);
+        setTempStrategyResult(null);
+        setTaskSubPhase('special');
+        return;
+      }
+      return;
+    }
+
+    // Task 6: Combined Challenge
+    if (currentTask === 6) {
+      if (taskSubPhase === 'idle') {
+        setShowCombinedChallenge(true);
+        setCombinedAnswers({});
+        setCombinedSubmitted(false);
+        setCombinedResult(null);
+        setTaskSubPhase('special');
+        return;
+      }
+      return;
+    }
+
+    // Task 7: Habit Reinforcement
+    if (currentTask === 7) {
+      if (taskSubPhase === 'idle') {
+        setShowHabitUI(true);
+        setHabitSitIdx(0);
+        setHabitResult(null);
+        setTaskSubPhase('special');
+        return;
+      }
+      return;
+    }
+  }, [currentTask, taskSubPhase, taskStep, showTaskPopup, showECBC, showCutscene, showTeacherIntro,
+      showTeacherEnd, showSystemPrompt, showACDial, showTempStrategy, showCombinedChallenge,
+      showHabitUI, showDayNightCycle, showPerformance, indoorTemp, outdoorTemp, windowOpen,
+      curtainOpenState, showMicroFeedbackBrief]);
+
+  // System prompt dismiss → start steps
+  const handleSystemPromptDismiss = useCallback(() => {
+    setShowSystemPrompt(false);
+    const taskData = PHASE1_TASKS.find(t => t.id === currentTask);
+    if (currentTask <= 3) {
+      setTaskSubPhase('steps');
+      setTaskStep(0);
+    } else if (currentTask === 4) {
+      // Start day/night cycle
+      setShowDayNightCycle(true);
+      setDayNightPhase('day');
+      setDayNightCycle(1);
+      setTimeOfDay('day');
+      setTaskSubPhase('special');
+    }
+  }, [currentTask]);
+
+  // AC dial selection
+  const handleACTempSelect = useCallback((opt) => {
+    setShowACDial(false);
+    setAcTemp(opt.temp);
+    setAcOn(true);
+    const taskData = PHASE1_TASKS.find(t => t.id === currentTask);
+    let resultData;
+    if (windowOpen) {
+      // Player didn't close windows — wasted!
+      resultData = { ...taskData.ignoreResult, scoreDisplay: 0 };
+      showMicroFeedbackBrief(MICRO_FEEDBACK.coolingWasted);
+    } else {
+      resultData = {
+        ...taskData.correctResult,
+        message: taskData.correctResult.message.replace('{{acTemp}}', opt.temp),
+        scoreDisplay: (taskData.correctResult.score || 15) + opt.score,
+      };
+      showMicroFeedbackBrief(opt.status === 'good' ? MICRO_FEEDBACK.efficientCooling : MICRO_FEEDBACK.correctSetting);
+    }
+    setCurrentPopup(resultData);
+    setShowTaskPopup(true);
+    setTaskSubPhase('decision');
+  }, [currentTask, windowOpen, showMicroFeedbackBrief]);
+
+  // Day/Night cycle action handler
+  const handleDayNightAction = useCallback(() => {
+    const taskData = PHASE1_TASKS.find(t => t.id === 4);
+    if (dayNightPhase === 'day') {
+      setWindowsInstalled(w => Math.max(w, 1)); setCurtainsOpen(true); setLightsOn(false);
+      showMicroFeedbackBrief(MICRO_FEEDBACK.sunlightUsed);
+      setTimeOfDay('night'); setDayNightPhase('night');
+    } else {
+      setCurtainsOpen(false); setLightsOn(true);
+      showMicroFeedbackBrief(MICRO_FEEDBACK.efficientDecision);
+      if (dayNightCycle >= 2) {
+        setShowDayNightCycle(false);
+        setTimeOfDay('day');
+        advanceTask(taskData.score || 15);
+      } else {
+        setDayNightCycle(c => c + 1); setTimeOfDay('day'); setDayNightPhase('day');
+      }
+    }
+  }, [dayNightPhase, dayNightCycle, advanceTask, showMicroFeedbackBrief]);
+
+  // Temperature strategy action
+  const handleTempStrategyAction = useCallback((action) => {
+    const taskData = PHASE1_TASKS.find(t => t.id === 5);
+    const c = taskData.cases[tempStrategyCase];
+    const correct = action === c.bestAction;
+    setTempStrategyResult({
+      correct,
+      explanation: c.explanation,
+      onContinue: () => {
+        setTempStrategyResult(null);
+        if (tempStrategyCase + 1 < taskData.cases.length) {
+          setTempStrategyCase(i => i + 1);
+        } else {
+          setShowTempStrategy(false);
+          advanceTask(correct ? taskData.correctScore : taskData.wrongScore);
+        }
+      },
+    });
+    showMicroFeedbackBrief(correct ? c.feedback : MICRO_FEEDBACK.energyWasted);
+  }, [tempStrategyCase, advanceTask, showMicroFeedbackBrief]);
+
+  // Combined challenge handlers
+  const handleCombinedAnswer = useCallback((id, val) => {
+    setCombinedAnswers(prev => ({ ...prev, [id]: val }));
+  }, []);
+
+  const handleCombinedSubmit = useCallback(() => {
+    if (combinedSubmitted && combinedResult) {
+      setShowCombinedChallenge(false);
+      advanceTask(combinedResult.score);
+      return;
+    }
+    const taskData = PHASE1_TASKS.find(t => t.id === 6);
+    let correctCount = 0;
+    taskData.decisions.forEach(d => {
+      if (combinedAnswers[d.id] === d.correct) correctCount++;
+    });
+    const ratio = correctCount / taskData.decisions.length;
+    let result;
+    if (ratio >= 1) result = { ...taskData.scoring.perfect, icon: '🌟' };
+    else if (ratio >= 0.75) result = { ...taskData.scoring.good, icon: '👍' };
+    else if (ratio >= 0.5) result = { ...taskData.scoring.average, icon: '⚠️' };
+    else result = { ...taskData.scoring.poor, icon: '❌' };
+    setCombinedResult(result);
+    setCombinedSubmitted(true);
+  }, [combinedAnswers, combinedSubmitted, combinedResult, advanceTask]);
+
+  // Habit reinforcement handler
+  const handleHabitAction = useCallback((action) => {
+    const taskData = PHASE1_TASKS.find(t => t.id === 7);
+    const sit = taskData.situations[habitSitIdx];
+    const correct = action === sit.correctAction;
+    setHabitResult({
+      correct,
+      explanation: sit.explanation,
+      onContinue: () => {
+        setHabitResult(null);
+        if (habitSitIdx + 1 < taskData.situations.length) {
+          setHabitSitIdx(i => i + 1);
+        } else {
+          setShowHabitUI(false);
+          advanceTask(correct ? taskData.correctScore : taskData.wrongScore);
+        }
+      },
+    });
+    showMicroFeedbackBrief(correct ? MICRO_FEEDBACK.efficientDecision : MICRO_FEEDBACK.energyWasted);
+  }, [habitSitIdx, advanceTask, showMicroFeedbackBrief]);
+
+  // ─── PHASE 2: APPLIANCE INTERACTION ───
+  const handleApplianceInteract = useCallback((applianceId) => {
+    if (showApplianceInfo || showPhase2Quiz || showLevelComplete || showWindowInfo) return;
+    if (applianceId.startsWith('__window__')) {
+      const windowId = applianceId.replace('__window__', '');
+      const windowData = WINDOW_POSITIONS[windowId];
+      if (windowData) { playInteractSound(); setActiveWindowId(windowId); setShowWindowInfo(true); }
+      return;
+    }
     playInteractSound();
     setActiveApplianceId(applianceId);
     setShowApplianceInfo(true);
-
-    setInteractedAppliances(prev => {
-      const next = new Set(prev);
-      next.add(applianceId);
-      return next;
-    });
+    setInteractedAppliances(prev => { const next = new Set(prev); next.add(applianceId); return next; });
   }, [showApplianceInfo, showPhase2Quiz, showLevelComplete, showWindowInfo]);
 
   // Main interaction dispatcher
@@ -1089,17 +1800,28 @@ export default function Level1() {
   // ─── FLOW HANDLERS ───
   const handleTaskPopupClose = useCallback(() => {
     setShowTaskPopup(false); setCurrentPopup(null);
-    if (currentTask < 5) setCurrentTask(t => t + 1);
-    else setShowECBC(true); // All building tasks done
-  }, [currentTask]);
+    // For decision tasks (1-3), advance via the score
+    if (currentTask <= 3) {
+      const score = currentPopup?.scoreDisplay || currentPopup?.score || 15;
+      advanceTask(score);
+    }
+  }, [currentTask, currentPopup, advanceTask]);
+
+  // Performance summary → cutscene
+  const handlePerformanceContinue = useCallback(() => {
+    setShowPerformance(false);
+    setShowCutscene(true);
+  }, []);
 
   const handleECBCClose = useCallback(() => { setShowECBC(false); setShowCutscene(true); }, []);
+
+  // Updated cutscene: After cutscene → teacher end → quiz
   const handleCutsceneComplete = useCallback(() => { setShowCutscene(false); setShowTeacherEnd(true); }, []);
 
   // After building tasks → show Phase 1 quiz
   const handleTeacherEndClose = useCallback(() => {
     setShowTeacherEnd(false);
-    setShowPhase1Quiz(true); // Phase 1 Quiz
+    setShowPhase1Quiz(true);
   }, []);
 
   // After Phase 1 quiz → show phase transition
@@ -1117,8 +1839,6 @@ export default function Level1() {
   const handleApplianceInfoClose = useCallback(() => {
     setShowApplianceInfo(false);
     setActiveApplianceId(null);
-
-    // Check if ALL appliances discovered (must be exactly all)
     if (interactedAppliances.size >= INTERACTABLE_IDS.length) {
       setTimeout(() => setShowPhase2Quiz(true), 500);
     }
@@ -1141,7 +1861,10 @@ export default function Level1() {
   const handleApplianceClick = useCallback((id) => handleApplianceInteract(id), [handleApplianceInteract]);
 
   // Determine if any overlay is active (for hiding 3D labels)
-  const anyOverlayActive = showCinematic || showTeacherIntro || showTeacherEnd || showTaskPopup || showPhase1Quiz || showPhase2Quiz || showLevelComplete || showCutscene || showECBC || showPhaseTransition || showApplianceInfo || showWindowInfo;
+  const anyOverlayActive = showCinematic || showTeacherIntro || showTeacherEnd || showTaskPopup ||
+    showPhase1Quiz || showPhase2Quiz || showLevelComplete || showCutscene || showECBC ||
+    showPhaseTransition || showApplianceInfo || showWindowInfo || showSystemPrompt ||
+    showACDial || showTempStrategy || showCombinedChallenge || showHabitUI || showDayNightCycle || showPerformance;
 
   // ─── LEVEL INTRO ───
   if (showLevelIntro) {
@@ -1161,6 +1884,7 @@ export default function Level1() {
   }
 
   const activeTask = TASKS.find(t => t.id === currentTask);
+  const activeTaskData = activeTask?.data;
 
   return (
     <div className="level1-container">
@@ -1176,6 +1900,7 @@ export default function Level1() {
               timeOfDay={timeOfDay} showAirflow={showAirflow} lightsOn={lightsOn} hideLabels={anyOverlayActive}
               phase={phase} activeApplianceId={activeApplianceId} interactedAppliances={interactedAppliances}
               onApplianceClick={handleApplianceClick} onWindowClick={() => {}}
+              taskSubPhase={taskSubPhase} taskStep={taskStep}
             />
             {showCinematic && <CinematicCamera active={showCinematic} onComplete={() => setShowCinematic(false)} />}
           </Suspense>
@@ -1189,16 +1914,20 @@ export default function Level1() {
           <div className="level1-hud">
             <button className="hud-back-btn" onClick={() => { stopSpeech(); navigate('/hub'); }}>← Back</button>
             <div className="hud-room-name">📍 {currentRoom}</div>
-            <div className="hud-instructions">{phase === 'building' ? '🏠 Building Design' : '🔍 Appliance Discovery'}</div>
+            <div className="hud-instructions">{phase === 'building' ? '🏠 Think Before Using Energy' : '🔍 Appliance Discovery'}</div>
           </div>
 
           {/* Phase 1 HUD */}
           {phase === 'building' && (
             <>
               <BuildingTaskHUD currentTask={currentTask} completedTasks={completedTasks} />
-              {activeTask && currentTask <= 5 && <TaskObjective task={activeTask} />}
+              {activeTask && currentTask <= 7 && <TaskObjective task={activeTask} />}
               <EnergyMeter energyLevel={energyLevel} />
-              <TemperatureDisplay visible={currentTask >= 5} indoor={28} outdoor={30} />
+              <TemperatureDisplay visible={true} indoor={indoorTemp} outdoor={outdoorTemp} />
+              {/* Task step indicator for multi-step tasks */}
+              {taskSubPhase === 'steps' && activeTaskData?.steps && (
+                <TaskStepIndicator steps={activeTaskData.steps} currentStep={taskStep} taskTitle={activeTask.title} />
+              )}
             </>
           )}
 
@@ -1225,15 +1954,68 @@ export default function Level1() {
         </>
       )}
 
+      {/* Micro Feedback Toast — always visible when triggered */}
+      <MicroFeedbackToast feedback={microFeedback} visible={showMicroFeedback} />
+
       {/* Cinematic Overlay */}
       <CinematicOverlay visible={showCinematic} textPhase={cinematicText} />
 
       {/* Phase 1 Overlays */}
-      <TeacherMessage visible={showTeacherIntro} title="Welcome to Building Design!" message="Before we use any appliances, let's improve this house using natural methods. A good house reduces energy needs! Walk to the glowing markers and press E to complete each task." onClose={() => setShowTeacherIntro(false)} />
+      <TeacherMessage visible={showTeacherIntro} title="Welcome to Energy-Smart Living!" message="Before we use any appliances, let's learn to THINK first! Every time you want to use an appliance, check the environment and try natural options. Walk to the glowing markers and press E." onClose={() => setShowTeacherIntro(false)} />
+
+      {/* System Prompt — Decision Interrupt */}
+      <SystemPrompt visible={showSystemPrompt} message={systemPromptMsg} onDismiss={handleSystemPromptDismiss} />
+
+      {/* Task result popup */}
       <TaskPopup visible={showTaskPopup} popup={currentPopup} onClose={handleTaskPopupClose} langCode={selectedLanguage} />
-      <ECBCPopup visible={showECBC} onClose={handleECBCClose} />
+
+      {/* AC Temperature Dial */}
+      <ACTemperatureDial visible={showACDial} onSelect={handleACTempSelect} />
+
+      {/* Day/Night Cycle UI */}
+      <DayNightCycleUI
+        visible={showDayNightCycle}
+        phase={dayNightPhase}
+        cycle={dayNightCycle}
+        totalCycles={2}
+        actions={activeTaskData}
+        onAction={handleDayNightAction}
+      />
+
+      {/* Temperature Strategy UI */}
+      <TemperatureStrategyUI
+        visible={showTempStrategy}
+        cases={activeTaskData?.cases}
+        currentCase={tempStrategyCase}
+        onAction={handleTempStrategyAction}
+        result={tempStrategyResult}
+      />
+
+      {/* Combined Challenge UI */}
+      <CombinedChallengeUI
+        visible={showCombinedChallenge}
+        decisions={activeTaskData?.decisions || []}
+        answers={combinedAnswers}
+        onAnswer={handleCombinedAnswer}
+        onSubmit={handleCombinedSubmit}
+        submitted={combinedSubmitted}
+        result={combinedResult}
+      />
+
+      {/* Habit Reinforcement UI */}
+      <HabitReinforcementUI
+        visible={showHabitUI}
+        situation={activeTaskData?.situations?.[habitSitIdx]}
+        onAction={handleHabitAction}
+        result={habitResult}
+      />
+
+      {/* Performance Summary */}
+      <PerformanceSummary visible={showPerformance} data={performanceData} onContinue={handlePerformanceContinue} />
+
+      {/* Before/After Cutscene */}
       <BeforeAfterCutscene visible={showCutscene} onComplete={handleCutsceneComplete} />
-      <TeacherMessage visible={showTeacherEnd} title="House Design Complete!" message="Now your house is bright, well-ventilated, and comfortable — all without extra electricity! Next, let's discover what appliances you have and learn to use them wisely." onClose={handleTeacherEndClose} />
+      <TeacherMessage visible={showTeacherEnd} title="Smart Thinking Complete!" message="You've learned to think before using energy! Good design and smart decisions reduce electricity use. Now let's discover what appliances you have and learn to use them wisely." onClose={handleTeacherEndClose} />
 
       {/* Phase Transition */}
       <PhaseTransition visible={showPhaseTransition} onStart={handlePhaseStart} />
