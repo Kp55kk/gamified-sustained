@@ -146,11 +146,13 @@ export const PHASE1_TASKS = [
       windowStart: 'open',
       curtainStart: 'open',
     },
-    systemPrompt: 'Are windows and curtains closed? AC requires a closed environment.',
-    interruptPrompt: 'Close windows and curtains before using AC',
+    systemPrompt: 'AC requires a fully closed environment!\nClose windows, curtains, and doors first.',
+    interruptPrompt: 'Close everything before using AC',
     steps: [
       { id: 'close_window', instruction: 'Walk to Bedroom window → Press E → Close', action: 'closeWindow', icon: '🪟', position: [5, 1.5, -7.0] },
       { id: 'close_curtain', instruction: 'Walk to Bedroom curtain → Press E → Close', action: 'closeCurtain', icon: '🏠', position: [5, 1.5, -7.0] },
+      { id: 'close_door1', instruction: 'Walk to Bedroom door 1 → Press E → Close', action: 'closeDoor1', icon: '🚪', position: [5, 1.0, 0.5] },
+      { id: 'close_door2', instruction: 'Walk to Bedroom door 2 → Press E → Close', action: 'closeDoor2', icon: '🚪', position: [0.5, 1.0, -4] },
     ],
     // After closing: show AC temp dial
     acTempRequired: true,
@@ -163,9 +165,9 @@ export const PHASE1_TASKS = [
     },
     correctResult: {
       title: '✅ Efficient Cooling Achieved!',
-      message: 'Windows and curtains closed. AC set to {{acTemp}}°C — cooling efficiently!',
+      message: 'Windows, curtains, and doors closed. AC set to {{acTemp}}°C — cooling efficiently!',
       feedback: MICRO_FEEDBACK.efficientCooling,
-      learning: 'AC requires a closed environment. Correct temperature setting saves up to 25% energy.',
+      learning: 'AC requires a fully closed environment. Correct temperature setting saves up to 25% energy.',
       score: 15, // + AC temp score
     },
     markerPosition: [7, 1.5, -4], // Bedroom near AC

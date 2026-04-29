@@ -119,7 +119,6 @@ const ICONS = {
   teacher: '\u{1F468}\u{200D}\u{1F3EB}', sparkles: '\u{2728}',
 };
 
-<<<<<<< HEAD
 // ─── Task Definitions (Phase 1) — 7-Task Decision System ───
 const TASKS = PHASE1_TASKS.map(t => ({
   id: t.id,
@@ -135,31 +134,6 @@ const TASKS = PHASE1_TASKS.map(t => ({
   },
   data: t, // full task data for multi-step logic
 }));
-=======
-// ─── Task Definitions (Phase 1) ───
-const TASKS = [
-  {
-    id: 1, title: 'Add Windows — Let the Light In', icon: '🪟', objective: 'Walk to the living room wall and press E to install a window', markerId: 'task_window_living',
-    popup: { title: '☀️ Daylight Enters!', message: 'Sunlight is now lighting the room — artificial lighting is not required during daytime!', learning: 'Windows reduce electricity usage during daytime' }
-  },
-  {
-    id: 2, title: 'Cross Ventilation — Fresh Air Flow', icon: '🌬️', objective: 'Place a window on the opposite wall for cross ventilation', markerId: 'task_ventilation',
-    popup: { title: '🌬️ Fresh Air Flow!', message: 'Air now flows naturally through opposite openings. The room feels cooler without any fan!', learning: 'Cross ventilation improves comfort naturally' }
-  },
-  {
-    id: 3, title: 'Open Curtains — Use Daylight', icon: '🌞', objective: 'Walk to the bedroom window and press E to open the curtains', markerId: 'task_curtains',
-    popup: { title: '☀️ Sunlight Fills the Room!', message: 'The curtains are open — natural light replaces artificial lighting. Lights turn OFF automatically!', learning: 'Curtains affect energy usage — use natural light whenever possible' }
-  },
-  {
-    id: 4, title: 'Day vs Night — Smart Behavior', icon: '🌗', objective: 'Walk to the living room center and press E to learn day vs night actions', markerId: 'task_daynight',
-    popup: { title: '🌞🌙 Day vs Night', message: 'During DAY: Open windows, open curtains, turn OFF lights.\nDuring NIGHT: Turn ON only required lights, close curtains, use fan if needed.', learning: 'Day and night need different energy actions' }
-  },
-  {
-    id: 5, title: 'Temperature Action — Ventilate First', icon: '🌡️', objective: 'Walk to the bedroom and press E to check temperature', markerId: 'task_temperature',
-    popup: { title: '🌡️ Natural Cooling Works!', message: 'Outside: 30°C | Inside: 28°C — Opening the window provides natural cooling. No need for AC!', learning: 'Use ventilation before appliances' }
-  },
-];
->>>>>>> 98469833a58091602777eb8d5d30cb4337b23193
 
 // ═══ 3D TASK MARKER ═══
 function TaskMarker3D({ position, label, isActive, isCompleted, taskNumber, hideLabel }) {
@@ -314,6 +288,71 @@ function WallCover({ position, size, visible }) {
   const ref = useRef();
   useFrame(() => { if (!ref.current) return; const t = visible ? 1 : 0; ref.current.material.opacity += (t - ref.current.material.opacity) * 0.05; ref.current.visible = ref.current.material.opacity > 0.01; });
   return (<mesh ref={ref} position={position}><boxGeometry args={size} /><meshStandardMaterial color="#f5f0e8" roughness={0.85} transparent opacity={1} /></mesh>);
+}
+
+// ═══ WINDOW FRAME — Appears when window is installed ═══
+function WindowFrame({ position, visible }) {
+  const groupRef = useRef();
+  useFrame(() => {
+    if (!groupRef.current) return;
+    const t = visible ? 1 : 0;
+    groupRef.current.scale.y += (t - groupRef.current.scale.y) * 0.06;
+    groupRef.current.visible = groupRef.current.scale.y > 0.01;
+  });
+  return (
+    <group ref={groupRef} position={position} scale={[1, 0, 1]}>
+      {/* Glass pane — transparent blue */}
+      <mesh position={[0, 0, 0]}>
+        <boxGeometry args={[1.3, 1.2, 0.04]} />
+        <meshStandardMaterial color="#b8d4e8" transparent opacity={0.25} roughness={0.1} metalness={0.3} />
+      </mesh>
+      {/* Horizontal divider */}
+      <mesh position={[0, 0, 0.02]}>
+        <boxGeometry args={[1.3, 0.04, 0.04]} />
+        <meshStandardMaterial color="#8B6914" roughness={0.6} />
+      </mesh>
+      {/* Vertical divider */}
+      <mesh position={[0, 0, 0.02]}>
+        <boxGeometry args={[0.04, 1.2, 0.04]} />
+        <meshStandardMaterial color="#8B6914" roughness={0.6} />
+      </mesh>
+      {/* Frame — top */}
+      <mesh position={[0, 0.62, 0.01]}><boxGeometry args={[1.4, 0.06, 0.06]} /><meshStandardMaterial color="#8B6914" roughness={0.5} /></mesh>
+      {/* Frame — bottom */}
+      <mesh position={[0, -0.62, 0.01]}><boxGeometry args={[1.4, 0.06, 0.06]} /><meshStandardMaterial color="#8B6914" roughness={0.5} /></mesh>
+      {/* Frame — left */}
+      <mesh position={[-0.67, 0, 0.01]}><boxGeometry args={[0.06, 1.3, 0.06]} /><meshStandardMaterial color="#8B6914" roughness={0.5} /></mesh>
+      {/* Frame — right */}
+      <mesh position={[0.67, 0, 0.01]}><boxGeometry args={[0.06, 1.3, 0.06]} /><meshStandardMaterial color="#8B6914" roughness={0.5} /></mesh>
+    </group>
+  );
+}
+
+// ═══ ANIMATED DOOR — Rotates closed on command ═══
+function AnimatedDoor({ position, rotation = [0, 0, 0], isClosed, hingeOffset = 0.5 }) {
+  const doorRef = useRef();
+  const targetAngle = isClosed ? Math.PI / 2 : 0; // 90° rotation = closed
+
+  useFrame(() => {
+    if (!doorRef.current) return;
+    doorRef.current.rotation.y += (targetAngle - doorRef.current.rotation.y) * 0.04;
+  });
+
+  return (
+    <group position={position} rotation={rotation}>
+      <group ref={doorRef} position={[-hingeOffset, 0, 0]}>
+        <mesh position={[hingeOffset, 1.1, 0]}>
+          <boxGeometry args={[1.0, 2.1, 0.08]} />
+          <meshStandardMaterial color="#7a5c3a" roughness={0.7} />
+        </mesh>
+        {/* Door handle */}
+        <mesh position={[hingeOffset + 0.35, 1.0, 0.06]}>
+          <boxGeometry args={[0.08, 0.14, 0.06]} />
+          <meshStandardMaterial color="#b8860b" metalness={0.8} roughness={0.2} />
+        </mesh>
+      </group>
+    </group>
+  );
 }
 
 // ═══ SUNLIGHT BEAM ═══
@@ -473,7 +512,7 @@ function SceneContent({
   cameraRef, onInteract, onRoomChange, onNearestChange,
   currentTask, completedTasks, windowsInstalled, curtainsOpen, timeOfDay,
   showAirflow, lightsOn, hideLabels, phase, activeApplianceId, interactedAppliances,
-  onApplianceClick, onWindowClick, taskSubPhase, taskStep
+  onApplianceClick, onWindowClick, taskSubPhase, taskStep, door1Closed, door2Closed
 }) {
   // During 'steps' phase, use the step-specific marker ID so the marker moves to the step location
   const taskIdList = React.useMemo(() => {
@@ -510,22 +549,22 @@ function SceneContent({
       <CameraRefForwarder cameraRef={cameraRef} />
       <House />
       <EnvironmentTrees />
-<<<<<<< HEAD
 
       {/* Window covers — disappear when windows are opened */}
       <WallCover position={[-5, 1.8, -7.95]} size={[1.5, 1.4, 0.2]} visible={windowsInstalled < 1} />
 
+      {/* Window frames — appear when windows are installed */}
+      <WindowFrame position={[-5, 1.8, -7.9]} visible={windowsInstalled >= 1} />
+
       <SunlightBeam position={[-5, 1, -6]} visible={windowsInstalled > 0 && timeOfDay === 'day'} />
       <SunlightBeam position={[-8, 1, -4]} visible={windowsInstalled > 1 && timeOfDay === 'day'} />
-=======
-      <WallCover position={[-5, 1.8, -7.95]} size={[1.5, 1.4, 0.2]} visible={!completedTasks.has(1)} />
-      <WallCover position={[-9.95, 1.8, -4.75]} size={[0.2, 1.4, 1.5]} visible={!completedTasks.has(2)} />
-      <SunlightBeam position={[-5, 1, -6]} visible={completedTasks.has(1) && timeOfDay === 'day'} />
-      <SunlightBeam position={[-8, 1, -4]} visible={completedTasks.has(2) && timeOfDay === 'day'} />
->>>>>>> 98469833a58091602777eb8d5d30cb4337b23193
       <SunlightBeam position={[5, 1, -6]} visible={curtainsOpen && timeOfDay === 'day'} />
       <RealisticCurtain isOpen={curtainsOpen} />
       <AirflowParticles visible={showAirflow} />
+
+      {/* Bedroom doors — animate closed during AC task */}
+      <AnimatedDoor position={[5, 0, 0.05]} isClosed={door1Closed} />
+      <AnimatedDoor position={[0.05, 0, -4]} rotation={[0, Math.PI / 2, 0]} isClosed={door2Closed} />
 
       {/* Phase 1: Task markers — position follows current step */}
       {phase === 'building' && TASKS.map(task => {
@@ -1462,6 +1501,8 @@ export default function Level1() {
   const [lightsOn, setLightsOn] = useState(true);
   const [energyLevel, setEnergyLevel] = useState(100);
   const [currentRoom, setCurrentRoom] = useState('Living Room');
+  const [door1Closed, setDoor1Closed] = useState(false);
+  const [door2Closed, setDoor2Closed] = useState(false);
 
   // Teacher intro after cinematic completes
   useEffect(() => {
@@ -1567,7 +1608,9 @@ export default function Level1() {
         if (taskData.scenario?.indoorTemp) setIndoorTemp(taskData.scenario.indoorTemp);
         if (taskData.scenario?.outdoorTemp) setOutdoorTemp(taskData.scenario.outdoorTemp);
         if (taskData.scenario?.windowStart === 'open') setWindowOpen(true);
-        if (taskData.scenario?.curtainStart === 'open') setCurtainOpenState(true);
+        if (taskData.scenario?.curtainStart === 'open') { setCurtainOpenState(true); setCurtainsOpen(true); }
+        // Reset doors for AC task
+        if (currentTask === 2) { setDoor1Closed(false); setDoor2Closed(false); }
         return;
       }
       if (taskSubPhase === 'steps') {
@@ -1579,6 +1622,8 @@ export default function Level1() {
           if (step.action === 'closeWindow') { setWindowOpen(false); }
           if (step.action === 'openCurtain') { setCurtainOpenState(true); setCurtainsOpen(true); }
           if (step.action === 'closeCurtain') { setCurtainOpenState(false); setCurtainsOpen(false); }
+          if (step.action === 'closeDoor1') { setDoor1Closed(true); }
+          if (step.action === 'closeDoor2') { setDoor2Closed(true); }
           playTaskCompleteSound();
           setTaskStep(s => s + 1);
 
@@ -1928,12 +1973,9 @@ export default function Level1() {
               currentTask={currentTask} completedTasks={completedTasks} windowsInstalled={windowsInstalled} curtainsOpen={curtainsOpen}
               timeOfDay={timeOfDay} showAirflow={showAirflow} lightsOn={lightsOn} hideLabels={anyOverlayActive}
               phase={phase} activeApplianceId={activeApplianceId} interactedAppliances={interactedAppliances}
-<<<<<<< HEAD
               onApplianceClick={handleApplianceClick} onWindowClick={() => {}}
               taskSubPhase={taskSubPhase} taskStep={taskStep}
-=======
-              onApplianceClick={handleApplianceClick} onWindowClick={() => { }}
->>>>>>> 98469833a58091602777eb8d5d30cb4337b23193
+              door1Closed={door1Closed} door2Closed={door2Closed}
             />
             {showCinematic && <CinematicCamera active={showCinematic} onComplete={() => setShowCinematic(false)} />}
           </Suspense>
