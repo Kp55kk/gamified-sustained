@@ -4,70 +4,68 @@
 // ═══════════════════════════════════════════════════════════
 
 // ─── Family Members ───
+// Arjun = Player (green shirt, controlled by player)
+// Family NPCs: Father, Mother, Brother
 export const FAMILY_MEMBERS = [
   {
-    id: 'dad',
-    name: 'Dad',
+    id: 'father',
+    name: 'Father',
+    gender: 'male',
     color: { skin: '#c68642', shirt: '#3b82f6', pants: '#334155', hair: '#1a1a2e', shoe: '#222' },
     scale: 1.05,
   },
   {
-    id: 'mom',
-    name: 'Mom',
-    color: { skin: '#d4956b', shirt: '#ec4899', pants: '#7c3aed', hair: '#1a1a2e', shoe: '#333' },
+    id: 'mother',
+    name: 'Mother',
+    gender: 'female',
+    color: {
+      skin: '#d4956b', shirt: '#ec4899', pants: '#7c3aed', hair: '#1a1a2e', shoe: '#333',
+      dupatta: '#f472b6', bindi: '#dc2626',
+    },
     scale: 0.95,
   },
   {
-    id: 'son',
-    name: 'Son',
+    id: 'brother',
+    name: 'Brother',
+    gender: 'male',
     color: { skin: '#c68642', shirt: '#f59e0b', pants: '#2563eb', hair: '#1a1a2e', shoe: '#333' },
-    scale: 0.75,
-  },
-  {
-    id: 'daughter',
-    name: 'Daughter',
-    color: { skin: '#d4956b', shirt: '#f472b6', pants: '#a855f7', hair: '#1a1a2e', shoe: '#222' },
     scale: 0.7,
   },
 ];
 
 // ─── Family positions per task ───
-// Room reference: Living Room (x<0, z<0), Bedroom (x>=0, z<0), Kitchen (x<4, z>=0), Bathroom (x>=4, z>=0)
 export const FAMILY_POSITIONS = {
   task1: [
-    { id: 'dad',      pos: [-7, 0, -6],   rot: 0,          activity: 'Watching TV' },
-    { id: 'mom',      pos: [-8, 0, -5.5],  rot: 0.3,        activity: 'Reading' },
-    { id: 'son',      pos: [-6, 0, -5],    rot: -0.2,       activity: 'Playing' },
-    { id: 'daughter', pos: [-7.5, 0, -4.5], rot: 0.5,       activity: 'Studying' },
+    { id: 'father',  pos: [-7, 0, -6],    rot: 0,     activity: 'Watching TV' },
+    { id: 'mother',  pos: [-8, 0, -5.5],   rot: 0.3,   activity: 'Reading' },
+    { id: 'brother', pos: [-6, 0, -5],     rot: -0.2,  activity: 'Playing' },
   ],
   task2: [
-    { id: 'son',      pos: [5, 0, -6],     rot: 0,          activity: 'Sitting alone' },
+    { id: 'father',  pos: [5, 0, -6],      rot: Math.PI, activity: 'Sleeping 💤' },
   ],
   task3: [
-    { id: 'daughter', pos: [-5, 0, 4],      rot: Math.PI,   activity: 'In Kitchen' },
+    { id: 'brother', pos: [-5, 0, 4],      rot: Math.PI, activity: 'In Kitchen' },
   ],
   task4: [
-    { id: 'dad',      pos: [-6, 0, -5],     rot: 0,         activity: 'In Living Room' },
-    { id: 'mom',      pos: [-7, 0, -4.5],   rot: 0.3,       activity: 'In Living Room' },
+    { id: 'father',  pos: [-6, 0, -5],     rot: 0,     activity: 'In Living Room' },
+    { id: 'mother',  pos: [-7, 0, -4.5],   rot: 0.3,   activity: 'In Living Room' },
   ],
   task5: [
-    { id: 'mom',      pos: [-5, 0, -5],     rot: 0,         activity: 'In Living Room' },
-    { id: 'daughter', pos: [-4, 0, -4.5],   rot: -0.2,      activity: 'Playing' },
+    { id: 'mother',  pos: [-5, 0, -5],     rot: 0,     activity: 'In Living Room' },
+    { id: 'brother', pos: [-4, 0, -4.5],   rot: -0.2,  activity: 'Playing' },
   ],
   task6: [
-    { id: 'dad',      pos: [6, 0, -6],      rot: 0,         activity: 'In Bedroom' },
-    { id: 'son',      pos: [7, 0, -5],      rot: -0.3,      activity: 'In Bedroom' },
+    // Everyone asleep — no family visible (midnight patrol)
   ],
   task7: [
-    { id: 'dad',      pos: [5, 0, -6],      rot: 0,         activity: 'In Bedroom' },
-    { id: 'mom',      pos: [6, 0, -5.5],    rot: 0.2,       activity: 'In Bedroom' },
-    { id: 'son',      pos: [7, 0, -5],      rot: -0.2,      activity: 'In Bedroom' },
+    { id: 'father',  pos: [5, 0, -6],      rot: 0,     activity: 'In Bedroom' },
+    { id: 'mother',  pos: [6, 0, -5.5],    rot: 0.2,   activity: 'In Bedroom' },
+    { id: 'brother', pos: [7, 0, -5],      rot: -0.2,  activity: 'In Bedroom' },
   ],
   task8: [
-    { id: 'dad',      pos: [-5, 0, -3.5],   rot: Math.PI / 2, activity: 'Near door' },
-    { id: 'mom',      pos: [-4, 0, -3.5],   rot: Math.PI / 2, activity: 'Near door' },
-    { id: 'son',      pos: [-3.5, 0, -3],   rot: Math.PI / 2, activity: 'Near door' },
-    { id: 'daughter', pos: [-4.5, 0, -3],   rot: Math.PI / 2, activity: 'Near door' },
+    { id: 'father',  pos: [-5, 0, -3.5],   rot: Math.PI / 2, activity: 'Near door' },
+    { id: 'mother',  pos: [-4, 0, -3.5],   rot: Math.PI / 2, activity: 'Near door' },
+    { id: 'brother', pos: [-3.5, 0, -3],   rot: Math.PI / 2, activity: 'Near door' },
   ],
 };
 
@@ -88,7 +86,7 @@ export const PHASE1_TASKS = [
     color: '#22c55e',
     icon: '🏠',
     type: 'turn_off',
-    scenario: '👨‍👩‍👧‍👦 Family is gathered in the Living Room!',
+    scenario: '👨‍👩‍👦 Family is gathered in the Living Room!',
     instruction: 'Turn OFF all appliances in the empty rooms',
     hint: 'Walk to Bedroom, Kitchen, Bathroom — turn off what no one is using',
     learning: "Don't waste energy — if no one is in the room, turn everything OFF!",
@@ -113,34 +111,41 @@ export const PHASE1_TASKS = [
   },
 
   // ──────────────────────────────────────────
-  //  TASK 2 — PARTIAL USAGE AWARENESS 🔵
+  //  TASK 2 — SMART COOLING AWARENESS 🔵
+  //  Father sleeping in bedroom — AC unnecessary
   // ──────────────────────────────────────────
   {
-    id: 'task2_partial_usage',
+    id: 'task2_smart_cooling',
     number: 2,
-    title: 'Partial Usage Awareness',
-    subtitle: 'Even in same room, use only what is needed',
+    title: 'Smart Cooling',
+    subtitle: 'Is AC really needed?',
     colorDot: '🔵',
     color: '#3b82f6',
-    icon: '💡',
+    icon: '❄️',
     type: 'turn_off_partial',
-    scenario: '🧑 One person sitting in the Bedroom',
-    instruction: 'Fan ON, Light ON, TV ON — but only 1 person. Turn OFF what\'s unnecessary!',
-    hint: 'Not everything should be OFF — think about what the person actually needs',
-    learning: 'Even in the same room, use only what is needed!',
-    initialOn: ['table_fan', 'led_bulb', 'tv_smart', 'ac_1_5ton'],
-    turnOffIds: ['tv_smart', 'ac_1_5ton'],       // TV not being watched, AC when fan is enough
-    keepOnIds: ['table_fan', 'led_bulb'],          // Fan + Light needed
-    protectedIds: ['table_fan', 'led_bulb'],
-    protectedMessage: '💡 This person needs this right now!',
+    scenario: '💤 Father is sleeping in the Bedroom. The AC is running at full blast!',
+    instruction: 'The curtains are open and table fan is running — the room is already cool enough. Turn OFF what\'s wasting energy!',
+    hint: 'Think: Is the AC necessary when natural breeze + fan is enough?',
+    learning: 'Don\'t use AC when fan + natural ventilation is sufficient!',
+    initialOn: ['ac_1_5ton', 'table_fan', 'led_bulb'],
+    turnOffIds: ['ac_1_5ton', 'led_bulb'],        // AC wasteful (fan+breeze enough), light off (sleeping!)
+    keepOnIds: ['table_fan'],                       // Fan is sufficient cooling
+    protectedIds: ['table_fan'],
+    protectedMessage: '🌀 The table fan provides enough cooling for Father while sleeping!',
     requiredOff: 2,
     familyKey: 'task2',
-    trickMessage: '⚡ Not all appliances should be OFF — think about what is truly needed!',
+    trickMessage: '⚡ Not everything should be OFF — Father still needs some cooling! But does he need the AC AND a light while sleeping?',
+    offPopups: {
+      high:   '❄️ AC uses 1500W! Fan at 50W is 30x more efficient! 🌱',
+      medium: 'Good catch! 👍',
+      low:    '💡 Light OFF while sleeping — smart! 👍',
+    },
     finalLearning: {
       title: '💡 Key Learning',
       messages: [
-        'Even in the same room, not every appliance needs to be ON',
-        'Use only what is necessary — a fan + light may be enough',
+        'AC (1500W) vs Table Fan (50W) — fan is 30x more energy efficient!',
+        'When curtains are open and breeze is flowing, a fan is enough',
+        'Turn off lights when someone is sleeping — they don\'t need it!',
       ],
     },
   },
@@ -161,11 +166,10 @@ export const PHASE1_TASKS = [
     instruction: 'Go back and check — did you leave anything ON?',
     hint: 'Walk back to the Kitchen and turn off what was left running',
     learning: 'Build the habit of checking before leaving any room!',
-    // Player starts in Living Room, Kitchen has items left ON
     initialOn: ['led_tube', 'mixer_grinder'],
     turnOffIds: ['led_tube', 'mixer_grinder'],
-    triggerRoom: 'Living Room',   // Popup triggers when player reaches Living Room
-    sourceRoom: 'Kitchen',       // Must go back to Kitchen
+    triggerRoom: 'Living Room',
+    sourceRoom: 'Kitchen',
     popupMessage: '🤔 Did you forget something?',
     popupSubtext: 'Check the Kitchen — you might have left appliances ON!',
     requiredOff: 2,
@@ -195,7 +199,6 @@ export const PHASE1_TASKS = [
     instruction: 'Find devices in standby mode and unplug them',
     hint: 'TV is OFF but plug is ON. Charger is plugged in without phone.',
     learning: 'Standby power (phantom load) wastes energy silently!',
-    // These appliances appear OFF visually but are still drawing standby power
     standbyDevices: [
       { id: 'tv_smart', name: 'TV (Standby)', watts: 3, hint: 'TV is OFF but the plug indicator is glowing — unplug it!' },
       { id: 'set_top_box', name: 'Set-Top Box (Standby)', watts: 12, hint: 'STB light is ON even though TV is off — turn off at plug!' },
@@ -215,24 +218,26 @@ export const PHASE1_TASKS = [
   },
 
   // ──────────────────────────────────────────
-  //  TASK 5 — DAYTIME HABIT 🔴
+  //  TASK 5 — DAYTIME HABIT ☀️
+  //  Open windows in Living Room + turn off lights
   // ──────────────────────────────────────────
   {
     id: 'task5_daytime',
     number: 5,
-    title: 'Daytime Habit',
-    subtitle: 'Use natural light',
+    title: 'Sunlight Savings',
+    subtitle: 'Use natural light from windows',
     colorDot: '🔴',
     color: '#ef4444',
     icon: '☀️',
     type: 'daytime',
-    scenario: '☀️ It\'s a bright sunny day!',
-    instruction: 'Open the curtains and turn OFF the lights',
-    hint: 'Natural sunlight is FREE — use it instead of electric lights!',
-    learning: 'During daytime, use natural light to save electricity!',
+    scenario: '☀️ It\'s a bright sunny afternoon! The Living Room lights are ON unnecessarily.',
+    instruction: 'Open the windows in the Living Room and turn OFF the electric lights',
+    hint: 'Natural sunlight is FREE — open the windows and let it flood in!',
+    learning: 'During daytime, open windows for natural light instead of using electricity!',
     initialOn: ['led_bulb', 'led_tube'],
     turnOffIds: ['led_bulb', 'led_tube'],
-    curtainsClosed: true,         // Visual: curtains start closed
+    curtainsClosed: true,
+    targetRoom: 'Living Room',
     requiredActions: ['open_curtains', 'turn_off_lights'],
     requiredOff: 2,
     familyKey: 'task5',
@@ -240,40 +245,54 @@ export const PHASE1_TASKS = [
       title: '💡 Key Learning',
       messages: [
         'Natural sunlight is the best FREE light source',
-        'Open curtains during the day instead of using electric lights',
+        'Open windows during daytime — save electricity AND get fresh air!',
+        'Two lights OFF = 27W saved continuously. Over a month, that adds up!',
       ],
     },
   },
 
   // ──────────────────────────────────────────
-  //  TASK 6 — NIGHTTIME DISCIPLINE 🟤
+  //  TASK 6 — MIDNIGHT ENERGY PATROL 🔦
+  //  Creative nighttime detective mission
   // ──────────────────────────────────────────
   {
-    id: 'task6_nighttime',
+    id: 'task6_midnight_patrol',
     number: 6,
-    title: 'Nighttime Discipline',
-    subtitle: 'Controlled usage',
+    title: 'Midnight Energy Patrol',
+    subtitle: 'Be the energy detective',
     colorDot: '🟤',
     color: '#a16207',
-    icon: '🌙',
-    type: 'turn_off_partial',
-    scenario: '🌙 It\'s nighttime — too many lights are ON!',
-    instruction: 'Keep only the lights that are actually needed',
-    hint: 'Not every room needs a light ON at night',
-    learning: 'At night, use controlled lighting — only in rooms you\'re using!',
-    initialOn: ['led_bulb', 'led_tube', 'ceiling_fan', 'table_fan'],
-    turnOffIds: ['led_tube', 'table_fan'],            // Kitchen light + bedroom fan (family sleeping in bedroom with AC)
-    keepOnIds: ['led_bulb', 'ceiling_fan'],            // Living room light (someone reading) + fan
-    protectedIds: ['led_bulb', 'ceiling_fan'],
-    protectedMessage: '🌙 This light is needed — someone is using this room!',
-    requiredOff: 2,
+    icon: '🔦',
+    type: 'turn_off',
+    scenario: '🌙 It\'s midnight. Everyone is asleep… but you hear humming sounds from other rooms!',
+    instruction: 'Patrol the house like an Energy Detective — find and turn off forgotten appliances!',
+    hint: 'Check every room! Some appliances are still running that nobody needs at midnight. But careful — some things MUST stay on!',
+    learning: 'Even at midnight, energy waste continues silently. Be the family\'s Energy Guardian!',
+    initialOn: ['geyser', 'led_tube', 'tv_smart', 'ceiling_fan', 'fridge'],
+    turnOffIds: ['geyser', 'led_tube', 'tv_smart'],
+    protectedIds: ['ceiling_fan', 'fridge'],
+    protectedMessage: '🌙 This needs to stay ON! (Fan for sleeping family / Fridge for food)',
+    mustStayOnIds: ['ceiling_fan', 'fridge'],
+    mustStayOnReasons: {
+      ceiling_fan: '🌀 The family is sleeping with the fan on — don\'t wake them!',
+      fridge: '🧊 Fridge must stay ON 24/7 — food will spoil!',
+    },
+    requiredOff: 3,
     familyKey: 'task6',
     isNightScene: true,
+    offPopups: {
+      high:   '🔦 Found it! Geyser was wasting 2000W all night! 🌱',
+      medium: '🔦 Caught it! No one watches TV at midnight! 👍',
+      low:    '🔦 Kitchen light OFF — no one is cooking at midnight! 👍',
+    },
+    trickMessage: '🔦 You\'re the Midnight Energy Detective! Not everything should be OFF — the fridge and bedroom fan must stay ON!',
     finalLearning: {
-      title: '💡 Key Learning',
+      title: '💡 Key Learning — Energy Never Sleeps!',
       messages: [
-        'At night, only keep lights ON in rooms you\'re actively using',
-        'Controlled usage saves significant energy over time',
+        'Forgotten geyser at midnight = 2000W wasted for hours!',
+        'Always do a quick patrol before bed — it takes 30 seconds',
+        'Fridge is the ONLY appliance that should run 24/7',
+        'This nightly habit can save ₹500+ per month!',
       ],
     },
   },
@@ -295,9 +314,8 @@ export const PHASE1_TASKS = [
     hint: 'Is the AC really needed if the fan is enough? Is anyone watching TV?',
     learning: 'Prioritize — think about what is truly necessary!',
     initialOn: ['ac_1_5ton', 'ceiling_fan', 'tv_smart'],
-    // Player must make smart choices — turn off AC (use fan instead), keep TV if watching
-    turnOffIds: ['ac_1_5ton'],                // AC is unnecessary when fan works
-    keepOnIds: ['ceiling_fan', 'tv_smart'],   // Fan + TV stay (family watching)
+    turnOffIds: ['ac_1_5ton'],
+    keepOnIds: ['ceiling_fan', 'tv_smart'],
     protectedIds: ['ceiling_fan', 'tv_smart'],
     protectedMessage: '📺 The family is watching TV and the fan provides enough cooling!',
     requiredOff: 1,
@@ -325,7 +343,7 @@ export const PHASE1_TASKS = [
     color: '#dc2626',
     icon: '🏠',
     type: 'last_check',
-    scenario: '👨‍👩‍👧‍👦 Family is leaving for a function!',
+    scenario: '👨‍👩‍👦 Family is leaving for a function!',
     instruction: 'Check every room — turn OFF unnecessary appliances before leaving!',
     hint: 'Walk through ALL rooms. But remember: some things should STAY on!',
     learning: 'Before leaving home, always do a final energy check!',
@@ -341,7 +359,6 @@ export const PHASE1_TASKS = [
       'ceiling_fan', 'tv_smart', 'led_bulb', 'ac_1_5ton', 'table_fan',
       'led_tube', 'geyser', 'phone_charger',
     ],
-    // TRICKY: These should NOT be turned off!
     mustStayOnIds: ['fridge'],
     mustStayOnReasons: {
       fridge: '🧊 Fridge should STAY ON — food will spoil!',

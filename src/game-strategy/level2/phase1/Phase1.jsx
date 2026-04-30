@@ -65,6 +65,7 @@ export default function Phase1({ onComplete }) {
   const [curtainsOpened, setCurtainsOpened] = useState(false);
   const [showPhaseComplete, setShowPhaseComplete] = useState(false);
   const floatIdRef = useRef(0);
+  const forgottenDismissedRef = useRef(false);
 
   const currentTask = PHASE1_TASKS[currentTaskIdx];
   const familyPositions = currentTask ? FAMILY_POSITIONS[currentTask.familyKey] || [] : [];
@@ -81,6 +82,7 @@ export default function Phase1({ onComplete }) {
     setTurnedOff([]);
     setFeedback(null);
     setForgottenPopup(false);
+    forgottenDismissedRef.current = false;
     setStandbyFound([]);
     setCurtainsOpened(false);
     setTaskState('intro');
@@ -97,10 +99,16 @@ export default function Phase1({ onComplete }) {
   // ─── Task 3: Forgotten popup trigger ───
   useEffect(() => {
     if (!currentTask || currentTask.type !== 'forgotten' || taskState !== 'playing') return;
-    if (currentTask.triggerRoom && currentRoom === currentTask.triggerRoom && !forgottenPopup && turnedOff.length === 0) {
+    if (currentTask.triggerRoom && currentRoom === currentTask.triggerRoom && !forgottenPopup && !forgottenDismissedRef.current && turnedOff.length === 0) {
       setForgottenPopup(true);
     }
   }, [currentRoom, currentTask, taskState, forgottenPopup, turnedOff]);
+
+  // ─── Dismiss forgotten popup (prevents re-triggering) ───
+  const dismissForgotten = useCallback(() => {
+    setForgottenPopup(false);
+    forgottenDismissedRef.current = true;
+  }, []);
 
   // ─── Check task completion ───
   const checkCompletion = useCallback((newTurnedOff) => {
@@ -256,7 +264,7 @@ export default function Phase1({ onComplete }) {
       <div className="p1-container">
         <div className="p1-cutscene-overlay">
           <div className="p1-cutscene-card">
-            <div className="p1-cutscene-family">👨‍👩‍👧‍👦</div>
+            <div className="p1-cutscene-family">👨‍👩‍👦</div>
             <div className="p1-cutscene-bubble">
               <p className="p1-cutscene-quote">💬 {currentTask.cutscene.message}</p>
             </div>
@@ -373,12 +381,12 @@ export default function Phase1({ onComplete }) {
 
       {/* FORGOTTEN POPUP (Task 3) */}
       {forgottenPopup && currentTask?.type === 'forgotten' && (
-        <div className="p1-forgotten-overlay" onClick={() => setForgottenPopup(false)}>
+        <div className="p1-forgotten-overlay" onClick={dismissForgotten}>
           <div className="p1-forgotten-card" onClick={e => e.stopPropagation()}>
             <div className="p1-forgotten-icon">🤔</div>
             <h3 className="p1-forgotten-title">{currentTask.popupMessage}</h3>
             <p className="p1-forgotten-text">{currentTask.popupSubtext}</p>
-            <button className="p1-forgotten-btn" onClick={() => setForgottenPopup(false)}>Go Back! →</button>
+            <button className="p1-forgotten-btn" onClick={dismissForgotten}>Go Back! →</button>
           </div>
         </div>
       )}
