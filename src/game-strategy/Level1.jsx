@@ -198,7 +198,7 @@ function CurtainMesh({ isOpen }) {
 }
 
 // ═══ REALISTIC CURTAIN ═══
-function RealisticCurtain({ isOpen }) {
+function RealisticCurtain({ isOpen, centerX = 5 }) {
   const leftPanels = useRef([]); const rightPanels = useRef([]);
   const FOLDS = 5; // number of fold segments per side
   const CURTAIN_WIDTH = 0.7; // total width of each curtain panel
@@ -210,10 +210,6 @@ function RealisticCurtain({ isOpen }) {
       const leftPanel = leftPanels.current[i];
       const rightPanel = rightPanels.current[i];
       if (!leftPanel || !rightPanel) continue;
-
-      // Calculate target positions
-      const centerX = 5; // window center X
-      const spreadClosed = (i - FOLDS / 2 + 0.5) * foldWidth;
 
       if (isOpen) {
         // Bunch up to the sides
@@ -240,20 +236,20 @@ function RealisticCurtain({ isOpen }) {
   return (
     <group>
       {/* Curtain rod */}
-      <mesh position={[5, 2.58, -7.84]} rotation={[0, 0, Math.PI / 2]}>
+      <mesh position={[centerX, 2.58, -7.84]} rotation={[0, 0, Math.PI / 2]}>
         <cylinderGeometry args={[0.025, 0.025, 1.9, 8]} />
         <meshStandardMaterial color="#b8860b" metalness={0.8} roughness={0.2} />
       </mesh>
       {/* Rod finials */}
-      <mesh position={[4.05, 2.58, -7.84]}><sphereGeometry args={[0.04, 8, 8]} /><meshStandardMaterial color="#b8860b" metalness={0.8} roughness={0.2} /></mesh>
-      <mesh position={[5.95, 2.58, -7.84]}><sphereGeometry args={[0.04, 8, 8]} /><meshStandardMaterial color="#b8860b" metalness={0.8} roughness={0.2} /></mesh>
+      <mesh position={[centerX - 0.95, 2.58, -7.84]}><sphereGeometry args={[0.04, 8, 8]} /><meshStandardMaterial color="#b8860b" metalness={0.8} roughness={0.2} /></mesh>
+      <mesh position={[centerX + 0.95, 2.58, -7.84]}><sphereGeometry args={[0.04, 8, 8]} /><meshStandardMaterial color="#b8860b" metalness={0.8} roughness={0.2} /></mesh>
 
       {/* Left curtain folds */}
       {Array.from({ length: FOLDS }).map((_, i) => (
         <mesh
           key={`l${i}`}
           ref={el => { leftPanels.current[i] = el; }}
-          position={[5 - CURTAIN_WIDTH / 2 + i * foldWidth, 1.82, -7.84]}
+          position={[centerX - CURTAIN_WIDTH / 2 + i * foldWidth, 1.82, -7.84]}
         >
           <boxGeometry args={[foldWidth - 0.01, 1.5, 0.03]} />
           <meshStandardMaterial
@@ -269,7 +265,7 @@ function RealisticCurtain({ isOpen }) {
         <mesh
           key={`r${i}`}
           ref={el => { rightPanels.current[i] = el; }}
-          position={[5 + i * foldWidth, 1.82, -7.84]}
+          position={[centerX + i * foldWidth, 1.82, -7.84]}
         >
           <boxGeometry args={[foldWidth - 0.01, 1.5, 0.03]} />
           <meshStandardMaterial
@@ -331,7 +327,7 @@ function WindowFrame({ position, visible }) {
 // ═══ ANIMATED DOOR — Rotates closed on command ═══
 function AnimatedDoor({ position, rotation = [0, 0, 0], isClosed, hingeOffset = 0.5 }) {
   const doorRef = useRef();
-  const targetAngle = isClosed ? Math.PI / 2 : 0; // 90° rotation = closed
+  const targetAngle = isClosed ? 0 : Math.PI / 2; // 0° = flush with wall (closed), 90° = swung open
 
   useFrame(() => {
     if (!doorRef.current) return;
@@ -507,10 +503,30 @@ const TRACKER_ROOMS = [
   { name: 'Bathroom', icon: '🚿', ids: ['geyser', 'washing_machine'] },
 ];
 
+// ═══ STANDALONE AC MODEL (for Phase 1 visibility) ═══
+function StandaloneAC() {
+  return (
+    <group position={[9.0, 2.3, -4]} rotation={[0, -Math.PI / 2, 0]}>
+      <mesh castShadow>
+        <boxGeometry args={[1.3, 0.32, 0.22]} />
+        <meshStandardMaterial color="#f0f0f0" roughness={0.3} metalness={0.15} />
+      </mesh>
+      <mesh position={[0, -0.08, 0.12]}>
+        <boxGeometry args={[1.1, 0.1, 0.01]} />
+        <meshStandardMaterial color="#d4d4d4" roughness={0.4} />
+      </mesh>
+      <mesh position={[0.5, 0.1, 0.12]}>
+        <sphereGeometry args={[0.02]} />
+        <meshStandardMaterial color="#00e676" emissive="#00e676" emissiveIntensity={2.5} />
+      </mesh>
+    </group>
+  );
+}
+
 // ═══ 3D SCENE CONTENT ═══
 function SceneContent({
   cameraRef, onInteract, onRoomChange, onNearestChange,
-  currentTask, completedTasks, windowsInstalled, curtainsOpen, timeOfDay,
+  currentTask, completedTasks, windowsInstalled, curtainsOpen, curtains2Open, timeOfDay,
   showAirflow, lightsOn, hideLabels, phase, activeApplianceId, interactedAppliances,
   onApplianceClick, onWindowClick, taskSubPhase, taskStep, door1Closed, door2Closed
 }) {
@@ -559,12 +575,23 @@ function SceneContent({
       <SunlightBeam position={[-5, 1, -6]} visible={windowsInstalled > 0 && timeOfDay === 'day'} />
       <SunlightBeam position={[-8, 1, -4]} visible={windowsInstalled > 1 && timeOfDay === 'day'} />
       <SunlightBeam position={[5, 1, -6]} visible={curtainsOpen && timeOfDay === 'day'} />
-      <RealisticCurtain isOpen={curtainsOpen} />
+      <SunlightBeam position={[2.5, 1, -6]} visible={curtains2Open && timeOfDay === 'day'} />
+      {/* Bedroom window 1 curtain (x=5) */}
+      <RealisticCurtain isOpen={curtainsOpen} centerX={5} />
+      {/* Bedroom window 2 curtain (x=2.5) */}
+      <RealisticCurtain isOpen={curtains2Open} centerX={2.5} />
       <AirflowParticles visible={showAirflow} />
 
-      {/* Bedroom doors — animate closed during AC task */}
-      <AnimatedDoor position={[5, 0, 0.05]} isClosed={door1Closed} />
-      <AnimatedDoor position={[0.05, 0, -4]} rotation={[0, Math.PI / 2, 0]} isClosed={door2Closed} />
+      {/* Bedroom doors — only visible during AC task (task 2), removed after */}
+      {currentTask === 2 && !completedTasks.has(2) && (
+        <>
+          <AnimatedDoor position={[5, 0, 0.05]} isClosed={door1Closed} />
+          <AnimatedDoor position={[0.05, 0, -4]} rotation={[0, Math.PI / 2, 0]} isClosed={door2Closed} />
+        </>
+      )}
+
+      {/* AC model — always visible so it shows during Phase 1 AC task */}
+      {phase === 'building' && <StandaloneAC />}
 
       {/* Phase 1: Task markers — position follows current step */}
       {phase === 'building' && TASKS.map(task => {
@@ -1248,9 +1275,11 @@ function TemperatureStrategyUI({ visible, cases, currentCase, onAction, result }
   );
 }
 
-// ═══ COMBINED CHALLENGE UI (Task 6) ═══
+// ═══ STANDBY POWER HUNT UI (Task 6) ═══
 function CombinedChallengeUI({ visible, decisions, answers, onAnswer, onSubmit, submitted, result }) {
   if (!visible) return null;
+  // `decisions` here is actually taskData.appliances from the new data
+  const appliances = decisions;
 
   if (submitted && result) {
     return (
@@ -1259,7 +1288,22 @@ function CombinedChallengeUI({ visible, decisions, answers, onAnswer, onSubmit, 
           <div className="task-popup-sparkle">{result.icon}</div>
           <h2 className="task-popup-title">{result.label}</h2>
           <p className="task-popup-message">{result.feedback}</p>
-          <div className="decision-score-badge">+{result.score} points</div>
+          {/* Show facts about each appliance */}
+          <div style={{ textAlign: 'left', marginTop: 12, display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {appliances.map(a => (
+              <div key={a.id} style={{
+                padding: '8px 12px', borderRadius: 10,
+                background: a.standby ? 'rgba(239,68,68,0.12)' : 'rgba(34,197,94,0.1)',
+                border: `1px solid ${a.standby ? 'rgba(239,68,68,0.25)' : 'rgba(34,197,94,0.2)'}`,
+                fontSize: 12, fontFamily: "'Nunito', sans-serif", color: '#cbd5e1', lineHeight: 1.5,
+              }}>
+                <span style={{ fontWeight: 700 }}>{a.icon} {a.name}</span>
+                <span style={{ color: a.standby ? '#f87171' : '#4ade80', fontWeight: 700 }}> — {a.standby ? `Standby: ${a.standbyW}` : 'No standby'}</span>
+                <br /><span style={{ color: '#94a3b8', fontSize: 11 }}>{a.fact}</span>
+              </div>
+            ))}
+          </div>
+          <div className="decision-score-badge" style={{ marginTop: 16 }}>+{result.score} points</div>
           <button className="task-popup-btn" onClick={onSubmit}>Continue →</button>
         </div>
       </div>
@@ -1269,26 +1313,38 @@ function CombinedChallengeUI({ visible, decisions, answers, onAnswer, onSubmit, 
   return (
     <div className="combined-challenge-overlay">
       <div className="combined-challenge-card">
-        <h3 className="combined-challenge-title">🔥 Combined Decision Challenge</h3>
-        <p className="combined-challenge-desc">Daytime • Medium heat (30°C) • Medium room • Outdoor: 28°C</p>
+        <h3 className="combined-challenge-title">🔌 Standby Power Hunt</h3>
+        <p className="combined-challenge-desc">All appliances are "OFF". Tap the ones you think are <strong style={{ color: '#f87171' }}>still wasting electricity</strong> in standby mode!</p>
         <div className="combined-challenge-questions">
-          {decisions.map((d, i) => (
-            <div key={d.id} className="combined-q">
-              <div className="combined-q-text">{d.question}</div>
-              <div className="combined-q-options">
-                {d.options.map(opt => (
-                  <button key={opt} className={`combined-q-btn ${answers[d.id] === opt ? 'selected' : ''}`}
-                    onClick={() => onAnswer(d.id, opt)}>
-                    {opt === 'yes' ? '✅ Yes' : opt === 'no' ? '❌ No' : '🔄 Optional'}
-                  </button>
-                ))}
+          {appliances.map(a => {
+            const isSelected = answers[a.id] === 'waster';
+            return (
+              <div key={a.id} className="combined-q" onClick={() => onAnswer(a.id, isSelected ? null : 'waster')}
+                style={{
+                  cursor: 'pointer', transition: 'all 0.2s',
+                  background: isSelected ? 'rgba(239,68,68,0.15)' : 'rgba(255,255,255,0.04)',
+                  borderColor: isSelected ? 'rgba(239,68,68,0.5)' : 'rgba(255,255,255,0.08)',
+                }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <span style={{ fontSize: 28 }}>{a.icon}</span>
+                  <div>
+                    <div style={{ fontFamily: "'Fredoka', sans-serif", fontSize: 15, fontWeight: 700, color: '#fff' }}>{a.name}</div>
+                    <div style={{ fontFamily: "'Nunito', sans-serif", fontSize: 11, color: '#94a3b8' }}>Appears OFF</div>
+                  </div>
+                  <div style={{ marginLeft: 'auto', fontSize: 20 }}>
+                    {isSelected ? '⚡' : '💤'}
+                  </div>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
+        <p style={{ fontFamily: "'Nunito', sans-serif", fontSize: 11, color: '#64748b', textAlign: 'center', margin: '8px 0 12px' }}>
+          Tap to mark as energy waster — tap again to deselect
+        </p>
         <button className="combined-submit-btn" onClick={onSubmit}
-          disabled={Object.keys(answers).length < decisions.length}>
-          Submit Decisions →
+          disabled={Object.keys(answers).filter(k => answers[k]).length === 0}>
+          Submit Hunt →
         </button>
       </div>
     </div>
@@ -1496,6 +1552,7 @@ export default function Level1() {
   // House state
   const [windowsInstalled, setWindowsInstalled] = useState(0);
   const [curtainsOpen, setCurtainsOpen] = useState(false);
+  const [curtains2Open, setCurtains2Open] = useState(false);
   const [timeOfDay, setTimeOfDay] = useState('day');
   const [showAirflow, setShowAirflow] = useState(false);
   const [lightsOn, setLightsOn] = useState(true);
@@ -1564,6 +1621,7 @@ export default function Level1() {
     setTaskStep(0);
     setWindowOpen(false);
     setCurtainOpenState(false);
+    setCurtains2Open(false);
     if (currentTask < 7) {
       setCurrentTask(t => t + 1);
       // Set scenario for next task
@@ -1608,8 +1666,8 @@ export default function Level1() {
         if (taskData.scenario?.indoorTemp) setIndoorTemp(taskData.scenario.indoorTemp);
         if (taskData.scenario?.outdoorTemp) setOutdoorTemp(taskData.scenario.outdoorTemp);
         if (taskData.scenario?.windowStart === 'open') setWindowOpen(true);
-        if (taskData.scenario?.curtainStart === 'open') { setCurtainOpenState(true); setCurtainsOpen(true); }
-        // Reset doors for AC task
+        if (taskData.scenario?.curtainStart === 'open') { setCurtainOpenState(true); setCurtainsOpen(true); setCurtains2Open(true); }
+        // Reset doors for AC task — both curtains/windows open, doors open
         if (currentTask === 2) { setDoor1Closed(false); setDoor2Closed(false); }
         return;
       }
@@ -1620,8 +1678,10 @@ export default function Level1() {
           // Execute action
           if (step.action === 'openWindow') { setWindowOpen(true); setWindowsInstalled(w => w + 1); setShowAirflow(true); }
           if (step.action === 'closeWindow') { setWindowOpen(false); }
+          if (step.action === 'closeWindow2') { /* second window closed */ }
           if (step.action === 'openCurtain') { setCurtainOpenState(true); setCurtainsOpen(true); }
           if (step.action === 'closeCurtain') { setCurtainOpenState(false); setCurtainsOpen(false); }
+          if (step.action === 'closeCurtain2') { setCurtains2Open(false); }
           if (step.action === 'closeDoor1') { setDoor1Closed(true); }
           if (step.action === 'closeDoor2') { setDoor2Closed(true); }
           playTaskCompleteSound();
@@ -1808,6 +1868,7 @@ export default function Level1() {
     setCombinedAnswers(prev => ({ ...prev, [id]: val }));
   }, []);
 
+
   const handleCombinedSubmit = useCallback(() => {
     if (combinedSubmitted && combinedResult) {
       setShowCombinedChallenge(false);
@@ -1816,15 +1877,17 @@ export default function Level1() {
     }
     const taskData = PHASE1_TASKS.find(t => t.id === 6);
     let correctCount = 0;
-    taskData.decisions.forEach(d => {
-      if (combinedAnswers[d.id] === d.correct) correctCount++;
+    const appliances = taskData.appliances;
+    appliances.forEach(a => {
+      const playerMarked = combinedAnswers[a.id] === 'waster';
+      if (playerMarked === a.standby) correctCount++;
     });
-    const ratio = correctCount / taskData.decisions.length;
+    const ratio = correctCount / appliances.length;
     let result;
-    if (ratio >= 1) result = { ...taskData.scoring.perfect, icon: '🌟' };
-    else if (ratio >= 0.75) result = { ...taskData.scoring.good, icon: '👍' };
-    else if (ratio >= 0.5) result = { ...taskData.scoring.average, icon: '⚠️' };
-    else result = { ...taskData.scoring.poor, icon: '❌' };
+    if (ratio >= 1) result = { ...taskData.scoring.perfect, icon: '🕵️' };
+    else if (ratio >= 0.8) result = { ...taskData.scoring.good, icon: '👀' };
+    else if (ratio >= 0.6) result = { ...taskData.scoring.average, icon: '🔍' };
+    else result = { ...taskData.scoring.poor, icon: '😅' };
     setCombinedResult(result);
     setCombinedSubmitted(true);
   }, [combinedAnswers, combinedSubmitted, combinedResult, advanceTask]);
@@ -1970,7 +2033,7 @@ export default function Level1() {
           <Suspense fallback={null}>
             <SceneContent
               cameraRef={cameraRef} onInteract={handleInteract} onRoomChange={handleRoomChange} onNearestChange={handleNearestChange}
-              currentTask={currentTask} completedTasks={completedTasks} windowsInstalled={windowsInstalled} curtainsOpen={curtainsOpen}
+              currentTask={currentTask} completedTasks={completedTasks} windowsInstalled={windowsInstalled} curtainsOpen={curtainsOpen} curtains2Open={curtains2Open}
               timeOfDay={timeOfDay} showAirflow={showAirflow} lightsOn={lightsOn} hideLabels={anyOverlayActive}
               phase={phase} activeApplianceId={activeApplianceId} interactedAppliances={interactedAppliances}
               onApplianceClick={handleApplianceClick} onWindowClick={() => {}}
@@ -2066,10 +2129,10 @@ export default function Level1() {
         result={tempStrategyResult}
       />
 
-      {/* Combined Challenge UI */}
+      {/* Standby Power Hunt UI */}
       <CombinedChallengeUI
         visible={showCombinedChallenge}
-        decisions={activeTaskData?.decisions || []}
+        decisions={activeTaskData?.appliances || []}
         answers={combinedAnswers}
         onAnswer={handleCombinedAnswer}
         onSubmit={handleCombinedSubmit}
