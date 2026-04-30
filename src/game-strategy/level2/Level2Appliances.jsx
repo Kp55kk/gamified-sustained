@@ -824,7 +824,16 @@ function LEDBulbL2({ isOn }) {
   );
 }
 
-// ─── Appliance Labels (proximity-based — only show when near) ───
+// ─── Watt color helper (Change 6) ───
+function getWattColor(wattage) {
+  const w = typeof wattage === 'string' ? parseInt(wattage) : wattage;
+  if (isNaN(w)) return '#fff';
+  if (w < 100) return '#22c55e';   // Green
+  if (w <= 500) return '#f59e0b';  // Amber
+  return '#ef4444';                 // Red
+}
+
+// ─── Appliance Labels (proximity-based — only show when near, with watt color-coding) ───
 function ApplianceLabel({ id, isOn, showLevel }) {
   const pos = APPLIANCE_POSITIONS[id]?.pos;
   if (!pos) return null;
@@ -839,12 +848,13 @@ function ApplianceLabel({ id, isOn, showLevel }) {
     led_tube: 0.3, table_fan: 0.55, led_bulb: 0.2,
   };
   const yOffset = labelOffsets[id] || 0.5;
+  const wattColor = getWattColor(appliance.wattage);
 
   return (
     <Html position={[pos[0], pos[1] + yOffset, pos[2]]} center>
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', pointerEvents: 'none' }}>
         <div style={{ background: 'rgba(0,0,0,0.7)', color: '#fff', padding: '4px 12px', borderRadius: '8px', fontSize: '12px', fontFamily: 'Nunito, sans-serif', fontWeight: 600, whiteSpace: 'nowrap' }}>
-          {appliance.icon} {appliance.name}
+          {appliance.icon} {appliance.name} <span style={{ color: wattColor, fontWeight: 700 }}>{appliance.wattage}W</span>
         </div>
         <div style={{ background: 'rgba(34,197,94,0.85)', color: '#fff', padding: '3px 10px', borderRadius: '6px', fontSize: '11px', fontFamily: 'Nunito, sans-serif', fontWeight: 600, whiteSpace: 'nowrap' }}>
           Press <span style={{ background: 'rgba(255,255,255,0.3)', padding: '1px 5px', borderRadius: '3px', fontWeight: 700 }}>E</span> to {isOn ? 'Turn OFF' : 'Turn ON'}
