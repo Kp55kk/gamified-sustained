@@ -20,6 +20,8 @@ import QuizModal from './QuizModal';
 import { useGame } from '../../context/GameContext';
 import { getTranslation } from '../../translations/index';
 import LevelIntro from '../LevelIntro';
+import Phase1 from './phase1/Phase1';
+import SchoolCutscene from './phase1/SchoolCutscene';
 import './Level2.css';
 
 // ─── Audio System ───
@@ -314,6 +316,7 @@ export default function Level2() {
   const l2t = t?.level2 || {};
   const cameraRef = useRef(null);
 
+  const [levelPhase, setLevelPhase] = useState('phase1'); // 'phase1', 'cutscene', or 'phase2'
   const [showLevelIntro, setShowLevelIntro] = useState(true);
   const [phase, setPhase] = useState('intro');
   const [introStep, setIntroStep] = useState(0);
@@ -619,24 +622,37 @@ export default function Level2() {
   }, []);
 
   // ═══════════════════════════════════════════════════════
-  //  RENDER — LEVEL INTRO (Learn Before Play)
+  //  RENDER — PHASE 1 (Build Energy Saving Habits)
   // ═══════════════════════════════════════════════════════
-  if (showLevelIntro) {
+  if (levelPhase === 'phase1') {
     return (
-      <LevelIntro
-        levelNumber={2}
-        levelTitle="The Energy Meter"
-        levelIcon="⚡"
-        objective="Explore your home with a powerful new tool — the Energy Meter. Walk through each room, toggle appliances ON and OFF, and watch how each one affects electricity usage, bills, and the environment in real-time."
-        learningOutcome="By the end of this level, you will understand how much electricity each appliance uses (in Watts), how energy consumption translates to monthly bills, and how to identify and stop energy waste in your home."
-        terms={[
-          { icon: '⚡', name: 'Watts', definition: 'Watts tell you how much electricity an appliance uses at any moment. Higher watts = more electricity consumed.', example: 'AC uses 1500W while a fan uses only 75W' },
-          { icon: '🔋', name: 'Energy Consumption', definition: 'The total amount of electricity used over time. It is measured in kilowatt-hours (kWh) and determines your monthly usage.', example: 'Running a 1000W heater for 1 hour = 1 kWh' },
-          { icon: '💰', name: 'Electricity Bill', definition: 'The money you pay for the electricity your home uses each month. The more appliances you run, the higher the bill.', example: 'A home using 300 kWh/month pays around ₹2,000' },
-        ]}
-        onComplete={() => setShowLevelIntro(false)}
-      />
+      <>
+        {showLevelIntro ? (
+          <LevelIntro
+            levelNumber={2}
+            levelTitle="Build Energy Saving Habits"
+            levelIcon="🌱"
+            objective="Learn to save energy by building daily habits at home. Walk through each room, identify wasted energy, and practice turning off unnecessary appliances — just like a responsible family member."
+            learningOutcome="By the end of this phase, you will learn to turn off unused appliances, avoid phantom power waste, use natural light, and develop the daily habit of checking your home before leaving."
+            terms={[
+              { icon: '🌱', name: 'Energy Habits', definition: 'Small daily actions like turning off unused lights and fans that save electricity over time.', example: 'Turning off the bedroom fan when no one is there' },
+              { icon: '🔌', name: 'Phantom Power', definition: 'Electricity consumed by devices even when they are turned off but still plugged in.', example: 'A TV on standby uses 5-10W without you knowing' },
+              { icon: '☀️', name: 'Natural Light', definition: 'Using sunlight instead of artificial lights during daytime to reduce energy use.', example: 'Opening curtains can replace 2-3 tube lights' },
+            ]}
+            onComplete={() => setShowLevelIntro(false)}
+          />
+        ) : (
+          <Phase1 onComplete={() => setLevelPhase('cutscene')} />
+        )}
+      </>
     );
+  }
+
+  // ═══════════════════════════════════════════════════════
+  //  RENDER — SCHOOL CUTSCENE (Phase 1 → Phase 2 transition)
+  // ═══════════════════════════════════════════════════════
+  if (levelPhase === 'cutscene') {
+    return <SchoolCutscene onComplete={() => setLevelPhase('phase2')} />;
   }
 
   // ═══════════════════════════════════════════════════════
