@@ -772,16 +772,148 @@ export default function House() {
         </mesh>
       </group>
 
-      {/* Bathroom - Sink (repositioned for smaller bathroom) */}
-      <group position={[5.5, 0, 6.8]}>
-        <mesh position={[0, 0.8, 0]} castShadow>
-          <boxGeometry args={[0.8, 0.08, 0.5]} />
-          <meshStandardMaterial color="#e8e8e8" roughness={0.2} metalness={0.3} />
+      {/* Bathroom - Realistic Wash Basin with Vanity, Faucet & Mirror */}
+      <group position={[5.5, 0, 7.8]} rotation={[0, Math.PI, 0]}>
+        {/* Vanity cabinet base */}
+        <mesh position={[0, 0.38, 0]} castShadow>
+          <boxGeometry args={[1.4, 0.76, 0.5]} />
+          <meshStandardMaterial color="#d4c4a8" roughness={0.55} />
         </mesh>
-        {/* Basin */}
-        <mesh position={[0, 0.73, 0]}>
-          <cylinderGeometry args={[0.25, 0.2, 0.12, 16]} />
-          <meshStandardMaterial color="#ddd" roughness={0.2} />
+        {/* Cabinet left door */}
+        <mesh position={[-0.35, 0.38, 0.256]}>
+          <boxGeometry args={[0.62, 0.64, 0.02]} />
+          <meshStandardMaterial color="#c8b890" roughness={0.5} />
+        </mesh>
+        {/* Cabinet right door */}
+        <mesh position={[0.35, 0.38, 0.256]}>
+          <boxGeometry args={[0.62, 0.64, 0.02]} />
+          <meshStandardMaterial color="#c8b890" roughness={0.5} />
+        </mesh>
+        {/* Cabinet handles */}
+        <mesh position={[-0.12, 0.42, 0.28]}>
+          <sphereGeometry args={[0.025, 10, 10]} />
+          <meshStandardMaterial color="#b8b8b8" metalness={0.8} roughness={0.15} />
+        </mesh>
+        <mesh position={[0.12, 0.42, 0.28]}>
+          <sphereGeometry args={[0.025, 10, 10]} />
+          <meshStandardMaterial color="#b8b8b8" metalness={0.8} roughness={0.15} />
+        </mesh>
+        {/* Center divider line */}
+        <mesh position={[0, 0.38, 0.258]}>
+          <boxGeometry args={[0.015, 0.64, 0.005]} />
+          <meshStandardMaterial color="#b0a080" roughness={0.6} />
+        </mesh>
+        {/* Thick marble countertop */}
+        <mesh position={[0, 0.78, 0]} castShadow>
+          <boxGeometry args={[1.45, 0.06, 0.55]} />
+          <meshStandardMaterial color="#f5f0e8" roughness={0.1} metalness={0.03} />
+        </mesh>
+        {/* Backsplash */}
+        <mesh position={[0, 0.92, -0.24]}>
+          <boxGeometry args={[1.45, 0.24, 0.04]} />
+          <meshStandardMaterial color="#f0ece4" roughness={0.15} />
+        </mesh>
+        {/* Basin rim */}
+        <mesh position={[0, 0.8, 0.02]} rotation={[-Math.PI / 2, 0, 0]}>
+          <ringGeometry args={[0.17, 0.23, 24]} />
+          <meshStandardMaterial color="#ffffff" roughness={0.12} side={THREE.DoubleSide} />
+        </mesh>
+        {/* Basin bowl */}
+        <mesh position={[0, 0.72, 0.02]}>
+          <cylinderGeometry args={[0.2, 0.14, 0.16, 24]} />
+          <meshStandardMaterial color="#f8f8f8" roughness={0.12} metalness={0.08} />
+        </mesh>
+        {/* Basin inner */}
+        <mesh position={[0, 0.68, 0.02]}>
+          <cylinderGeometry args={[0.12, 0.1, 0.04, 20]} />
+          <meshStandardMaterial color="#e0e0e0" roughness={0.25} />
+        </mesh>
+        {/* Drain plug */}
+        <mesh position={[0, 0.66, 0.02]} rotation={[-Math.PI / 2, 0, 0]}>
+          <circleGeometry args={[0.025, 12]} />
+          <meshStandardMaterial color="#999" metalness={0.7} roughness={0.2} side={THREE.DoubleSide} />
+        </mesh>
+        {/* Faucet base plate */}
+        <mesh position={[0, 0.82, -0.14]} castShadow>
+          <cylinderGeometry args={[0.04, 0.045, 0.03, 12]} />
+          <meshStandardMaterial color="#d0d0d0" metalness={0.9} roughness={0.08} />
+        </mesh>
+        {/* Faucet pillar */}
+        <mesh position={[0, 0.98, -0.14]} castShadow>
+          <cylinderGeometry args={[0.02, 0.025, 0.3, 10]} />
+          <meshStandardMaterial color="#c8c8c8" metalness={0.9} roughness={0.08} />
+        </mesh>
+        {/* Faucet gooseneck */}
+        <mesh position={[0, 1.1, -0.04]} rotation={[0.85, 0, 0]} castShadow>
+          <cylinderGeometry args={[0.012, 0.015, 0.22, 8]} />
+          <meshStandardMaterial color="#c8c8c8" metalness={0.9} roughness={0.08} />
+        </mesh>
+        {/* Spout end */}
+        <mesh position={[0, 1.0, 0.06]}>
+          <cylinderGeometry args={[0.018, 0.012, 0.05, 8]} />
+          <meshStandardMaterial color="#b8b8b8" metalness={0.85} roughness={0.1} />
+        </mesh>
+        {/* Hot handle (red dot) */}
+        <mesh position={[-0.1, 0.88, -0.12]} castShadow>
+          <cylinderGeometry args={[0.022, 0.022, 0.05, 8]} />
+          <meshStandardMaterial color="#d0d0d0" metalness={0.8} roughness={0.15} />
+        </mesh>
+        <mesh position={[-0.1, 0.91, -0.12]}>
+          <sphereGeometry args={[0.012, 8, 8]} />
+          <meshStandardMaterial color="#ef4444" roughness={0.3} />
+        </mesh>
+        {/* Cold handle (blue dot) */}
+        <mesh position={[0.1, 0.88, -0.12]} castShadow>
+          <cylinderGeometry args={[0.022, 0.022, 0.05, 8]} />
+          <meshStandardMaterial color="#d0d0d0" metalness={0.8} roughness={0.15} />
+        </mesh>
+        <mesh position={[0.1, 0.91, -0.12]}>
+          <sphereGeometry args={[0.012, 8, 8]} />
+          <meshStandardMaterial color="#3b82f6" roughness={0.3} />
+        </mesh>
+        {/* Soap dispenser */}
+        <mesh position={[0.4, 0.86, 0.05]}>
+          <cylinderGeometry args={[0.03, 0.035, 0.1, 10]} />
+          <meshStandardMaterial color="#e8c8a0" roughness={0.4} />
+        </mesh>
+        <mesh position={[0.4, 0.93, 0.05]}>
+          <cylinderGeometry args={[0.015, 0.015, 0.04, 8]} />
+          <meshStandardMaterial color="#c0c0c0" metalness={0.7} roughness={0.2} />
+        </mesh>
+        {/* Towel bar */}
+        <mesh position={[0.72, 0.5, 0.1]}>
+          <boxGeometry args={[0.02, 0.02, 0.35]} />
+          <meshStandardMaterial color="#c0c0c0" metalness={0.7} roughness={0.2} />
+        </mesh>
+        {/* Towel */}
+        <mesh position={[0.72, 0.42, 0.1]}>
+          <boxGeometry args={[0.01, 0.2, 0.3]} />
+          <meshStandardMaterial color="#87CEEB" roughness={0.7} />
+        </mesh>
+        {/* ─── MIRROR ─── */}
+        {/* Wooden frame */}
+        <mesh position={[0, 1.75, -0.26]} castShadow>
+          <boxGeometry args={[0.85, 1.0, 0.035]} />
+          <meshStandardMaterial color="#6b4520" roughness={0.45} metalness={0.05} />
+        </mesh>
+        {/* Inner frame accent */}
+        <mesh position={[0, 1.75, -0.24]}>
+          <boxGeometry args={[0.8, 0.95, 0.01]} />
+          <meshStandardMaterial color="#8B6914" roughness={0.4} />
+        </mesh>
+        {/* Mirror glass */}
+        <mesh position={[0, 1.75, -0.232]}>
+          <boxGeometry args={[0.72, 0.87, 0.008]} />
+          <meshStandardMaterial color="#c0d8e8" metalness={0.92} roughness={0.03} />
+        </mesh>
+        {/* Glare highlight */}
+        <mesh position={[-0.18, 1.8, -0.226]}>
+          <boxGeometry args={[0.06, 0.55, 0.004]} />
+          <meshStandardMaterial color="#ffffff" transparent opacity={0.2} roughness={0.0} />
+        </mesh>
+        <mesh position={[0.22, 1.65, -0.226]}>
+          <boxGeometry args={[0.04, 0.3, 0.004]} />
+          <meshStandardMaterial color="#ffffff" transparent opacity={0.12} roughness={0.0} />
         </mesh>
       </group>
 
