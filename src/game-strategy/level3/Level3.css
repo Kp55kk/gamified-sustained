@@ -199,42 +199,43 @@
   top: 0;
   left: 0;
   right: 0;
-  height: 46px;
+  height: 48px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 12px;
-  background: linear-gradient(180deg, rgba(10,5,5,0.9) 0%, rgba(10,5,5,0.6) 80%, transparent 100%);
+  padding: 0 16px;
+  background: #FFFFFF;
+  border-bottom: 1px solid #e0e0e0;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
   z-index: 20;
 }
 .l3-back-btn {
-  background: rgba(255,255,255,0.08);
-  border: 1px solid rgba(255,255,255,0.15);
-  color: #ccc;
-  padding: 5px 14px;
+  background: #f5f5f5;
+  border: 1px solid #e0e0e0;
+  color: #1a1a1a;
+  padding: 6px 16px;
   border-radius: 8px;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
 }
 .l3-back-btn:hover {
-  background: rgba(255,255,255,0.15);
-  color: #fff;
+  background: #e8e8e8;
 }
 .l3-hud-title {
   font-family: 'Fredoka', sans-serif;
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 700;
-  color: #ff6644;
-  text-shadow: 0 0 8px rgba(255, 68, 0, 0.4);
+  color: #1a1a1a;
 }
 .l3-hud-room {
-  font-size: 12px;
-  color: #aaa;
-  background: rgba(255,255,255,0.05);
-  padding: 4px 10px;
-  border-radius: 6px;
+  font-size: 13px;
+  color: #555;
+  background: #f5f5f5;
+  padding: 5px 12px;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
 }
 
 /* ─── Carbon Meter Panel ─── */
@@ -242,67 +243,67 @@
   position: absolute;
   bottom: 16px;
   left: 16px;
-  width: 220px;
-  background: rgba(10, 5, 5, 0.92);
-  border: 1px solid rgba(255, 68, 0, 0.25);
-  border-radius: 14px;
-  padding: 12px;
+  width: 240px;
+  background: #FFFFFF;
+  border: 1px solid #e0e0e0;
+  border-radius: 16px;
+  padding: 16px 20px;
   z-index: 20;
-  backdrop-filter: blur(8px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
 }
 .l3-carbon-header {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 12px;
+  gap: 8px;
+  font-size: 13px;
   font-weight: 700;
-  color: #ff8855;
+  color: #1a1a1a;
   text-transform: uppercase;
   letter-spacing: 1px;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
 }
 .l3-carbon-bar-outer {
   width: 100%;
-  height: 16px;
-  background: rgba(255,255,255,0.08);
-  border-radius: 8px;
+  height: 12px;
+  background: #f0f0f0;
+  border-radius: 6px;
   overflow: hidden;
   position: relative;
 }
 .l3-carbon-bar-fill {
   height: 100%;
-  border-radius: 8px;
+  border-radius: 6px;
   transition: width 0.5s ease, background-color 0.5s ease;
-  box-shadow: 0 0 12px currentColor;
 }
 .l3-carbon-value {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 6px;
-  font-size: 11px;
-  color: #ccc;
+  margin-top: 8px;
+  font-size: 12px;
+  color: #555;
 }
 .l3-carbon-kg {
-  font-size: 18px;
+  font-size: 24px;
   font-weight: 800;
   font-family: 'Fredoka', sans-serif;
+  color: #1a1a1a;
   transition: color 0.3s;
 }
 .l3-carbon-tier {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
-  padding: 2px 8px;
-  border-radius: 4px;
+  padding: 3px 10px;
+  border-radius: 6px;
   text-transform: uppercase;
   letter-spacing: 1px;
 }
 .l3-carbon-watts {
   display: flex;
   justify-content: space-between;
-  margin-top: 6px;
-  font-size: 11px;
-  color: #999;
+  margin-top: 8px;
+  font-size: 12px;
+  color: #555;
 }
 
 /* ─── Bill Counter ─── */
@@ -310,33 +311,34 @@
   position: absolute;
   bottom: 16px;
   right: 16px;
-  background: rgba(10, 5, 5, 0.92);
-  border: 1px solid rgba(255, 200, 0, 0.2);
-  border-radius: 14px;
-  padding: 12px 16px;
+  background: #FFFFFF;
+  border: 1px solid #e0e0e0;
+  border-radius: 16px;
+  padding: 16px 20px;
   z-index: 20;
-  backdrop-filter: blur(8px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
   text-align: center;
-  min-width: 140px;
+  min-width: 160px;
 }
 .l3-bill-header {
-  font-size: 11px;
-  color: #f59e0b;
+  font-size: 12px;
+  color: #555;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 1px;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
 }
 .l3-bill-amount {
-  font-size: 28px;
+  font-size: 32px;
   font-weight: 800;
   font-family: 'Fredoka', sans-serif;
+  color: #1a1a1a;
   transition: color 0.3s;
 }
 .l3-bill-label {
-  font-size: 10px;
-  color: #888;
-  margin-top: 2px;
+  font-size: 12px;
+  color: #555;
+  margin-top: 4px;
 }
 @keyframes l3-bill-flash {
   0%, 100% { box-shadow: 0 0 0 rgba(255,100,0,0); }
@@ -462,36 +464,37 @@
   position: absolute;
   top: 55px;
   right: 12px;
-  width: 180px;
-  background: rgba(10, 5, 5, 0.88);
-  border: 1px solid rgba(255, 68, 0, 0.2);
-  border-radius: 10px;
-  padding: 8px 10px;
+  width: 200px;
+  background: #FFFFFF;
+  border: 1px solid #e0e0e0;
+  border-radius: 16px;
+  padding: 12px 16px;
   z-index: 20;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
 }
 .l3-progress-header {
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 700;
-  color: #ff8855;
-  margin-bottom: 4px;
+  color: #1a1a1a;
+  margin-bottom: 6px;
 }
 .l3-progress-bar-outer {
   width: 100%;
-  height: 6px;
-  background: rgba(255,255,255,0.08);
-  border-radius: 3px;
+  height: 8px;
+  background: #f0f0f0;
+  border-radius: 4px;
   overflow: hidden;
 }
 .l3-progress-bar-inner {
   height: 100%;
-  background: linear-gradient(90deg, #c0392b, #e74c3c);
-  border-radius: 3px;
+  background: linear-gradient(90deg, #22c55e, #16a34a);
+  border-radius: 4px;
   transition: width 0.5s ease;
 }
 .l3-progress-text {
-  font-size: 10px;
-  color: #999;
-  margin-top: 3px;
+  font-size: 12px;
+  color: #555;
+  margin-top: 4px;
 }
 
 /* ─── Floating Texts ─── */
@@ -564,26 +567,26 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(5, 2, 2, 0.85);
-  backdrop-filter: blur(6px);
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(8px);
   padding: 16px;
 }
 .l3-modal-card {
-  background: linear-gradient(145deg, #1a0e0a, #120808);
-  border: 1px solid rgba(255, 68, 0, 0.3);
-  border-radius: 18px;
-  padding: 24px;
-  max-width: 480px;
+  background: #FFFFFF;
+  border: 1px solid #e0e0e0;
+  border-radius: 24px;
+  padding: 28px;
+  max-width: 500px;
   width: 100%;
   max-height: 85vh;
   overflow-y: auto;
-  box-shadow: 0 0 40px rgba(255, 68, 0, 0.15);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.15);
 }
 .l3-modal-title {
   font-family: 'Fredoka', sans-serif;
   font-size: 22px;
   font-weight: 700;
-  color: #ff6644;
+  color: #1a1a1a;
   margin-bottom: 16px;
   display: flex;
   align-items: center;
@@ -593,9 +596,9 @@
   position: absolute;
   top: 20px;
   right: 20px;
-  background: rgba(255,255,255,0.1);
-  border: none;
-  color: #aaa;
+  background: #f5f5f5;
+  border: 1px solid #e0e0e0;
+  color: #555;
   font-size: 18px;
   width: 32px;
   height: 32px;
@@ -607,22 +610,22 @@
 }
 .l3-modal-btn {
   width: 100%;
-  background: linear-gradient(135deg, #c0392b, #e74c3c);
+  background: linear-gradient(135deg, #22c55e, #16a34a);
   border: none;
   color: #fff;
-  padding: 12px;
-  border-radius: 10px;
-  font-size: 15px;
+  padding: 14px;
+  border-radius: 14px;
+  font-size: 16px;
   font-weight: 700;
   font-family: 'Fredoka', sans-serif;
   cursor: pointer;
   margin-top: 16px;
-  box-shadow: 0 0 16px rgba(231, 76, 60, 0.3);
+  box-shadow: 0 4px 16px rgba(34,197,94,0.35);
   transition: all 0.2s;
 }
 .l3-modal-btn:hover {
-  transform: scale(1.02);
-  box-shadow: 0 0 24px rgba(231, 76, 60, 0.5);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(34,197,94,0.45);
 }
 
 /* ─── Damage Graph Bars ─── */
@@ -751,17 +754,17 @@
 ═══════════════════════════════════════════════════════════ */
 .l3-mission-bar {
   position: absolute;
-  top: 52px;
+  top: 54px;
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(10, 5, 5, 0.95);
-  border: 2px solid rgba(255, 68, 0, 0.4);
-  border-radius: 14px;
-  padding: 12px 20px;
+  background: #FFFFFF;
+  border: 1px solid #e0e0e0;
+  border-radius: 16px;
+  padding: 14px 22px;
   z-index: 25;
-  max-width: 450px;
-  width: 90%;
-  box-shadow: 0 0 24px rgba(255, 68, 0, 0.2);
+  max-width: 480px;
+  width: 92%;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
 }
 .l3-mission-header {
   display: flex;
@@ -771,36 +774,36 @@
 }
 .l3-mission-title {
   font-family: 'Fredoka', sans-serif;
-  font-size: 16px;
+  font-size: 17px;
   font-weight: 700;
-  color: #ff6644;
+  color: #1a1a1a;
   display: flex;
   align-items: center;
   gap: 6px;
 }
 .l3-mission-timer {
   font-family: 'Fredoka', sans-serif;
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 800;
-  padding: 2px 10px;
-  border-radius: 6px;
+  padding: 3px 12px;
+  border-radius: 8px;
   transition: all 0.3s;
 }
-.l3-mission-timer.safe { color: #22c55e; background: rgba(34,197,94,0.1); }
-.l3-mission-timer.warn { color: #f59e0b; background: rgba(245,158,11,0.1); }
-.l3-mission-timer.danger { color: #ef4444; background: rgba(239,68,68,0.15); animation: l3-timer-pulse 0.5s ease infinite; }
+.l3-mission-timer.safe { color: #16a34a; background: rgba(34,197,94,0.08); }
+.l3-mission-timer.warn { color: #d97706; background: rgba(245,158,11,0.08); }
+.l3-mission-timer.danger { color: #dc2626; background: rgba(239,68,68,0.08); animation: l3-timer-pulse 0.5s ease infinite; }
 @keyframes l3-timer-pulse {
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.1); }
 }
 .l3-mission-desc {
-  font-size: 13px;
-  color: #ffccaa;
+  font-size: 14px;
+  color: #1a1a1a;
   margin-bottom: 4px;
 }
 .l3-mission-hint {
-  font-size: 11px;
-  color: #999;
+  font-size: 12px;
+  color: #555;
 }
 
 /* ─── Mission Result ─── */
@@ -809,39 +812,40 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  background: rgba(10, 5, 5, 0.95);
-  border-radius: 16px;
-  padding: 24px 32px;
+  background: #FFFFFF;
+  border-radius: 20px;
+  padding: 28px 36px;
   z-index: 30;
   text-align: center;
-  max-width: 380px;
-  box-shadow: 0 0 30px rgba(0,0,0,0.5);
+  max-width: 400px;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.15);
 }
 .l3-mission-result.success {
-  border: 2px solid rgba(34, 197, 94, 0.4);
+  border: 2px solid rgba(34, 197, 94, 0.3);
 }
 .l3-mission-result.fail {
-  border: 2px solid rgba(239, 68, 68, 0.4);
+  border: 2px solid rgba(239, 68, 68, 0.3);
 }
 .l3-mission-result-icon {
   font-size: 48px;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
 }
 .l3-mission-result-text {
-  font-size: 15px;
-  color: #ddd;
-  margin-bottom: 14px;
-  line-height: 1.5;
+  font-size: 16px;
+  color: #1a1a1a;
+  margin-bottom: 16px;
+  line-height: 1.6;
 }
 .l3-mission-result-btn {
-  background: rgba(255,255,255,0.1);
-  border: 1px solid rgba(255,255,255,0.2);
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  border: none;
   color: #fff;
-  padding: 10px 24px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
+  padding: 12px 28px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 700;
   cursor: pointer;
+  box-shadow: 0 4px 16px rgba(34,197,94,0.35);
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -962,33 +966,33 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #050505, #1a0a05);
+  background: rgba(0,0,0,0.45);
+  backdrop-filter: blur(8px);
 }
 .l3-reward-card {
-  background: linear-gradient(145deg, #1a0e0a, #120808);
-  border: 2px solid rgba(255, 68, 0, 0.3);
-  border-radius: 20px;
-  padding: 28px;
-  max-width: 420px;
-  width: 90%;
+  background: #FFFFFF;
+  border: 1px solid #e0e0e0;
+  border-radius: 24px;
+  padding: 32px;
+  max-width: 440px;
+  width: 92%;
   text-align: center;
-  box-shadow: 0 0 50px rgba(255, 68, 0, 0.15);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.15);
 }
 .l3-reward-badge {
   font-size: 60px;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
 }
 .l3-reward-title {
   font-family: 'Fredoka', sans-serif;
-  font-size: 26px;
+  font-size: 28px;
   font-weight: 700;
-  color: #ff6644;
-  text-shadow: 0 0 15px rgba(255, 68, 0, 0.4);
+  color: #1a1a1a;
 }
 .l3-reward-subtitle {
-  font-size: 13px;
-  color: #ccc;
-  margin-top: 4px;
+  font-size: 14px;
+  color: #555;
+  margin-top: 6px;
 }
 .l3-reward-stars {
   display: flex;

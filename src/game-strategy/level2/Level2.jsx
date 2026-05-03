@@ -154,7 +154,7 @@ function SceneContent({ applianceStates, nearestAppliance, taskTargetIds, onRoom
     <>
       <WarmLighting />
       <CameraRefForwarder cameraRef={cameraRef} />
-      <House />
+      <House bedroomCurtainsOnly={true} />
       <Level2Appliances applianceStates={applianceStates} nearestAppliance={nearestAppliance} taskTargetIds={taskTargetIds} proximityLevels={proximityLevels} />
       <Player onRoomChange={onRoomChange} onNearestApplianceChange={onNearestChange} onInteract={onInteract} applianceIdList={L2_APPLIANCE_IDS} />
     </>

@@ -210,7 +210,7 @@ export function SceneContent({
     <>
       <CameraRefForwarder cameraRef={cameraRef} />
       <Level3Environment damageLevel={damageLevel} />
-      <House />
+      <House bedroomCurtainsOnly={true} />
       <Level2Appliances
         applianceStates={applianceStates}
         nearestAppliance={nearestAppliance}

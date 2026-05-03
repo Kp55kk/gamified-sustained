@@ -1,8 +1,8 @@
 
 
 
-import React, { useMemo } from 'react';
-import { Html } from '@react-three/drei';
+import React, { useMemo, useRef, useState } from 'react';
+import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
 const WALL_THICKNESS = 0.15;
@@ -98,6 +98,144 @@ function GlassDoor({ position, rotation = [0, 0, 0], height = 2.2, width = 1.0 }
         <sphereGeometry args={[0.04, 8, 8]} />
         <meshStandardMaterial color="#c0c0c0" metalness={0.8} roughness={0.15} />
       </mesh>
+    </group>
+  );
+}
+
+// ─── Animated Door (wood panel that swings open on Y-axis) ───
+function AnimatedDoor({ position, rotation = [0, 0, 0], height = 2.2, width = 1.0 }) {
+  const doorRef = useRef();
+  const [isOpen, setIsOpen] = useState(false);
+  const targetAngle = useRef(0);
+
+  useFrame(() => {
+    if (!doorRef.current) return;
+    targetAngle.current = isOpen ? Math.PI / 2 : 0;
+    doorRef.current.rotation.y += (targetAngle.current - doorRef.current.rotation.y) * 0.06;
+  });
+
+  return (
+    <group position={position} rotation={rotation}
+      onClick={(e) => { e.stopPropagation(); setIsOpen(prev => !prev); }}
+      onPointerOver={(e) => { document.body.style.cursor = 'pointer'; }}
+      onPointerOut={() => { document.body.style.cursor = 'default'; }}>
+      {/* Door pivot group — hinge on left edge */}
+      <group ref={doorRef} position={[-width / 2, 0, 0]}>
+        {/* Wood door panel */}
+        <mesh position={[width / 2, height / 2, 0]} castShadow>
+          <boxGeometry args={[width, height, 0.05]} />
+          <meshStandardMaterial color="#6b4226" roughness={0.7} />
+        </mesh>
+        {/* Wood grain detail */}
+        <mesh position={[width / 2, height / 2, 0.026]}>
+          <boxGeometry args={[width * 0.15, height * 0.85, 0.005]} />
+          <meshStandardMaterial color="#7a5230" roughness={0.6} />
+        </mesh>
+        {/* Handle */}
+        <mesh position={[width - 0.12, height / 2, 0.04]}>
+          <sphereGeometry args={[0.04, 10, 10]} />
+          <meshStandardMaterial color="#c0a040" metalness={0.85} roughness={0.15} />
+        </mesh>
+        {/* Handle base plate */}
+        <mesh position={[width - 0.12, height / 2, 0.03]}>
+          <boxGeometry args={[0.06, 0.12, 0.01]} />
+          <meshStandardMaterial color="#b08830" metalness={0.7} roughness={0.25} />
+        </mesh>
+      </group>
+    </group>
+  );
+}
+
+// ─── Realistic Bedroom Curtain (multi-fold panels with rod, finials, and smooth animation) ───
+function RealisticBedroomCurtain({ position, rotation = [0, 0, 0], width = 1.4, height = 1.1 }) {
+  const FOLDS = 5;
+  const PANEL_WIDTH = width / 2;
+  const foldWidth = PANEL_WIDTH / FOLDS;
+  const leftPanels = useRef([]);
+  const rightPanels = useRef([]);
+  const [isOpen, setIsOpen] = useState(false);
+
+  useFrame(() => {
+    const speed = 0.055;
+    for (let i = 0; i < FOLDS; i++) {
+      const lp = leftPanels.current[i];
+      const rp = rightPanels.current[i];
+      if (!lp || !rp) continue;
+
+      if (isOpen) {
+        // Bunch up to edges with staggered fold effect
+        const lTarget = -width / 2 - 0.05 - i * 0.025;
+        const rTarget = width / 2 + 0.05 + i * 0.025;
+        lp.position.x += (lTarget - lp.position.x) * speed;
+        rp.position.x += (rTarget - rp.position.x) * speed;
+        const scaleTarget = 0.22 + i * 0.03;
+        lp.scale.x += (scaleTarget - lp.scale.x) * speed;
+        rp.scale.x += (scaleTarget - rp.scale.x) * speed;
+      } else {
+        // Spread evenly across window — panels meet in the middle
+        const lTarget = -PANEL_WIDTH / 2 + i * foldWidth;
+        const rTarget = i * foldWidth;
+        lp.position.x += (lTarget - lp.position.x) * speed;
+        rp.position.x += (rTarget - rp.position.x) * speed;
+        lp.scale.x += (1 - lp.scale.x) * speed;
+        rp.scale.x += (1 - rp.scale.x) * speed;
+      }
+    }
+  });
+
+  return (
+    <group position={position} rotation={rotation}
+      onClick={(e) => { e.stopPropagation(); setIsOpen(prev => !prev); }}
+      onPointerOver={() => { document.body.style.cursor = 'pointer'; }}
+      onPointerOut={() => { document.body.style.cursor = 'default'; }}>
+      {/* Curtain rod */}
+      <mesh position={[0, height / 2 + 0.08, 0.07]} rotation={[0, 0, Math.PI / 2]}>
+        <cylinderGeometry args={[0.02, 0.02, width + 0.3, 8]} />
+        <meshStandardMaterial color="#b8860b" metalness={0.8} roughness={0.2} />
+      </mesh>
+      {/* Rod finials (decorative end caps) */}
+      <mesh position={[-(width / 2 + 0.15), height / 2 + 0.08, 0.07]}>
+        <sphereGeometry args={[0.035, 8, 8]} />
+        <meshStandardMaterial color="#b8860b" metalness={0.8} roughness={0.2} />
+      </mesh>
+      <mesh position={[(width / 2 + 0.15), height / 2 + 0.08, 0.07]}>
+        <sphereGeometry args={[0.035, 8, 8]} />
+        <meshStandardMaterial color="#b8860b" metalness={0.8} roughness={0.2} />
+      </mesh>
+
+      {/* Left curtain folds — deep maroon fabric */}
+      {Array.from({ length: FOLDS }).map((_, i) => (
+        <mesh
+          key={`l${i}`}
+          ref={el => { leftPanels.current[i] = el; }}
+          position={[-PANEL_WIDTH / 2 + i * foldWidth, 0, 0.07]}
+        >
+          <boxGeometry args={[foldWidth - 0.008, height, 0.025]} />
+          <meshStandardMaterial
+            color={i % 2 === 0 ? '#8B0000' : '#7a0000'}
+            roughness={0.85}
+            transparent opacity={0.95}
+            side={THREE.DoubleSide}
+          />
+        </mesh>
+      ))}
+
+      {/* Right curtain folds — deep maroon fabric */}
+      {Array.from({ length: FOLDS }).map((_, i) => (
+        <mesh
+          key={`r${i}`}
+          ref={el => { rightPanels.current[i] = el; }}
+          position={[i * foldWidth, 0, 0.07]}
+        >
+          <boxGeometry args={[foldWidth - 0.008, height, 0.025]} />
+          <meshStandardMaterial
+            color={i % 2 === 0 ? '#8B0000' : '#7a0000'}
+            roughness={0.85}
+            transparent opacity={0.95}
+            side={THREE.DoubleSide}
+          />
+        </mesh>
+      ))}
     </group>
   );
 }
@@ -500,7 +638,7 @@ export const WINDOW_POSITIONS = {
   bathroom_window: { pos: [10, 2.1, 4], label: 'Bathroom Window' },
 };
 
-export default function House() {
+export default function House({ bedroomCurtainsOnly = false }) {
   return (
     <group>
       {/* ─── ROOF ─── */}
@@ -675,19 +813,38 @@ export default function House() {
       {/* Bottom section: z = [4.5, 8] */}
       <WallBox position={[4, WALL_HEIGHT / 2, 6.25]} size={[WALL_THICKNESS, WALL_HEIGHT, 3.5]} color={WALL_COLOR_INNER} />
 
-      {/* ─── TRANSPARENT GLASS DOORS ON ALL DOORWAYS (1.0w x 2.2h, light blue-grey) ─── */}
+      {/* ─── ANIMATED WOOD DOORS ON ALL DOORWAYS ─── */}
       {/* Living→Kitchen doorway (z=0, x=-5) */}
-      <GlassDoor position={[-5, 0, 0.02]} width={1.0} height={2.2} />
+      <AnimatedDoor position={[-5, 0, 0.02]} width={1.0} height={2.2} />
       {/* Living→Bedroom doorway (x=0, z=-4) */}
-      <GlassDoor position={[0.02, 0, -4]} rotation={[0, Math.PI / 2, 0]} width={1.0} height={2.2} />
+      <AnimatedDoor position={[0.02, 0, -4]} rotation={[0, Math.PI / 2, 0]} width={1.0} height={2.2} />
       {/* Bedroom→Bathroom doorway (z=0, x=5) */}
-      <GlassDoor position={[5, 0, 0.02]} width={1.0} height={2.2} />
+      <AnimatedDoor position={[5, 0, 0.02]} width={1.0} height={2.2} />
       {/* Kitchen→Bathroom doorway (x=4, z=4) */}
-      <GlassDoor position={[4.02, 0, 4]} rotation={[0, Math.PI / 2, 0]} width={1.0} height={2.2} />
+      <AnimatedDoor position={[4.02, 0, 4]} rotation={[0, Math.PI / 2, 0]} width={1.0} height={2.2} />
       {/* Back door (z=8, x=0) */}
-      <GlassDoor position={[0, 0, 7.98]} width={1.0} height={2.2} />
+      <AnimatedDoor position={[0, 0, 7.98]} width={1.0} height={2.2} />
       {/* Left entrance door (x=-10, z=-2) */}
-      <GlassDoor position={[-9.98, 0, -2]} rotation={[0, Math.PI / 2, 0]} width={1.0} height={2.2} />
+      <AnimatedDoor position={[-9.98, 0, -2]} rotation={[0, Math.PI / 2, 0]} width={1.0} height={2.2} />
+
+      {/* ─── CURTAINS ─── */}
+      {/* Bedroom back window — always has curtain */}
+      <RealisticBedroomCurtain position={[5, 1.8, -7.9]} width={1.4} height={1.1} />
+      {/* Bedroom front window — always has curtain */}
+      <RealisticBedroomCurtain position={[2.5, 1.8, -7.9]} width={1.4} height={1.1} />
+      {/* Non-bedroom curtains — only shown when bedroomCurtainsOnly is false */}
+      {!bedroomCurtainsOnly && (
+        <>
+          {/* Living Room front window */}
+          <RealisticBedroomCurtain position={[-5, 1.8, -7.9]} width={1.4} height={1.1} />
+          {/* Living Room left window */}
+          <RealisticBedroomCurtain position={[-9.9, 1.8, -4.75]} rotation={[0, Math.PI / 2, 0]} width={1.4} height={1.1} />
+          {/* Kitchen back window */}
+          <RealisticBedroomCurtain position={[-5, 2.1, 7.9]} width={1.4} height={1.1} />
+          {/* Bathroom window (smaller) */}
+          <RealisticBedroomCurtain position={[9.9, 1.8, 4]} rotation={[0, Math.PI / 2, 0]} width={1.1} height={0.8} />
+        </>
+      )}
 
       {/* ─── BASIC FURNITURE ─── */}
       {/* Living Room - Sofa */}
@@ -917,19 +1074,7 @@ export default function House() {
         </mesh>
       </group>
 
-      {/* ─── ROOM LABELS ─── */}
-      <Html position={[-5, 2.8, -4]} center>
-        <div className="room-label-3d">Living Room</div>
-      </Html>
-      <Html position={[5, 2.8, -4]} center>
-        <div className="room-label-3d">Bedroom</div>
-      </Html>
-      <Html position={[-3, 2.8, 4]} center>
-        <div className="room-label-3d">Kitchen</div>
-      </Html>
-      <Html position={[7, 2.8, 4]} center>
-        <div className="room-label-3d">Bathroom</div>
-      </Html>
+      {/* Room labels removed — names shown in top HUD banner only */}
 
       {/* ─── GROUND OUTSIDE ─── */}
       <mesh position={[0, -0.01, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>

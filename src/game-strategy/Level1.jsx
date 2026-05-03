@@ -204,8 +204,8 @@ function RealisticCurtain({ isOpen, centerX = 5 }) {
   const CURTAIN_WIDTH = 0.7; // total width of each curtain panel
   const foldWidth = CURTAIN_WIDTH / FOLDS;
 
-  useFrame(() => {
-    // Smooth animation — panels slide to sides and bunch up when open
+  useFrame((_, delta) => {
+    const speed = 0.06; // Smooth 0.8s feel
     for (let i = 0; i < FOLDS; i++) {
       const leftPanel = leftPanels.current[i];
       const rightPanel = rightPanels.current[i];
@@ -213,22 +213,22 @@ function RealisticCurtain({ isOpen, centerX = 5 }) {
 
       if (isOpen) {
         // Bunch up to the sides
-        const leftTarget = centerX - 0.85 - i * 0.04;
-        const rightTarget = centerX + 0.85 + i * 0.04;
-        leftPanel.position.x += (leftTarget - leftPanel.position.x) * 0.04;
-        rightPanel.position.x += (rightTarget - rightPanel.position.x) * 0.04;
-        // Scrunch scale
-        const scaleTarget = 0.3 + i * 0.05;
-        leftPanel.scale.x += (scaleTarget - leftPanel.scale.x) * 0.04;
-        rightPanel.scale.x += (scaleTarget - rightPanel.scale.x) * 0.04;
+        const leftTarget = centerX - 0.9 - i * 0.03;
+        const rightTarget = centerX + 0.9 + i * 0.03;
+        leftPanel.position.x += (leftTarget - leftPanel.position.x) * speed;
+        rightPanel.position.x += (rightTarget - rightPanel.position.x) * speed;
+        // Scrunch scale to look gathered
+        const scaleTarget = 0.25 + i * 0.04;
+        leftPanel.scale.x += (scaleTarget - leftPanel.scale.x) * speed;
+        rightPanel.scale.x += (scaleTarget - rightPanel.scale.x) * speed;
       } else {
-        // Spread evenly across window
+        // Spread evenly across window — panels meet in the middle
         const leftTarget = centerX - CURTAIN_WIDTH / 2 + i * foldWidth;
         const rightTarget = centerX + i * foldWidth;
-        leftPanel.position.x += (leftTarget - leftPanel.position.x) * 0.04;
-        rightPanel.position.x += (rightTarget - rightPanel.position.x) * 0.04;
-        leftPanel.scale.x += (1 - leftPanel.scale.x) * 0.04;
-        rightPanel.scale.x += (1 - rightPanel.scale.x) * 0.04;
+        leftPanel.position.x += (leftTarget - leftPanel.position.x) * speed;
+        rightPanel.position.x += (rightTarget - rightPanel.position.x) * speed;
+        leftPanel.scale.x += (1 - leftPanel.scale.x) * speed;
+        rightPanel.scale.x += (1 - rightPanel.scale.x) * speed;
       }
     }
   });
@@ -244,7 +244,7 @@ function RealisticCurtain({ isOpen, centerX = 5 }) {
       <mesh position={[centerX - 0.95, 2.58, -7.84]}><sphereGeometry args={[0.04, 8, 8]} /><meshStandardMaterial color="#b8860b" metalness={0.8} roughness={0.2} /></mesh>
       <mesh position={[centerX + 0.95, 2.58, -7.84]}><sphereGeometry args={[0.04, 8, 8]} /><meshStandardMaterial color="#b8860b" metalness={0.8} roughness={0.2} /></mesh>
 
-      {/* Left curtain folds */}
+      {/* Left curtain folds — dark maroon fabric */}
       {Array.from({ length: FOLDS }).map((_, i) => (
         <mesh
           key={`l${i}`}
@@ -253,14 +253,15 @@ function RealisticCurtain({ isOpen, centerX = 5 }) {
         >
           <boxGeometry args={[foldWidth - 0.01, 1.5, 0.03]} />
           <meshStandardMaterial
-            color={i % 2 === 0 ? '#8B2500' : '#A0522D'}
+            color={i % 2 === 0 ? '#8B0000' : '#7a0000'}
             roughness={0.85}
+            transparent opacity={0.95}
             side={THREE.DoubleSide}
           />
         </mesh>
       ))}
 
-      {/* Right curtain folds */}
+      {/* Right curtain folds — dark maroon fabric */}
       {Array.from({ length: FOLDS }).map((_, i) => (
         <mesh
           key={`r${i}`}
@@ -269,8 +270,9 @@ function RealisticCurtain({ isOpen, centerX = 5 }) {
         >
           <boxGeometry args={[foldWidth - 0.01, 1.5, 0.03]} />
           <meshStandardMaterial
-            color={i % 2 === 0 ? '#8B2500' : '#A0522D'}
+            color={i % 2 === 0 ? '#8B0000' : '#7a0000'}
             roughness={0.85}
+            transparent opacity={0.95}
             side={THREE.DoubleSide}
           />
         </mesh>
@@ -324,26 +326,38 @@ function WindowFrame({ position, visible }) {
   );
 }
 
-// ═══ ANIMATED DOOR — Rotates closed on command ═══
+// ═══ ANIMATED DOOR — Rotates on hinge with handle ═══
 function AnimatedDoor({ position, rotation = [0, 0, 0], isClosed, hingeOffset = 0.5 }) {
   const doorRef = useRef();
-  const targetAngle = isClosed ? 0 : Math.PI / 2; // 0° = flush with wall (closed), 90° = swung open
+  const targetAngle = isClosed ? 0 : Math.PI / 2; // 0° = closed, 90° = open inward
 
   useFrame(() => {
     if (!doorRef.current) return;
-    doorRef.current.rotation.y += (targetAngle - doorRef.current.rotation.y) * 0.04;
+    // 0.6s ease-in-out feel
+    doorRef.current.rotation.y += (targetAngle - doorRef.current.rotation.y) * 0.06;
   });
 
   return (
     <group position={position} rotation={rotation}>
       <group ref={doorRef} position={[-hingeOffset, 0, 0]}>
+        {/* Door panel — brown wood */}
         <mesh position={[hingeOffset, 1.1, 0]}>
           <boxGeometry args={[1.0, 2.1, 0.08]} />
-          <meshStandardMaterial color="#7a5c3a" roughness={0.7} />
+          <meshStandardMaterial color="#6b4226" roughness={0.7} />
         </mesh>
-        {/* Door handle */}
+        {/* Wood grain detail strip */}
+        <mesh position={[hingeOffset, 1.1, 0.041]}>
+          <boxGeometry args={[0.85, 1.8, 0.002]} />
+          <meshStandardMaterial color="#7a5230" roughness={0.8} />
+        </mesh>
+        {/* Door handle — metallic sphere */}
         <mesh position={[hingeOffset + 0.35, 1.0, 0.06]}>
-          <boxGeometry args={[0.08, 0.14, 0.06]} />
+          <sphereGeometry args={[0.04, 12, 12]} />
+          <meshStandardMaterial color="#c0a040" metalness={0.85} roughness={0.15} />
+        </mesh>
+        {/* Handle base plate */}
+        <mesh position={[hingeOffset + 0.35, 1.0, 0.045]}>
+          <boxGeometry args={[0.06, 0.12, 0.02]} />
           <meshStandardMaterial color="#b8860b" metalness={0.8} roughness={0.2} />
         </mesh>
       </group>
@@ -582,13 +596,9 @@ function SceneContent({
       <RealisticCurtain isOpen={curtains2Open} centerX={2.5} />
       <AirflowParticles visible={showAirflow} />
 
-      {/* Bedroom doors — only visible during AC task (task 2), removed after */}
-      {currentTask === 2 && !completedTasks.has(2) && (
-        <>
-          <AnimatedDoor position={[5, 0, 0.05]} isClosed={door1Closed} />
-          <AnimatedDoor position={[0.05, 0, -4]} rotation={[0, Math.PI / 2, 0]} isClosed={door2Closed} />
-        </>
-      )}
+      {/* Doors — always present at doorways */}
+      <AnimatedDoor position={[5, 0, 0.05]} isClosed={door1Closed} />
+      <AnimatedDoor position={[0.05, 0, -4]} rotation={[0, Math.PI / 2, 0]} isClosed={door2Closed} />
 
       {/* AC model — always visible so it shows during Phase 1 AC task */}
       {phase === 'building' && <StandaloneAC />}
@@ -1186,9 +1196,11 @@ function ACTemperatureDial({ visible, onSelect }) {
             <button key={opt.temp} className={`ac-dial-option ac-dial-${opt.status}`}
               style={{ borderColor: opt.borderColor, background: opt.bgColor }}
               onClick={() => onSelect(opt)}>
-              <div className="ac-dial-opt-temp">{opt.label}</div>
               <div className="ac-dial-opt-icon">{opt.icon}</div>
+              <div className="ac-dial-opt-temp" style={{ color: opt.color }}>{opt.label}</div>
               <div className="ac-dial-opt-impact" style={{ color: opt.color }}>{opt.energyImpact}</div>
+              <div className="ac-dial-opt-watts">{opt.temp === 18 ? 'Uses 1800W • ₹12/hr' : opt.temp === 22 ? 'Uses 1400W • ₹9/hr' : 'Uses 1000W • ₹6.5/hr'}</div>
+              <div className="ac-dial-opt-desc">{opt.temp === 18 ? 'Cools fast but wastes energy' : opt.temp === 22 ? 'Comfortable but still high' : 'BEE recommended setting'}</div>
             </button>
           ))}
         </div>
