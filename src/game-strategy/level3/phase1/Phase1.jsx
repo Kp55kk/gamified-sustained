@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { playerState } from '../../Player';
 import { getProximityLevels } from '../../level2/Level2Appliances';
 import Level3Environment from '../Level3Environment';
-import { L2_APPLIANCE_IDS, L2_APPLIANCE_MAP, computeEnvironment, AC_TEMP_SETTINGS, OPTIMAL_TEMP_IDX, PHASE1_TASKS, REALIZATION_LINES, P1_QUIZ, PHASE1_BADGE, calculateP1Stars, BILL_APPLIANCES, EXPERIMENT_FEEDBACK, AC_SCENARIOS, computeEBMeter } from './phase1Data';
+import { L2_APPLIANCE_IDS, L2_APPLIANCE_MAP, computeEnvironment, AC_TEMP_SETTINGS, OPTIMAL_TEMP_IDX, PHASE1_TASKS, REALIZATION_LINES, P1_QUIZ, PHASE1_BADGE, calculateP1Stars, BILL_APPLIANCES, EXPERIMENT_FEEDBACK, AC_SCENARIOS, computeEBMeter, CO2_JOURNEY_STEPS, APPLIANCE_COAL_DATA } from './phase1Data';
 import { SceneContent, AnimatedValue, FloatingText, DashboardMetric, StepItem, playToggleOn, playToggleOff, playCorrectSound, playWrongSound, playMilestoneSound, playWarningSound, playHeavyHum, playBreathingSound } from './Phase1Core';
 import './Phase1.css';
 
@@ -53,6 +53,11 @@ export default function Phase1({ onComplete }) {
   const [floats, setFloats] = useState([]);
   const [feedback, setFeedback] = useState(null);
   const [stars, setStars] = useState(0);
+  const [door1Closed, setDoor1Closed] = useState(false);
+  const [door2Closed, setDoor2Closed] = useState(false);
+  const [showDoors, setShowDoors] = useState(false);
+  const [showCO2Journey, setShowCO2Journey] = useState(false);
+  const [co2Step, setCo2Step] = useState(0);
 
   const task = PHASE1_TASKS[taskIdx];
   const env = useMemo(() => computeEnvironment(appStates, acTempIdx, windowOpen, curtainOpen), [appStates, acTempIdx, windowOpen, curtainOpen]);
@@ -86,6 +91,9 @@ export default function Phase1({ onComplete }) {
     setExpTimer(0); setExpRunning(false); setBestWatts(99999);
     setShowEBMeter(false); setShowACScenarios(false); setScenarioIdx(0);
     setShowAirExperience(false); setAirTimer(0);
+    setDoor1Closed(false); setDoor2Closed(false);
+    setShowDoors(task.id === 'comfort_decision');
+    setShowCO2Journey(false); setCo2Step(0);
   }, [taskIdx]);
 
   useEffect(() => {
@@ -174,6 +182,36 @@ export default function Phase1({ onComplete }) {
   const handleInteract = useCallback((appId) => {
     if (!task || taskState !== 'playing') return;
 
+    // Handle DOOR interactions (from Player.jsx detecting __door__ positions)
+    if (appId && appId.startsWith && appId.startsWith('__door__')) {
+      if (task.type === 'multi_step') {
+        const step = task.steps[currentStep];
+        if (step && step.action === 'close_door_1' && !door1Closed && appId === '__door__bedroom_living') {
+          playCorrectSound(); setDoor1Closed(true);
+          addFloat(step.feedback, 'save');
+          showFB('\ud83d\udeaa Door 1 closed! Living room → Bedroom sealed.', 'success');
+          setStepsDone(prev => [...prev, step.id]);
+          setCurrentStep(currentStep + 1);
+          return;
+        }
+        if (step && step.action === 'close_door_2' && !door2Closed && appId === '__door__bedroom_bathroom') {
+          playCorrectSound(); setDoor2Closed(true);
+          addFloat(step.feedback, 'save');
+          showFB('\ud83d\udeaa Door 2 closed! Bedroom → Bathroom sealed. Room is FULLY sealed! \u2705', 'success');
+          setStepsDone(prev => [...prev, step.id]);
+          setCurrentStep(currentStep + 1);
+          return;
+        }
+        // Wrong door for the current step
+        if (step && (step.action === 'close_door_1' || step.action === 'close_door_2')) {
+          const needed = step.action === 'close_door_1' ? 'Living Room → Bedroom' : 'Bedroom → Bathroom';
+          showFB(`\ud83d\udeaa Wrong door! Close the ${needed} door first.`, 'warning');
+          return;
+        }
+      }
+      return;
+    }
+
     // Handle window interactions (from Player.jsx __window__ prefix)
     if (appId && appId.startsWith && appId.startsWith('__window__')) {
       if (task.type === 'multi_step') {
@@ -197,7 +235,6 @@ export default function Phase1({ onComplete }) {
       }
       if (task.type === 'air_check' && !showAirExperience) {
         playWarningSound();
-        setWindowOpen(true);
         setShowAirExperience(true);
         setAirTimer(task.duration || 8);
         showFB('\ud83c\udf2b\ufe0f Look outside... The air is thick with pollution!', 'danger', 5000);
@@ -245,6 +282,45 @@ export default function Phase1({ onComplete }) {
     if (task.type === 'multi_step') {
       const step = task.steps[currentStep];
       if (!step) return;
+
+      // ── DOOR STEP: Check proximity to the SPECIFIC door directly ──
+      if (step.action === 'close_door_1') {
+        // Door 1 is at position [0, 1.1, -4]
+        const dx = playerState.x - 0;
+        const dz = playerState.z - (-4);
+        const dist = Math.sqrt(dx * dx + dz * dz);
+        if (dist < 3.5 && !door1Closed) {
+          playCorrectSound(); setDoor1Closed(true);
+          addFloat(step.feedback, 'save');
+          showFB('\ud83d\udeaa Door 1 closed! Living room \u2192 Bedroom sealed.', 'success');
+          setStepsDone(prev => [...prev, step.id]);
+          setCurrentStep(currentStep + 1);
+        } else if (door1Closed) {
+          showFB('\u2705 Door already closed!', 'info');
+        } else {
+          showFB('\ud83d\udeaa Walk closer to the Living \u2192 Bedroom door (green glow)!', 'warning');
+        }
+        return;
+      }
+      if (step.action === 'close_door_2') {
+        // Door 2 is at position [5, 1.1, 0]
+        const dx = playerState.x - 5;
+        const dz = playerState.z - 0;
+        const dist = Math.sqrt(dx * dx + dz * dz);
+        if (dist < 3.5 && !door2Closed) {
+          playCorrectSound(); setDoor2Closed(true);
+          addFloat(step.feedback, 'save');
+          showFB('\ud83d\udeaa Door 2 closed! Bedroom \u2192 Bathroom sealed. Room FULLY sealed! \u2705', 'success');
+          setStepsDone(prev => [...prev, step.id]);
+          setCurrentStep(currentStep + 1);
+        } else if (door2Closed) {
+          showFB('\u2705 Door already closed!', 'info');
+        } else {
+          showFB('\ud83d\udeaa Walk closer to the Bedroom \u2192 Bathroom door (green glow)!', 'warning');
+        }
+        return;
+      }
+
       if (step.action === 'turn_on' && step.target === appId) {
         if (appStates[appId]) { addFloat('Already ON', 'info'); return; }
         playToggleOn();
@@ -285,24 +361,32 @@ export default function Phase1({ onComplete }) {
     }
 
     if (task.type === 'eb_meter') {
-      if (currentRoom === (task.meterRoom || 'Living Room') && !showEBMeter) {
+      // EB meter is at x=-10.35, z=-1 (outside left wall near entrance)
+      // Player can be near x=-9, z=-1 (inside living room near entrance wall)
+      const dx = playerState.x - (-9);
+      const dz = playerState.z - (-1);
+      const dist = Math.sqrt(dx * dx + dz * dz);
+      if (dist < 3 && !showEBMeter) {
         setShowEBMeter(true); playCorrectSound();
-        showFB('\ud83d\udcca EB Meter opened! Click appliances to investigate their costs.', 'info');
+        showFB('\ud83d\udcca EB Meter Board opened! Investigate which appliances use the most power.', 'info');
       } else if (!showEBMeter) {
-        showFB('\ud83d\udccd Walk to the ' + (task.meterRoom || 'Living Room') + ' near the front door!', 'info');
+        showFB('\ud83d\udccd Walk to the EB Meter near the front door (left wall)!', 'info');
       }
       return;
     }
 
     if (task.type === 'air_check') {
-      if (currentRoom === (task.triggerRoom || 'Living Room') && !showAirExperience) {
+      // Player near the front door at x=-10, z=-2
+      const dx = playerState.x - (-9);
+      const dz = playerState.z - (-2);
+      const dist = Math.sqrt(dx * dx + dz * dz);
+      if (dist < 3 && !showAirExperience) {
         playWarningSound();
-        setWindowOpen(true);
         setShowAirExperience(true);
         setAirTimer(task.duration || 8);
-        showFB('\ud83c\udf2b\ufe0f Look outside... The air is thick with pollution!', 'danger', 5000);
+        showFB('\ud83c\udf2b\ufe0f Look outside through the door... The air is hazardous!', 'danger', 5000);
       } else if (!showAirExperience) {
-        showFB('\ud83d\udccd Walk to the door area in the Living Room!', 'info');
+        showFB('\ud83d\udccd Walk to the front door area to check outside air quality!', 'info');
       }
       return;
     }
@@ -340,6 +424,22 @@ export default function Phase1({ onComplete }) {
         if (ns) playToggleOn(); else playToggleOff();
         setAppStates(prev => ({ ...prev, [appId]: ns }));
         addFloat(ns ? `+${ap.wattage}W` : `-${ap.wattage}W saved`, ns ? 'damage' : 'save');
+      }
+      return;
+    }
+
+    if (task.type === 'co2_journey') {
+      // Player must be near front door area (x=-9, z=-1)
+      const dx = playerState.x - (-9);
+      const dz = playerState.z - (-1);
+      const dist = Math.sqrt(dx * dx + dz * dz);
+      if (dist < 4 && !showCO2Journey) {
+        playCorrectSound();
+        setShowCO2Journey(true);
+        setCo2Step(0);
+        showFB('\u{1F3ED} Coal \u2192 Electricity journey begins! Watch the full chain...', 'info', 5000);
+      } else if (!showCO2Journey) {
+        showFB('\u{1F4CD} Walk to the front door area to see the Coal \u2192 Electricity journey!', 'info');
       }
       return;
     }
@@ -649,6 +749,13 @@ export default function Phase1({ onComplete }) {
   const showCloseCur = curtainOpen && task && ((task.type === 'multi_step' && task.steps[currentStep]?.id === 'close_curtain') || task.type === 'free_play');
   const showOpenWin = !windowOpen && task && ((task.type === 'fix' && !fixActions.includes('window_open')) || task.type === 'free_play');
 
+  // Compute which door step is currently active for door highlighting
+  const currentDoorStep = (task?.type === 'multi_step' && task.steps[currentStep]) ? task.steps[currentStep].action : null;
+
+  // CO₂ educational data
+  const co2Kg = (env.watts * 0.71 / 1000).toFixed(2);
+  const coalKg = (env.watts * 0.0007).toFixed(2);
+
   return (
     <div className="l3p1-container">
       <div className="l3p1-canvas-wrapper">
@@ -657,7 +764,8 @@ export default function Phase1({ onComplete }) {
           <Suspense fallback={null}>
             <SceneContent applianceStates={appStates} nearestAppliance={nearestApp} highlightIds={highlightIds}
               onRoomChange={handleRoomChange} onNearestChange={handleNearestChange} onInteract={handleInteract}
-              cameraRef={cameraRef} proximityLevels={proxLevels} damageLevel={env.damageLevel} />
+              cameraRef={cameraRef} proximityLevels={proxLevels} damageLevel={env.damageLevel}
+              windowOpen={windowOpen} curtainOpen={curtainOpen} door1Closed={door1Closed} door2Closed={door2Closed} showDoors={showDoors} currentDoorStep={currentDoorStep} />
           </Suspense>
         </Canvas>
         <div className={`l3p1-vignette ${vignetteClass}`} />
@@ -680,6 +788,25 @@ export default function Phase1({ onComplete }) {
         <DashboardMetric icon={'\u{1F4B0}'} value={<AnimatedValue value={env.monthlyBill} prefix={'\u{20B9}'} />} label="Bill/mo" color={env.monthlyBill > 2000 ? '#ef4444' : '#22c55e'} />
         <DashboardMetric icon={'\u{26A1}'} value={<AnimatedValue value={env.watts} suffix="W" />} label="Power" color={wC} pulse={env.watts > 3000} />
       </div>
+
+      {/* CO₂ EDUCATIONAL DETAIL — shows coal/CO₂ impact */}
+      {env.watts > 0 && taskState === 'playing' && (
+        <div className="l3p1-co2-detail">
+          <div className="l3p1-co2-detail-row">
+            <span className="l3p1-co2-icon">{"\u{1F3ED}"}</span>
+            <span className="l3p1-co2-label">Coal Burning:</span>
+            <span className="l3p1-co2-val" style={{color:'#f59e0b'}}>{coalKg} kg/hr</span>
+          </div>
+          <div className="l3p1-co2-detail-row">
+            <span className="l3p1-co2-icon">{"\u{1F32B}\u{FE0F}"}</span>
+            <span className="l3p1-co2-label">CO{"\u{2082}"} Emitting:</span>
+            <span className="l3p1-co2-val" style={{color: env.co2Level > 0.5 ? '#ef4444' : '#f59e0b'}}>{co2Kg} kg/hr</span>
+          </div>
+          {env.watts > 1000 && (
+            <div className="l3p1-co2-warning">{"\u{26A0}\u{FE0F}"} High energy = More coal burned at power plant!</div>
+          )}
+        </div>
+      )}
 
       {/* TASK BAR */}
       {task && taskState === 'playing' && (
@@ -749,8 +876,12 @@ export default function Phase1({ onComplete }) {
         )}
       </div>
 
-      {/* FEEDBACK */}
-      {feedback && <div className={`l3p1-feedback ${feedback.type}`}>{feedback.text}</div>}
+      {/* FEEDBACK — Enhanced visibility */}
+      {feedback && (
+        <div className={`l3p1-feedback ${feedback.type}`}>
+          <div className="l3p1-feedback-content">{feedback.text}</div>
+        </div>
+      )}
       <div className="l3p1-float-container">
         {floats.map(ft => <FloatingText key={ft.id} {...ft} onDone={removeFloat} />)}
       </div>
@@ -917,11 +1048,202 @@ export default function Phase1({ onComplete }) {
         </div>
       )}
 
-      {/* PROXIMITY PROMPT for window/curtain interaction */}
+      {/* PROXIMITY PROMPT for window/curtain/door interaction */}
       {task && taskState === 'playing' && task.type === 'multi_step' && task.steps[currentStep] && 
-       (task.steps[currentStep].action === 'interact_window' || task.steps[currentStep].action === 'interact_curtain') && (
-        <div className="l3p1-proximity-prompt">
-          {'\u{1FA9F}'} Walk to a window and press E to {task.steps[currentStep].action === 'interact_window' ? 'close the window' : 'close the curtain'}!
+       (task.steps[currentStep].action === 'interact_window' || task.steps[currentStep].action === 'interact_curtain' || task.steps[currentStep].action === 'close_door_1' || task.steps[currentStep].action === 'close_door_2') && (
+        <div className="l3p1-proximity-prompt l3p1-proximity-prompt--action l3p1-proximity-prompt--enhanced">
+          <div className="l3p1-prompt-icon">
+            {(task.steps[currentStep].action === 'close_door_1' || task.steps[currentStep].action === 'close_door_2') ? '\ud83d\udeaa' : '\ud83e\udea9'}
+          </div>
+          <div className="l3p1-prompt-text">
+            {task.steps[currentStep].action === 'close_door_1'
+              ? 'Walk to the bedroom door and press E to close it!'
+              : task.steps[currentStep].action === 'close_door_2'
+              ? 'Walk to the bathroom door and press E to close it!'
+              : `Walk to a window and press E to ${task.steps[currentStep].action === 'interact_window' ? 'close the window' : 'close the curtain'}!`
+            }
+          </div>
+          <div className="l3p1-prompt-key">
+            <span className="l3p1-key-badge">E</span> Interact
+          </div>
+        </div>
+      )}
+
+      {/* PROXIMITY PROMPT for EB Meter */}
+      {task && taskState === 'playing' && task.type === 'eb_meter' && !showEBMeter && (
+        <div className="l3p1-proximity-prompt l3p1-proximity-prompt--action">
+          {'\u{1F4E1}'} Walk to the EB Meter Board near the front door (left wall) and press E!
+        </div>
+      )}
+
+      {/* PROXIMITY PROMPT for CO2 Journey */}
+      {task && taskState === 'playing' && task.type === 'co2_journey' && !showCO2Journey && (
+        <div className="l3p1-proximity-prompt l3p1-proximity-prompt--action l3p1-proximity-prompt--enhanced">
+          <div className="l3p1-prompt-icon">{'\u{1F3ED}'}</div>
+          <div className="l3p1-prompt-text">Walk to the front door and press E to see the Coal {'\u2192'} Electricity journey!</div>
+          <div className="l3p1-prompt-key">
+            <span className="l3p1-key-badge">E</span> Start Journey
+          </div>
+        </div>
+      )}
+
+      {/* ═══════════════════════════════════════════════════════════ */}
+      {/*  CO₂ FACTORY VISUALIZATION — Full-screen animated overlay  */}
+      {/* ═══════════════════════════════════════════════════════════ */}
+      {showCO2Journey && CO2_JOURNEY_STEPS && (
+        <div className="co2j-overlay">
+          <div className="co2j-container">
+            {/* Progress bar */}
+            <div className="co2j-progress-bar">
+              <div className="co2j-progress-fill" style={{ width: `${((co2Step + 1) / CO2_JOURNEY_STEPS.length) * 100}%` }} />
+              <span className="co2j-progress-text">Stage {co2Step + 1} of {CO2_JOURNEY_STEPS.length}</span>
+            </div>
+
+            {/* Step indicators */}
+            <div className="co2j-steps-row">
+              {CO2_JOURNEY_STEPS.map((s, i) => (
+                <div key={s.id} className={`co2j-step-dot ${i < co2Step ? 'done' : i === co2Step ? 'active' : ''}`}>
+                  <span className="co2j-step-dot-icon">{i < co2Step ? '\u2705' : s.icon}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Arrow chain between dots */}
+            <div className="co2j-chain">
+              {CO2_JOURNEY_STEPS.map((s, i) => (
+                <React.Fragment key={s.id}>
+                  <div className={`co2j-chain-node ${i <= co2Step ? 'lit' : ''}`}>{s.icon}</div>
+                  {i < CO2_JOURNEY_STEPS.length - 1 && (
+                    <div className={`co2j-chain-arrow ${i < co2Step ? 'lit' : ''}`}>{'\u2192'}</div>
+                  )}
+                </React.Fragment>
+              ))}
+            </div>
+
+            {/* Main content card */}
+            <div className="co2j-card" style={{ background: CO2_JOURNEY_STEPS[co2Step]?.bg || '#1a1a2e' }}>
+              <div className="co2j-card-icon">{CO2_JOURNEY_STEPS[co2Step]?.icon}</div>
+              <h2 className="co2j-card-title">{CO2_JOURNEY_STEPS[co2Step]?.title}</h2>
+              <p className="co2j-card-desc">{CO2_JOURNEY_STEPS[co2Step]?.description}</p>
+              
+              {/* Animated visual for the current step */}
+              <div className={`co2j-animation co2j-anim-${CO2_JOURNEY_STEPS[co2Step]?.animation}`}>
+                {CO2_JOURNEY_STEPS[co2Step]?.animation === 'mine' && (
+                  <div className="co2j-mine-visual">
+                    <div className="co2j-rock">{'⛏️'}</div>
+                    <div className="co2j-coal-pieces">
+                      {[1,2,3,4,5].map(i => <div key={i} className="co2j-coal-piece" style={{'--delay': `${i * 0.3}s`}}>{'🪨'}</div>)}
+                    </div>
+                  </div>
+                )}
+                {CO2_JOURNEY_STEPS[co2Step]?.animation === 'train' && (
+                  <div className="co2j-train-visual">
+                    <div className="co2j-train">{'🚂'}</div>
+                    <div className="co2j-tracks">{'━━━━━━━━━━━━━━━'}</div>
+                  </div>
+                )}
+                {CO2_JOURNEY_STEPS[co2Step]?.animation === 'burn' && (
+                  <div className="co2j-burn-visual">
+                    <div className="co2j-furnace">{'🔥'}</div>
+                    <div className="co2j-smoke">
+                      {[1,2,3,4,5,6].map(i => <div key={i} className="co2j-smoke-puff" style={{'--delay': `${i * 0.5}s`}}>{'💨'}</div>)}
+                    </div>
+                  </div>
+                )}
+                {CO2_JOURNEY_STEPS[co2Step]?.animation === 'spin' && (
+                  <div className="co2j-spin-visual">
+                    <div className="co2j-turbine">{'⚙️'}</div>
+                    <div className="co2j-steam">{'💨'}</div>
+                    <div className="co2j-bolt">{'⚡'}</div>
+                  </div>
+                )}
+                {CO2_JOURNEY_STEPS[co2Step]?.animation === 'grid' && (
+                  <div className="co2j-grid-visual">
+                    <div className="co2j-tower">{'🗼'}</div>
+                    <div className="co2j-wire">{'━━⚡━━⚡━━⚡━━'}</div>
+                    <div className="co2j-city">{'🏘️'}</div>
+                  </div>
+                )}
+                {CO2_JOURNEY_STEPS[co2Step]?.animation === 'home' && (
+                  <div className="co2j-home-visual">
+                    <div className="co2j-house">{'🏠'}</div>
+                    <div className="co2j-plug">{'🔌'}</div>
+                    <div className="co2j-apps-grid">
+                      {APPLIANCE_COAL_DATA && Object.entries(APPLIANCE_COAL_DATA).filter(([id]) => appStates[id]).map(([id, data]) => (
+                        <div key={id} className="co2j-app-chip">
+                          <span>{data.icon}</span>
+                          <span className="co2j-app-name">{data.name}</span>
+                          <span className="co2j-app-coal">{data.coalPerHr} kg/hr</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Fact box */}
+              <div className="co2j-fact-box">
+                <div className="co2j-fact-label">{'\u{1F4A1}'} Did You Know?</div>
+                <div className="co2j-fact-text">{CO2_JOURNEY_STEPS[co2Step]?.fact}</div>
+              </div>
+
+              {/* Detail box */}
+              <div className="co2j-detail-box">
+                <div className="co2j-detail-text">{CO2_JOURNEY_STEPS[co2Step]?.detail}</div>
+              </div>
+
+              {/* Coal impact on final step */}
+              {co2Step === CO2_JOURNEY_STEPS.length - 1 && APPLIANCE_COAL_DATA && (
+                <div className="co2j-impact-section">
+                  <div className="co2j-impact-title">{'\u{1F525}'} YOUR Appliances Right Now:</div>
+                  <div className="co2j-impact-grid">
+                    {Object.entries(APPLIANCE_COAL_DATA).filter(([id]) => appStates[id]).map(([id, data]) => (
+                      <div key={id} className="co2j-impact-row">
+                        <span className="co2j-impact-icon">{data.icon}</span>
+                        <span className="co2j-impact-name">{data.name}</span>
+                        <span className="co2j-impact-watts">{data.watt}W</span>
+                        <span className="co2j-impact-coal" style={{color: data.coalPerHr > 0.5 ? '#ef4444' : data.coalPerHr > 0.1 ? '#f59e0b' : '#22c55e'}}>
+                          {data.coalPerHr} kg coal/hr
+                        </span>
+                        <span className="co2j-impact-tip">{data.tip}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="co2j-impact-total">
+                    {'\u{1F525}'} Total Coal: <strong style={{color:'#ef4444', fontSize: '18px'}}>
+                      {Object.entries(APPLIANCE_COAL_DATA).filter(([id]) => appStates[id]).reduce((sum, [, d]) => sum + d.coalPerHr, 0).toFixed(2)} kg/hour
+                    </strong>
+                    {' '}{'\u2022'}{' '}
+                    CO{'\u2082'}: <strong style={{color:'#f59e0b'}}>
+                      {Object.entries(APPLIANCE_COAL_DATA).filter(([id]) => appStates[id]).reduce((sum, [, d]) => sum + d.co2PerHr, 0).toFixed(2)} kg/hour
+                    </strong>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Navigation */}
+            <div className="co2j-nav">
+              {co2Step > 0 && (
+                <button className="co2j-nav-btn co2j-nav-prev" onClick={() => setCo2Step(s => s - 1)}>
+                  {'\u2190'} Previous
+                </button>
+              )}
+              <button className="co2j-nav-btn co2j-nav-next" onClick={() => {
+                if (co2Step + 1 >= CO2_JOURNEY_STEPS.length) {
+                  setShowCO2Journey(false);
+                  playMilestoneSound();
+                  showFB('\u{2705} You now understand the FULL coal→electricity→CO\u2082 chain! Every watt matters!', 'success', 5000);
+                  setTimeout(() => handleTaskComplete(), 2000);
+                } else {
+                  setCo2Step(s => s + 1);
+                  playCorrectSound();
+                }
+              }}>
+                {co2Step + 1 >= CO2_JOURNEY_STEPS.length ? 'I Understand! \u2705' : 'Next Stage \u2192'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

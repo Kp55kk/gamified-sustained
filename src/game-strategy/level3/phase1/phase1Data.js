@@ -1,4 +1,4 @@
-// ═══════════════════════════════════════════════════════════
+﻿// ═══════════════════════════════════════════════════════════
 //  LEVEL 3 — PHASE 1: "Understand the Consequences of Energy Use"
 //  Data: Tasks, Environment Model, AC Temp, Quiz
 // ═══════════════════════════════════════════════════════════
@@ -233,45 +233,46 @@ export const PHASE1_TASKS = [
     type: 'multi_step',
     hasACScenarios: true, // Triggers the elaborate AC scenario teaching UI
     steps: [
-      { id: 'try_fan', label: '1. Walk to ceiling fan and turn it ON', action: 'turn_on', target: 'ceiling_fan', feedback: 'Fan running... 70W only! But still 32°C 🥵' },
+      { id: 'try_fan', label: '1. Walk to ceiling fan and turn it ON', action: 'turn_on', target: 'ceiling_fan', feedback: 'Fan ON! 70W only... but 32°C is still too hot 🥵' },
       { id: 'close_window', label: '2. Walk to window → Press E to close', action: 'interact_window', feedback: 'Window closed! Hot air blocked ✅' },
       { id: 'close_curtain', label: '3. Walk to window → Press E to close curtain', action: 'interact_curtain', feedback: 'Curtain closed! Sunlight blocked ✅' },
-      { id: 'turn_on_ac', label: '4. Walk to AC and turn it ON', action: 'turn_on', target: 'ac_1_5ton', feedback: 'AC ON — sealed room = efficient cooling! ✅' },
-      { id: 'learn_temp', label: '5. Learn why 24°C is the best setting', action: 'ac_scenarios', feedback: 'Now you understand AC temperature science! 🧠' },
+      { id: 'close_door_1', label: '4. Close Living → Bedroom door', action: 'close_door_1', feedback: 'Door 1 sealed! ✅' },
+      { id: 'close_door_2', label: '5. Close Bedroom → Bathroom door', action: 'close_door_2', feedback: 'Door 2 sealed! Room is FULLY closed ✅' },
+      { id: 'turn_on_ac', label: '6. Walk to AC and turn it ON', action: 'turn_on', target: 'ac_1_5ton', feedback: 'AC ON — sealed room = efficient cooling! ✅' },
+      { id: 'learn_temp', label: '7. Learn why 24°C is the best setting', action: 'ac_scenarios', feedback: 'Now you understand AC temperature science! 🧠' },
     ],
-    initialOn: [], initialWindows: true, initialCurtains: true,
+    initialOn: [],
+    initialWindows: true, initialCurtains: true,
     learning: {
-      title: '🧠 Smart Cooling Science',
+      title: '\u{1F4A1} Smart Cooling',
       messages: [
-        'Always try the fan FIRST — 70W vs AC\'s 1500W (20x difference!)',
-        'SEAL the room (close windows + curtains + doors) before AC',
-        'AC at 24°C with closed room = ₹0 wasted. AC at 18°C = ₹900 extra!',
-        'Open windows + AC = 70% cooling WASTED. Worst combination!',
-        'BEE India recommends 24°C as the standard AC temperature',
+        'Fan first (70W), AC only when needed (1500W)',
+        'SEAL the room before AC: close windows, curtains, doors',
+        '24\u00B0C is the golden temperature: comfort + efficiency',
+        'Each degree below 24\u00B0C wastes ~6% more energy',
       ],
     },
   },
   {
-    id: 'bill_hunt', number: 3,
-    title: 'Bill Hunt',
-    subtitle: 'FIND THE ENERGY THIEVES',
-    icon: '💰', color: '#8b5cf6', colorDot: '🟣',
-    objective: 'Find what is increasing your electricity bill',
-    description: 'Your electricity bill is ₹3000+! Walk OUTSIDE to the EB meter board to investigate. The meter shows exactly which appliances are stealing your money!',
-    instruction: 'Walk to the DOOR (left wall) → The EB meter is just inside the door → Press E to read the meter',
-    hint: 'The EB meter is near the front door on the left wall!',
-    type: 'eb_meter',
-    initialOn: ['ac_1_5ton', 'geyser', 'tv_smart', 'led_tube', 'led_bulb', 'ceiling_fan', 'fridge'],
+    id: 'fix_the_damage', number: 3,
+    title: 'Fix the Damage',
+    subtitle: 'UNDO THE OVERUSE',
+    icon: '\u{1F33F}', color: '#22c55e', colorDot: '\u{1F7E2}',
+    objective: 'Turn off wasteful appliances and restore the environment',
+    description: 'The house is overloaded! AC, geyser, and lights are all ON. Turn off the geyser, turn off AC, turn ON the fan, and open the windows to let natural air in.',
+    instruction: 'Turn OFF geyser \u2192 Turn OFF AC \u2192 Turn ON fan \u2192 Open windows',
+    hint: 'Geyser (2000W) and AC (1500W) are the biggest energy wasters!',
+    type: 'fix',
+    requiredActions: ['geyser_off', 'ac_off', 'fan_on', 'window_open'],
+    initialOn: ['ac_1_5ton', 'geyser', 'led_tube', 'induction'],
     initialWindows: false, initialCurtains: false,
-    meterRoom: 'Living Room', // Must be in this room to interact
-    requiredClicks: 3, // Must investigate at least 3 appliances
     learning: {
-      title: '🧠 Bill Breakdown',
+      title: '\u{1F4A1} Smart Choices',
       messages: [
-        'AC and Geyser together make up 60%+ of your electricity bill',
-        'The EB meter never lies — it shows EXACTLY what you\'re paying',
-        'Small devices like LED lights cost < ₹30/month. AC costs ₹1500+!',
-        'Knowing which appliance costs the most helps you save smartly',
+        'Turning OFF geyser saves 2000W instantly!',
+        'Fan + open windows uses 20x less energy than AC',
+        'Your actions directly reduce CO\u2082 emissions',
+        'Small choices create massive impact at scale',
       ],
     },
   },
@@ -287,7 +288,7 @@ export const PHASE1_TASKS = [
     type: 'observation',
     initialOn: ['ac_1_5ton', 'geyser', 'induction'],
     initialWindows: false, initialCurtains: false,
-    duration: 15, // seconds to observe
+    duration: 15,
     learning: {
       title: '🧠 The Heat Loop',
       messages: [
@@ -309,8 +310,8 @@ export const PHASE1_TASKS = [
     type: 'air_check',
     initialOn: ['ac_1_5ton', 'geyser', 'induction', 'tv_smart'],
     initialWindows: false, initialCurtains: false,
-    triggerRoom: 'Living Room', // Near the front door
-    duration: 8, // seconds to experience
+    triggerRoom: 'Living Room',
+    duration: 8,
     learning: {
       title: '🧠 The Air We Breathe',
       messages: [
@@ -322,51 +323,144 @@ export const PHASE1_TASKS = [
     },
   },
   {
-    id: 'fix_created', number: 6,
-    title: 'Fix What You Created',
-    subtitle: 'UNDO THE DAMAGE',
-    icon: '🔧', color: '#22c55e', colorDot: '🟢',
-    objective: 'Reduce the environmental impact',
-    description: 'Now fix the damage! Turn OFF the geyser, replace AC with fan, and open windows for natural ventilation.',
-    instruction: 'Turn OFF geyser → Turn OFF AC → Turn ON fan → Open windows',
-    hint: 'Reduce wattage to see the environment recover!',
-    type: 'fix',
-    requiredActions: ['geyser_off', 'ac_off', 'fan_on', 'window_open'],
-    initialOn: ['ac_1_5ton', 'geyser', 'tv_smart', 'led_tube', 'induction'],
+    id: 'coal_to_light', number: 6,
+    title: 'Coal to Light: The CO\u2082 Journey',
+    subtitle: 'SEE WHERE ELECTRICITY COMES FROM',
+    icon: '\u{1F3ED}', color: '#dc2626', colorDot: '\u{1F534}',
+    objective: 'Discover how coal becomes electricity and causes CO\u2082',
+    description: 'Every time you flip a switch, coal burns in a power plant hundreds of kilometers away. Walk to the front door and press E to witness the FULL journey: Coal Mine \u2192 Power Plant \u2192 Burning Furnace \u2192 Steam Turbine \u2192 Your Home!',
+    instruction: 'Walk to the front door area \u2192 Press E to start the Coal \u2192 Electricity visualization',
+    hint: 'India generates ~70% electricity from coal. Your AC alone burns 0.95 kg of coal per HOUR!',
+    type: 'co2_journey',
+    initialOn: ['ac_1_5ton', 'geyser', 'tv_smart', 'led_tube', 'ceiling_fan', 'fridge'],
     initialWindows: false, initialCurtains: false,
     learning: {
-      title: '🧠 Recovery',
+      title: '\u{1F4A1} The Coal Truth',
       messages: [
-        'Smart choices immediately reduce environmental impact',
-        'Fan + open windows = natural cooling with 95% less energy',
-        'Good… but is this enough? Electricity still causes pollution.',
+        '70% of India\'s electricity comes from COAL power plants',
+        'Burning 1 kg of coal produces 2.86 kg of CO\u2082 gas',
+        'Your AC running 8 hrs/day burns ~7.6 kg of coal DAILY',
+        'A geyser running 30 min burns 0.7 kg of coal \u2014 just for hot water!',
+        'India is the world\'s 2nd largest coal consumer \u2014 YOUR choices matter!',
+        'Renewable energy (solar, wind) produces ZERO CO\u2082. This is the future.',
       ],
     },
   },
   {
-    id: 'free_play', number: 7,
-    title: 'Free Play Experiment',
-    subtitle: 'TRY COMBINATIONS',
-    icon: '🔬', color: '#06b6d4', colorDot: '🔵',
-    objective: 'Experiment freely and find the best combinations',
-    description: 'Try different combinations! AC + closed room vs Fan + ventilation vs Lights + daylight. Watch how each choice affects the environment.',
-    instruction: 'Toggle appliances freely. Try to find the lowest-impact setup!',
-    hint: 'Best combo: Fan + open windows during day, minimal lights at night',
+    id: 'coal_counter_fix', number: 7,
+    title: 'Stop the Coal Furnace!',
+    subtitle: 'UNDO THE DAMAGE',
+    icon: '\u{1F525}', color: '#22c55e', colorDot: '\u{1F7E2}',
+    objective: 'Reduce coal burning by fixing the wasteful home!',
+    description: 'You just SAW coal burning for YOUR appliances! Now fix the house: turn off wasteful appliances, enable natural cooling, and watch the coal consumption DROP!',
+    instruction: 'Turn OFF geyser \u2192 Turn OFF AC \u2192 Turn ON fan \u2192 Open windows \u2192 Watch coal STOP!',
+    hint: 'Target: Under 200W = only 0.14 kg coal/hr vs 5.4 kg when wasteful!',
+    type: 'fix',
+    requiredActions: ['geyser_off', 'ac_off', 'fan_on', 'window_open'],
+    initialOn: ['ac_1_5ton', 'geyser', 'tv_smart', 'led_tube', 'led_bulb', 'induction', 'ceiling_fan'],
+    initialWindows: false, initialCurtains: false,
+    learning: {
+      title: '\u{1F4A1} Green Home = Less Coal',
+      messages: [
+        'Wasteful home: 7720W = 5.4 kg coal/hr. Green home: 200W = 0.14 kg coal/hr!',
+        'That\'s a 97% REDUCTION in coal burning just from smart choices!',
+        'Fan (70W) + open windows = natural cooling burning only 0.05 kg coal/hr',
+        'A green home saves ~35 kg of coal per DAY compared to a wasteful one',
+        'If every Indian household did this: 1.3 BILLION kg less coal burned daily!',
+      ],
+    },
+  },
+  {
+    id: 'energy_budget', number: 8,
+    title: 'Energy Budget Challenge',
+    subtitle: 'PROVE YOUR KNOWLEDGE',
+    icon: '\u{1F4CA}', color: '#06b6d4', colorDot: '\u{1F535}',
+    objective: 'Keep the house comfortable under 200W for 30 seconds',
+    description: 'Final challenge! Strict budget: only 200W = 0.14 kg coal/hr. Can you keep the house liveable while staying under budget?',
+    instruction: 'Toggle appliances ON/OFF. Stay UNDER 200W for 30 seconds to win!',
+    hint: 'Smart combo: Fan (70W) + LED (7W) + WiFi (12W) + Charger (5W) = 94W!',
     type: 'free_play',
     initialOn: [],
     initialWindows: true, initialCurtains: true,
-    targetWatts: 200, // Goal: get under 200W
-    experimentTime: 30, // seconds
+    targetWatts: 200,
+    experimentTime: 30,
     learning: {
-      title: '🧠 Key Insight',
+      title: '\u{1F4A1} Energy Analyst Graduate',
       messages: [
-        'The best energy setup uses natural resources first (light, air)',
-        'Only use high-watt appliances when absolutely necessary',
-        'Every watt saved reduces your carbon footprint',
+        'You proved a family CAN live comfortably under 200W!',
+        'AC (1500W) alone burns more coal than your ENTIRE green home setup!',
+        'Coal burned per hour: AC=0.95kg, Geyser=1.42kg, Your setup=0.066kg!',
+        'You are now a certified Energy Analyst \u2014 you understand consequences!',
+        'Next: Discover RENEWABLE energy that burns ZERO coal!',
       ],
     },
   },
 ];
+
+
+// ═══════════════════════════════════════════════════════════
+//  CO2 JOURNEY VISUALIZATION STEPS
+// ═══════════════════════════════════════════════════════════
+export const CO2_JOURNEY_STEPS = [
+  {
+    id: 'coal_mine', title: 'Step 1: The Coal Mine', icon: '⛏️',
+    bg: 'linear-gradient(135deg, #1a1a2e, #16213e)',
+    description: 'Deep underground in Jharia, Jharkhand — India\'s largest coalfield. Massive machines extract coal 24/7.',
+    fact: 'India mines ~900 MILLION tons of coal every year — enough to fill 15 million train cars!',
+    detail: 'Coal formed over 300 million years from dead plants. We burn in hours what nature created in millennia.',
+    animation: 'mine',
+  },
+  {
+    id: 'transport', title: 'Step 2: Coal Transport', icon: '🚂',
+    bg: 'linear-gradient(135deg, #1a1a2e, #0f3460)',
+    description: 'Trains carry coal hundreds of kilometers from mines to thermal power plants. Each train carries ~4,000 tons.',
+    fact: '40% of Indian Railways freight is COAL — the single largest cargo moved in India!',
+    detail: 'The journey from Jharia mines to a power plant can take 2-3 days by rail.',
+    animation: 'train',
+  },
+  {
+    id: 'power_plant', title: 'Step 3: The Power Plant', icon: '🏭',
+    bg: 'linear-gradient(135deg, #2d1810, #4a1c10)',
+    description: 'Coal is crushed to powder and blown into a MASSIVE furnace at 1,500°C. The heat boils water into steam.',
+    fact: 'A single power plant burns 20,000 tons of coal PER DAY — 230 kg every SECOND!',
+    detail: 'For every 1 kWh produced, about 0.71 kg of CO₂ is released into the atmosphere.',
+    animation: 'burn',
+  },
+  {
+    id: 'turbine', title: 'Step 4: Steam Turbine', icon: '⚙️',
+    bg: 'linear-gradient(135deg, #1a1a2e, #3a1078)',
+    description: 'Super-heated steam spins giant turbine blades at 3,000 RPM, driving a generator that produces electricity.',
+    fact: 'Thermal efficiency is only ~33% — TWO-THIRDS of coal energy is WASTED as heat!',
+    detail: 'For every 3 units of coal energy, only 1 becomes electricity. The rest heats the atmosphere.',
+    animation: 'spin',
+  },
+  {
+    id: 'grid', title: 'Step 5: The Power Grid', icon: '⚡',
+    bg: 'linear-gradient(135deg, #0a1628, #1a2980)',
+    description: 'Electricity travels through 400,000V lines across hundreds of km. Transformers step down to 230V for homes.',
+    fact: 'India\'s power grid is the 3rd largest in the world — serving 1.4 billion people!',
+    detail: '~5% of electricity is LOST during transmission. Even more coal is burned to compensate.',
+    animation: 'grid',
+  },
+  {
+    id: 'your_home', title: 'Step 6: YOUR Home', icon: '🏠',
+    bg: 'linear-gradient(135deg, #0a1628, #1e3a5f)',
+    description: 'Electricity reaches YOUR switchboard. Every appliance ON sends a signal back — burning MORE coal!',
+    fact: 'Right now, YOUR appliances are burning coal at a power plant far away!',
+    detail: 'See exactly how much coal each of your appliances is consuming below.',
+    animation: 'home',
+  },
+];
+
+export const APPLIANCE_COAL_DATA = {
+  ac_1_5ton: { name: 'AC (1.5T)', watt: 1500, coalPerHr: 0.95, co2PerHr: 1.065, icon: '❄️', tip: 'BIGGEST coal burner!' },
+  geyser: { name: 'Geyser', watt: 2000, coalPerHr: 1.42, co2PerHr: 1.42, icon: '🚿', tip: '30 min = 0.71 kg coal!' },
+  induction: { name: 'Induction', watt: 2000, coalPerHr: 1.42, co2PerHr: 1.42, icon: '🍳', tip: 'Same power as geyser!' },
+  tv_smart: { name: 'Smart TV', watt: 120, coalPerHr: 0.085, co2PerHr: 0.085, icon: '📺', tip: 'Low but hours add up' },
+  led_tube: { name: 'LED Tube', watt: 20, coalPerHr: 0.014, co2PerHr: 0.014, icon: '💡', tip: '20x better than old bulbs' },
+  ceiling_fan: { name: 'Fan', watt: 70, coalPerHr: 0.05, co2PerHr: 0.05, icon: '🌬️', tip: 'Low coal, great comfort!' },
+  fridge: { name: 'Fridge', watt: 150, coalPerHr: 0.11, co2PerHr: 0.11, icon: '🧊', tip: 'Runs 24/7 but efficient' },
+};
 
 // ═══════════════════════════════════════════════════════════
 //  REALIZATION DIALOGUE

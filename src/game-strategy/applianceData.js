@@ -488,6 +488,9 @@ export const APPLIANCE_POSITIONS = {
   led_tube:       { pos: [-7, 2.85, 4],     rot: [0, 0, 0] },           // Kitchen ceiling
   phone_charger:  { pos: [5, 0.55, -7.0],   rot: [0, 0, 0] },           // Bedroom desk
   table_fan:      { pos: [3, 0.55, -5],     rot: [0, Math.PI / 4, 0] }, // Bedroom table
+  // Door positions (for Level 3 Phase 1 interaction)
+  __door__bedroom_living:   { pos: [0, 1.1, -4],  rot: [0, Math.PI / 2, 0] }, // Living→Bedroom door
+  __door__bedroom_bathroom: { pos: [5, 1.1, 0],   rot: [0, 0, 0] },           // Bedroom→Bathroom door
 };
 
 // ─── Quiz Questions — Phase 2 Appliance Discovery (with difficulty: 1=easy, 2=medium, 3=hard) ───

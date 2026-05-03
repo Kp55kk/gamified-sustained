@@ -2,8 +2,10 @@
 //  LEVEL 3 — PHASE 1 CORE: Audio, 3D Scene, Shared Components
 //  "Understand the Consequences of Energy Use"
 // ═══════════════════════════════════════════════════════════
-import React, { useState, useEffect, useCallback } from 'react';
-import { useThree } from '@react-three/fiber';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useThree, useFrame } from '@react-three/fiber';
+import { Html } from '@react-three/drei';
+import * as THREE from 'three';
 import House from '../../House';
 import Player from '../../Player';
 import Level2Appliances from '../../level2/Level2Appliances';
@@ -201,10 +203,263 @@ export function CameraRefForwarder({ cameraRef }) {
   return null;
 }
 
+// ═══════════════════════════════════════════════════════════
+//  3D EB METER — Indian-style electricity meter on wall
+// ═══════════════════════════════════════════════════════════
+function EBMeter3D({ damageLevel }) {
+  const dialRef = useRef();
+  const ledRef = useRef();
+
+  useFrame(() => {
+    // Spinning dial based on power usage
+    if (dialRef.current) {
+      dialRef.current.rotation.z -= 0.02 + damageLevel * 0.08;
+    }
+    // Blinking LED
+    if (ledRef.current) {
+      const t = performance.now() * 0.005;
+      ledRef.current.material.emissiveIntensity = 0.5 + Math.sin(t * (2 + damageLevel * 5)) * 0.5;
+    }
+  });
+
+  return (
+    <group position={[-10.35, 1.6, -1]}>
+      {/* Meter board (wooden backing) */}
+      <mesh position={[0, 0, 0]}>
+        <boxGeometry args={[0.08, 1.2, 0.8]} />
+        <meshStandardMaterial color="#5a3a20" roughness={0.7} />
+      </mesh>
+      {/* Meter box (grey metal) */}
+      <mesh position={[-0.06, 0.1, 0]}>
+        <boxGeometry args={[0.12, 0.7, 0.55]} />
+        <meshStandardMaterial color="#707070" metalness={0.5} roughness={0.3} />
+      </mesh>
+      {/* Glass window on meter */}
+      <mesh position={[-0.13, 0.15, 0]}>
+        <boxGeometry args={[0.02, 0.35, 0.3]} />
+        <meshStandardMaterial color="#a8d4e6" transparent opacity={0.4} roughness={0.1} />
+      </mesh>
+      {/* Spinning dial (aluminum disc) */}
+      <mesh ref={dialRef} position={[-0.15, 0.15, 0]} rotation={[0, Math.PI / 2, 0]}>
+        <circleGeometry args={[0.08, 16]} />
+        <meshStandardMaterial color="#c0c0c0" metalness={0.8} roughness={0.15} side={THREE.DoubleSide} />
+      </mesh>
+      {/* Dial mark */}
+      <mesh position={[-0.155, 0.15, 0]}>
+        <boxGeometry args={[0.005, 0.06, 0.01]} />
+        <meshStandardMaterial color="#333" />
+      </mesh>
+      {/* Counter display */}
+      <mesh position={[-0.13, -0.05, 0]}>
+        <boxGeometry args={[0.02, 0.1, 0.25]} />
+        <meshStandardMaterial color="#111" roughness={0.2} />
+      </mesh>
+      {/* LED indicator */}
+      <mesh ref={ledRef} position={[-0.13, 0.35, 0.15]}>
+        <sphereGeometry args={[0.02, 8, 8]} />
+        <meshStandardMaterial color="#ff0000" emissive="#ff0000" emissiveIntensity={0.5} />
+      </mesh>
+      {/* Second LED */}
+      <mesh position={[-0.13, 0.35, -0.15]}>
+        <sphereGeometry args={[0.02, 8, 8]} />
+        <meshStandardMaterial color="#00ff00" emissive="#00ff00" emissiveIntensity={0.3} />
+      </mesh>
+      {/* Wires coming from top */}
+      <mesh position={[-0.06, 0.55, -0.1]}>
+        <cylinderGeometry args={[0.01, 0.01, 0.3, 6]} />
+        <meshStandardMaterial color="#222" />
+      </mesh>
+      <mesh position={[-0.06, 0.55, 0.1]}>
+        <cylinderGeometry args={[0.01, 0.01, 0.3, 6]} />
+        <meshStandardMaterial color="#c00" />
+      </mesh>
+      {/* MCB switch panel below */}
+      <mesh position={[-0.06, -0.35, 0]}>
+        <boxGeometry args={[0.1, 0.3, 0.45]} />
+        <meshStandardMaterial color="#e8e0d0" roughness={0.6} />
+      </mesh>
+      {/* MCB switches */}
+      {[-0.12, -0.04, 0.04, 0.12].map((z, i) => (
+        <mesh key={i} position={[-0.12, -0.35, z]}>
+          <boxGeometry args={[0.02, 0.08, 0.06]} />
+          <meshStandardMaterial color={i < 2 ? '#2563eb' : '#888'} roughness={0.3} />
+        </mesh>
+      ))}
+      {/* "EB" label */}
+      <mesh position={[-0.13, 0.5, 0]}>
+        <boxGeometry args={[0.01, 0.08, 0.2]} />
+        <meshStandardMaterial color="#fff" roughness={0.5} />
+      </mesh>
+    </group>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════
+//  REALISTIC CURTAIN — Same as Level 1 (folding animation)
+// ═══════════════════════════════════════════════════════════
+function RealisticCurtain({ isOpen, centerX = 5, centerZ = -7.84, rotY = 0 }) {
+  const leftPanels = useRef([]); const rightPanels = useRef([]);
+  const FOLDS = 5;
+  const CURTAIN_WIDTH = 0.7;
+  const foldWidth = CURTAIN_WIDTH / FOLDS;
+
+  useFrame(() => {
+    for (let i = 0; i < FOLDS; i++) {
+      const leftPanel = leftPanels.current[i];
+      const rightPanel = rightPanels.current[i];
+      if (!leftPanel || !rightPanel) continue;
+      if (isOpen) {
+        const leftTarget = -0.85 - i * 0.04;
+        const rightTarget = 0.85 + i * 0.04;
+        leftPanel.position.x += (leftTarget - leftPanel.position.x) * 0.04;
+        rightPanel.position.x += (rightTarget - rightPanel.position.x) * 0.04;
+        const scaleTarget = 0.3 + i * 0.05;
+        leftPanel.scale.x += (scaleTarget - leftPanel.scale.x) * 0.04;
+        rightPanel.scale.x += (scaleTarget - rightPanel.scale.x) * 0.04;
+      } else {
+        const leftTarget = -CURTAIN_WIDTH / 2 + i * foldWidth;
+        const rightTarget = i * foldWidth;
+        leftPanel.position.x += (leftTarget - leftPanel.position.x) * 0.04;
+        rightPanel.position.x += (rightTarget - rightPanel.position.x) * 0.04;
+        leftPanel.scale.x += (1 - leftPanel.scale.x) * 0.04;
+        rightPanel.scale.x += (1 - rightPanel.scale.x) * 0.04;
+      }
+    }
+  });
+
+  return (
+    <group position={[centerX, 0, centerZ]} rotation={[0, rotY, 0]}>
+      {/* Curtain rod */}
+      <mesh position={[0, 2.58, 0]} rotation={[0, 0, Math.PI / 2]}>
+        <cylinderGeometry args={[0.025, 0.025, 1.9, 8]} />
+        <meshStandardMaterial color="#b8860b" metalness={0.8} roughness={0.2} />
+      </mesh>
+      {/* Rod finials */}
+      <mesh position={[-0.95, 2.58, 0]}><sphereGeometry args={[0.04, 8, 8]} /><meshStandardMaterial color="#b8860b" metalness={0.8} roughness={0.2} /></mesh>
+      <mesh position={[0.95, 2.58, 0]}><sphereGeometry args={[0.04, 8, 8]} /><meshStandardMaterial color="#b8860b" metalness={0.8} roughness={0.2} /></mesh>
+      {/* Left curtain folds */}
+      {Array.from({ length: FOLDS }).map((_, i) => (
+        <mesh key={`l${i}`} ref={el => { leftPanels.current[i] = el; }}
+          position={[-CURTAIN_WIDTH / 2 + i * foldWidth, 1.82, 0]}>
+          <boxGeometry args={[foldWidth - 0.01, 1.5, 0.03]} />
+          <meshStandardMaterial color={i % 2 === 0 ? '#8B2500' : '#A0522D'} roughness={0.85} side={THREE.DoubleSide} />
+        </mesh>
+      ))}
+      {/* Right curtain folds */}
+      {Array.from({ length: FOLDS }).map((_, i) => (
+        <mesh key={`r${i}`} ref={el => { rightPanels.current[i] = el; }}
+          position={[i * foldWidth, 1.82, 0]}>
+          <boxGeometry args={[foldWidth - 0.01, 1.5, 0.03]} />
+          <meshStandardMaterial color={i % 2 === 0 ? '#8B2500' : '#A0522D'} roughness={0.85} side={THREE.DoubleSide} />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════
+//  ANIMATED DOOR — Same as Level 1 (hinge rotation)
+// ═══════════════════════════════════════════════════════════
+function AnimatedDoor({ position, rotation = [0, 0, 0], isClosed, hingeOffset = 0.5, isTarget, doorLabel }) {
+  const doorRef = useRef();
+  const glowRef = useRef();
+  const targetAngle = isClosed ? 0 : Math.PI / 2;
+
+  useFrame(() => {
+    if (!doorRef.current) return;
+    doorRef.current.rotation.y += (targetAngle - doorRef.current.rotation.y) * 0.04;
+    // Pulsing glow for target door
+    if (glowRef.current && isTarget && !isClosed) {
+      const t = performance.now() * 0.003;
+      glowRef.current.emissiveIntensity = 1.5 + Math.sin(t) * 0.8;
+    }
+  });
+
+  return (
+    <group position={position} rotation={rotation}>
+      <group ref={doorRef} position={[-hingeOffset, 0, 0]}>
+        <mesh position={[hingeOffset, 1.1, 0]}>
+          <boxGeometry args={[1.0, 2.1, 0.08]} />
+          <meshStandardMaterial color="#7a5c3a" roughness={0.7} />
+        </mesh>
+        {/* Door handle */}
+        <mesh position={[hingeOffset + 0.35, 1.0, 0.06]}>
+          <boxGeometry args={[0.08, 0.14, 0.06]} />
+          <meshStandardMaterial color="#b8860b" metalness={0.8} roughness={0.2} />
+        </mesh>
+        {/* Glowing frame edges when this is the target */}
+        {isTarget && !isClosed && (
+          <>
+            {/* Top frame glow */}
+            <mesh position={[hingeOffset, 2.18, 0]}>
+              <boxGeometry args={[1.1, 0.06, 0.12]} />
+              <meshStandardMaterial ref={glowRef} color="#22c55e" emissive="#22c55e" emissiveIntensity={1.5} transparent opacity={0.9} />
+            </mesh>
+            {/* Bottom frame glow */}
+            <mesh position={[hingeOffset, 0.02, 0]}>
+              <boxGeometry args={[1.1, 0.06, 0.12]} />
+              <meshStandardMaterial color="#22c55e" emissive="#22c55e" emissiveIntensity={1.5} transparent opacity={0.9} />
+            </mesh>
+            {/* Left frame glow */}
+            <mesh position={[hingeOffset - 0.52, 1.1, 0]}>
+              <boxGeometry args={[0.06, 2.2, 0.12]} />
+              <meshStandardMaterial color="#22c55e" emissive="#22c55e" emissiveIntensity={1.5} transparent opacity={0.9} />
+            </mesh>
+            {/* Right frame glow */}
+            <mesh position={[hingeOffset + 0.52, 1.1, 0]}>
+              <boxGeometry args={[0.06, 2.2, 0.12]} />
+              <meshStandardMaterial color="#22c55e" emissive="#22c55e" emissiveIntensity={1.5} transparent opacity={0.9} />
+            </mesh>
+            {/* Point light for visibility */}
+            <pointLight position={[hingeOffset, 1.1, 0.3]} intensity={2} distance={4} color="#22c55e" />
+          </>
+        )}
+        {/* "Closed" indicator — red frame when door is closed */}
+        {isClosed && (
+          <>
+            <mesh position={[hingeOffset, 2.18, 0]}>
+              <boxGeometry args={[1.1, 0.04, 0.1]} />
+              <meshStandardMaterial color="#ef4444" emissive="#ef4444" emissiveIntensity={0.8} transparent opacity={0.7} />
+            </mesh>
+          </>
+        )}
+      </group>
+      {/* Floating label above the door when it's the target */}
+      {isTarget && !isClosed && (
+        <Html position={[0, 2.8, 0]} center>
+          <div style={{
+            background: 'rgba(5,10,5,0.95)',
+            border: '2px solid #22c55e',
+            borderRadius: '12px',
+            padding: '8px 16px',
+            textAlign: 'center',
+            minWidth: '160px',
+            boxShadow: '0 0 20px rgba(34,197,94,0.5)',
+            animation: 'l3p1-doorpulse 1.5s ease infinite',
+            pointerEvents: 'none',
+          }}>
+            <div style={{ fontSize: '20px', marginBottom: '4px' }}>🚪</div>
+            <div style={{ fontFamily: "'Fredoka',sans-serif", fontSize: '13px', fontWeight: 700, color: '#4ade80' }}>
+              {doorLabel || 'Close Door'}
+            </div>
+            <div style={{ fontSize: '11px', color: '#fff', marginTop: '2px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+              Press <span style={{ background: '#22c55e', color: '#000', padding: '2px 8px', borderRadius: '4px', fontWeight: 800, fontSize: '12px' }}>E</span> to Close
+            </div>
+          </div>
+        </Html>
+      )}
+    </group>
+  );
+}
+
+// Extended appliance list including door interaction targets
+const EXTENDED_IDS = [...L2_APPLIANCE_IDS, '__door__bedroom_living', '__door__bedroom_bathroom'];
+
 export function SceneContent({
   applianceStates, nearestAppliance, highlightIds,
   onRoomChange, onNearestChange, onInteract,
-  cameraRef, proximityLevels, damageLevel
+  cameraRef, proximityLevels, damageLevel,
+  windowOpen, curtainOpen, door1Closed, door2Closed, showDoors, currentDoorStep
 }) {
   return (
     <>
@@ -217,11 +472,38 @@ export function SceneContent({
         taskTargetIds={highlightIds}
         proximityLevels={proximityLevels}
       />
+      {/* EB Meter — outside the house on left wall */}
+      <EBMeter3D damageLevel={damageLevel} />
+      {/* Bedroom curtains (same as Level 1) */}
+      <RealisticCurtain isOpen={curtainOpen} centerX={5} centerZ={-7.84} />
+      <RealisticCurtain isOpen={curtainOpen} centerX={2.5} centerZ={-7.84} />
+      {/* Living room curtain */}
+      <RealisticCurtain isOpen={curtainOpen} centerX={-5} centerZ={-7.84} />
+      {/* TWO Animated bedroom doors — only visible during AC task */}
+      {showDoors && (
+        <>
+          {/* Door 1: Living→Bedroom (vertical wall at x=0, z=-4) */}
+          <AnimatedDoor 
+            position={[0, 0, -4]} 
+            rotation={[0, Math.PI / 2, 0]} 
+            isClosed={door1Closed} 
+            isTarget={currentDoorStep === 'close_door_1'}
+            doorLabel="Living → Bedroom Door"
+          />
+          {/* Door 2: Bedroom→Bathroom (horizontal wall at x=5, z=0) */}
+          <AnimatedDoor 
+            position={[5, 0, 0]} 
+            isClosed={door2Closed}
+            isTarget={currentDoorStep === 'close_door_2'}
+            doorLabel="Bedroom → Bathroom Door"
+          />
+        </>
+      )}
       <Player
         onRoomChange={onRoomChange}
         onNearestApplianceChange={onNearestChange}
         onInteract={onInteract}
-        applianceIdList={L2_APPLIANCE_IDS}
+        applianceIdList={EXTENDED_IDS}
       />
     </>
   );

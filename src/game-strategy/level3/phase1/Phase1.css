@@ -99,13 +99,14 @@
 .l3p1-obs-timer-lbl { font-size:10px; color:#888; text-transform:uppercase; }
 .l3p1-obs-msg { font-size:12px; color:#ffaa77; margin-top:6px; max-width:160px; }
 
-/* ══════ FEEDBACK TOAST ══════ */
-.l3p1-feedback { position:absolute; bottom:60px; left:50%; transform:translateX(-50%); padding:10px 20px; border-radius:12px; font-size:14px; font-weight:700; z-index:25; animation:l3p1-feedin .3s ease; max-width:400px; text-align:center; }
+/* ══════ FEEDBACK TOAST — Enhanced visibility ══════ */
+.l3p1-feedback { position:absolute; bottom:70px; left:50%; transform:translateX(-50%); padding:14px 28px; border-radius:14px; font-size:16px; font-weight:700; z-index:25; animation:l3p1-feedin .3s ease; max-width:500px; text-align:center; backdrop-filter:blur(10px); box-shadow:0 4px 30px rgba(0,0,0,.5); }
+.l3p1-feedback-content { line-height:1.5; }
 @keyframes l3p1-feedin { from{opacity:0;transform:translateX(-50%) translateY(10px)} to{opacity:1;transform:translateX(-50%) translateY(0)} }
-.l3p1-feedback.warning { background:rgba(245,158,11,.15); border:1px solid rgba(245,158,11,.4); color:#fbbf24; }
-.l3p1-feedback.danger { background:rgba(239,68,68,.15); border:1px solid rgba(239,68,68,.4); color:#f87171; }
-.l3p1-feedback.success { background:rgba(34,197,94,.15); border:1px solid rgba(34,197,94,.4); color:#4ade80; }
-.l3p1-feedback.info { background:rgba(99,102,241,.15); border:1px solid rgba(99,102,241,.4); color:#a5b4fc; }
+.l3p1-feedback.warning { background:rgba(245,158,11,.25); border:2px solid rgba(245,158,11,.6); color:#fde68a; text-shadow:0 1px 4px rgba(0,0,0,.4); }
+.l3p1-feedback.danger { background:rgba(239,68,68,.25); border:2px solid rgba(239,68,68,.6); color:#fca5a5; text-shadow:0 1px 4px rgba(0,0,0,.4); }
+.l3p1-feedback.success { background:rgba(34,197,94,.25); border:2px solid rgba(34,197,94,.6); color:#86efac; text-shadow:0 1px 4px rgba(0,0,0,.4); }
+.l3p1-feedback.info { background:rgba(99,102,241,.25); border:2px solid rgba(99,102,241,.6); color:#c7d2fe; text-shadow:0 1px 4px rgba(0,0,0,.4); }
 
 /* ══════ FLOATING TEXT ══════ */
 .l3p1-float-container { position:absolute; top:40%; left:50%; transform:translate(-50%,-50%); pointer-events:none; z-index:25; }
@@ -252,8 +253,134 @@
 .l3p1-air-timer { font-family:'Fredoka',sans-serif; font-size:28px; color:#fbbf24; margin-top:12px; }
 
 /* ══════ PROXIMITY PROMPT ══════ */
-.l3p1-proximity-prompt { position:absolute; bottom:30px; left:50%; transform:translateX(-50%); background:rgba(10,8,8,.92); border:2px solid rgba(255,200,0,.5); border-radius:12px; padding:8px 20px; z-index:22; font-size:14px; font-weight:700; color:#ffd666; animation:l3p1-promptpulse 1.5s ease infinite; text-align:center; }
+.l3p1-proximity-prompt { position:absolute; bottom:130px; left:50%; transform:translateX(-50%); background:rgba(10,8,8,.95); border:2px solid rgba(255,200,0,.5); border-radius:12px; padding:8px 20px; z-index:22; font-size:14px; font-weight:700; color:#ffd666; animation:l3p1-promptpulse 1.5s ease infinite; text-align:center; max-width:500px; }
 @keyframes l3p1-promptpulse { 0%,100%{box-shadow:0 0 0 rgba(255,200,0,0)} 50%{box-shadow:0 0 20px rgba(255,200,0,.4)} }
+.l3p1-proximity-prompt--enhanced { display:flex; align-items:center; gap:12px; padding:12px 24px; border-radius:16px; font-size:15px; backdrop-filter:blur(8px); }
+.l3p1-prompt-icon { font-size:28px; flex-shrink:0; }
+.l3p1-prompt-text { flex:1; text-align:left; line-height:1.4; }
+.l3p1-prompt-key { display:flex; align-items:center; gap:6px; font-size:12px; color:#ccc; flex-shrink:0; }
+.l3p1-key-badge { background:#22c55e; color:#000; padding:4px 10px; border-radius:6px; font-weight:800; font-size:14px; font-family:'Fredoka',sans-serif; }
+
+/* ══════ CO₂ EDUCATIONAL DETAIL PANEL ══════ */
+.l3p1-co2-detail { position:absolute; top:108px; right:12px; background:rgba(10,8,8,.94); border:1px solid rgba(255,68,0,.25); border-radius:12px; padding:10px 14px; z-index:20; backdrop-filter:blur(8px); min-width:200px; }
+.l3p1-co2-detail-row { display:flex; align-items:center; gap:8px; padding:4px 0; }
+.l3p1-co2-icon { font-size:16px; flex-shrink:0; }
+.l3p1-co2-label { font-size:11px; color:#aaa; flex:1; }
+.l3p1-co2-val { font-family:'Fredoka',sans-serif; font-size:15px; font-weight:700; transition:color .5s; }
+.l3p1-co2-warning { font-size:10px; color:#f59e0b; margin-top:4px; padding:4px 8px; background:rgba(245,158,11,.08); border-radius:6px; text-align:center; }
+
+/* ══════ DOOR PULSE ANIMATION ══════ */
+@keyframes l3p1-doorpulse { 0%,100%{box-shadow:0 0 10px rgba(34,197,94,.3)} 50%{box-shadow:0 0 25px rgba(34,197,94,.7)} }
 
 /* ══════ HELP BUTTON ══════ */
 .l3p1-help-btn { position:absolute; bottom:12px; right:12px; width:32px; height:32px; border-radius:50%; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.15); color:#aaa; font-size:14px; font-weight:700; cursor:pointer; z-index:20; display:flex; align-items:center; justify-content:center; }
+
+/* ══════════════════════════════════════════════════════════════ */
+/*  CO₂ FACTORY VISUALIZATION — Full-screen animated overlay    */
+/* ══════════════════════════════════════════════════════════════ */
+.co2j-overlay { position:absolute; inset:0; z-index:50; background:rgba(2,2,8,.95); backdrop-filter:blur(8px); display:flex; align-items:center; justify-content:center; overflow-y:auto; }
+.co2j-container { width:95%; max-width:600px; padding:20px; animation:co2j-fadein .5s ease; }
+@keyframes co2j-fadein { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+
+/* Progress bar */
+.co2j-progress-bar { position:relative; width:100%; height:6px; background:rgba(255,255,255,.08); border-radius:3px; margin-bottom:16px; overflow:hidden; }
+.co2j-progress-fill { height:100%; background:linear-gradient(90deg,#ef4444,#f59e0b,#22c55e); border-radius:3px; transition:width .5s ease; }
+.co2j-progress-text { position:absolute; right:0; top:-18px; font-size:10px; color:#888; text-transform:uppercase; letter-spacing:1px; }
+
+/* Step dots */
+.co2j-steps-row { display:none; }
+
+/* Chain visualization */
+.co2j-chain { display:flex; align-items:center; justify-content:center; gap:4px; margin-bottom:16px; flex-wrap:wrap; }
+.co2j-chain-node { font-size:20px; padding:6px 8px; border-radius:10px; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.1); transition:all .4s; opacity:.4; }
+.co2j-chain-node.lit { opacity:1; background:rgba(255,100,0,.15); border-color:rgba(255,100,0,.4); box-shadow:0 0 12px rgba(255,100,0,.3); }
+.co2j-chain-arrow { font-size:14px; color:rgba(255,255,255,.2); transition:color .4s; }
+.co2j-chain-arrow.lit { color:#f59e0b; text-shadow:0 0 8px rgba(245,158,11,.5); }
+
+/* Main card */
+.co2j-card { border-radius:20px; padding:24px; border:1px solid rgba(255,100,0,.2); box-shadow:0 8px 40px rgba(0,0,0,.4); margin-bottom:16px; animation:co2j-cardin .4s ease; }
+@keyframes co2j-cardin { from{opacity:0;transform:scale(.95)} to{opacity:1;transform:scale(1)} }
+.co2j-card-icon { font-size:48px; text-align:center; margin-bottom:8px; filter:drop-shadow(0 0 20px rgba(255,100,0,.5)); animation:co2j-iconpulse 2s ease infinite; }
+@keyframes co2j-iconpulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.1)} }
+.co2j-card-title { font-family:'Fredoka',sans-serif; font-size:22px; font-weight:700; color:#ff8855; text-align:center; margin-bottom:8px; text-shadow:0 0 20px rgba(255,136,85,.3); }
+.co2j-card-desc { font-size:14px; color:#ddd; line-height:1.6; text-align:center; margin-bottom:16px; }
+
+/* Animations area */
+.co2j-animation { min-height:80px; display:flex; align-items:center; justify-content:center; margin-bottom:16px; overflow:hidden; border-radius:14px; background:rgba(0,0,0,.2); padding:16px; }
+
+/* Mine animation */
+.co2j-mine-visual { display:flex; align-items:center; gap:12px; }
+.co2j-rock { font-size:40px; animation:co2j-dig 1s ease infinite; }
+@keyframes co2j-dig { 0%,100%{transform:rotate(0deg)} 25%{transform:rotate(-30deg)} 50%{transform:rotate(0deg)} 75%{transform:rotate(20deg)} }
+.co2j-coal-pieces { display:flex; gap:8px; }
+.co2j-coal-piece { font-size:24px; animation:co2j-fall 1.5s ease infinite; animation-delay:var(--delay); }
+@keyframes co2j-fall { 0%{opacity:0;transform:translateY(-20px)} 30%{opacity:1;transform:translateY(0)} 100%{opacity:.5;transform:translateY(10px)} }
+
+/* Train animation */
+.co2j-train-visual { text-align:center; width:100%; overflow:hidden; }
+.co2j-train { font-size:40px; animation:co2j-move 3s linear infinite; }
+@keyframes co2j-move { 0%{transform:translateX(-100px)} 100%{transform:translateX(100px)} }
+.co2j-tracks { font-size:14px; color:#555; letter-spacing:2px; margin-top:8px; }
+
+/* Burn animation */
+.co2j-burn-visual { display:flex; flex-direction:column; align-items:center; }
+.co2j-furnace { font-size:48px; animation:co2j-flame 0.5s ease infinite alternate; }
+@keyframes co2j-flame { 0%{transform:scale(1);filter:brightness(1)} 100%{transform:scale(1.15);filter:brightness(1.3)} }
+.co2j-smoke { display:flex; gap:6px; margin-top:4px; }
+.co2j-smoke-puff { font-size:20px; animation:co2j-rise 2s ease infinite; animation-delay:var(--delay); opacity:.6; }
+@keyframes co2j-rise { 0%{opacity:.8;transform:translateY(0) scale(1)} 100%{opacity:0;transform:translateY(-40px) scale(1.5)} }
+
+/* Spin animation */
+.co2j-spin-visual { display:flex; align-items:center; gap:16px; }
+.co2j-turbine { font-size:48px; animation:co2j-spin 1.5s linear infinite; }
+@keyframes co2j-spin { 0%{transform:rotate(0deg)} 100%{transform:rotate(360deg)} }
+.co2j-steam { font-size:28px; animation:co2j-steamflow .8s ease infinite alternate; }
+@keyframes co2j-steamflow { 0%{opacity:.5;transform:translateX(-5px)} 100%{opacity:1;transform:translateX(5px)} }
+.co2j-bolt { font-size:32px; animation:co2j-zap .5s ease infinite alternate; }
+@keyframes co2j-zap { 0%{opacity:.4;transform:scale(.9)} 100%{opacity:1;transform:scale(1.2)} }
+
+/* Grid animation */
+.co2j-grid-visual { display:flex; align-items:center; gap:12px; width:100%; justify-content:center; }
+.co2j-tower { font-size:32px; }
+.co2j-wire { font-size:14px; color:#f59e0b; animation:co2j-flow 1s ease infinite; letter-spacing:3px; }
+@keyframes co2j-flow { 0%{opacity:.3} 50%{opacity:1} 100%{opacity:.3} }
+.co2j-city { font-size:32px; }
+
+/* Home animation */
+.co2j-home-visual { text-align:center; width:100%; }
+.co2j-house { font-size:40px; margin-bottom:4px; }
+.co2j-plug { font-size:24px; margin-bottom:8px; animation:co2j-plugpulse 1s ease infinite; }
+@keyframes co2j-plugpulse { 0%,100%{opacity:.5} 50%{opacity:1} }
+.co2j-apps-grid { display:flex; flex-wrap:wrap; gap:6px; justify-content:center; }
+.co2j-app-chip { display:flex; align-items:center; gap:4px; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1); border-radius:8px; padding:4px 8px; font-size:11px; color:#ccc; }
+.co2j-app-name { font-weight:600; }
+.co2j-app-coal { color:#f59e0b; font-family:'Fredoka',sans-serif; font-weight:700; }
+
+/* Fact box */
+.co2j-fact-box { background:rgba(245,158,11,.08); border:1px solid rgba(245,158,11,.25); border-radius:12px; padding:12px 16px; margin-bottom:10px; }
+.co2j-fact-label { font-size:11px; color:#f59e0b; font-weight:700; text-transform:uppercase; letter-spacing:1px; margin-bottom:4px; }
+.co2j-fact-text { font-size:13px; color:#fde68a; line-height:1.5; }
+
+/* Detail box */
+.co2j-detail-box { background:rgba(99,102,241,.06); border:1px solid rgba(99,102,241,.2); border-radius:10px; padding:10px 14px; margin-bottom:10px; }
+.co2j-detail-text { font-size:12px; color:#c7d2fe; line-height:1.5; }
+
+/* Impact section (final step) */
+.co2j-impact-section { background:rgba(239,68,68,.06); border:1px solid rgba(239,68,68,.25); border-radius:14px; padding:14px; margin-top:12px; }
+.co2j-impact-title { font-family:'Fredoka',sans-serif; font-size:16px; color:#f87171; margin-bottom:10px; text-align:center; }
+.co2j-impact-grid { display:flex; flex-direction:column; gap:6px; }
+.co2j-impact-row { display:flex; align-items:center; gap:8px; padding:6px 8px; background:rgba(255,255,255,.03); border-radius:8px; font-size:12px; }
+.co2j-impact-icon { font-size:18px; flex-shrink:0; }
+.co2j-impact-name { font-weight:700; color:#ddd; min-width:80px; }
+.co2j-impact-watts { color:#888; min-width:50px; }
+.co2j-impact-coal { font-family:'Fredoka',sans-serif; font-weight:700; min-width:100px; }
+.co2j-impact-tip { font-size:10px; color:#999; font-style:italic; flex:1; }
+.co2j-impact-total { margin-top:10px; padding:10px; background:rgba(0,0,0,.3); border-radius:10px; text-align:center; font-size:14px; color:#ccc; }
+
+/* Navigation */
+.co2j-nav { display:flex; gap:10px; justify-content:center; }
+.co2j-nav-btn { padding:12px 28px; border-radius:12px; font-size:15px; font-weight:700; font-family:'Fredoka',sans-serif; cursor:pointer; transition:all .2s; border:none; }
+.co2j-nav-prev { background:rgba(255,255,255,.08); color:#ccc; border:1px solid rgba(255,255,255,.15); }
+.co2j-nav-prev:hover { background:rgba(255,255,255,.15); color:#fff; }
+.co2j-nav-next { background:linear-gradient(135deg,#c0392b,#e74c3c); color:#fff; box-shadow:0 0 16px rgba(231,76,60,.4); }
+.co2j-nav-next:hover { transform:scale(1.05); box-shadow:0 0 24px rgba(231,76,60,.6); }
