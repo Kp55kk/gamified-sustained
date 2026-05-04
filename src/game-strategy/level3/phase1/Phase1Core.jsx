@@ -11,6 +11,7 @@ import Player from '../../Player';
 import Level2Appliances from '../../level2/Level2Appliances';
 import Level3Environment from '../Level3Environment';
 import { L2_APPLIANCE_IDS } from './phase1Data';
+import { FactoryExterior, OutdoorPath } from './FactoryScene';
 
 // ═══════════════════════════════════════════════════════════
 //  AUDIO SYSTEM — Immersive sound feedback
@@ -206,9 +207,10 @@ export function CameraRefForwarder({ cameraRef }) {
 // ═══════════════════════════════════════════════════════════
 //  3D EB METER — Indian-style electricity meter on wall
 // ═══════════════════════════════════════════════════════════
-function EBMeter3D({ damageLevel }) {
+function EBMeter3D({ damageLevel, isTarget = false }) {
   const dialRef = useRef();
   const ledRef = useRef();
+  const glowRef = useRef();
 
   useFrame(() => {
     // Spinning dial based on power usage
@@ -219,6 +221,11 @@ function EBMeter3D({ damageLevel }) {
     if (ledRef.current) {
       const t = performance.now() * 0.005;
       ledRef.current.material.emissiveIntensity = 0.5 + Math.sin(t * (2 + damageLevel * 5)) * 0.5;
+    }
+    // Glow when target
+    if (glowRef.current && isTarget) {
+      const t = performance.now() * 0.003;
+      glowRef.current.emissiveIntensity = 1.0 + Math.sin(t) * 0.5;
     }
   });
 
@@ -290,6 +297,42 @@ function EBMeter3D({ damageLevel }) {
         <boxGeometry args={[0.01, 0.08, 0.2]} />
         <meshStandardMaterial color="#fff" roughness={0.5} />
       </mesh>
+      {/* Glow overlay + interaction label when target */}
+      {isTarget && (
+        <>
+          <mesh position={[-0.08, 0.1, 0]}>
+            <boxGeometry args={[0.15, 0.75, 0.6]} />
+            <meshStandardMaterial
+              ref={glowRef}
+              color="#8b5cf6"
+              emissive="#8b5cf6"
+              emissiveIntensity={1.0}
+              transparent
+              opacity={0.2}
+            />
+          </mesh>
+          <pointLight position={[-0.2, 0.1, 0]} intensity={0.8} distance={3} color="#8b5cf6" />
+          <Html position={[-0.3, 0.9, 0]} center>
+            <div style={{
+              background: 'rgba(139,92,246,0.95)',
+              border: '2px solid #fbbf24',
+              borderRadius: '10px',
+              padding: '6px 12px',
+              fontFamily: "'Fredoka',sans-serif",
+              fontSize: '12px',
+              fontWeight: 700,
+              color: '#fff',
+              textAlign: 'center',
+              pointerEvents: 'none',
+              whiteSpace: 'nowrap',
+              boxShadow: '0 0 15px rgba(139,92,246,0.5)',
+            }}>
+              <div>📊 EB Meter</div>
+              <div style={{ fontSize: '10px', color: '#fbbf24', marginTop: '2px' }}>Press <span style={{ background: '#22c55e', color: '#000', padding: '1px 6px', borderRadius: '3px' }}>E</span></div>
+            </div>
+          </Html>
+        </>
+      )}
     </group>
   );
 }
@@ -455,11 +498,37 @@ function AnimatedDoor({ position, rotation = [0, 0, 0], isClosed, hingeOffset = 
 // Extended appliance list including door interaction targets
 const EXTENDED_IDS = [...L2_APPLIANCE_IDS, '__door__bedroom_living', '__door__bedroom_bathroom'];
 
+// ─── Window Pane (glass that visually opens/closes) ───
+function WindowPane({ position, isOpen, width = 0.8, height = 1.0 }) {
+  const ref = useRef();
+  const targetAngle = isOpen ? -Math.PI / 3 : 0;
+  useFrame(() => {
+    if (!ref.current) return;
+    ref.current.rotation.y += (targetAngle - ref.current.rotation.y) * 0.06;
+  });
+  return (
+    <group position={position}>
+      <group ref={ref} position={[-width / 2, 0, 0]}>
+        <mesh position={[width / 2, 0, 0]}>
+          <planeGeometry args={[width, height]} />
+          <meshStandardMaterial
+            color={isOpen ? '#a8d8ea' : '#c8e6f0'}
+            transparent
+            opacity={isOpen ? 0.3 : 0.5}
+            side={THREE.DoubleSide}
+          />
+        </mesh>
+      </group>
+    </group>
+  );
+}
+
 export function SceneContent({
   applianceStates, nearestAppliance, highlightIds,
   onRoomChange, onNearestChange, onInteract,
   cameraRef, proximityLevels, damageLevel,
-  windowOpen, curtainOpen, door1Closed, door2Closed, showDoors, currentDoorStep
+  windowOpen, curtainOpen, door1Closed, door2Closed, showDoors, currentDoorStep,
+  allowOutside, showFactory, showEBMeterOutside
 }) {
   return (
     <>
@@ -472,38 +541,49 @@ export function SceneContent({
         taskTargetIds={highlightIds}
         proximityLevels={proximityLevels}
       />
-      {/* EB Meter — outside the house on left wall */}
-      <EBMeter3D damageLevel={damageLevel} />
-      {/* Bedroom curtains (same as Level 1) */}
+      {/* EB Meter — with target glow for eb_meter task */}
+      <EBMeter3D damageLevel={damageLevel} isTarget={showEBMeterOutside} />
+      {/* Window panes — visual open/close */}
+      <WindowPane position={[-5, 2, -7.84]} isOpen={windowOpen} />
+      <WindowPane position={[2.5, 2, -7.84]} isOpen={windowOpen} />
+      <WindowPane position={[5, 2, -7.84]} isOpen={windowOpen} />
+      {/* Bedroom curtains */}
       <RealisticCurtain isOpen={curtainOpen} centerX={5} centerZ={-7.84} />
       <RealisticCurtain isOpen={curtainOpen} centerX={2.5} centerZ={-7.84} />
       {/* Living room curtain */}
       <RealisticCurtain isOpen={curtainOpen} centerX={-5} centerZ={-7.84} />
-      {/* TWO Animated bedroom doors — only visible during AC task */}
+      {/* TWO Animated bedroom doors */}
       {showDoors && (
         <>
-          {/* Door 1: Living→Bedroom (vertical wall at x=0, z=-4) */}
-          <AnimatedDoor 
-            position={[0, 0, -4]} 
-            rotation={[0, Math.PI / 2, 0]} 
-            isClosed={door1Closed} 
+          <AnimatedDoor
+            position={[0, 0, -4]}
+            rotation={[0, Math.PI / 2, 0]}
+            isClosed={door1Closed}
             isTarget={currentDoorStep === 'close_door_1'}
             doorLabel="Living → Bedroom Door"
           />
-          {/* Door 2: Bedroom→Bathroom (horizontal wall at x=5, z=0) */}
-          <AnimatedDoor 
-            position={[5, 0, 0]} 
+          <AnimatedDoor
+            position={[5, 0, 0]}
             isClosed={door2Closed}
             isTarget={currentDoorStep === 'close_door_2'}
             doorLabel="Bedroom → Bathroom Door"
           />
         </>
       )}
+      {/* ══ OUTDOOR ELEMENTS ══ */}
+      {allowOutside && (
+        <>
+          <OutdoorPath />
+          <FactoryExterior isTarget={showFactory} />
+        </>
+      )}
+
       <Player
         onRoomChange={onRoomChange}
         onNearestApplianceChange={onNearestChange}
         onInteract={onInteract}
         applianceIdList={EXTENDED_IDS}
+        allowOutside={allowOutside}
       />
     </>
   );

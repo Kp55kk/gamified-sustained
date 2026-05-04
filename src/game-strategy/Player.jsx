@@ -9,31 +9,57 @@ import { PHASE1_TASK_POSITIONS } from './level1Phase1Data';
 //  Doorways have gaps so character can walk through
 // ════════════════════════════════════════════════════════════
 
-const WALL_SEGMENTS = [
+// Indoor walls — used when player is locked inside
+const WALL_SEGMENTS_INDOOR = [
   // Front wall (z = -8) — fully solid, no door
   { type: 'h', z: -8, x1: -10, x2: 10 },
-
   // Back wall (z = 8)
   { type: 'h', z: 8, x1: -10, x2: 10 },
-
   // Horizontal middle wall (z = 0) — gaps for doorways
   { type: 'h', z: 0, x1: -10, x2: -6.5 },
   { type: 'h', z: 0, x1: -3.5, x2: 3.5 },
   { type: 'h', z: 0, x1: 6.5, x2: 10 },
-
   // Left wall (x = -10) — door gap at z = [-3.5, -0.5] near WiFi router
   { type: 'v', x: -10, z1: -8, z2: -3.5 },
   { type: 'v', x: -10, z1: -0.5, z2: 8 },
   // Right wall (x = 10)
   { type: 'v', x: 10, z1: -8, z2: 8 },
-
   // Vertical wall front (x = 0, z = [-8, 0]) — gap for doorway
   { type: 'v', x: 0, z1: -8, z2: -5.5 },
   { type: 'v', x: 0, z1: -2.5, z2: 0 },
-
   // Vertical wall back (x = 4, z = [0, 8]) — gap for doorway
   { type: 'v', x: 4, z1: 0, z2: 2.5 },
   { type: 'v', x: 4, z1: 5.5, z2: 8 },
+];
+
+// Outdoor-enabled walls — left wall has extended door gap so player can walk outside
+const WALL_SEGMENTS_OUTDOOR = [
+  // Front wall (z = -8) — fully solid
+  { type: 'h', z: -8, x1: -10, x2: 10 },
+  // Back wall (z = 8)
+  { type: 'h', z: 8, x1: -10, x2: 10 },
+  // Horizontal middle wall (z = 0)
+  { type: 'h', z: 0, x1: -10, x2: -6.5 },
+  { type: 'h', z: 0, x1: -3.5, x2: 3.5 },
+  { type: 'h', z: 0, x1: 6.5, x2: 10 },
+  // Left wall (x = -10) — WIDE door gap at z = [-4.5, 0.5] for easy exit
+  { type: 'v', x: -10, z1: -8, z2: -4.5 },
+  { type: 'v', x: -10, z1: 0.5, z2: 8 },
+  // Right wall (x = 10)
+  { type: 'v', x: 10, z1: -8, z2: 8 },
+  // Vertical wall front (x = 0, z = [-8, 0]) — gap for doorway
+  { type: 'v', x: 0, z1: -8, z2: -5.5 },
+  { type: 'v', x: 0, z1: -2.5, z2: 0 },
+  // Vertical wall back (x = 4, z = [0, 8]) — gap for doorway
+  { type: 'v', x: 4, z1: 0, z2: 2.5 },
+  { type: 'v', x: 4, z1: 5.5, z2: 8 },
+  // ── Outdoor boundaries ──
+  // Yard fence (x = -32)
+  { type: 'v', x: -32, z1: -14, z2: 14 },
+  // Yard fence north (z = -14)
+  { type: 'h', z: -14, x1: -32, x2: -10 },
+  // Yard fence south (z = 14)
+  { type: 'h', z: 14, x1: -32, x2: -10 },
 ];
 
 // Collision radius — 0.4 triggers collisions earlier so character doesn't clip
@@ -70,9 +96,9 @@ const FURNITURE_BOXES = [
 //  COLLISION — WALLS + LARGE FURNITURE
 // ════════════════════════════════════════════════════════════
 
-function checkCollision(x, z) {
+function checkCollision(x, z, walls) {
   // Check walls
-  for (const w of WALL_SEGMENTS) {
+  for (const w of walls) {
     if (w.type === 'h') {
       if (Math.abs(z - w.z) < PLAYER_RADIUS &&
           x >= w.x1 - PLAYER_RADIUS &&
@@ -83,30 +109,41 @@ function checkCollision(x, z) {
           z <= w.z2 + PLAYER_RADIUS) return true;
     }
   }
-  // Check furniture
-  for (const box of FURNITURE_BOXES) {
-    if (x + PLAYER_RADIUS > box.minX && x - PLAYER_RADIUS < box.maxX &&
-        z + PLAYER_RADIUS > box.minZ && z - PLAYER_RADIUS < box.maxZ) return true;
+  // Check furniture (only when inside the house)
+  if (x > -10 && x < 10 && z > -8 && z < 8) {
+    for (const box of FURNITURE_BOXES) {
+      if (x + PLAYER_RADIUS > box.minX && x - PLAYER_RADIUS < box.maxX &&
+          z + PLAYER_RADIUS > box.minZ && z - PLAYER_RADIUS < box.maxZ) return true;
+    }
   }
   return false;
 }
 
-// moveWithCollisions equivalent — try full move, then slide, then clamp to house bounds
-function moveWithCollisions(x, z, dx, dz) {
+// moveWithCollisions — try full move, then slide, then clamp
+function moveWithCollisions(x, z, dx, dz, allowOutside) {
+  const walls = allowOutside ? WALL_SEGMENTS_OUTDOOR : WALL_SEGMENTS_INDOOR;
+  const minX = allowOutside ? -31 : -9.5;
+  const maxX = 9.5;
+  const minZ = allowOutside ? -13 : -7.5;
+  const maxZ = allowOutside ? 13 : 7.5;
   let nx = x + dx;
   let nz = z + dz;
-  // Clamp to house boundary as safety net (walls at ±10 x, ±8 z)
-  nx = Math.max(-9.5, Math.min(9.5, nx));
-  nz = Math.max(-7.5, Math.min(7.5, nz));
-  if (!checkCollision(nx, nz)) return { x: nx, z: nz };
-  const cx = Math.max(-9.5, Math.min(9.5, x + dx));
-  if (!checkCollision(cx, z)) return { x: cx, z: z };
-  const cz = Math.max(-9.5, Math.min(9.5, z + dz));
-  if (!checkCollision(x, cz)) return { x: x, z: cz };
+  nx = Math.max(minX, Math.min(maxX, nx));
+  nz = Math.max(minZ, Math.min(maxZ, nz));
+  if (!checkCollision(nx, nz, walls)) return { x: nx, z: nz };
+  const cx = Math.max(minX, Math.min(maxX, x + dx));
+  if (!checkCollision(cx, z, walls)) return { x: cx, z: z };
+  const cz = Math.max(minZ, Math.min(maxZ, z + dz));
+  if (!checkCollision(x, cz, walls)) return { x: x, z: cz };
   return { x, z };
 }
 
 function getCurrentRoom(x, z) {
+  // Outside the house
+  if (x < -10.5) {
+    if (x < -20) return 'Factory';
+    return 'Outside';
+  }
   if (x < 0 && z < 0) return 'Living Room';
   if (x >= 0 && z < 0) return 'Bedroom';
   if (x < 4 && z >= 0) return 'Kitchen';
@@ -230,7 +267,7 @@ export const cameraMode = {
 //  - Collisions: WALLS ONLY via moveWithCollisions
 // ════════════════════════════════════════════════════════════
 
-export default function Player({ onRoomChange, onNearestApplianceChange, onInteract, applianceIdList }) {
+export default function Player({ onRoomChange, onNearestApplianceChange, onInteract, applianceIdList, allowOutside = false }) {
   const groupRef = useRef();
   const { camera } = useThree();
 
@@ -320,7 +357,7 @@ export default function Player({ onRoomChange, onNearestApplianceChange, onInter
     if (k['w'] || k['arrowup']) {
       const result = moveWithCollisions(
         posRef.current.x, posRef.current.z,
-        forwardX * speed, forwardZ * speed
+        forwardX * speed, forwardZ * speed, allowOutside
       );
       posRef.current.x = result.x;
       posRef.current.z = result.z;
@@ -329,7 +366,7 @@ export default function Player({ onRoomChange, onNearestApplianceChange, onInter
     if (k['s'] || k['arrowdown']) {
       const result = moveWithCollisions(
         posRef.current.x, posRef.current.z,
-        -forwardX * speed, -forwardZ * speed
+        -forwardX * speed, -forwardZ * speed, allowOutside
       );
       posRef.current.x = result.x;
       posRef.current.z = result.z;

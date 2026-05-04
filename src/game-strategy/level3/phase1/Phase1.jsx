@@ -58,6 +58,12 @@ export default function Phase1({ onComplete }) {
   const [showDoors, setShowDoors] = useState(false);
   const [showCO2Journey, setShowCO2Journey] = useState(false);
   const [co2Step, setCo2Step] = useState(0);
+  const [showPollutionOverlay, setShowPollutionOverlay] = useState(false);
+  const [showIndianEBMeter, setShowIndianEBMeter] = useState(false);
+  const [showFactoryInterior, setShowFactoryInterior] = useState(false);
+  const [factoryStation, setFactoryStation] = useState(0);
+  const [showPledge, setShowPledge] = useState(false);
+  const [pledgeComplete, setPledgeComplete] = useState(false);
 
   const task = PHASE1_TASKS[taskIdx];
   const env = useMemo(() => computeEnvironment(appStates, acTempIdx, windowOpen, curtainOpen), [appStates, acTempIdx, windowOpen, curtainOpen]);
@@ -94,6 +100,9 @@ export default function Phase1({ onComplete }) {
     setDoor1Closed(false); setDoor2Closed(false);
     setShowDoors(task.id === 'comfort_decision');
     setShowCO2Journey(false); setCo2Step(0);
+    setShowPollutionOverlay(false); setShowIndianEBMeter(false);
+    setShowFactoryInterior(false); setFactoryStation(0);
+    setShowPledge(false); setPledgeComplete(false);
   }, [taskIdx]);
 
   useEffect(() => {
@@ -171,7 +180,25 @@ export default function Phase1({ onComplete }) {
         setTimeout(() => handleTaskComplete(), 5000);
       }
     }
-  }, [task, taskState, outsideReached, handleTaskComplete, showFB]);
+    // Auto-trigger pollution when entering Outside during air task
+    if (task?.type === 'walk_outside_air' && taskState === 'playing' && room === 'Outside' && !showPollutionOverlay) {
+      playWarningSound();
+      setShowPollutionOverlay(true);
+      showFB('\u{1F32B}\u{FE0F} The air is TOXIC! AQI 387 — HAZARDOUS!', 'danger', 5000);
+      playBreathingSound();
+      setTimeout(() => {
+        showFB('\u{1F4A8} You felt the deadly pollution your energy use creates!', 'danger', 3000);
+        setTimeout(() => handleTaskComplete(), 3000);
+      }, (task.duration || 10) * 1000);
+    }
+    // Auto-trigger factory interior when entering Factory zone
+    if (task?.type === 'factory_visit' && taskState === 'playing' && room === 'Factory' && !showFactoryInterior) {
+      playWarningSound();
+      setShowFactoryInterior(true);
+      setFactoryStation(0);
+      showFB('\u{1F3ED} You entered the Power Plant! Witness coal burning...', 'danger', 5000);
+    }
+  }, [task, taskState, outsideReached, handleTaskComplete, showFB, showPollutionOverlay, showFactoryInterior]);
 
   const handleNearestChange = useCallback(id => {
     setNearestApp(id);
@@ -182,7 +209,62 @@ export default function Phase1({ onComplete }) {
   const handleInteract = useCallback((appId) => {
     if (!task || taskState !== 'playing') return;
 
-    // Handle DOOR interactions (from Player.jsx detecting __door__ positions)
+    // ─── OUTDOOR TASKS: fire based on position, not appId ───
+    if (task.type === 'walk_outside_air') {
+      if (playerState.x < -11 && !showPollutionOverlay) {
+        playWarningSound();
+        setShowPollutionOverlay(true);
+        showFB('\u{1F32B}\u{FE0F} The air is TOXIC! AQI 387 — HAZARDOUS! You can barely breathe!', 'danger', 5000);
+        playBreathingSound();
+        setTimeout(() => {
+          showFB('\u{1F4A8} You felt the deadly pollution your energy use creates!', 'danger', 3000);
+          setTimeout(() => handleTaskComplete(), 3000);
+        }, (task.duration || 10) * 1000);
+      } else if (!showPollutionOverlay) {
+        showFB('\u{1F6AA} Walk OUTSIDE through the front door (left wall gap)!', 'info');
+      }
+      return;
+    }
+
+    if (task.type === 'eb_meter_outside') {
+      // EB meter is on the left wall at [-10.35, 1.6, -1]
+      const dx = playerState.x - (-10.35);
+      const dz = playerState.z - (-1);
+      const dist = Math.sqrt(dx * dx + dz * dz);
+      if (dist < 3.5 && !showIndianEBMeter) {
+        playCorrectSound();
+        setShowIndianEBMeter(true);
+        showFB('\u{1F4CA} EB Meter opened! Look at your shocking consumption!', 'info');
+      } else if (!showIndianEBMeter) {
+        showFB('\u{1F4CD} Walk to the EB Meter on the left wall and press E!', 'info');
+      }
+      return;
+    }
+
+    if (task.type === 'factory_visit') {
+      if (playerState.x < -20 && !showFactoryInterior) {
+        playWarningSound();
+        setShowFactoryInterior(true);
+        setFactoryStation(0);
+        showFB('\u{1F3ED} You entered the Power Plant! Witness coal burning for YOUR electricity...', 'danger', 5000);
+      } else if (!showFactoryInterior) {
+        showFB('\u{1F3ED} Walk to the Factory — follow the path LEFT outside!', 'info');
+      }
+      return;
+    }
+
+    if (task.type === 'pledge_challenge') {
+      if (!appId) return;
+      if (!L2_APPLIANCE_IDS.includes(appId)) return;
+      const ap = L2_APPLIANCE_MAP[appId];
+      const ns = !appStates[appId];
+      if (ns) { playToggleOn(); addFloat(`+${ap.wattage}W ⚡`, 'damage'); }
+      else { playToggleOff(); addFloat(`-${ap.wattage}W saved 🌿`, 'save'); }
+      setAppStates(prev => ({ ...prev, [appId]: ns }));
+      return;
+    }
+
+    // ─── Handle DOOR interactions ───
     if (appId && appId.startsWith && appId.startsWith('__door__')) {
       if (task.type === 'multi_step') {
         const step = task.steps[currentStep];
@@ -241,9 +323,9 @@ export default function Phase1({ onComplete }) {
         return;
       }
       if (task.type === 'fix' && !windowOpen) {
-        playCorrectSound(); setWindowOpen(true);
-        addFloat('\ud83e\udea9 Window open! \u2705', 'save');
-        showFB('\u2705 Window open! Fresh air flows in \u2014 natural ventilation!', 'success');
+        playCorrectSound(); setWindowOpen(true); setCurtainOpen(true);
+        addFloat('\ud83e\udea9 Window & curtains open! \u2705', 'save');
+        showFB('\u2705 Windows & curtains open! Fresh air and natural light flow in!', 'success');
         setFixActions(prev => [...prev, 'window_open']);
         return;
       }
@@ -428,21 +510,7 @@ export default function Phase1({ onComplete }) {
       return;
     }
 
-    if (task.type === 'co2_journey') {
-      // Player must be near front door area (x=-9, z=-1)
-      const dx = playerState.x - (-9);
-      const dz = playerState.z - (-1);
-      const dist = Math.sqrt(dx * dx + dz * dz);
-      if (dist < 4 && !showCO2Journey) {
-        playCorrectSound();
-        setShowCO2Journey(true);
-        setCo2Step(0);
-        showFB('\u{1F3ED} Coal \u2192 Electricity journey begins! Watch the full chain...', 'info', 5000);
-      } else if (!showCO2Journey) {
-        showFB('\u{1F4CD} Walk to the front door area to see the Coal \u2192 Electricity journey!', 'info');
-      }
-      return;
-    }
+
 
     if (task.type === 'free_play') {
       const ns = !appStates[appId];
@@ -456,7 +524,7 @@ export default function Phase1({ onComplete }) {
     if (ns) playToggleOn(); else playToggleOff();
     setAppStates(prev => ({ ...prev, [appId]: ns }));
     addFloat(ns ? `+${ap.wattage}W` : `-${ap.wattage}W`, ns ? 'damage' : 'save');
-  }, [task, taskState, appStates, turnedOn, currentStep, stepsDone, windowOpen, curtainOpen, currentRoom, showBillUI, showEBMeter, showAirExperience, fixActions, addFloat, showFB, handleTaskComplete, showACScenarios]);
+  }, [task, taskState, appStates, turnedOn, currentStep, stepsDone, windowOpen, curtainOpen, currentRoom, showBillUI, showEBMeter, showAirExperience, fixActions, addFloat, showFB, handleTaskComplete, showACScenarios, showPollutionOverlay, showIndianEBMeter, showFactoryInterior]);
 
   useEffect(() => {
     if (task?.type !== 'fix' || taskState !== 'playing') return;
@@ -756,6 +824,9 @@ export default function Phase1({ onComplete }) {
   const co2Kg = (env.watts * 0.71 / 1000).toFixed(2);
   const coalKg = (env.watts * 0.0007).toFixed(2);
 
+  // Determine if player should be allowed outside
+  const allowOutside = task?.allowOutside && taskState === 'playing';
+
   return (
     <div className="l3p1-container">
       <div className="l3p1-canvas-wrapper">
@@ -765,12 +836,26 @@ export default function Phase1({ onComplete }) {
             <SceneContent applianceStates={appStates} nearestAppliance={nearestApp} highlightIds={highlightIds}
               onRoomChange={handleRoomChange} onNearestChange={handleNearestChange} onInteract={handleInteract}
               cameraRef={cameraRef} proximityLevels={proxLevels} damageLevel={env.damageLevel}
-              windowOpen={windowOpen} curtainOpen={curtainOpen} door1Closed={door1Closed} door2Closed={door2Closed} showDoors={showDoors} currentDoorStep={currentDoorStep} />
+              windowOpen={windowOpen} curtainOpen={curtainOpen} door1Closed={door1Closed} door2Closed={door2Closed} showDoors={showDoors} currentDoorStep={currentDoorStep}
+              allowOutside={allowOutside}
+              showFactory={task?.type === 'factory_visit' && taskState === 'playing'}
+              showEBMeterOutside={task?.type === 'eb_meter_outside' && taskState === 'playing'} />
           </Suspense>
         </Canvas>
         <div className={`l3p1-vignette ${vignetteClass}`} />
         <div className={`l3p1-fog-overlay ${fogLevel}`} />
         <div className="l3p1-heat-tint" style={{ background: heatTint }} />
+        {/* Pollution visual when outside */}
+        {showPollutionOverlay && (
+          <div className="l3p1-pollution-overlay active">
+            <div className="l3p1-pollution-particles" />
+            <div className="l3p1-aqi-badge">
+              <div className="l3p1-aqi-value">AQI 387</div>
+              <div className="l3p1-aqi-label">HAZARDOUS</div>
+              <div className="l3p1-aqi-detail">PM2.5: 285 µg/m³</div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* TOP HUD */}
@@ -1243,6 +1328,251 @@ export default function Phase1({ onComplete }) {
                 {co2Step + 1 >= CO2_JOURNEY_STEPS.length ? 'I Understand! \u2705' : 'Next Stage \u2192'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* PROXIMITY PROMPT for outdoor tasks */}
+      {task && taskState === 'playing' && task.allowOutside && currentRoom !== 'Outside' && currentRoom !== 'Factory' && (
+        <div className="l3p1-proximity-prompt l3p1-proximity-prompt--action l3p1-proximity-prompt--enhanced">
+          <div className="l3p1-prompt-icon">{'\u{1F6AA}'}</div>
+          <div className="l3p1-prompt-text">Walk to the front door (left wall) and go OUTSIDE!</div>
+          <div className="l3p1-prompt-key">
+            <span className="l3p1-key-badge">W</span> Walk through door
+          </div>
+        </div>
+      )}
+
+      {/* ═══ INDIAN EB METER OVERLAY ═══ */}
+      {showIndianEBMeter && (() => {
+        const ebData = computeEBMeter(appStates, acTempIdx);
+        return (
+          <div className="l3p1-eb-overlay">
+            <div className="l3p1-eb-panel">
+              <div className="l3p1-eb-header">
+                <div className="l3p1-eb-logo">{'\u{26A1}'}</div>
+                <div className="l3p1-eb-title">STATE ELECTRICITY BOARD</div>
+                <div className="l3p1-eb-subtitle">Digital Energy Meter</div>
+                <div className="l3p1-eb-consumer">SC No: SC-2024-48291</div>
+              </div>
+
+              <div className="l3p1-eb-display">
+                <div className="l3p1-eb-reading">
+                  <div className="l3p1-eb-reading-label">Current Reading</div>
+                  <div className="l3p1-eb-reading-value">{ebData.totalKwh} <span>kWh/month</span></div>
+                </div>
+                <div className="l3p1-eb-load">
+                  <div className="l3p1-eb-load-label">Live Load</div>
+                  <div className="l3p1-eb-load-value" style={{color: ebData.totalWatts > 3000 ? '#ef4444' : ebData.totalWatts > 1000 ? '#f59e0b' : '#22c55e'}}>
+                    {ebData.totalWatts}W
+                  </div>
+                </div>
+              </div>
+
+              <div className="l3p1-eb-breakdown">
+                <div className="l3p1-eb-breakdown-title">{'\u{1F4CB}'} Appliance Breakdown</div>
+                {ebData.breakdown.filter(b => appStates[b.id]).map(b => (
+                  <div key={b.id} className="l3p1-eb-row">
+                    <span className="l3p1-eb-row-icon">{b.icon}</span>
+                    <span className="l3p1-eb-row-name">{b.name}</span>
+                    <span className="l3p1-eb-row-watts">{b.wattage}W</span>
+                    <span className="l3p1-eb-row-kwh">{b.monthlyKwh} kWh</span>
+                    <span className="l3p1-eb-row-cost" style={{color: b.monthlyCost > 500 ? '#ef4444' : b.monthlyCost > 100 ? '#f59e0b' : '#22c55e'}}>
+                      {'\u{20B9}'}{b.monthlyCost}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              <div className="l3p1-eb-total-section">
+                <div className="l3p1-eb-total">
+                  <div className="l3p1-eb-total-label">Monthly Bill</div>
+                  <div className="l3p1-eb-total-value">{'\u{20B9}'}{ebData.totalCost}</div>
+                </div>
+                <div className="l3p1-eb-coal">
+                  <div>{'\u{1F525}'} Coal burned: <strong style={{color:'#ef4444'}}>{(ebData.totalWatts * 0.0007 * 24 * 30).toFixed(0)} kg/month</strong></div>
+                  <div>{'\u{1F4A8}'} CO{'\u{2082}'} emitted: <strong style={{color:'#f59e0b'}}>{(ebData.totalKwh * 0.71).toFixed(0)} kg/month</strong></div>
+                </div>
+                <div className="l3p1-eb-comparison">
+                  <div className="l3p1-eb-comp-bar">
+                    <div className="l3p1-eb-comp-fill l3p1-eb-comp-green" style={{width: '25%'}}>
+                      <span>Green: 90kWh</span>
+                    </div>
+                    <div className="l3p1-eb-comp-fill l3p1-eb-comp-avg" style={{width: '40%'}}>
+                      <span>Avg: 150kWh</span>
+                    </div>
+                    <div className="l3p1-eb-comp-fill l3p1-eb-comp-you" style={{width: `${Math.min(100, (ebData.totalKwh / 400) * 100)}%`}}>
+                      <span>YOU: {ebData.totalKwh}kWh</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="l3p1-eb-shock">
+                {'\u{1F628}'} Your family is spending <strong style={{color:'#ef4444', fontSize:'20px'}}>{'\u{20B9}'}{ebData.totalCost}/month</strong> on electricity!
+                <br />That's <strong>{(ebData.totalKwh * 0.71).toFixed(0)} kg of CO{'\u{2082}'}</strong> dumped into the atmosphere every month.
+              </div>
+
+              <button className="l3p1-eb-close-btn" onClick={() => {
+                setShowIndianEBMeter(false);
+                playMilestoneSound();
+                showFB('\u{1F4CA} Now you know the REAL cost of your energy use!', 'success', 3000);
+                setTimeout(() => handleTaskComplete(), 2000);
+              }}>
+                I Understand the Impact {'\u{2705}'}
+              </button>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* ═══ FACTORY INTERIOR OVERLAY ═══ */}
+      {showFactoryInterior && (() => {
+        const stations = [
+          { id: 'coal_arrival', title: 'Coal Arrival', icon: '⛏️', desc: 'Trains bring thousands of tons of coal from mines. This coal was formed over 300 MILLION years.', fact: 'India mines 900 million tons of coal per year!' },
+          { id: 'conveyor', title: 'Coal Conveyor Belt', icon: '⚙️', desc: 'Coal is crushed into fine powder and carried by conveyor belts into the massive furnace.', fact: 'A power plant burns 230 kg of coal EVERY SECOND!' },
+          { id: 'furnace', title: 'The Burning Furnace', icon: '🔥', desc: 'Coal powder is blown into a furnace at 1,500°C. Every watt of YOUR electricity starts with FIRE.', fact: 'For every 1 kWh: 0.71 kg CO₂ released!' },
+          { id: 'turbine', title: 'Steam Turbine', icon: '⚡', desc: 'Steam spins turbine blades at 3,000 RPM generating electricity. Only 33% efficiency!', fact: 'TWO-THIRDS of coal energy is WASTED as heat!' },
+          { id: 'emissions', title: 'The CO₂ Cloud', icon: '💨', desc: 'That thick smoke = CO₂, SO₂, toxic particles going into the air YOU breathe.', fact: 'YOUR appliances right now are burning coal:', showAppliances: true },
+        ];
+        const station = stations[factoryStation];
+        return (
+          <div className="l3p1-factory-overlay">
+            <div className="l3p1-factory-panel">
+              <div className="l3p1-factory-progress">
+                {stations.map((s, i) => (
+                  <div key={s.id} className={`l3p1-factory-dot ${i <= factoryStation ? 'active' : ''}`}>
+                    {i < factoryStation ? '✅' : s.icon}
+                  </div>
+                ))}
+              </div>
+
+              <div className="l3p1-factory-card">
+                <div className="l3p1-factory-station-icon">{station.icon}</div>
+                <h2 className="l3p1-factory-station-title">Station {factoryStation + 1}: {station.title}</h2>
+                <p className="l3p1-factory-station-desc">{station.desc}</p>
+
+                {/* Animated visual per station */}
+                <div className={`l3p1-factory-visual l3p1-fv-${station.id}`}>
+                  {station.id === 'furnace' && (
+                    <div className="l3p1-furnace-anim">
+                      <div className="l3p1-furnace-fire">{['🔥','🔥','🔥','🔥','🔥'].map((f,i) => <span key={i} style={{'--i': i}}>{f}</span>)}</div>
+                      <div className="l3p1-furnace-glow" />
+                    </div>
+                  )}
+                  {station.id === 'conveyor' && (
+                    <div className="l3p1-conveyor-anim">
+                      {[1,2,3,4,5].map(i => <div key={i} className="l3p1-coal-box" style={{'--delay': `${i * 0.6}s`}}>⬛</div>)}
+                    </div>
+                  )}
+                  {station.id === 'turbine' && (
+                    <div className="l3p1-turbine-anim">⚙️</div>
+                  )}
+                  {station.id === 'emissions' && (
+                    <div className="l3p1-emissions-anim">
+                      {['💨','💨','💨','☁️','☁️'].map((e,i) => <span key={i} className="l3p1-smoke-emoji" style={{'--i': i}}>{e}</span>)}
+                    </div>
+                  )}
+                </div>
+
+                <div className="l3p1-factory-fact">
+                  <span className="l3p1-factory-fact-label">⚠️ Did You Know?</span>
+                  <span>{station.fact}</span>
+                </div>
+
+                {/* Show appliance coal impact on final station */}
+                {station.showAppliances && (
+                  <div className="l3p1-factory-impact">
+                    {Object.entries(APPLIANCE_COAL_DATA).filter(([id]) => appStates[id]).map(([id, data]) => (
+                      <div key={id} className="l3p1-factory-impact-row">
+                        <span>{data.icon} {data.name}</span>
+                        <span style={{color: data.coalPerHr > 0.5 ? '#ef4444' : '#f59e0b'}}>{data.coalPerHr} kg coal/hr</span>
+                      </div>
+                    ))}
+                    <div className="l3p1-factory-impact-total">
+                      🔥 Total: <strong style={{color:'#ef4444'}}>
+                        {Object.entries(APPLIANCE_COAL_DATA).filter(([id]) => appStates[id]).reduce((s,[,d]) => s + d.coalPerHr, 0).toFixed(2)} kg coal/hr
+                      </strong>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <button className="l3p1-factory-next-btn" onClick={() => {
+                if (factoryStation + 1 >= stations.length) {
+                  setShowFactoryInterior(false);
+                  playMilestoneSound();
+                  showFB('🏭 You witnessed coal burning for YOUR electricity! Every watt matters!', 'success', 5000);
+                  setTimeout(() => handleTaskComplete(), 2000);
+                } else {
+                  setFactoryStation(s => s + 1);
+                  playCorrectSound();
+                }
+              }}>
+                {factoryStation + 1 >= stations.length ? 'I Will Save Energy! ✅' : `Next Station → (${factoryStation + 2}/5)`}
+              </button>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* ═══ PLEDGE CHALLENGE TIMER & UI ═══ */}
+      {task?.type === 'pledge_challenge' && taskState === 'playing' && (
+        <div className="l3p1-pledge-hud">
+          <div className="l3p1-pledge-watts" style={{color: env.watts <= (task.targetWatts || 150) ? '#22c55e' : '#ef4444'}}>
+            {'\u{26A1}'} {env.watts}W / {task.targetWatts || 150}W
+          </div>
+          <div className="l3p1-pledge-coal">
+            🔥 Coal: {(env.watts * 0.0007).toFixed(3)} kg/hr
+          </div>
+          {env.watts <= (task.targetWatts || 150) && !pledgeComplete && (
+            <button className="l3p1-pledge-btn" onClick={() => {
+              setPledgeComplete(true);
+              playMilestoneSound();
+            }}>
+              🌍 Take the Green Pledge!
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* PLEDGE CERTIFICATE */}
+      {pledgeComplete && (
+        <div className="l3p1-pledge-overlay">
+          <div className="l3p1-pledge-cert">
+            <div className="l3p1-pledge-cert-icon">🌍</div>
+            <h2 className="l3p1-pledge-cert-title">GREEN PLEDGE CERTIFICATE</h2>
+            <div className="l3p1-pledge-cert-line" />
+            <p className="l3p1-pledge-cert-text">
+              I pledge to use energy wisely, keep my home under {task?.targetWatts || 150}W when possible,
+              and choose fans over AC whenever I can.
+            </p>
+            <div className="l3p1-pledge-cert-stats">
+              <div className="l3p1-pledge-stat">
+                <div className="l3p1-pledge-stat-val">{env.watts}W</div>
+                <div className="l3p1-pledge-stat-lbl">Your Home</div>
+              </div>
+              <div className="l3p1-pledge-stat">
+                <div className="l3p1-pledge-stat-val" style={{color:'#ef4444'}}>7720W</div>
+                <div className="l3p1-pledge-stat-lbl">Wasteful Home</div>
+              </div>
+              <div className="l3p1-pledge-stat">
+                <div className="l3p1-pledge-stat-val" style={{color:'#22c55e'}}>97%</div>
+                <div className="l3p1-pledge-stat-lbl">Reduction!</div>
+              </div>
+            </div>
+            <div className="l3p1-pledge-scale">
+              <div className="l3p1-pledge-scale-title">If every student in India (260 million) takes this pledge:</div>
+              <div className="l3p1-pledge-scale-item">🔥 1.3 BILLION kg less coal burned DAILY</div>
+              <div className="l3p1-pledge-scale-item">💨 3.7 BILLION kg less CO₂ per DAY</div>
+              <div className="l3p1-pledge-scale-item">🌳 = Planting 170 million trees EVERY DAY!</div>
+            </div>
+            <button className="l3p1-pledge-done-btn" onClick={() => {
+              setPledgeComplete(false);
+              handleTaskComplete();
+            }}>
+              Pledge Taken! Continue →
+            </button>
           </div>
         </div>
       )}
