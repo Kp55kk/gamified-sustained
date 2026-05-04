@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { playerState } from '../../Player';
 import { getProximityLevels } from '../../level2/Level2Appliances';
 import Level3Environment from '../Level3Environment';
-import { L2_APPLIANCE_IDS, L2_APPLIANCE_MAP, computeEnvironment, AC_TEMP_SETTINGS, OPTIMAL_TEMP_IDX, PHASE1_TASKS, REALIZATION_LINES, P1_QUIZ, PHASE1_BADGE, calculateP1Stars, BILL_APPLIANCES, EXPERIMENT_FEEDBACK, AC_SCENARIOS, computeEBMeter } from './phase1Data';
+import { L2_APPLIANCE_IDS, L2_APPLIANCE_MAP, computeEnvironment, AC_TEMP_SETTINGS, OPTIMAL_TEMP_IDX, PHASE1_TASKS, REALIZATION_LINES, P1_QUIZ, PHASE1_BADGE, calculateP1Stars, BILL_APPLIANCES, EXPERIMENT_FEEDBACK, AC_SCENARIOS, computeEBMeter, CO2_JOURNEY_STEPS, APPLIANCE_COAL_DATA } from './phase1Data';
 import { SceneContent, AnimatedValue, FloatingText, DashboardMetric, StepItem, playToggleOn, playToggleOff, playCorrectSound, playWrongSound, playMilestoneSound, playWarningSound, playHeavyHum, playBreathingSound } from './Phase1Core';
 import './Phase1.css';
 
@@ -53,6 +53,17 @@ export default function Phase1({ onComplete }) {
   const [floats, setFloats] = useState([]);
   const [feedback, setFeedback] = useState(null);
   const [stars, setStars] = useState(0);
+  const [door1Closed, setDoor1Closed] = useState(false);
+  const [door2Closed, setDoor2Closed] = useState(false);
+  const [showDoors, setShowDoors] = useState(false);
+  const [showCO2Journey, setShowCO2Journey] = useState(false);
+  const [co2Step, setCo2Step] = useState(0);
+  const [showPollutionOverlay, setShowPollutionOverlay] = useState(false);
+  const [showIndianEBMeter, setShowIndianEBMeter] = useState(false);
+  const [showFactoryInterior, setShowFactoryInterior] = useState(false);
+  const [factoryStation, setFactoryStation] = useState(0);
+  const [showPledge, setShowPledge] = useState(false);
+  const [pledgeComplete, setPledgeComplete] = useState(false);
 
   const task = PHASE1_TASKS[taskIdx];
   const env = useMemo(() => computeEnvironment(appStates, acTempIdx, windowOpen, curtainOpen), [appStates, acTempIdx, windowOpen, curtainOpen]);
@@ -86,6 +97,12 @@ export default function Phase1({ onComplete }) {
     setExpTimer(0); setExpRunning(false); setBestWatts(99999);
     setShowEBMeter(false); setShowACScenarios(false); setScenarioIdx(0);
     setShowAirExperience(false); setAirTimer(0);
+    setDoor1Closed(false); setDoor2Closed(false);
+    setShowDoors(task.id === 'comfort_decision');
+    setShowCO2Journey(false); setCo2Step(0);
+    setShowPollutionOverlay(false); setShowIndianEBMeter(false);
+    setShowFactoryInterior(false); setFactoryStation(0);
+    setShowPledge(false); setPledgeComplete(false);
   }, [taskIdx]);
 
   useEffect(() => {
@@ -163,7 +180,25 @@ export default function Phase1({ onComplete }) {
         setTimeout(() => handleTaskComplete(), 5000);
       }
     }
-  }, [task, taskState, outsideReached, handleTaskComplete, showFB]);
+    // Auto-trigger pollution when entering Outside during air task
+    if (task?.type === 'walk_outside_air' && taskState === 'playing' && room === 'Outside' && !showPollutionOverlay) {
+      playWarningSound();
+      setShowPollutionOverlay(true);
+      showFB('\u{1F32B}\u{FE0F} The air is TOXIC! AQI 387 — HAZARDOUS!', 'danger', 5000);
+      playBreathingSound();
+      setTimeout(() => {
+        showFB('\u{1F4A8} You felt the deadly pollution your energy use creates!', 'danger', 3000);
+        setTimeout(() => handleTaskComplete(), 3000);
+      }, (task.duration || 10) * 1000);
+    }
+    // Auto-trigger factory interior when entering Factory zone
+    if (task?.type === 'factory_visit' && taskState === 'playing' && room === 'Factory' && !showFactoryInterior) {
+      playWarningSound();
+      setShowFactoryInterior(true);
+      setFactoryStation(0);
+      showFB('\u{1F3ED} You entered the Power Plant! Witness coal burning...', 'danger', 5000);
+    }
+  }, [task, taskState, outsideReached, handleTaskComplete, showFB, showPollutionOverlay, showFactoryInterior]);
 
   const handleNearestChange = useCallback(id => {
     setNearestApp(id);
@@ -173,6 +208,91 @@ export default function Phase1({ onComplete }) {
   // ═══ INTERACTION HANDLER ═══
   const handleInteract = useCallback((appId) => {
     if (!task || taskState !== 'playing') return;
+
+    // ─── OUTDOOR TASKS: fire based on position, not appId ───
+    if (task.type === 'walk_outside_air') {
+      if (playerState.x < -11 && !showPollutionOverlay) {
+        playWarningSound();
+        setShowPollutionOverlay(true);
+        showFB('\u{1F32B}\u{FE0F} The air is TOXIC! AQI 387 — HAZARDOUS! You can barely breathe!', 'danger', 5000);
+        playBreathingSound();
+        setTimeout(() => {
+          showFB('\u{1F4A8} You felt the deadly pollution your energy use creates!', 'danger', 3000);
+          setTimeout(() => handleTaskComplete(), 3000);
+        }, (task.duration || 10) * 1000);
+      } else if (!showPollutionOverlay) {
+        showFB('\u{1F6AA} Walk OUTSIDE through the front door (left wall gap)!', 'info');
+      }
+      return;
+    }
+
+    if (task.type === 'eb_meter_outside') {
+      // EB meter is on the left wall at [-10.35, 1.6, -1]
+      const dx = playerState.x - (-10.35);
+      const dz = playerState.z - (-1);
+      const dist = Math.sqrt(dx * dx + dz * dz);
+      if (dist < 3.5 && !showIndianEBMeter) {
+        playCorrectSound();
+        setShowIndianEBMeter(true);
+        showFB('\u{1F4CA} EB Meter opened! Look at your shocking consumption!', 'info');
+      } else if (!showIndianEBMeter) {
+        showFB('\u{1F4CD} Walk to the EB Meter on the left wall and press E!', 'info');
+      }
+      return;
+    }
+
+    if (task.type === 'factory_visit') {
+      if (playerState.x < -20 && !showFactoryInterior) {
+        playWarningSound();
+        setShowFactoryInterior(true);
+        setFactoryStation(0);
+        showFB('\u{1F3ED} You entered the Power Plant! Witness coal burning for YOUR electricity...', 'danger', 5000);
+      } else if (!showFactoryInterior) {
+        showFB('\u{1F3ED} Walk to the Factory — follow the path LEFT outside!', 'info');
+      }
+      return;
+    }
+
+    if (task.type === 'pledge_challenge') {
+      if (!appId) return;
+      if (!L2_APPLIANCE_IDS.includes(appId)) return;
+      const ap = L2_APPLIANCE_MAP[appId];
+      const ns = !appStates[appId];
+      if (ns) { playToggleOn(); addFloat(`+${ap.wattage}W ⚡`, 'damage'); }
+      else { playToggleOff(); addFloat(`-${ap.wattage}W saved 🌿`, 'save'); }
+      setAppStates(prev => ({ ...prev, [appId]: ns }));
+      return;
+    }
+
+    // ─── Handle DOOR interactions ───
+    if (appId && appId.startsWith && appId.startsWith('__door__')) {
+      if (task.type === 'multi_step') {
+        const step = task.steps[currentStep];
+        if (step && step.action === 'close_door_1' && !door1Closed && appId === '__door__bedroom_living') {
+          playCorrectSound(); setDoor1Closed(true);
+          addFloat(step.feedback, 'save');
+          showFB('\ud83d\udeaa Door 1 closed! Living room → Bedroom sealed.', 'success');
+          setStepsDone(prev => [...prev, step.id]);
+          setCurrentStep(currentStep + 1);
+          return;
+        }
+        if (step && step.action === 'close_door_2' && !door2Closed && appId === '__door__bedroom_bathroom') {
+          playCorrectSound(); setDoor2Closed(true);
+          addFloat(step.feedback, 'save');
+          showFB('\ud83d\udeaa Door 2 closed! Bedroom → Bathroom sealed. Room is FULLY sealed! \u2705', 'success');
+          setStepsDone(prev => [...prev, step.id]);
+          setCurrentStep(currentStep + 1);
+          return;
+        }
+        // Wrong door for the current step
+        if (step && (step.action === 'close_door_1' || step.action === 'close_door_2')) {
+          const needed = step.action === 'close_door_1' ? 'Living Room → Bedroom' : 'Bedroom → Bathroom';
+          showFB(`\ud83d\udeaa Wrong door! Close the ${needed} door first.`, 'warning');
+          return;
+        }
+      }
+      return;
+    }
 
     // Handle window interactions (from Player.jsx __window__ prefix)
     if (appId && appId.startsWith && appId.startsWith('__window__')) {
@@ -197,16 +317,15 @@ export default function Phase1({ onComplete }) {
       }
       if (task.type === 'air_check' && !showAirExperience) {
         playWarningSound();
-        setWindowOpen(true);
         setShowAirExperience(true);
         setAirTimer(task.duration || 8);
         showFB('\ud83c\udf2b\ufe0f Look outside... The air is thick with pollution!', 'danger', 5000);
         return;
       }
       if (task.type === 'fix' && !windowOpen) {
-        playCorrectSound(); setWindowOpen(true);
-        addFloat('\ud83e\udea9 Window open! \u2705', 'save');
-        showFB('\u2705 Window open! Fresh air flows in \u2014 natural ventilation!', 'success');
+        playCorrectSound(); setWindowOpen(true); setCurtainOpen(true);
+        addFloat('\ud83e\udea9 Window & curtains open! \u2705', 'save');
+        showFB('\u2705 Windows & curtains open! Fresh air and natural light flow in!', 'success');
         setFixActions(prev => [...prev, 'window_open']);
         return;
       }
@@ -245,6 +364,45 @@ export default function Phase1({ onComplete }) {
     if (task.type === 'multi_step') {
       const step = task.steps[currentStep];
       if (!step) return;
+
+      // ── DOOR STEP: Check proximity to the SPECIFIC door directly ──
+      if (step.action === 'close_door_1') {
+        // Door 1 is at position [0, 1.1, -4]
+        const dx = playerState.x - 0;
+        const dz = playerState.z - (-4);
+        const dist = Math.sqrt(dx * dx + dz * dz);
+        if (dist < 3.5 && !door1Closed) {
+          playCorrectSound(); setDoor1Closed(true);
+          addFloat(step.feedback, 'save');
+          showFB('\ud83d\udeaa Door 1 closed! Living room \u2192 Bedroom sealed.', 'success');
+          setStepsDone(prev => [...prev, step.id]);
+          setCurrentStep(currentStep + 1);
+        } else if (door1Closed) {
+          showFB('\u2705 Door already closed!', 'info');
+        } else {
+          showFB('\ud83d\udeaa Walk closer to the Living \u2192 Bedroom door (green glow)!', 'warning');
+        }
+        return;
+      }
+      if (step.action === 'close_door_2') {
+        // Door 2 is at position [5, 1.1, 0]
+        const dx = playerState.x - 5;
+        const dz = playerState.z - 0;
+        const dist = Math.sqrt(dx * dx + dz * dz);
+        if (dist < 3.5 && !door2Closed) {
+          playCorrectSound(); setDoor2Closed(true);
+          addFloat(step.feedback, 'save');
+          showFB('\ud83d\udeaa Door 2 closed! Bedroom \u2192 Bathroom sealed. Room FULLY sealed! \u2705', 'success');
+          setStepsDone(prev => [...prev, step.id]);
+          setCurrentStep(currentStep + 1);
+        } else if (door2Closed) {
+          showFB('\u2705 Door already closed!', 'info');
+        } else {
+          showFB('\ud83d\udeaa Walk closer to the Bedroom \u2192 Bathroom door (green glow)!', 'warning');
+        }
+        return;
+      }
+
       if (step.action === 'turn_on' && step.target === appId) {
         if (appStates[appId]) { addFloat('Already ON', 'info'); return; }
         playToggleOn();
@@ -285,24 +443,32 @@ export default function Phase1({ onComplete }) {
     }
 
     if (task.type === 'eb_meter') {
-      if (currentRoom === (task.meterRoom || 'Living Room') && !showEBMeter) {
+      // EB meter is at x=-10.35, z=-1 (outside left wall near entrance)
+      // Player can be near x=-9, z=-1 (inside living room near entrance wall)
+      const dx = playerState.x - (-9);
+      const dz = playerState.z - (-1);
+      const dist = Math.sqrt(dx * dx + dz * dz);
+      if (dist < 3 && !showEBMeter) {
         setShowEBMeter(true); playCorrectSound();
-        showFB('\ud83d\udcca EB Meter opened! Click appliances to investigate their costs.', 'info');
+        showFB('\ud83d\udcca EB Meter Board opened! Investigate which appliances use the most power.', 'info');
       } else if (!showEBMeter) {
-        showFB('\ud83d\udccd Walk to the ' + (task.meterRoom || 'Living Room') + ' near the front door!', 'info');
+        showFB('\ud83d\udccd Walk to the EB Meter near the front door (left wall)!', 'info');
       }
       return;
     }
 
     if (task.type === 'air_check') {
-      if (currentRoom === (task.triggerRoom || 'Living Room') && !showAirExperience) {
+      // Player near the front door at x=-10, z=-2
+      const dx = playerState.x - (-9);
+      const dz = playerState.z - (-2);
+      const dist = Math.sqrt(dx * dx + dz * dz);
+      if (dist < 3 && !showAirExperience) {
         playWarningSound();
-        setWindowOpen(true);
         setShowAirExperience(true);
         setAirTimer(task.duration || 8);
-        showFB('\ud83c\udf2b\ufe0f Look outside... The air is thick with pollution!', 'danger', 5000);
+        showFB('\ud83c\udf2b\ufe0f Look outside through the door... The air is hazardous!', 'danger', 5000);
       } else if (!showAirExperience) {
-        showFB('\ud83d\udccd Walk to the door area in the Living Room!', 'info');
+        showFB('\ud83d\udccd Walk to the front door area to check outside air quality!', 'info');
       }
       return;
     }
@@ -344,6 +510,8 @@ export default function Phase1({ onComplete }) {
       return;
     }
 
+
+
     if (task.type === 'free_play') {
       const ns = !appStates[appId];
       if (ns) { playToggleOn(); addFloat(`+${ap.wattage}W`, 'damage'); }
@@ -356,7 +524,7 @@ export default function Phase1({ onComplete }) {
     if (ns) playToggleOn(); else playToggleOff();
     setAppStates(prev => ({ ...prev, [appId]: ns }));
     addFloat(ns ? `+${ap.wattage}W` : `-${ap.wattage}W`, ns ? 'damage' : 'save');
-  }, [task, taskState, appStates, turnedOn, currentStep, stepsDone, windowOpen, curtainOpen, currentRoom, showBillUI, showEBMeter, showAirExperience, fixActions, addFloat, showFB, handleTaskComplete, showACScenarios]);
+  }, [task, taskState, appStates, turnedOn, currentStep, stepsDone, windowOpen, curtainOpen, currentRoom, showBillUI, showEBMeter, showAirExperience, fixActions, addFloat, showFB, handleTaskComplete, showACScenarios, showPollutionOverlay, showIndianEBMeter, showFactoryInterior]);
 
   useEffect(() => {
     if (task?.type !== 'fix' || taskState !== 'playing') return;
@@ -649,6 +817,16 @@ export default function Phase1({ onComplete }) {
   const showCloseCur = curtainOpen && task && ((task.type === 'multi_step' && task.steps[currentStep]?.id === 'close_curtain') || task.type === 'free_play');
   const showOpenWin = !windowOpen && task && ((task.type === 'fix' && !fixActions.includes('window_open')) || task.type === 'free_play');
 
+  // Compute which door step is currently active for door highlighting
+  const currentDoorStep = (task?.type === 'multi_step' && task.steps[currentStep]) ? task.steps[currentStep].action : null;
+
+  // CO₂ educational data
+  const co2Kg = (env.watts * 0.71 / 1000).toFixed(2);
+  const coalKg = (env.watts * 0.0007).toFixed(2);
+
+  // Determine if player should be allowed outside
+  const allowOutside = task?.allowOutside && taskState === 'playing';
+
   return (
     <div className="l3p1-container">
       <div className="l3p1-canvas-wrapper">
@@ -657,12 +835,27 @@ export default function Phase1({ onComplete }) {
           <Suspense fallback={null}>
             <SceneContent applianceStates={appStates} nearestAppliance={nearestApp} highlightIds={highlightIds}
               onRoomChange={handleRoomChange} onNearestChange={handleNearestChange} onInteract={handleInteract}
-              cameraRef={cameraRef} proximityLevels={proxLevels} damageLevel={env.damageLevel} />
+              cameraRef={cameraRef} proximityLevels={proxLevels} damageLevel={env.damageLevel}
+              windowOpen={windowOpen} curtainOpen={curtainOpen} door1Closed={door1Closed} door2Closed={door2Closed} showDoors={showDoors} currentDoorStep={currentDoorStep}
+              allowOutside={allowOutside}
+              showFactory={task?.type === 'factory_visit' && taskState === 'playing'}
+              showEBMeterOutside={task?.type === 'eb_meter_outside' && taskState === 'playing'} />
           </Suspense>
         </Canvas>
         <div className={`l3p1-vignette ${vignetteClass}`} />
         <div className={`l3p1-fog-overlay ${fogLevel}`} />
         <div className="l3p1-heat-tint" style={{ background: heatTint }} />
+        {/* Pollution visual when outside */}
+        {showPollutionOverlay && (
+          <div className="l3p1-pollution-overlay active">
+            <div className="l3p1-pollution-particles" />
+            <div className="l3p1-aqi-badge">
+              <div className="l3p1-aqi-value">AQI 387</div>
+              <div className="l3p1-aqi-label">HAZARDOUS</div>
+              <div className="l3p1-aqi-detail">PM2.5: 285 µg/m³</div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* TOP HUD */}
@@ -680,6 +873,25 @@ export default function Phase1({ onComplete }) {
         <DashboardMetric icon={'\u{1F4B0}'} value={<AnimatedValue value={env.monthlyBill} prefix={'\u{20B9}'} />} label="Bill/mo" color={env.monthlyBill > 2000 ? '#ef4444' : '#22c55e'} />
         <DashboardMetric icon={'\u{26A1}'} value={<AnimatedValue value={env.watts} suffix="W" />} label="Power" color={wC} pulse={env.watts > 3000} />
       </div>
+
+      {/* CO₂ EDUCATIONAL DETAIL — shows coal/CO₂ impact */}
+      {env.watts > 0 && taskState === 'playing' && (
+        <div className="l3p1-co2-detail">
+          <div className="l3p1-co2-detail-row">
+            <span className="l3p1-co2-icon">{"\u{1F3ED}"}</span>
+            <span className="l3p1-co2-label">Coal Burning:</span>
+            <span className="l3p1-co2-val" style={{color:'#f59e0b'}}>{coalKg} kg/hr</span>
+          </div>
+          <div className="l3p1-co2-detail-row">
+            <span className="l3p1-co2-icon">{"\u{1F32B}\u{FE0F}"}</span>
+            <span className="l3p1-co2-label">CO{"\u{2082}"} Emitting:</span>
+            <span className="l3p1-co2-val" style={{color: env.co2Level > 0.5 ? '#ef4444' : '#f59e0b'}}>{co2Kg} kg/hr</span>
+          </div>
+          {env.watts > 1000 && (
+            <div className="l3p1-co2-warning">{"\u{26A0}\u{FE0F}"} High energy = More coal burned at power plant!</div>
+          )}
+        </div>
+      )}
 
       {/* TASK BAR */}
       {task && taskState === 'playing' && (
@@ -749,8 +961,12 @@ export default function Phase1({ onComplete }) {
         )}
       </div>
 
-      {/* FEEDBACK */}
-      {feedback && <div className={`l3p1-feedback ${feedback.type}`}>{feedback.text}</div>}
+      {/* FEEDBACK — Enhanced visibility */}
+      {feedback && (
+        <div className={`l3p1-feedback ${feedback.type}`}>
+          <div className="l3p1-feedback-content">{feedback.text}</div>
+        </div>
+      )}
       <div className="l3p1-float-container">
         {floats.map(ft => <FloatingText key={ft.id} {...ft} onDone={removeFloat} />)}
       </div>
@@ -917,11 +1133,447 @@ export default function Phase1({ onComplete }) {
         </div>
       )}
 
-      {/* PROXIMITY PROMPT for window/curtain interaction */}
+      {/* PROXIMITY PROMPT for window/curtain/door interaction */}
       {task && taskState === 'playing' && task.type === 'multi_step' && task.steps[currentStep] && 
-       (task.steps[currentStep].action === 'interact_window' || task.steps[currentStep].action === 'interact_curtain') && (
-        <div className="l3p1-proximity-prompt">
-          {'\u{1FA9F}'} Walk to a window and press E to {task.steps[currentStep].action === 'interact_window' ? 'close the window' : 'close the curtain'}!
+       (task.steps[currentStep].action === 'interact_window' || task.steps[currentStep].action === 'interact_curtain' || task.steps[currentStep].action === 'close_door_1' || task.steps[currentStep].action === 'close_door_2') && (
+        <div className="l3p1-proximity-prompt l3p1-proximity-prompt--action l3p1-proximity-prompt--enhanced">
+          <div className="l3p1-prompt-icon">
+            {(task.steps[currentStep].action === 'close_door_1' || task.steps[currentStep].action === 'close_door_2') ? '\ud83d\udeaa' : '\ud83e\udea9'}
+          </div>
+          <div className="l3p1-prompt-text">
+            {task.steps[currentStep].action === 'close_door_1'
+              ? 'Walk to the bedroom door and press E to close it!'
+              : task.steps[currentStep].action === 'close_door_2'
+              ? 'Walk to the bathroom door and press E to close it!'
+              : `Walk to a window and press E to ${task.steps[currentStep].action === 'interact_window' ? 'close the window' : 'close the curtain'}!`
+            }
+          </div>
+          <div className="l3p1-prompt-key">
+            <span className="l3p1-key-badge">E</span> Interact
+          </div>
+        </div>
+      )}
+
+      {/* PROXIMITY PROMPT for EB Meter */}
+      {task && taskState === 'playing' && task.type === 'eb_meter' && !showEBMeter && (
+        <div className="l3p1-proximity-prompt l3p1-proximity-prompt--action">
+          {'\u{1F4E1}'} Walk to the EB Meter Board near the front door (left wall) and press E!
+        </div>
+      )}
+
+      {/* PROXIMITY PROMPT for CO2 Journey */}
+      {task && taskState === 'playing' && task.type === 'co2_journey' && !showCO2Journey && (
+        <div className="l3p1-proximity-prompt l3p1-proximity-prompt--action l3p1-proximity-prompt--enhanced">
+          <div className="l3p1-prompt-icon">{'\u{1F3ED}'}</div>
+          <div className="l3p1-prompt-text">Walk to the front door and press E to see the Coal {'\u2192'} Electricity journey!</div>
+          <div className="l3p1-prompt-key">
+            <span className="l3p1-key-badge">E</span> Start Journey
+          </div>
+        </div>
+      )}
+
+      {/* ═══════════════════════════════════════════════════════════ */}
+      {/*  CO₂ FACTORY VISUALIZATION — Full-screen animated overlay  */}
+      {/* ═══════════════════════════════════════════════════════════ */}
+      {showCO2Journey && CO2_JOURNEY_STEPS && (
+        <div className="co2j-overlay">
+          <div className="co2j-container">
+            {/* Progress bar */}
+            <div className="co2j-progress-bar">
+              <div className="co2j-progress-fill" style={{ width: `${((co2Step + 1) / CO2_JOURNEY_STEPS.length) * 100}%` }} />
+              <span className="co2j-progress-text">Stage {co2Step + 1} of {CO2_JOURNEY_STEPS.length}</span>
+            </div>
+
+            {/* Step indicators */}
+            <div className="co2j-steps-row">
+              {CO2_JOURNEY_STEPS.map((s, i) => (
+                <div key={s.id} className={`co2j-step-dot ${i < co2Step ? 'done' : i === co2Step ? 'active' : ''}`}>
+                  <span className="co2j-step-dot-icon">{i < co2Step ? '\u2705' : s.icon}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Arrow chain between dots */}
+            <div className="co2j-chain">
+              {CO2_JOURNEY_STEPS.map((s, i) => (
+                <React.Fragment key={s.id}>
+                  <div className={`co2j-chain-node ${i <= co2Step ? 'lit' : ''}`}>{s.icon}</div>
+                  {i < CO2_JOURNEY_STEPS.length - 1 && (
+                    <div className={`co2j-chain-arrow ${i < co2Step ? 'lit' : ''}`}>{'\u2192'}</div>
+                  )}
+                </React.Fragment>
+              ))}
+            </div>
+
+            {/* Main content card */}
+            <div className="co2j-card" style={{ background: CO2_JOURNEY_STEPS[co2Step]?.bg || '#1a1a2e' }}>
+              <div className="co2j-card-icon">{CO2_JOURNEY_STEPS[co2Step]?.icon}</div>
+              <h2 className="co2j-card-title">{CO2_JOURNEY_STEPS[co2Step]?.title}</h2>
+              <p className="co2j-card-desc">{CO2_JOURNEY_STEPS[co2Step]?.description}</p>
+              
+              {/* Animated visual for the current step */}
+              <div className={`co2j-animation co2j-anim-${CO2_JOURNEY_STEPS[co2Step]?.animation}`}>
+                {CO2_JOURNEY_STEPS[co2Step]?.animation === 'mine' && (
+                  <div className="co2j-mine-visual">
+                    <div className="co2j-rock">{'⛏️'}</div>
+                    <div className="co2j-coal-pieces">
+                      {[1,2,3,4,5].map(i => <div key={i} className="co2j-coal-piece" style={{'--delay': `${i * 0.3}s`}}>{'🪨'}</div>)}
+                    </div>
+                  </div>
+                )}
+                {CO2_JOURNEY_STEPS[co2Step]?.animation === 'train' && (
+                  <div className="co2j-train-visual">
+                    <div className="co2j-train">{'🚂'}</div>
+                    <div className="co2j-tracks">{'━━━━━━━━━━━━━━━'}</div>
+                  </div>
+                )}
+                {CO2_JOURNEY_STEPS[co2Step]?.animation === 'burn' && (
+                  <div className="co2j-burn-visual">
+                    <div className="co2j-furnace">{'🔥'}</div>
+                    <div className="co2j-smoke">
+                      {[1,2,3,4,5,6].map(i => <div key={i} className="co2j-smoke-puff" style={{'--delay': `${i * 0.5}s`}}>{'💨'}</div>)}
+                    </div>
+                  </div>
+                )}
+                {CO2_JOURNEY_STEPS[co2Step]?.animation === 'spin' && (
+                  <div className="co2j-spin-visual">
+                    <div className="co2j-turbine">{'⚙️'}</div>
+                    <div className="co2j-steam">{'💨'}</div>
+                    <div className="co2j-bolt">{'⚡'}</div>
+                  </div>
+                )}
+                {CO2_JOURNEY_STEPS[co2Step]?.animation === 'grid' && (
+                  <div className="co2j-grid-visual">
+                    <div className="co2j-tower">{'🗼'}</div>
+                    <div className="co2j-wire">{'━━⚡━━⚡━━⚡━━'}</div>
+                    <div className="co2j-city">{'🏘️'}</div>
+                  </div>
+                )}
+                {CO2_JOURNEY_STEPS[co2Step]?.animation === 'home' && (
+                  <div className="co2j-home-visual">
+                    <div className="co2j-house">{'🏠'}</div>
+                    <div className="co2j-plug">{'🔌'}</div>
+                    <div className="co2j-apps-grid">
+                      {APPLIANCE_COAL_DATA && Object.entries(APPLIANCE_COAL_DATA).filter(([id]) => appStates[id]).map(([id, data]) => (
+                        <div key={id} className="co2j-app-chip">
+                          <span>{data.icon}</span>
+                          <span className="co2j-app-name">{data.name}</span>
+                          <span className="co2j-app-coal">{data.coalPerHr} kg/hr</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Fact box */}
+              <div className="co2j-fact-box">
+                <div className="co2j-fact-label">{'\u{1F4A1}'} Did You Know?</div>
+                <div className="co2j-fact-text">{CO2_JOURNEY_STEPS[co2Step]?.fact}</div>
+              </div>
+
+              {/* Detail box */}
+              <div className="co2j-detail-box">
+                <div className="co2j-detail-text">{CO2_JOURNEY_STEPS[co2Step]?.detail}</div>
+              </div>
+
+              {/* Coal impact on final step */}
+              {co2Step === CO2_JOURNEY_STEPS.length - 1 && APPLIANCE_COAL_DATA && (
+                <div className="co2j-impact-section">
+                  <div className="co2j-impact-title">{'\u{1F525}'} YOUR Appliances Right Now:</div>
+                  <div className="co2j-impact-grid">
+                    {Object.entries(APPLIANCE_COAL_DATA).filter(([id]) => appStates[id]).map(([id, data]) => (
+                      <div key={id} className="co2j-impact-row">
+                        <span className="co2j-impact-icon">{data.icon}</span>
+                        <span className="co2j-impact-name">{data.name}</span>
+                        <span className="co2j-impact-watts">{data.watt}W</span>
+                        <span className="co2j-impact-coal" style={{color: data.coalPerHr > 0.5 ? '#ef4444' : data.coalPerHr > 0.1 ? '#f59e0b' : '#22c55e'}}>
+                          {data.coalPerHr} kg coal/hr
+                        </span>
+                        <span className="co2j-impact-tip">{data.tip}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="co2j-impact-total">
+                    {'\u{1F525}'} Total Coal: <strong style={{color:'#ef4444', fontSize: '18px'}}>
+                      {Object.entries(APPLIANCE_COAL_DATA).filter(([id]) => appStates[id]).reduce((sum, [, d]) => sum + d.coalPerHr, 0).toFixed(2)} kg/hour
+                    </strong>
+                    {' '}{'\u2022'}{' '}
+                    CO{'\u2082'}: <strong style={{color:'#f59e0b'}}>
+                      {Object.entries(APPLIANCE_COAL_DATA).filter(([id]) => appStates[id]).reduce((sum, [, d]) => sum + d.co2PerHr, 0).toFixed(2)} kg/hour
+                    </strong>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Navigation */}
+            <div className="co2j-nav">
+              {co2Step > 0 && (
+                <button className="co2j-nav-btn co2j-nav-prev" onClick={() => setCo2Step(s => s - 1)}>
+                  {'\u2190'} Previous
+                </button>
+              )}
+              <button className="co2j-nav-btn co2j-nav-next" onClick={() => {
+                if (co2Step + 1 >= CO2_JOURNEY_STEPS.length) {
+                  setShowCO2Journey(false);
+                  playMilestoneSound();
+                  showFB('\u{2705} You now understand the FULL coal→electricity→CO\u2082 chain! Every watt matters!', 'success', 5000);
+                  setTimeout(() => handleTaskComplete(), 2000);
+                } else {
+                  setCo2Step(s => s + 1);
+                  playCorrectSound();
+                }
+              }}>
+                {co2Step + 1 >= CO2_JOURNEY_STEPS.length ? 'I Understand! \u2705' : 'Next Stage \u2192'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* PROXIMITY PROMPT for outdoor tasks */}
+      {task && taskState === 'playing' && task.allowOutside && currentRoom !== 'Outside' && currentRoom !== 'Factory' && (
+        <div className="l3p1-proximity-prompt l3p1-proximity-prompt--action l3p1-proximity-prompt--enhanced">
+          <div className="l3p1-prompt-icon">{'\u{1F6AA}'}</div>
+          <div className="l3p1-prompt-text">Walk to the front door (left wall) and go OUTSIDE!</div>
+          <div className="l3p1-prompt-key">
+            <span className="l3p1-key-badge">W</span> Walk through door
+          </div>
+        </div>
+      )}
+
+      {/* ═══ INDIAN EB METER OVERLAY ═══ */}
+      {showIndianEBMeter && (() => {
+        const ebData = computeEBMeter(appStates, acTempIdx);
+        return (
+          <div className="l3p1-eb-overlay">
+            <div className="l3p1-eb-panel">
+              <div className="l3p1-eb-header">
+                <div className="l3p1-eb-logo">{'\u{26A1}'}</div>
+                <div className="l3p1-eb-title">STATE ELECTRICITY BOARD</div>
+                <div className="l3p1-eb-subtitle">Digital Energy Meter</div>
+                <div className="l3p1-eb-consumer">SC No: SC-2024-48291</div>
+              </div>
+
+              <div className="l3p1-eb-display">
+                <div className="l3p1-eb-reading">
+                  <div className="l3p1-eb-reading-label">Current Reading</div>
+                  <div className="l3p1-eb-reading-value">{ebData.totalKwh} <span>kWh/month</span></div>
+                </div>
+                <div className="l3p1-eb-load">
+                  <div className="l3p1-eb-load-label">Live Load</div>
+                  <div className="l3p1-eb-load-value" style={{color: ebData.totalWatts > 3000 ? '#ef4444' : ebData.totalWatts > 1000 ? '#f59e0b' : '#22c55e'}}>
+                    {ebData.totalWatts}W
+                  </div>
+                </div>
+              </div>
+
+              <div className="l3p1-eb-breakdown">
+                <div className="l3p1-eb-breakdown-title">{'\u{1F4CB}'} Appliance Breakdown</div>
+                {ebData.breakdown.filter(b => appStates[b.id]).map(b => (
+                  <div key={b.id} className="l3p1-eb-row">
+                    <span className="l3p1-eb-row-icon">{b.icon}</span>
+                    <span className="l3p1-eb-row-name">{b.name}</span>
+                    <span className="l3p1-eb-row-watts">{b.wattage}W</span>
+                    <span className="l3p1-eb-row-kwh">{b.monthlyKwh} kWh</span>
+                    <span className="l3p1-eb-row-cost" style={{color: b.monthlyCost > 500 ? '#ef4444' : b.monthlyCost > 100 ? '#f59e0b' : '#22c55e'}}>
+                      {'\u{20B9}'}{b.monthlyCost}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              <div className="l3p1-eb-total-section">
+                <div className="l3p1-eb-total">
+                  <div className="l3p1-eb-total-label">Monthly Bill</div>
+                  <div className="l3p1-eb-total-value">{'\u{20B9}'}{ebData.totalCost}</div>
+                </div>
+                <div className="l3p1-eb-coal">
+                  <div>{'\u{1F525}'} Coal burned: <strong style={{color:'#ef4444'}}>{(ebData.totalWatts * 0.0007 * 24 * 30).toFixed(0)} kg/month</strong></div>
+                  <div>{'\u{1F4A8}'} CO{'\u{2082}'} emitted: <strong style={{color:'#f59e0b'}}>{(ebData.totalKwh * 0.71).toFixed(0)} kg/month</strong></div>
+                </div>
+                <div className="l3p1-eb-comparison">
+                  <div className="l3p1-eb-comp-bar">
+                    <div className="l3p1-eb-comp-fill l3p1-eb-comp-green" style={{width: '25%'}}>
+                      <span>Green: 90kWh</span>
+                    </div>
+                    <div className="l3p1-eb-comp-fill l3p1-eb-comp-avg" style={{width: '40%'}}>
+                      <span>Avg: 150kWh</span>
+                    </div>
+                    <div className="l3p1-eb-comp-fill l3p1-eb-comp-you" style={{width: `${Math.min(100, (ebData.totalKwh / 400) * 100)}%`}}>
+                      <span>YOU: {ebData.totalKwh}kWh</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="l3p1-eb-shock">
+                {'\u{1F628}'} Your family is spending <strong style={{color:'#ef4444', fontSize:'20px'}}>{'\u{20B9}'}{ebData.totalCost}/month</strong> on electricity!
+                <br />That's <strong>{(ebData.totalKwh * 0.71).toFixed(0)} kg of CO{'\u{2082}'}</strong> dumped into the atmosphere every month.
+              </div>
+
+              <button className="l3p1-eb-close-btn" onClick={() => {
+                setShowIndianEBMeter(false);
+                playMilestoneSound();
+                showFB('\u{1F4CA} Now you know the REAL cost of your energy use!', 'success', 3000);
+                setTimeout(() => handleTaskComplete(), 2000);
+              }}>
+                I Understand the Impact {'\u{2705}'}
+              </button>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* ═══ FACTORY INTERIOR OVERLAY ═══ */}
+      {showFactoryInterior && (() => {
+        const stations = [
+          { id: 'coal_arrival', title: 'Coal Arrival', icon: '⛏️', desc: 'Trains bring thousands of tons of coal from mines. This coal was formed over 300 MILLION years.', fact: 'India mines 900 million tons of coal per year!' },
+          { id: 'conveyor', title: 'Coal Conveyor Belt', icon: '⚙️', desc: 'Coal is crushed into fine powder and carried by conveyor belts into the massive furnace.', fact: 'A power plant burns 230 kg of coal EVERY SECOND!' },
+          { id: 'furnace', title: 'The Burning Furnace', icon: '🔥', desc: 'Coal powder is blown into a furnace at 1,500°C. Every watt of YOUR electricity starts with FIRE.', fact: 'For every 1 kWh: 0.71 kg CO₂ released!' },
+          { id: 'turbine', title: 'Steam Turbine', icon: '⚡', desc: 'Steam spins turbine blades at 3,000 RPM generating electricity. Only 33% efficiency!', fact: 'TWO-THIRDS of coal energy is WASTED as heat!' },
+          { id: 'emissions', title: 'The CO₂ Cloud', icon: '💨', desc: 'That thick smoke = CO₂, SO₂, toxic particles going into the air YOU breathe.', fact: 'YOUR appliances right now are burning coal:', showAppliances: true },
+        ];
+        const station = stations[factoryStation];
+        return (
+          <div className="l3p1-factory-overlay">
+            <div className="l3p1-factory-panel">
+              <div className="l3p1-factory-progress">
+                {stations.map((s, i) => (
+                  <div key={s.id} className={`l3p1-factory-dot ${i <= factoryStation ? 'active' : ''}`}>
+                    {i < factoryStation ? '✅' : s.icon}
+                  </div>
+                ))}
+              </div>
+
+              <div className="l3p1-factory-card">
+                <div className="l3p1-factory-station-icon">{station.icon}</div>
+                <h2 className="l3p1-factory-station-title">Station {factoryStation + 1}: {station.title}</h2>
+                <p className="l3p1-factory-station-desc">{station.desc}</p>
+
+                {/* Animated visual per station */}
+                <div className={`l3p1-factory-visual l3p1-fv-${station.id}`}>
+                  {station.id === 'furnace' && (
+                    <div className="l3p1-furnace-anim">
+                      <div className="l3p1-furnace-fire">{['🔥','🔥','🔥','🔥','🔥'].map((f,i) => <span key={i} style={{'--i': i}}>{f}</span>)}</div>
+                      <div className="l3p1-furnace-glow" />
+                    </div>
+                  )}
+                  {station.id === 'conveyor' && (
+                    <div className="l3p1-conveyor-anim">
+                      {[1,2,3,4,5].map(i => <div key={i} className="l3p1-coal-box" style={{'--delay': `${i * 0.6}s`}}>⬛</div>)}
+                    </div>
+                  )}
+                  {station.id === 'turbine' && (
+                    <div className="l3p1-turbine-anim">⚙️</div>
+                  )}
+                  {station.id === 'emissions' && (
+                    <div className="l3p1-emissions-anim">
+                      {['💨','💨','💨','☁️','☁️'].map((e,i) => <span key={i} className="l3p1-smoke-emoji" style={{'--i': i}}>{e}</span>)}
+                    </div>
+                  )}
+                </div>
+
+                <div className="l3p1-factory-fact">
+                  <span className="l3p1-factory-fact-label">⚠️ Did You Know?</span>
+                  <span>{station.fact}</span>
+                </div>
+
+                {/* Show appliance coal impact on final station */}
+                {station.showAppliances && (
+                  <div className="l3p1-factory-impact">
+                    {Object.entries(APPLIANCE_COAL_DATA).filter(([id]) => appStates[id]).map(([id, data]) => (
+                      <div key={id} className="l3p1-factory-impact-row">
+                        <span>{data.icon} {data.name}</span>
+                        <span style={{color: data.coalPerHr > 0.5 ? '#ef4444' : '#f59e0b'}}>{data.coalPerHr} kg coal/hr</span>
+                      </div>
+                    ))}
+                    <div className="l3p1-factory-impact-total">
+                      🔥 Total: <strong style={{color:'#ef4444'}}>
+                        {Object.entries(APPLIANCE_COAL_DATA).filter(([id]) => appStates[id]).reduce((s,[,d]) => s + d.coalPerHr, 0).toFixed(2)} kg coal/hr
+                      </strong>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <button className="l3p1-factory-next-btn" onClick={() => {
+                if (factoryStation + 1 >= stations.length) {
+                  setShowFactoryInterior(false);
+                  playMilestoneSound();
+                  showFB('🏭 You witnessed coal burning for YOUR electricity! Every watt matters!', 'success', 5000);
+                  setTimeout(() => handleTaskComplete(), 2000);
+                } else {
+                  setFactoryStation(s => s + 1);
+                  playCorrectSound();
+                }
+              }}>
+                {factoryStation + 1 >= stations.length ? 'I Will Save Energy! ✅' : `Next Station → (${factoryStation + 2}/5)`}
+              </button>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* ═══ PLEDGE CHALLENGE TIMER & UI ═══ */}
+      {task?.type === 'pledge_challenge' && taskState === 'playing' && (
+        <div className="l3p1-pledge-hud">
+          <div className="l3p1-pledge-watts" style={{color: env.watts <= (task.targetWatts || 150) ? '#22c55e' : '#ef4444'}}>
+            {'\u{26A1}'} {env.watts}W / {task.targetWatts || 150}W
+          </div>
+          <div className="l3p1-pledge-coal">
+            🔥 Coal: {(env.watts * 0.0007).toFixed(3)} kg/hr
+          </div>
+          {env.watts <= (task.targetWatts || 150) && !pledgeComplete && (
+            <button className="l3p1-pledge-btn" onClick={() => {
+              setPledgeComplete(true);
+              playMilestoneSound();
+            }}>
+              🌍 Take the Green Pledge!
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* PLEDGE CERTIFICATE */}
+      {pledgeComplete && (
+        <div className="l3p1-pledge-overlay">
+          <div className="l3p1-pledge-cert">
+            <div className="l3p1-pledge-cert-icon">🌍</div>
+            <h2 className="l3p1-pledge-cert-title">GREEN PLEDGE CERTIFICATE</h2>
+            <div className="l3p1-pledge-cert-line" />
+            <p className="l3p1-pledge-cert-text">
+              I pledge to use energy wisely, keep my home under {task?.targetWatts || 150}W when possible,
+              and choose fans over AC whenever I can.
+            </p>
+            <div className="l3p1-pledge-cert-stats">
+              <div className="l3p1-pledge-stat">
+                <div className="l3p1-pledge-stat-val">{env.watts}W</div>
+                <div className="l3p1-pledge-stat-lbl">Your Home</div>
+              </div>
+              <div className="l3p1-pledge-stat">
+                <div className="l3p1-pledge-stat-val" style={{color:'#ef4444'}}>7720W</div>
+                <div className="l3p1-pledge-stat-lbl">Wasteful Home</div>
+              </div>
+              <div className="l3p1-pledge-stat">
+                <div className="l3p1-pledge-stat-val" style={{color:'#22c55e'}}>97%</div>
+                <div className="l3p1-pledge-stat-lbl">Reduction!</div>
+              </div>
+            </div>
+            <div className="l3p1-pledge-scale">
+              <div className="l3p1-pledge-scale-title">If every student in India (260 million) takes this pledge:</div>
+              <div className="l3p1-pledge-scale-item">🔥 1.3 BILLION kg less coal burned DAILY</div>
+              <div className="l3p1-pledge-scale-item">💨 3.7 BILLION kg less CO₂ per DAY</div>
+              <div className="l3p1-pledge-scale-item">🌳 = Planting 170 million trees EVERY DAY!</div>
+            </div>
+            <button className="l3p1-pledge-done-btn" onClick={() => {
+              setPledgeComplete(false);
+              handleTaskComplete();
+            }}>
+              Pledge Taken! Continue →
+            </button>
+          </div>
         </div>
       )}
 
