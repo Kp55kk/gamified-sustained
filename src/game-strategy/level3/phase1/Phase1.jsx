@@ -1426,57 +1426,175 @@ export default function Phase1({ onComplete }) {
         );
       })()}
 
-      {/* ═══ FACTORY INTERIOR OVERLAY ═══ */}
+      {/* ═══ FACTORY INTERIOR OVERLAY — REALISTIC ═══ */}
       {showFactoryInterior && (() => {
         const stations = [
-          { id: 'coal_arrival', title: 'Coal Arrival', icon: '⛏️', desc: 'Trains bring thousands of tons of coal from mines. This coal was formed over 300 MILLION years.', fact: 'India mines 900 million tons of coal per year!' },
-          { id: 'conveyor', title: 'Coal Conveyor Belt', icon: '⚙️', desc: 'Coal is crushed into fine powder and carried by conveyor belts into the massive furnace.', fact: 'A power plant burns 230 kg of coal EVERY SECOND!' },
-          { id: 'furnace', title: 'The Burning Furnace', icon: '🔥', desc: 'Coal powder is blown into a furnace at 1,500°C. Every watt of YOUR electricity starts with FIRE.', fact: 'For every 1 kWh: 0.71 kg CO₂ released!' },
-          { id: 'turbine', title: 'Steam Turbine', icon: '⚡', desc: 'Steam spins turbine blades at 3,000 RPM generating electricity. Only 33% efficiency!', fact: 'TWO-THIRDS of coal energy is WASTED as heat!' },
-          { id: 'emissions', title: 'The CO₂ Cloud', icon: '💨', desc: 'That thick smoke = CO₂, SO₂, toxic particles going into the air YOU breathe.', fact: 'YOUR appliances right now are burning coal:', showAppliances: true },
+          { id: 'coal_arrival', title: 'Coal Arrival Yard', desc: 'Massive trains bring thousands of tons of coal from mines deep underground. This coal was formed over 300 MILLION years — and we burn it in mere hours to power your appliances.', fact: 'India mines 900 million tons of coal per year — the 2nd highest in the world.' },
+          { id: 'conveyor', title: 'Coal Conveyor System', desc: 'Raw coal is crushed into fine powder and transported on heavy industrial conveyor belts into the furnace chamber. The conveyor runs 24 hours a day, 365 days a year.', fact: 'A single power plant burns 230 kg of coal EVERY SECOND — that is 20,000 tons per day.' },
+          { id: 'furnace', title: 'The Burning Furnace', desc: 'Pulverized coal is injected into a massive furnace reaching 1,500°C. The heat is so intense it can melt steel. Every single watt of YOUR electricity begins right here — with fire.', fact: 'For every 1 kWh of electricity generated, 0.71 kg of CO₂ is released into the atmosphere.' },
+          { id: 'turbine', title: 'Steam Turbine Generator', desc: 'Super-heated steam at 540°C blasts through turbine blades spinning at 3,000 RPM. The mechanical energy is converted to electricity — but only 33% of the coal energy makes it through.', fact: 'TWO-THIRDS of all coal energy is completely WASTED as heat — never becoming electricity.' },
+          { id: 'emissions', title: 'Emissions & Pollution', desc: 'Look up at those towering smokestacks. Thick grey smoke pours out carrying CO₂, SO₂, mercury, and toxic particulates — going directly into the atmosphere you breathe every day.', fact: 'YOUR appliances right now are burning coal at this rate:', showAppliances: true },
         ];
         const station = stations[factoryStation];
         return (
           <div className="l3p1-factory-overlay">
             <div className="l3p1-factory-panel">
+              {/* Progress bar */}
               <div className="l3p1-factory-progress">
                 {stations.map((s, i) => (
-                  <div key={s.id} className={`l3p1-factory-dot ${i <= factoryStation ? 'active' : ''}`}>
-                    {i < factoryStation ? '✅' : s.icon}
+                  <div key={s.id} className={`l3p1-factory-dot ${i <= factoryStation ? 'active' : ''} ${i === factoryStation ? 'current' : ''}`}>
+                    {i < factoryStation ? <span className="l3p1-factory-checkmark"></span> : <span className="l3p1-factory-dot-num">{i + 1}</span>}
                   </div>
                 ))}
+                <div className="l3p1-factory-progress-line">
+                  <div className="l3p1-factory-progress-fill" style={{width: `${(factoryStation / (stations.length - 1)) * 100}%`}}></div>
+                </div>
               </div>
 
               <div className="l3p1-factory-card">
-                <div className="l3p1-factory-station-icon">{station.icon}</div>
                 <h2 className="l3p1-factory-station-title">Station {factoryStation + 1}: {station.title}</h2>
-                <p className="l3p1-factory-station-desc">{station.desc}</p>
+                
+                {/* ═══ REALISTIC ANIMATED VISUALS ═══ */}
+                <div className="l3p1-factory-visual">
+                  {/* COAL ARRIVAL: Railroad tracks + coal pile */}
+                  {station.id === 'coal_arrival' && (
+                    <div className="l3p1-real-coal-arrival">
+                      <div className="l3p1-real-tracks">
+                        <div className="l3p1-real-rail"></div>
+                        <div className="l3p1-real-rail"></div>
+                        {[...Array(8)].map((_,i) => <div key={i} className="l3p1-real-tie" style={{left: `${i*13}%`}}></div>)}
+                      </div>
+                      <div className="l3p1-real-train-car">
+                        <div className="l3p1-real-train-body"></div>
+                        <div className="l3p1-real-coal-load"></div>
+                        <div className="l3p1-real-wheel" style={{left:'15%'}}></div>
+                        <div className="l3p1-real-wheel" style={{left:'75%'}}></div>
+                      </div>
+                      <div className="l3p1-real-coal-pile">
+                        {[...Array(12)].map((_,i) => (
+                          <div key={i} className="l3p1-real-coal-chunk" style={{
+                            left: `${10 + Math.random()*80}%`,
+                            bottom: `${Math.random()*60}%`,
+                            width: `${8 + Math.random()*14}px`,
+                            height: `${6 + Math.random()*10}px`,
+                            animationDelay: `${i*0.2}s`,
+                          }}></div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
-                {/* Animated visual per station */}
-                <div className={`l3p1-factory-visual l3p1-fv-${station.id}`}>
-                  {station.id === 'furnace' && (
-                    <div className="l3p1-furnace-anim">
-                      <div className="l3p1-furnace-fire">{['🔥','🔥','🔥','🔥','🔥'].map((f,i) => <span key={i} style={{'--i': i}}>{f}</span>)}</div>
-                      <div className="l3p1-furnace-glow" />
-                    </div>
-                  )}
+                  {/* CONVEYOR: Steel belt with coal blocks */}
                   {station.id === 'conveyor' && (
-                    <div className="l3p1-conveyor-anim">
-                      {[1,2,3,4,5].map(i => <div key={i} className="l3p1-coal-box" style={{'--delay': `${i * 0.6}s`}}>⬛</div>)}
+                    <div className="l3p1-real-conveyor">
+                      <div className="l3p1-real-belt">
+                        <div className="l3p1-real-belt-surface"></div>
+                        <div className="l3p1-real-belt-ridges"></div>
+                      </div>
+                      <div className="l3p1-real-belt-supports">
+                        <div className="l3p1-real-support-leg"></div>
+                        <div className="l3p1-real-support-leg"></div>
+                        <div className="l3p1-real-support-leg"></div>
+                      </div>
+                      {[...Array(6)].map((_,i) => (
+                        <div key={i} className="l3p1-real-coal-block" style={{animationDelay: `${i*0.8}s`}}>
+                          <div className="l3p1-coal-texture"></div>
+                        </div>
+                      ))}
+                      <div className="l3p1-real-belt-roller l3p1-roller-left"></div>
+                      <div className="l3p1-real-belt-roller l3p1-roller-right"></div>
                     </div>
                   )}
-                  {station.id === 'turbine' && (
-                    <div className="l3p1-turbine-anim">⚙️</div>
+
+                  {/* FURNACE: Real fire with particles + heat haze */}
+                  {station.id === 'furnace' && (
+                    <div className="l3p1-real-furnace">
+                      <div className="l3p1-real-furnace-chamber">
+                        <div className="l3p1-real-furnace-wall l3p1-fw-left"></div>
+                        <div className="l3p1-real-furnace-wall l3p1-fw-right"></div>
+                        <div className="l3p1-real-furnace-floor"></div>
+                        <div className="l3p1-real-fire-bed">
+                          {[...Array(20)].map((_,i) => (
+                            <div key={i} className="l3p1-real-fire-particle" style={{
+                              left: `${5 + Math.random()*90}%`,
+                              animationDuration: `${0.6 + Math.random()*1.2}s`,
+                              animationDelay: `${Math.random()*1}s`,
+                              '--hue': Math.random() > 0.4 ? '20' : Math.random() > 0.5 ? '35' : '10',
+                              '--size': `${3 + Math.random()*8}px`,
+                            }}></div>
+                          ))}
+                        </div>
+                        <div className="l3p1-real-ember-glow"></div>
+                        <div className="l3p1-real-heat-haze"></div>
+                      </div>
+                      <div className="l3p1-real-furnace-label">1,500°C</div>
+                    </div>
                   )}
+
+                  {/* TURBINE: CSS spinning blades with housing */}
+                  {station.id === 'turbine' && (
+                    <div className="l3p1-real-turbine">
+                      <div className="l3p1-real-turbine-housing">
+                        <div className="l3p1-real-turbine-shaft"></div>
+                        <div className="l3p1-real-turbine-rotor">
+                          {[...Array(8)].map((_,i) => (
+                            <div key={i} className="l3p1-real-blade" style={{transform: `rotate(${i*45}deg)`}}></div>
+                          ))}
+                          <div className="l3p1-real-hub"></div>
+                        </div>
+                      </div>
+                      <div className="l3p1-real-steam-pipe">
+                        {[...Array(5)].map((_,i) => (
+                          <div key={i} className="l3p1-real-steam-puff" style={{animationDelay: `${i*0.4}s`}}></div>
+                        ))}
+                      </div>
+                      <div className="l3p1-real-generator">
+                        <div className="l3p1-real-gen-body"></div>
+                        <div className="l3p1-real-gen-coil"></div>
+                        <div className="l3p1-real-gen-coil l3p1-gen-coil-2"></div>
+                      </div>
+                      <div className="l3p1-real-turbine-label">3,000 RPM</div>
+                    </div>
+                  )}
+
+                  {/* EMISSIONS: Realistic smoke stacks with plumes */}
                   {station.id === 'emissions' && (
-                    <div className="l3p1-emissions-anim">
-                      {['💨','💨','💨','☁️','☁️'].map((e,i) => <span key={i} className="l3p1-smoke-emoji" style={{'--i': i}}>{e}</span>)}
+                    <div className="l3p1-real-emissions">
+                      <div className="l3p1-real-stack-group">
+                        <div className="l3p1-real-smokestack l3p1-stack-1">
+                          <div className="l3p1-real-stack-body"></div>
+                          <div className="l3p1-real-stack-ring"></div>
+                          <div className="l3p1-real-smoke-plume">
+                            {[...Array(8)].map((_,i) => (
+                              <div key={i} className="l3p1-real-smoke-cloud" style={{
+                                animationDelay: `${i*0.5}s`,
+                                '--drift': `${-15 + Math.random()*30}px`,
+                              }}></div>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="l3p1-real-smokestack l3p1-stack-2">
+                          <div className="l3p1-real-stack-body"></div>
+                          <div className="l3p1-real-stack-ring"></div>
+                          <div className="l3p1-real-smoke-plume">
+                            {[...Array(6)].map((_,i) => (
+                              <div key={i} className="l3p1-real-smoke-cloud" style={{
+                                animationDelay: `${i*0.6+0.3}s`,
+                                '--drift': `${-10 + Math.random()*20}px`,
+                              }}></div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="l3p1-real-pollution-sky"></div>
                     </div>
                   )}
                 </div>
 
+                <p className="l3p1-factory-station-desc">{station.desc}</p>
+
                 <div className="l3p1-factory-fact">
-                  <span className="l3p1-factory-fact-label">⚠️ Did You Know?</span>
+                  <span className="l3p1-factory-fact-label">DID YOU KNOW?</span>
                   <span>{station.fact}</span>
                 </div>
 
@@ -1485,12 +1603,12 @@ export default function Phase1({ onComplete }) {
                   <div className="l3p1-factory-impact">
                     {Object.entries(APPLIANCE_COAL_DATA).filter(([id]) => appStates[id]).map(([id, data]) => (
                       <div key={id} className="l3p1-factory-impact-row">
-                        <span>{data.icon} {data.name}</span>
+                        <span>{data.name}</span>
                         <span style={{color: data.coalPerHr > 0.5 ? '#ef4444' : '#f59e0b'}}>{data.coalPerHr} kg coal/hr</span>
                       </div>
                     ))}
                     <div className="l3p1-factory-impact-total">
-                      🔥 Total: <strong style={{color:'#ef4444'}}>
+                      Total Coal Burn: <strong style={{color:'#ef4444'}}>
                         {Object.entries(APPLIANCE_COAL_DATA).filter(([id]) => appStates[id]).reduce((s,[,d]) => s + d.coalPerHr, 0).toFixed(2)} kg coal/hr
                       </strong>
                     </div>
@@ -1502,14 +1620,14 @@ export default function Phase1({ onComplete }) {
                 if (factoryStation + 1 >= stations.length) {
                   setShowFactoryInterior(false);
                   playMilestoneSound();
-                  showFB('🏭 You witnessed coal burning for YOUR electricity! Every watt matters!', 'success', 5000);
+                  showFB('You witnessed coal burning for YOUR electricity! Every watt matters!', 'success', 5000);
                   setTimeout(() => handleTaskComplete(), 2000);
                 } else {
                   setFactoryStation(s => s + 1);
                   playCorrectSound();
                 }
               }}>
-                {factoryStation + 1 >= stations.length ? 'I Will Save Energy! ✅' : `Next Station → (${factoryStation + 2}/5)`}
+                {factoryStation + 1 >= stations.length ? 'I Will Save Energy!' : `Next Station (${factoryStation + 2}/5)`}
               </button>
             </div>
           </div>
