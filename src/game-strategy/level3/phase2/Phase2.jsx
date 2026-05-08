@@ -1,6 +1,6 @@
 import React,{useState,useEffect,useCallback,useMemo,useRef} from'react';
-import{INTRO_DIALOGUE,SEGMENTS,TREE_TASKS,SOLAR_TASKS,WIND_TASKS,TOTAL_TREES_TO_PLANT,PANEL_ORIENTATIONS,WIND_SPEED_SEQUENCE,DATA_POPUPS,COMPARISON_DATA,REALIZATION_LINES,TRANSITION_LINE,PHASE2_QUIZ,PHASE2_BADGE,calculateP2Stars,CO2_REDUCTION_LEVELS}from'./phase2Data';
-import{HouseScene3D,Scene3DCanvas,GARDEN_TREE_SPOTS,playAction,playSuccess,playCorrect,playWrong}from'./Phase2Core';
+import{INTRO_DIALOGUE,SEGMENTS,TREE_TASKS,SOLAR_TASKS,WIND_TASKS,TOTAL_TREES_TO_PLANT,PANEL_ORIENTATIONS,WIND_SPEED_SEQUENCE,DATA_POPUPS,COMPARISON_DATA,REALIZATION_LINES,TRANSITION_LINE,PHASE2_QUIZ,PHASE2_BADGE,calculateP2Stars,CO2_REDUCTION_LEVELS,ENV_HOTSPOTS,TREE_ANALYSIS,GROWTH_TIMELINE,SCANNER_APPLIANCES,LIVE_COMPARISON,BATTERY_DATA,WEATHER_SCENARIOS,TRANSFORMATION_BEFORE,TRANSFORMATION_AFTER,FINAL_TEACHER_DIALOGUE,LEVEL4_TRANSITION_TEXT,LEARNING_OUTCOMES}from'./phase2Data';
+import{HouseScene3D,Scene3DCanvas,DroneIntroCamera,GARDEN_TREE_SPOTS,DEBRIS_POSITIONS,playAction,playSuccess,playCorrect,playWrong}from'./Phase2Core';
 import'./Phase2.css';
 
 export default function Phase2({onComplete}){
@@ -33,6 +33,23 @@ const[showExp,setShowExp]=useState(false);
 const[stars,setStars]=useState(0);
 const[segsComplete,setSegsComplete]=useState(0);
 const[completedSegs,setCompletedSegs]=useState({trees:false,solar:false,wind:false});
+const[debrisCleared,setDebrisCleared]=useState([]);
+const[activeHotspot,setActiveHotspot]=useState(0);
+const[showTreeAnalysis,setShowTreeAnalysis]=useState(false);
+const[selectedTreeType,setSelectedTreeType]=useState(0);
+const[scannedAppliances,setScannedAppliances]=useState([]);
+const[showScanner,setShowScanner]=useState(false);
+const[fieldTurbines,setFieldTurbines]=useState([false,false,false]);
+const[fieldTurbineIdx,setFieldTurbineIdx]=useState(0);
+const[batteryCharge,setBatteryCharge]=useState(0);
+const[batteryActive,setBatteryActive]=useState(false);
+const[powerMode,setPowerMode]=useState('grid');
+const[weatherIdx,setWeatherIdx]=useState(0);
+const[showWeather,setShowWeather]=useState(false);
+const[growthPhaseIdx,setGrowthPhaseIdx]=useState(0);
+const[showTransformation,setShowTransformation]=useState(false);
+const[transStep,setTransStep]=useState(0);
+const[finalDialogIdx,setFinalDialogIdx]=useState(0);
 const autoTimerRef=useRef(null);
 
 const segId=SEGMENTS[segIdx]?.id;
@@ -48,7 +65,7 @@ const greenLevel=useMemo(()=>Math.min(1,trees.filter(t=>t.growth>=3).length/TOTA
 
 useEffect(()=>{
   if(segPhase!=='playing'||!task?.auto)return;
-  const dur=segId==='trees'?3000:segId==='solar'?4000:3000;
+  const dur=task.autoDur||(segId==='trees'?3000:segId==='solar'?4000:3000);
   autoTimerRef.current=setTimeout(()=>{showFB(task.feedback,'success');playAction();advanceTask();},dur);
   return()=>clearTimeout(autoTimerRef.current);
 },[taskIdx,segPhase]);
@@ -87,7 +104,8 @@ function handleInteract(){
   if(segPhase!=='playing'||!task||task.auto)return;
   playAction();
   if(segId==='trees'){
-    if(task.id==='select_trees'||task.id==='clear_land'||task.id==='dig_soil'){showFB(task.feedback,'success');advanceTask();}
+    if(task.id==='survey'){setActiveHotspot(p=>(p+1)%ENV_HOTSPOTS.length);if(activeHotspot>=ENV_HOTSPOTS.length-1){showFB(task.feedback,'success');advanceTask();}else showFB(ENV_HOTSPOTS[activeHotspot]?.detail||'','info');}
+    else if(task.id==='select_trees'){setShowTreeAnalysis(true);}
     else if(task.id==='plant'){
       const pos=GARDEN_TREE_SPOTS[currentSpot]||[0,0,0];
       setTrees(p=>[...p,{pos,growth:1,absorbing:false}]);showFB(task.feedback,'success');advanceTask();
@@ -96,11 +114,20 @@ function handleInteract(){
       showFB(task.feedback,'success');advanceTask();
     }
   }else if(segId==='solar'){
-    if(task.id==='energy_scan'||task.id==='roof_inspect'||task.id==='peak_hour'){showFB(task.feedback,'success');advanceTask();}
+    if(task.id==='energy_scan'){setShowScanner(true);}
+    else if(task.id==='roof_inspect'){showFB(task.feedback,'success');advanceTask();}
     else if(task.id.startsWith('place_panel')){setPanelsPlaced(p=>p+1);showFB(task.feedback,'success');advanceTask();}
     else if(task.id==='orient')setShowOrient(true);
+    else if(task.id==='solar_mode'){setPowerMode('solar');showFB(task.feedback,'success');advanceTask();}
+    else if(task.id==='peak_hour'){setBatteryActive(true);showFB(task.feedback,'success');advanceTask();}
   }else if(segId==='wind'){
-    if(task.id==='install_turbine'){setTurbineInstalled(true);showFB(task.feedback,'success');advanceTask();}
+    if(task.id==='install_turbine'||task.id.startsWith('install_turbine_')){
+      const idx=fieldTurbineIdx;
+      setFieldTurbines(p=>{const n=[...p];n[idx]=true;return n;});
+      setFieldTurbineIdx(p=>p+1);
+      if(!turbineInstalled)setTurbineInstalled(true);
+      showFB(task.feedback,'success');advanceTask();
+    }
   }
 }
 
@@ -117,8 +144,8 @@ function handleDataClose(){
   setSegsComplete(p=>p+1);
   setCompletedSegs(prev=>({...prev,[segId]:true}));
   setCo2(segId==='trees'?CO2_REDUCTION_LEVELS.afterTrees:segId==='solar'?CO2_REDUCTION_LEVELS.afterSolar:CO2_REDUCTION_LEVELS.afterWind);
-  if(nextSeg>=SEGMENTS.length){setPhase('comparison');setCompStep(0);}
-  else{setSegIdx(nextSeg);setTaskIdx(0);setSegPhase('intro');setPanelsPlaced(0);setPanelAngle(0);setOrientIdx(0);setSunProgress(0);setEnergyFlowing(false);setTurbineInstalled(false);setWindSpeed(0);setCurrentSpot(p=>p+1);}
+  if(nextSeg>=SEGMENTS.length){setPhase('transformation');setTransStep(0);}
+  else{setSegIdx(nextSeg);setTaskIdx(0);setSegPhase('intro');setPanelsPlaced(0);setPanelAngle(0);setOrientIdx(0);setSunProgress(0);setEnergyFlowing(false);setTurbineInstalled(false);setWindSpeed(0);setCurrentSpot(p=>p+1);setShowScanner(false);setScannedAppliances([]);setPowerMode('grid');setBatteryCharge(0);setBatteryActive(false);setFieldTurbineIdx(0);}
 }
 
 function handlePlantMore(){
@@ -150,12 +177,18 @@ useEffect(()=>{
 // Shared scene props
 const sceneProps={segment:segId,trees,plantSpots:GARDEN_TREE_SPOTS,currentSpot,co2Active:trees.some(t=>t.absorbing),greenLevel,
   panelsPlaced,panelAngle,sunProgress,energyFlowing,turbineInstalled,windSpeed,
-  treesComplete:completedSegs.trees,solarComplete:completedSegs.solar};
+  treesComplete:completedSegs.trees,solarComplete:completedSegs.solar,
+  debrisCleared,hotspots:ENV_HOTSPOTS,activeHotspot:segId==='trees'&&task?.id==='survey'?activeHotspot:-1,
+  fieldTurbines,batteryCharge,batteryActive};
 
-// ═══ INTRO ═══
+// ═══ INTRO — Cinematic drone shot + dialogue ═══
 if(phase==='intro'){
   return(
   <div className="l3p2-container">
+    <Scene3DCanvas>
+      <HouseScene3D {...sceneProps} />
+      <DroneIntroCamera active={true} />
+    </Scene3DCanvas>
     <div className="l3p2-intro-overlay">
       <div className="l3p2-intro-teacher">🧑‍🏫</div>
       {INTRO_DIALOGUE.slice(0,introStep+1).map((l,i)=>(
@@ -287,6 +320,85 @@ if(phase==='segments'&&(segPhase==='playing'||segPhase==='data')){
       </div>
     )}
 
+    {/* Tree Analysis Hologram */}
+    {showTreeAnalysis&&(
+      <div className="l3p2-orient-overlay">
+        <div className="l3p2-tree-analysis-card">
+          <div className="l3p2-orient-title">🌿 Tree Analysis — Holographic Preview</div>
+          <div className="l3p2-tree-grid">
+            {TREE_ANALYSIS.map((t,i)=>(
+              <div key={t.id} className={`l3p2-tree-option ${i===selectedTreeType?'selected':''}`}
+                onClick={()=>setSelectedTreeType(i)} style={{'--tc':t.color}}>
+                <div style={{fontSize:32}}>{t.icon}</div>
+                <div style={{fontWeight:700,color:'#fff',fontSize:14}}>{t.name}</div>
+                <div style={{fontSize:11,color:'#aaa'}}>{t.futureSize}</div>
+                <div className="l3p2-tree-stats">
+                  <div>🌡️ {t.coolingImpact}</div>
+                  <div>💨 CO₂: {t.co2Absorption}</div>
+                  <div>🌥️ Shadow: {t.shadowRadius}</div>
+                  <div>💨 Airflow: {t.airflow}</div>
+                </div>
+                <div className="l3p2-tree-rating">{'⭐'.repeat(t.rating)}{'☆'.repeat(5-t.rating)}</div>
+                <div style={{fontSize:11,color:t.color,fontWeight:600,marginTop:4}}>{t.verdict}</div>
+              </div>
+            ))}
+          </div>
+          <button className="l3p2-orient-confirm" style={{marginTop:16,background:'linear-gradient(135deg,#22c55e,#16a34a)'}}
+            onClick={()=>{setShowTreeAnalysis(false);showFB(`Selected ${TREE_ANALYSIS[selectedTreeType].name} — great choice!`,'success');playCorrect();advanceTask();}}>
+            Confirm Selection →
+          </button>
+        </div>
+      </div>
+    )}
+
+    {/* Energy Scanner */}
+    {showScanner&&(
+      <div className="l3p2-orient-overlay">
+        <div className="l3p2-scanner-card">
+          <div className="l3p2-orient-title">🔍 Energy Scanner — Tap Each Appliance</div>
+          <div className="l3p2-scanner-grid">
+            {SCANNER_APPLIANCES.map((a)=>{
+              const scanned=scannedAppliances.includes(a.id);
+              return(
+              <div key={a.id} className={`l3p2-scanner-item ${scanned?'scanned':''} ${a.category}`}
+                onClick={()=>{if(!scanned){setScannedAppliances(p=>[...p,a.id]);playAction();}}}>
+                <div style={{fontSize:28}}>{a.icon}</div>
+                <div style={{fontWeight:700,color:'#fff',fontSize:13}}>{a.name}</div>
+                {scanned?(
+                  <div className="l3p2-scanner-reveal">
+                    <div style={{color:a.wireColor,fontWeight:800,fontSize:16}}>{a.watts}W</div>
+                    <div style={{fontSize:11,color:'#ccc'}}>CO₂: {a.co2Daily}/day</div>
+                    <div style={{fontSize:11,color:'#ccc'}}>Bill: {a.billMonthly}/mo</div>
+                    <div style={{fontSize:10,color:'#888',marginTop:4}}>{a.scanReveal}</div>
+                  </div>
+                ):(
+                  <div style={{fontSize:12,color:'#666',marginTop:6}}>Tap to scan</div>
+                )}
+              </div>
+            );})}
+          </div>
+          {scannedAppliances.length>=SCANNER_APPLIANCES.length&&(
+            <button className="l3p2-orient-confirm" style={{marginTop:12,background:'linear-gradient(135deg,#f59e0b,#d97706)'}}
+              onClick={()=>{setShowScanner(false);showFB('Energy map complete! AC & Geyser consume the most.','success');playSuccess();advanceTask();}}>
+              Complete Scan →
+            </button>
+          )}
+        </div>
+      </div>
+    )}
+
+    {/* Solar Power Mode Indicator */}
+    {segId==='solar'&&powerMode==='solar'&&segPhase==='playing'&&(
+      <div className="l3p2-power-mode">
+        <div className="l3p2-power-badge solar">☀️ SOLAR ACTIVE</div>
+        <div className="l3p2-power-stats">
+          <div className="l3p2-pw-row"><span>CO₂</span><span style={{color:'#4ade80'}}>{LIVE_COMPARISON.solar.co2}</span></div>
+          <div className="l3p2-pw-row"><span>Bill</span><span style={{color:'#4ade80'}}>{LIVE_COMPARISON.solar.bill}</span></div>
+          <div className="l3p2-pw-row"><span>Source</span><span style={{color:'#fbbf24'}}>{LIVE_COMPARISON.solar.source}</span></div>
+        </div>
+      </div>
+    )}
+
     {/* Data Popup */}
     {showData&&dataPopup&&(
       <div className="l3p2-data-popup" style={{'--seg-color':seg.color}}>
@@ -315,6 +427,46 @@ if(phase==='segments'&&(segPhase==='playing'||segPhase==='data')){
         </button>
       </div>
     )}
+  </div>);
+}
+
+// ═══ TRANSFORMATION CINEMATIC ═══
+if(phase==='transformation'){
+  return(
+  <div className="l3p2-container">
+    <div className="l3p2-comp-overlay">
+      <div className="l3p2-comp-title" style={{fontSize:28}}>🏡 House Transformation</div>
+      <div className="l3p2-comp-subtitle">See what your actions have achieved</div>
+      <div className="l3p2-transform-split">
+        <div className="l3p2-transform-col before">
+          <div className="l3p2-transform-header" style={{color:'#ef4444'}}>❌ BEFORE</div>
+          {TRANSFORMATION_BEFORE.map((item,i)=>(
+            <div key={i} className="l3p2-transform-item" style={{animationDelay:`${i*0.2}s`,'--item-color':item.color}}>
+              <span>{item.icon}</span><span>{item.label}</span>
+            </div>
+          ))}
+        </div>
+        <div className="l3p2-transform-arrow">→</div>
+        <div className="l3p2-transform-col after">
+          <div className="l3p2-transform-header" style={{color:'#22c55e'}}>✅ AFTER</div>
+          {TRANSFORMATION_AFTER.map((item,i)=>(
+            <div key={i} className="l3p2-transform-item" style={{animationDelay:`${(i+6)*0.2}s`,'--item-color':item.color}}>
+              <span>{item.icon}</span><span>{item.label}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="l3p2-learning-grid">
+        {LEARNING_OUTCOMES.map((lo,i)=>(
+          <div key={i} className="l3p2-learning-card" style={{animationDelay:`${i*0.15}s`}}>
+            <div style={{fontSize:28}}>{lo.icon}</div>
+            <div style={{fontWeight:700,color:'#fff',fontSize:14}}>{lo.title}</div>
+            {lo.points.map((p,j)=><div key={j} style={{fontSize:11,color:'#aaa'}}>• {p}</div>)}
+          </div>
+        ))}
+      </div>
+      <button className="l3p2-comp-continue" onClick={()=>{setPhase('comparison');setCompStep(0);playAction();}}>View CO₂ Comparison →</button>
+    </div>
   </div>);
 }
 
@@ -350,18 +502,20 @@ if(phase==='comparison'){
   </div>);
 }
 
-// ═══ REALIZATION ═══
+// ═══ REALIZATION — FINAL TEACHER SCENE ═══
 if(phase==='realization'){
+  const dialogues=FINAL_TEACHER_DIALOGUE||REALIZATION_LINES;
   return(
   <div className="l3p2-container">
     <div className="l3p2-real-overlay">
-      <div className="l3p2-intro-teacher" style={{fontSize:56,filter:'drop-shadow(0 0 30px rgba(255,200,0,.5))'}}>🧑‍🏫</div>
-      {REALIZATION_LINES.slice(0,realStep+1).map((l,i)=>(
+      <div className="l3p2-intro-teacher" style={{fontSize:64,filter:'drop-shadow(0 0 40px rgba(255,200,0,.6))',marginBottom:8}}>🧑‍🏫</div>
+      <div style={{fontSize:12,color:'#666',textTransform:'uppercase',letterSpacing:2,marginBottom:12}}>Final Teacher Scene</div>
+      {dialogues.slice(0,realStep+1).map((l,i)=>(
         <div key={i} className={`l3p2-real-line ${l.speaker==='teacher'?'teacher':''}`} style={{animationDelay:`${i*0.3}s`}}>
           {l.speaker==='teacher'?'🧑‍🏫 ':''}{l.text}
         </div>
       ))}
-      {realStep<REALIZATION_LINES.length-1?(
+      {realStep<dialogues.length-1?(
         <button className="l3p2-real-btn" onClick={()=>{setRealStep(p=>p+1);playAction();}}>...</button>
       ):(<button className="l3p2-real-btn" onClick={()=>{setPhase('quiz');playAction();}}>Take the Quiz →</button>)}
     </div>
@@ -391,13 +545,15 @@ if(phase==='quiz'){
   </div>);
 }
 
-// ═══ TRANSITION ═══
+// ═══ TRANSITION — LEVEL 4 SOLAR REVOLUTION ═══
 if(phase==='transition'){
   return(
   <div className="l3p2-container">
     <div className="l3p2-transition">
       <div className="l3p2-trans-icon">☀️</div>
-      <div className="l3p2-trans-text">{TRANSITION_LINE}</div>
+      <div className="l3p2-trans-beam"></div>
+      <div className="l3p2-trans-text">{LEVEL4_TRANSITION_TEXT}</div>
+      <div style={{fontSize:14,color:'#999',maxWidth:400,textAlign:'center',marginTop:8}}>The solar energy beam fills the screen. The environment fully brightens.</div>
       <button className="l3p2-trans-btn" onClick={onComplete}>Continue to Level 4 →</button>
     </div>
   </div>);

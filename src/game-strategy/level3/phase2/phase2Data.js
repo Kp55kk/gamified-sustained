@@ -24,15 +24,13 @@ export const SFX = {
   ambient:  { freq: [220], dur: 2.0, type: 'sine', vol: 0.02 },
 };
 
-// ─── INTRO DIALOGUE ───
+// ─── INTRO DIALOGUE — "THERE IS STILL HOPE" ───
 export const INTRO_DIALOGUE = [
-  { speaker: 'narration', text: 'You step outside the house…' },
-  { speaker: 'narration', text: 'The environment is still polluted from all that energy overuse.' },
-  { speaker: 'narration', text: 'Dark clouds hang low. Heat waves shimmer. The garden is dry and barren.' },
-  { speaker: 'teacher', text: '"We cannot stop using electricity…"' },
-  { speaker: 'teacher', text: '"But we CAN reduce its damage."' },
-  { speaker: 'teacher', text: '"Let us transform THIS home into a sustainable home."' },
-  { speaker: 'narration', text: 'The teacher points toward the house. A journey of transformation begins.' },
+  { speaker: 'teacher', text: '"You have seen how energy usage damages our environment."' },
+  { speaker: 'teacher', text: '"But we can still fix this. There is hope."' },
+  { speaker: 'teacher', text: '"Let us transform THIS house into a sustainable home."' },
+  { speaker: 'teacher', text: '"We will use trees, solar energy, and wind energy."' },
+  { speaker: 'narration', text: 'A journey of transformation begins…' },
 ];
 
 // ─── PHASE SEGMENTS ───
@@ -115,22 +113,16 @@ export const TREE_TASKS = [
     sfx: 'reveal', interactive: 'tree_select',
   },
   {
-    id: 'clear_waste', label: 'Clear dry waste', icon: '🧹',
-    instruction: 'Tap the debris to clear the garden',
-    feedback: 'Garden cleared! The soil is ready.',
-    sfx: 'sweep', interactive: 'debris_clear',
+    id: 'dig_soil', label: 'Prepare the soil', icon: '⛏️',
+    instruction: 'Preparing the planting holes…',
+    feedback: 'Soil prepared! Planting spots are ready.',
+    sfx: 'dig', auto: true,
   },
   {
-    id: 'dig_soil', label: 'Dig planting holes', icon: '⛏️',
-    instruction: 'Press E to dig holes for each tree',
-    feedback: 'Holes dug! Soil particles settling…',
-    sfx: 'dig',
-  },
-  {
-    id: 'add_water', label: 'Connect water pipeline', icon: '💧',
-    instruction: 'Press E to lay down the irrigation line',
-    feedback: 'Water pipeline connected! Flow beginning…',
-    sfx: 'water',
+    id: 'add_water', label: 'Set up water supply', icon: '💧',
+    instruction: 'Setting up drip irrigation system…',
+    feedback: 'Water system connected! Trees will stay hydrated.',
+    sfx: 'water', auto: true,
   },
   {
     id: 'plant', label: 'Plant the trees', icon: '🌱',
@@ -518,3 +510,191 @@ export const CO2_REDUCTION_LEVELS = {
   afterWind: 10,
   target: 10,
 };
+
+// ═══════════════════════════════════════════════════════════
+//  ENHANCED DATA — ENVIRONMENTAL HOTSPOTS (Task 1)
+// ═══════════════════════════════════════════════════════════
+export const ENV_HOTSPOTS = [
+  { id: 'dry_land', label: 'Dry Cracked Land', icon: '🏜️', pos: [-6, 0.5, 5],
+    detail: 'No shade → more heat absorption → ground temperature 55°C',
+    impact: 'Temperature +8°C without tree cover' },
+  { id: 'dead_plants', label: 'Dead Plants', icon: '🥀', pos: [6, 0.5, -4],
+    detail: 'No water, no care → vegetation died → no CO₂ absorption',
+    impact: 'Lost 15 kg/year CO₂ absorption capacity' },
+  { id: 'hot_wall', label: 'Overheated Wall', icon: '🔥', pos: [4.5, 2, 3],
+    detail: 'Direct sunlight heats walls → indoor temperature rises → more AC needed',
+    impact: 'Wall temperature 65°C without shade' },
+  { id: 'poor_airflow', label: 'Stagnant Air', icon: '💨', pos: [-5, 3, -3],
+    detail: 'No trees → no wind channeling → poor natural ventilation',
+    impact: 'Indoor airflow reduced by 40%' },
+];
+
+// ═══════════════════════════════════════════════════════════
+//  TREE ANALYSIS HOLOGRAMS (Task 2)
+// ═══════════════════════════════════════════════════════════
+export const TREE_ANALYSIS = [
+  { id: 'neem', name: 'Neem Tree', icon: '🌿', color: '#166534',
+    futureSize: '15-20m tall', shadowRadius: '8m',
+    coolingImpact: '-3°C nearby', co2Absorption: '48 kg/year',
+    airflow: '+35% improvement', rating: 5,
+    verdict: 'Best for household environmental support' },
+  { id: 'banyan', name: 'Banyan Tree', icon: '🌳', color: '#15803d',
+    futureSize: '20-30m tall', shadowRadius: '15m',
+    coolingImpact: '-5°C nearby', co2Absorption: '22 kg/year',
+    airflow: '+50% improvement', rating: 4,
+    verdict: 'Massive shade coverage, slow growth' },
+  { id: 'mango', name: 'Mango Tree', icon: '🥭', color: '#047857',
+    futureSize: '10-15m tall', shadowRadius: '6m',
+    coolingImpact: '-2°C nearby', co2Absorption: '35 kg/year',
+    airflow: '+25% improvement', rating: 4,
+    verdict: 'Good CO₂ absorption + provides fruit' },
+  { id: 'decorative', name: 'Decorative Plant', icon: '🌸', color: '#65a30d',
+    futureSize: '1-2m tall', shadowRadius: '0.5m',
+    coolingImpact: '-0.5°C nearby', co2Absorption: '5 kg/year',
+    airflow: '+5% improvement', rating: 2,
+    verdict: 'Adds beauty only — low environmental impact' },
+];
+
+// ═══════════════════════════════════════════════════════════
+//  TREE GROWTH TIMELINE (Time Progression Cinematic)
+// ═══════════════════════════════════════════════════════════
+export const GROWTH_TIMELINE = [
+  { year: 1, label: 'Year 1', treeSize: 0.3, grassLevel: 0.15,
+    skyClarity: 0.1, description: 'Saplings planted, roots taking hold' },
+  { year: 3, label: 'Year 3', treeSize: 0.6, grassLevel: 0.4,
+    skyClarity: 0.3, description: 'Trees growing, shade emerging' },
+  { year: 5, label: 'Year 5', treeSize: 1.0, grassLevel: 0.7,
+    skyClarity: 0.6, description: 'Full canopy, birds arriving, grass spreading' },
+  { year: 10, label: 'Year 10', treeSize: 1.0, grassLevel: 1.0,
+    skyClarity: 0.8, description: 'Mature garden, full shade, cooler environment' },
+];
+
+// ═══════════════════════════════════════════════════════════
+//  TREE PLACEMENT EFFECTS
+// ═══════════════════════════════════════════════════════════
+export const TREE_PLACEMENT_EFFECTS = {
+  'near_window': { label: 'Near Windows', effect: 'Cool airflow improves by 30%', icon: '🪟' },
+  'near_wall': { label: 'Near Walls', effect: 'Wall heating reduces by 40%', icon: '🧱' },
+  'front_garden': { label: 'Front Garden', effect: 'Direct sunlight blocked, shade coverage', icon: '🌤️' },
+  'side_garden': { label: 'Side Garden', effect: 'Cross-ventilation improves naturally', icon: '💨' },
+};
+
+// ═══════════════════════════════════════════════════════════
+//  ENERGY SCANNER APPLIANCE DATA (Enhanced)
+// ═══════════════════════════════════════════════════════════
+export const SCANNER_APPLIANCES = [
+  { id: 'ac', name: 'Air Conditioner', icon: '❄️', watts: 1500,
+    co2Daily: '1.07 kg', billMonthly: '₹2,250', heatSignature: 0.9,
+    category: 'heavy', wireColor: '#ef4444', scanReveal: 'Highest energy consumer! Uses 1.5 kW continuously.' },
+  { id: 'geyser', name: 'Water Heater', icon: '🔥', watts: 2000,
+    co2Daily: '1.42 kg', billMonthly: '₹3,000', heatSignature: 1.0,
+    category: 'heavy', wireColor: '#f97316', scanReveal: 'Consumes 2000W — the silent bill killer!' },
+  { id: 'fridge', name: 'Refrigerator', icon: '🧊', watts: 150,
+    co2Daily: '0.11 kg', billMonthly: '₹225', heatSignature: 0.3,
+    category: 'medium', wireColor: '#fbbf24', scanReveal: 'Runs 24/7 but efficient. 150W average.' },
+  { id: 'lights', name: 'All Lights', icon: '💡', watts: 300,
+    co2Daily: '0.21 kg', billMonthly: '₹450', heatSignature: 0.4,
+    category: 'medium', wireColor: '#fbbf24', scanReveal: 'LED lights save 80% vs incandescent.' },
+  { id: 'fan', name: 'Ceiling Fan', icon: '🌀', watts: 70,
+    co2Daily: '0.05 kg', billMonthly: '₹105', heatSignature: 0.1,
+    category: 'low', wireColor: '#22c55e', scanReveal: 'Most efficient cooling! Only 70W.' },
+  { id: 'tv', name: 'Television', icon: '📺', watts: 100,
+    co2Daily: '0.07 kg', billMonthly: '₹150', heatSignature: 0.2,
+    category: 'low', wireColor: '#22c55e', scanReveal: 'Moderate usage. Consider standby power.' },
+];
+
+// ═══════════════════════════════════════════════════════════
+//  SOLAR vs GRID LIVE COMPARISON
+// ═══════════════════════════════════════════════════════════
+export const LIVE_COMPARISON = {
+  grid: {
+    label: 'Grid Power', icon: '🏭', color: '#ef4444',
+    co2: '4.2 tons/year', bill: '₹8,400/month', pollution: 'High',
+    source: 'Coal Power Plant', skyColor: '#8a6040',
+  },
+  solar: {
+    label: 'Solar Power', icon: '☀️', color: '#f59e0b',
+    co2: '0.2 tons/year', bill: '₹1,200/month', pollution: 'Near Zero',
+    source: 'Rooftop Panels', skyColor: '#87CEEB',
+  },
+};
+
+// ═══════════════════════════════════════════════════════════
+//  BATTERY SYSTEM DATA
+// ═══════════════════════════════════════════════════════════
+export const BATTERY_DATA = {
+  capacity: '10 kWh',
+  chargeRate: 'Charges during peak sun (10 AM - 3 PM)',
+  dischargeTime: 'Powers home 6 PM - 10 PM',
+  savings: 'Eliminates ₹3,000/month peak charges',
+  peakHours: { start: '6 PM', end: '10 PM', gridRate: '₹12/unit', solarRate: '₹0/unit' },
+};
+
+// ═══════════════════════════════════════════════════════════
+//  WEATHER REACTION SYSTEM (Wind segment)
+// ═══════════════════════════════════════════════════════════
+export const WEATHER_SCENARIOS = [
+  { id: 'clear_day', label: 'Clear Day ☀️', icon: '☀️',
+    solarOutput: 95, windOutput: 25, batteryAction: 'Charging',
+    skyColor: '#87CEEB', description: 'Solar strong, wind minimal',
+    learning: 'Solar handles most power during clear days.' },
+  { id: 'cloudy', label: 'Cloudy Weather ☁️', icon: '☁️',
+    solarOutput: 35, windOutput: 65, batteryAction: 'Supporting',
+    skyColor: '#9ca3af', description: 'Solar weak, wind stronger',
+    learning: 'Wind compensates when clouds block sunlight.' },
+  { id: 'night', label: 'Night Time 🌙', icon: '🌙',
+    solarOutput: 0, windOutput: 50, batteryAction: 'Discharging',
+    skyColor: '#1e1b4b', description: 'Solar inactive, wind continues',
+    learning: 'Battery + wind keeps the home powered at night.' },
+  { id: 'storm', label: 'Storm ⛈️', icon: '⛈️',
+    solarOutput: 5, windOutput: 90, batteryAction: 'Wind dominant',
+    skyColor: '#374151', description: 'Solar near zero, wind surges',
+    learning: 'Storms are wind energy\'s best moment!' },
+];
+
+// ═══════════════════════════════════════════════════════════
+//  FINAL HOUSE TRANSFORMATION CINEMATIC
+// ═══════════════════════════════════════════════════════════
+export const TRANSFORMATION_BEFORE = [
+  { label: 'Polluted surroundings', icon: '🏭', color: '#ef4444' },
+  { label: 'High CO₂ emissions', icon: '💨', color: '#f97316' },
+  { label: 'Electricity bill ₹8,400/mo', icon: '💸', color: '#f59e0b' },
+  { label: 'Overheated rooms', icon: '🌡️', color: '#ef4444' },
+  { label: 'Dry barren environment', icon: '🏜️', color: '#92400e' },
+  { label: '100% grid dependent', icon: '⚡', color: '#dc2626' },
+];
+
+export const TRANSFORMATION_AFTER = [
+  { label: 'Green lush surroundings', icon: '🌳', color: '#22c55e' },
+  { label: 'CO₂ reduced by 90%', icon: '🌿', color: '#16a34a' },
+  { label: 'Bill reduced to ₹1,200/mo', icon: '💰', color: '#059669' },
+  { label: 'Cooler comfortable home', icon: '❄️', color: '#06b6d4' },
+  { label: 'Trees, birds, clean air', icon: '🐦', color: '#22d3ee' },
+  { label: '90% renewable energy', icon: '♻️', color: '#10b981' },
+];
+
+// ═══════════════════════════════════════════════════════════
+//  ENHANCED REALIZATION / TEACHER FINAL SCENE
+// ═══════════════════════════════════════════════════════════
+export const FINAL_TEACHER_DIALOGUE = [
+  { speaker: 'narration', text: 'The family stands outside their transformed home…' },
+  { speaker: 'narration', text: 'Green trees sway gently. Solar panels glow on the roof. Wind turbines spin in the distance.' },
+  { speaker: 'teacher', text: '"Trees improve the environment slowly."' },
+  { speaker: 'teacher', text: '"Wind energy supports renewable systems."' },
+  { speaker: 'teacher', text: '"But for homes…"' },
+  { speaker: 'teacher', text: '"Solar energy gives the fastest and most practical solution."' },
+  { speaker: 'narration', text: 'The camera slowly zooms toward the solar panels. Golden sunlight reflects strongly.' },
+  { speaker: 'teacher', text: '"In the next level, you will learn how to fully power your home using solar energy."' },
+];
+
+export const LEVEL4_TRANSITION_TEXT = 'LEVEL 4 — SOLAR REVOLUTION';
+
+// ═══════════════════════════════════════════════════════════
+//  LEARNING OUTCOMES SUMMARY
+// ═══════════════════════════════════════════════════════════
+export const LEARNING_OUTCOMES = [
+  { icon: '🌳', title: 'Trees', points: ['Absorb CO₂ slowly (5-20 years)', 'Reduce heat by 2-4°C', 'Improve airflow naturally'] },
+  { icon: '☀️', title: 'Solar', points: ['Immediate household benefits', 'Reduces bill by 70-90%', 'Cuts CO₂ by 3-5 tons/year'] },
+  { icon: '🌬️', title: 'Wind', points: ['Supports solar at night/storms', 'Best in open fields', 'Backup renewable source'] },
+  { icon: '♻️', title: 'Combined', points: ['Reduces pollution', 'Reduces electricity bill', 'Reduces environmental damage'] },
+];

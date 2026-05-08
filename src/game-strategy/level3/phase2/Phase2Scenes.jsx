@@ -12,61 +12,43 @@ function lerpC(a, b, t) {
   return ca;
 }
 
-// ─── THE HOUSE (same structure as Level3Environment) ───
+// ─── THE HOUSE — Import the REAL house from Level 1 for visual continuity ───
+import RealHouse from '../../House';
+
+// Wrapper that renders the real house + opaque roof for aerial view
 export function House({ damageLevel = 0.8 }) {
-  const wallColor = damageLevel > 0.5 ? '#5a4a3a' : '#d4c4b0';
-  const roofColor = damageLevel > 0.5 ? '#3a2a1a' : '#8B4513';
-  const windowColor = damageLevel > 0.5 ? '#ff6600' : '#87CEEB';
   return (
-    <group position={[0, 0, 0]}>
-      {/* Main body */}
-      <mesh position={[0, 1.8, 0]} castShadow>
-        <boxGeometry args={[8, 3.6, 6]} />
-        <meshStandardMaterial color={wallColor} roughness={0.8} />
+    <group>
+      <RealHouse />
+      {/* Opaque flat roof overlay — visible from Phase 2's aerial camera */}
+      <mesh position={[0, 3.15, 0]}>
+        <boxGeometry args={[20.5, 0.12, 16.5]} />
+        <meshStandardMaterial color="#8B4513" roughness={0.7} />
       </mesh>
-      {/* Roof slab */}
-      <mesh position={[0, 3.8, 0]} castShadow>
-        <boxGeometry args={[9, 0.4, 7]} />
-        <meshStandardMaterial color={roofColor} roughness={0.7} />
-      </mesh>
-      {/* Roof parapet */}
-      <mesh position={[0, 4.2, -3.4]}><boxGeometry args={[9, 0.5, 0.15]} /><meshStandardMaterial color={roofColor} roughness={0.7} /></mesh>
-      <mesh position={[0, 4.2, 3.4]}><boxGeometry args={[9, 0.5, 0.15]} /><meshStandardMaterial color={roofColor} roughness={0.7} /></mesh>
-      <mesh position={[-4.4, 4.2, 0]}><boxGeometry args={[0.15, 0.5, 7]} /><meshStandardMaterial color={roofColor} roughness={0.7} /></mesh>
-      <mesh position={[4.4, 4.2, 0]}><boxGeometry args={[0.15, 0.5, 7]} /><meshStandardMaterial color={roofColor} roughness={0.7} /></mesh>
-      {/* Front windows */}
-      {[-2, 2].map(x => (
-        <mesh key={x} position={[x, 2, 3.01]}>
-          <planeGeometry args={[1.2, 0.9]} />
-          <meshStandardMaterial color={windowColor} emissive={damageLevel > 0.5 ? '#ff4400' : '#000'} emissiveIntensity={damageLevel > 0.5 ? 0.3 : 0} />
-        </mesh>
-      ))}
-      {/* Door */}
-      <mesh position={[0, 1.1, 3.01]}>
-        <planeGeometry args={[1, 2.2]} />
-        <meshStandardMaterial color="#6b4520" roughness={0.6} />
-      </mesh>
+      {/* Roof edge trim */}
+      <mesh position={[0, 3.25, -8.2]}><boxGeometry args={[20.8, 0.2, 0.15]} /><meshStandardMaterial color="#6b4520" roughness={0.6} /></mesh>
+      <mesh position={[0, 3.25, 8.2]}><boxGeometry args={[20.8, 0.2, 0.15]} /><meshStandardMaterial color="#6b4520" roughness={0.6} /></mesh>
+      <mesh position={[-10.3, 3.25, 0]}><boxGeometry args={[0.15, 0.2, 16.8]} /><meshStandardMaterial color="#6b4520" roughness={0.6} /></mesh>
+      <mesh position={[10.3, 3.25, 0]}><boxGeometry args={[0.15, 0.2, 16.8]} /><meshStandardMaterial color="#6b4520" roughness={0.6} /></mesh>
     </group>
   );
 }
 
-// ─── ENVIRONMENT that transforms from polluted → green ───
+// ─── ENVIRONMENT — sky dome + lighting (ground provided by House.jsx) ───
 export function HouseEnvironment({ greenLevel = 0, segment = 'trees' }) {
-  const skyColor = useMemo(() => lerpC('#8a6040', '#87CEEB', greenLevel), [greenLevel]);
-  const groundColor = useMemo(() => lerpC('#6a5030', '#3a7a3a', greenLevel), [greenLevel]);
-  const ambientI = 0.3 + greenLevel * 0.3;
-  const sunI = 0.5 + greenLevel * 0.5;
+  const skyColor = useMemo(() => lerpC('#a07050', '#87CEEB', greenLevel), [greenLevel]);
 
   return (
     <group>
-      <mesh><sphereGeometry args={[80, 16, 16]} /><meshBasicMaterial color={skyColor} side={THREE.BackSide} /></mesh>
-      <mesh position={[0, -0.01, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <planeGeometry args={[120, 120]} />
-        <meshStandardMaterial color={groundColor} roughness={1} />
-      </mesh>
-      <ambientLight intensity={ambientI} color="#ffe8cc" />
-      <directionalLight position={[8, 10, 5]} intensity={sunI} color="#ffd699" castShadow />
-      <hemisphereLight args={['#ffecd2', '#3a5a2a', 0.25]} />
+      {/* Sky dome */}
+      <mesh><sphereGeometry args={[100, 16, 16]} /><meshBasicMaterial color={skyColor} side={THREE.BackSide} /></mesh>
+      {/* STRONG lighting — must be visible */}
+      <ambientLight intensity={1.0 + greenLevel * 0.5} color="#ffe8cc" />
+      <directionalLight position={[8, 12, 5]} intensity={1.8 + greenLevel * 0.8} color="#ffd699" />
+      <directionalLight position={[-6, 10, -4]} intensity={0.6} color="#ffeedd" />
+      <hemisphereLight args={['#ffecd2', '#4a6a3a', 0.6]} />
+      <pointLight position={[0, 6, 8]} intensity={0.8} distance={30} color="#ffcc88" />
+      <pointLight position={[0, 3, -8]} intensity={0.4} distance={25} color="#ffeedd" />
     </group>
   );
 }
@@ -214,13 +196,17 @@ export function O2Particles({ active, treePositions = [] }) {
 }
 
 export function PlantSpot({ position, active = false }) {
-  const ref = useRef();
-  useFrame(() => { if (ref.current && active) { ref.current.material.emissiveIntensity = 0.5 + Math.sin(performance.now() * 0.003) * 0.3; } });
+  const meshRef = useRef();
+  useFrame(() => {
+    if (meshRef.current && active) {
+      meshRef.current.material.emissiveIntensity = 0.5 + Math.sin(performance.now() * 0.003) * 0.3;
+    }
+  });
   return (
     <group position={position}>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 0]}>
+      <mesh ref={meshRef} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 0]}>
         <ringGeometry args={[0.25, 0.35, 16]} />
-        <meshStandardMaterial ref={ref} color={active ? '#22c55e' : '#666'} emissive={active ? '#22c55e' : '#000'} emissiveIntensity={active ? 0.5 : 0} side={THREE.DoubleSide} />
+        <meshStandardMaterial color={active ? '#22c55e' : '#666'} emissive={active ? '#22c55e' : '#000'} emissiveIntensity={active ? 0.5 : 0} side={THREE.DoubleSide} />
       </mesh>
       {active && (<mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.03, 0]}><ringGeometry args={[0.4, 0.42, 16]} /><meshBasicMaterial color="#22c55e" transparent opacity={0.3} depthWrite={false} side={THREE.DoubleSide} /></mesh>)}
     </group>
@@ -319,6 +305,161 @@ export function WindParticles({ windSpeed = 0 }) {
   return (
     <group ref={groupRef}>
       {particles.map((p, i) => (<mesh key={i} position={[p.x, p.y, p.z]}><boxGeometry args={[0.3, 0.02, 0.02]} /><meshBasicMaterial color="#fff" transparent opacity={0.2} depthWrite={false} /></mesh>))}
+    </group>
+  );
+}
+
+// ─── BIRDS (appear as greenLevel increases) ───
+export function Birds({ count = 6, active = false }) {
+  const groupRef = useRef();
+  const birds = useMemo(() => Array.from({ length: count }, (_, i) => ({
+    x: (Math.random() - 0.5) * 30, y: 8 + Math.random() * 6, z: (Math.random() - 0.5) * 30,
+    speed: 1.5 + Math.random() * 2, wingPhase: Math.random() * Math.PI * 2, radius: 8 + Math.random() * 12,
+    angleOffset: (i / count) * Math.PI * 2,
+  })), [count]);
+
+  useFrame(() => {
+    if (!groupRef.current || !active) return;
+    const t = performance.now() * 0.001;
+    groupRef.current.children.forEach((bird, i) => {
+      const b = birds[i]; if (!b) return;
+      const angle = t * 0.2 * b.speed + b.angleOffset;
+      bird.position.x = Math.cos(angle) * b.radius;
+      bird.position.z = Math.sin(angle) * b.radius;
+      bird.position.y = b.y + Math.sin(t * 1.5 + i) * 0.5;
+      bird.rotation.y = -angle + Math.PI / 2;
+      // Wing flap
+      if (bird.children[0]) bird.children[0].rotation.z = Math.sin(t * 8 + b.wingPhase) * 0.4;
+      if (bird.children[1]) bird.children[1].rotation.z = -Math.sin(t * 8 + b.wingPhase) * 0.4;
+    });
+  });
+
+  if (!active) return null;
+  return (
+    <group ref={groupRef}>
+      {birds.map((_, i) => (
+        <group key={i}>
+          <mesh position={[0.15, 0, 0]} rotation={[0, 0, 0]}><boxGeometry args={[0.3, 0.02, 0.12]} /><meshStandardMaterial color="#333" /></mesh>
+          <mesh position={[-0.15, 0, 0]} rotation={[0, 0, 0]}><boxGeometry args={[0.3, 0.02, 0.12]} /><meshStandardMaterial color="#333" /></mesh>
+          <mesh><sphereGeometry args={[0.06, 6, 6]} /><meshStandardMaterial color="#222" /></mesh>
+        </group>
+      ))}
+    </group>
+  );
+}
+
+// ─── GRASS PATCHES (growing with greenLevel) ───
+export function GrassPatches({ greenLevel = 0 }) {
+  const patches = useMemo(() => Array.from({ length: 40 }, () => ({
+    x: (Math.random() - 0.5) * 35, z: (Math.random() - 0.5) * 35,
+    scale: 0.3 + Math.random() * 0.5, rot: Math.random() * Math.PI,
+  })), []);
+
+  if (greenLevel < 0.1) return null;
+  return (
+    <group>
+      {patches.map((p, i) => (
+        <mesh key={i} position={[p.x, greenLevel * p.scale * 0.3, p.z]} rotation={[0, p.rot, 0]} scale={[1, greenLevel, 1]}>
+          <coneGeometry args={[0.08 * p.scale, 0.4 * p.scale, 4]} />
+          <meshStandardMaterial color={greenLevel > 0.5 ? '#2d8a3e' : '#6b8e23'} roughness={0.8} />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
+// ─── DEBRIS OBJECTS (for cleanup task) ───
+export function DebrisObjects({ positions = [], cleared = [] }) {
+  return (
+    <group>
+      {positions.map((pos, i) => {
+        if (cleared.includes(i)) return null;
+        const type = i % 3;
+        return (
+          <group key={i} position={pos}>
+            {type === 0 && <mesh rotation={[0.3, 0.5, 0]}><boxGeometry args={[0.4, 0.15, 0.3]} /><meshStandardMaterial color="#8B7355" roughness={0.9} /></mesh>}
+            {type === 1 && <mesh rotation={[0.1, 0.8, 0.2]}><cylinderGeometry args={[0.1, 0.12, 0.25, 6]} /><meshStandardMaterial color="#666" roughness={0.5} metalness={0.3} /></mesh>}
+            {type === 2 && <mesh><sphereGeometry args={[0.12, 6, 6]} /><meshStandardMaterial color="#9CA3AF" roughness={0.4} transparent opacity={0.7} /></mesh>}
+            {/* Glow ring for interaction */}
+            <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.01, 0]}>
+              <ringGeometry args={[0.2, 0.28, 12]} />
+              <meshBasicMaterial color="#f59e0b" transparent opacity={0.4 + Math.sin(Date.now() * 0.003) * 0.2} side={THREE.DoubleSide} />
+            </mesh>
+          </group>
+        );
+      })}
+    </group>
+  );
+}
+
+// ─── FIELD WIND TURBINE (larger, placed in open field) ───
+export function FieldWindTurbine({ position, installed = false, windSpeed = 0 }) {
+  const bladeRef = useRef();
+  useFrame((_, delta) => { if (bladeRef.current && installed) bladeRef.current.rotation.z += windSpeed * 0.12 * delta; });
+
+  if (!installed) return (
+    <group position={position}>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.05, 0]}><circleGeometry args={[1.2, 16]} /><meshStandardMaterial color="#555" transparent opacity={0.25} /></mesh>
+      <mesh position={[0, 0.3, 0]}><cylinderGeometry args={[0.8, 1.0, 0.3, 12]} /><meshStandardMaterial color="#777" roughness={0.6} /></mesh>
+    </group>
+  );
+
+  return (
+    <group position={position}>
+      {/* Foundation */}
+      <mesh position={[0, 0.15, 0]}><cylinderGeometry args={[0.8, 1.0, 0.3, 12]} /><meshStandardMaterial color="#888" roughness={0.5} /></mesh>
+      {/* Tower */}
+      <mesh position={[0, 4, 0]}><cylinderGeometry args={[0.12, 0.25, 7.5, 8]} /><meshStandardMaterial color="#e8e8e8" roughness={0.3} metalness={0.4} /></mesh>
+      {/* Nacelle */}
+      <mesh position={[0, 7.8, 0.25]}><boxGeometry args={[0.5, 0.4, 1.0]} /><meshStandardMaterial color="#ddd" roughness={0.3} metalness={0.4} /></mesh>
+      <mesh position={[0, 7.8, 0.8]}><sphereGeometry args={[0.18, 8, 8]} /><meshStandardMaterial color="#ccc" metalness={0.5} /></mesh>
+      {/* Blades */}
+      <group ref={bladeRef} position={[0, 7.8, 0.9]}>
+        {[0, 120, 240].map((a, i) => (
+          <mesh key={i} rotation={[0, 0, (a * Math.PI) / 180]} position={[0, 1.8, 0]}>
+            <boxGeometry args={[0.1, 3.6, 0.03]} /><meshStandardMaterial color="#f5f5f5" roughness={0.3} />
+          </mesh>
+        ))}
+      </group>
+      {/* Light on top */}
+      {windSpeed > 3 && <pointLight position={[0, 8.2, 0]} intensity={windSpeed * 0.06} distance={8} color="#4ade80" />}
+    </group>
+  );
+}
+
+// ─── HOTSPOT MARKER (glowing interactive point) ───
+export function HotspotMarker({ position, active = false, color = '#f59e0b' }) {
+  const ref = useRef();
+  useFrame(() => {
+    if (ref.current && active) {
+      const t = performance.now() * 0.003;
+      ref.current.scale.setScalar(1 + Math.sin(t) * 0.15);
+      ref.current.material.emissiveIntensity = 0.5 + Math.sin(t * 2) * 0.3;
+    }
+  });
+  if (!active) return null;
+  return (
+    <group position={position}>
+      <mesh ref={ref}><sphereGeometry args={[0.25, 12, 12]} /><meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.5} transparent opacity={0.6} /></mesh>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.2, 0]}><ringGeometry args={[0.3, 0.5, 16]} /><meshBasicMaterial color={color} transparent opacity={0.3} side={THREE.DoubleSide} /></mesh>
+    </group>
+  );
+}
+
+// ─── BATTERY UNIT (on ground near house) ───
+export function BatteryUnit({ position = [5, 0, 4], chargeLevel = 0, active = false }) {
+  const glowRef = useRef();
+  useFrame(() => {
+    if (glowRef.current && active) glowRef.current.material.emissiveIntensity = 0.3 + Math.sin(performance.now() * 0.004) * 0.2;
+  });
+  return (
+    <group position={position}>
+      {/* Battery box */}
+      <mesh position={[0, 0.5, 0]}><boxGeometry args={[0.8, 1.0, 0.5]} /><meshStandardMaterial color="#374151" roughness={0.4} metalness={0.5} /></mesh>
+      {/* Charge indicator */}
+      <mesh position={[0, 0.5, 0.26]}><boxGeometry args={[0.6, 0.8 * chargeLevel, 0.02]} /><meshStandardMaterial color={chargeLevel > 0.6 ? '#22c55e' : chargeLevel > 0.3 ? '#f59e0b' : '#ef4444'} emissive={chargeLevel > 0.6 ? '#22c55e' : '#f59e0b'} emissiveIntensity={0.3} /></mesh>
+      {/* Glow when active */}
+      {active && <mesh ref={glowRef} position={[0, 0.5, 0]}><boxGeometry args={[0.9, 1.1, 0.6]} /><meshStandardMaterial color="#22c55e" emissive="#22c55e" emissiveIntensity={0.3} transparent opacity={0.1} depthWrite={false} /></mesh>}
     </group>
   );
 }

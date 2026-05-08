@@ -1,9 +1,9 @@
 /* Level 3 Phase 2 — Solutions to Reduce CO₂ — DARK CINEMATIC THEME */
 .l3p2-container{width:100vw;height:100vh;position:relative;overflow:hidden;background:#080808;font-family:'Nunito',sans-serif}
-.l3p2-canvas-wrap{position:absolute;inset:0;z-index:1}
+.l3p2-canvas-wrap{position:absolute;inset:0;z-index:1;width:100%;height:100%}
 
-/* Intro */
-.l3p2-intro-overlay{position:absolute;inset:0;z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(180deg,#0a0505 0%,#1a0a08 50%,#050505 100%);gap:20px}
+/* Intro — transparent so 3D house shows through */
+.l3p2-intro-overlay{position:absolute;inset:0;z-index:10;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(180deg,rgba(10,5,5,.55) 0%,rgba(26,10,8,.4) 50%,rgba(5,5,5,.55) 100%);gap:18px;backdrop-filter:blur(3px)}
 .l3p2-intro-env{position:absolute;inset:0;opacity:.25;z-index:0}
 .l3p2-intro-teacher{font-size:56px;z-index:2;filter:drop-shadow(0 0 30px rgba(255,200,0,.5))}
 .l3p2-intro-line{font-size:18px;color:#ddd;z-index:2;text-align:center;max-width:500px;animation:l3p2-fadein .6s ease forwards;opacity:0;font-style:italic;padding:4px 0}
@@ -166,3 +166,74 @@
 .l3p2-seg-sum-fact{font-size:13px;color:#ccc;padding:4px 0;line-height:1.5}
 .l3p2-seg-sum-conclusion{font-size:14px;font-weight:700;padding:10px;border-radius:10px;margin-bottom:12px}
 .l3p2-seg-next{background:linear-gradient(135deg,#22c55e,#16a34a);border:none;color:#fff;padding:12px 32px;border-radius:12px;font-size:15px;font-weight:700;font-family:'Fredoka',sans-serif;cursor:pointer}
+
+/* ═══ TREE ANALYSIS HOLOGRAM ═══ */
+.l3p2-tree-analysis-card{background:linear-gradient(145deg,#0a1a0a,#081208);border:1px solid rgba(34,197,94,.3);border-radius:24px;padding:24px;max-width:700px;width:95%;text-align:center;box-shadow:0 0 60px rgba(34,197,94,.1)}
+.l3p2-tree-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:16px 0}
+@media(max-width:600px){.l3p2-tree-grid{grid-template-columns:repeat(2,1fr)}}
+.l3p2-tree-option{background:rgba(255,255,255,.03);border:2px solid rgba(255,255,255,.08);border-radius:16px;padding:14px 10px;cursor:pointer;transition:all .3s;position:relative;overflow:hidden}
+.l3p2-tree-option::before{content:'';position:absolute;inset:0;background:linear-gradient(180deg,transparent 50%,var(--tc,#22c55e));opacity:0;transition:opacity .3s}
+.l3p2-tree-option:hover{border-color:var(--tc,#22c55e);transform:translateY(-3px)}
+.l3p2-tree-option:hover::before{opacity:.06}
+.l3p2-tree-option.selected{border-color:var(--tc,#22c55e);background:rgba(34,197,94,.08);box-shadow:0 0 20px rgba(34,197,94,.15)}
+.l3p2-tree-option.selected::before{opacity:.1}
+.l3p2-tree-stats{margin-top:8px;text-align:left;font-size:10px;color:#999;line-height:1.6}
+.l3p2-tree-rating{margin-top:6px;font-size:13px;letter-spacing:1px}
+
+/* ═══ ENERGY SCANNER ═══ */
+.l3p2-scanner-card{background:linear-gradient(145deg,#1a0a08,#0a0808);border:1px solid rgba(245,158,11,.3);border-radius:24px;padding:24px;max-width:600px;width:95%;text-align:center;box-shadow:0 0 60px rgba(245,158,11,.08)}
+.l3p2-scanner-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:16px 0}
+@media(max-width:500px){.l3p2-scanner-grid{grid-template-columns:repeat(2,1fr)}}
+.l3p2-scanner-item{background:rgba(255,255,255,.03);border:2px solid rgba(255,255,255,.08);border-radius:14px;padding:14px 8px;cursor:pointer;transition:all .4s;position:relative}
+.l3p2-scanner-item:hover{border-color:rgba(245,158,11,.4);transform:scale(1.03)}
+.l3p2-scanner-item.scanned{border-color:rgba(245,158,11,.5);background:rgba(245,158,11,.06)}
+.l3p2-scanner-item.scanned.heavy{border-color:rgba(239,68,68,.5);background:rgba(239,68,68,.06)}
+.l3p2-scanner-item.scanned.medium{border-color:rgba(251,191,36,.5);background:rgba(251,191,36,.06)}
+.l3p2-scanner-item.scanned.low{border-color:rgba(34,197,94,.5);background:rgba(34,197,94,.06)}
+.l3p2-scanner-reveal{margin-top:8px;animation:l3p2-scanreveal .5s ease}
+@keyframes l3p2-scanreveal{from{opacity:0;transform:scale(.8)}to{opacity:1;transform:scale(1)}}
+
+/* ═══ SOLAR POWER MODE ═══ */
+.l3p2-power-mode{position:absolute;bottom:20;left:12px;background:rgba(8,8,8,.92);border:1px solid rgba(245,158,11,.3);border-radius:16px;padding:14px 18px;z-index:20;backdrop-filter:blur(8px);min-width:180px;box-shadow:0 0 20px rgba(245,158,11,.08)}
+.l3p2-power-badge{font-family:'Fredoka',sans-serif;font-size:14px;font-weight:800;padding:4px 12px;border-radius:8px;display:inline-block;margin-bottom:8px}
+.l3p2-power-badge.solar{background:rgba(245,158,11,.15);color:#fbbf24;border:1px solid rgba(245,158,11,.3);animation:l3p2-solarpulse 2s ease infinite}
+@keyframes l3p2-solarpulse{0%,100%{box-shadow:0 0 0 rgba(245,158,11,0)}50%{box-shadow:0 0 16px rgba(245,158,11,.3)}}
+.l3p2-power-stats{font-size:12px}
+.l3p2-pw-row{display:flex;justify-content:space-between;padding:3px 0;color:#999;border-bottom:1px solid rgba(255,255,255,.04)}
+.l3p2-pw-row:last-child{border:none}
+
+/* ═══ TRANSFORMATION CINEMATIC ═══ */
+.l3p2-transform-split{display:flex;align-items:flex-start;gap:16px;margin:16px 0;max-width:600px;width:100%}
+@media(max-width:500px){.l3p2-transform-split{flex-direction:column;align-items:center}}
+.l3p2-transform-col{flex:1;min-width:200px}
+.l3p2-transform-header{font-family:'Fredoka',sans-serif;font-size:16px;font-weight:800;margin-bottom:10px;text-transform:uppercase;letter-spacing:2px}
+.l3p2-transform-item{display:flex;align-items:center;gap:8px;padding:6px 10px;margin-bottom:4px;border-radius:8px;font-size:13px;color:#ddd;animation:l3p2-transformslide .5s ease forwards;opacity:0;transform:translateX(-15px)}
+.l3p2-transform-col.before .l3p2-transform-item{background:rgba(239,68,68,.06);border-left:3px solid var(--item-color,#ef4444)}
+.l3p2-transform-col.after .l3p2-transform-item{background:rgba(34,197,94,.06);border-left:3px solid var(--item-color,#22c55e)}
+@keyframes l3p2-transformslide{to{opacity:1;transform:translateX(0)}}
+.l3p2-transform-arrow{font-size:32px;color:#666;align-self:center;animation:l3p2-arrowpulse 1.5s ease infinite}
+@keyframes l3p2-arrowpulse{0%,100%{opacity:.4;transform:scale(1)}50%{opacity:1;transform:scale(1.2)}}
+
+/* ═══ LEARNING OUTCOMES GRID ═══ */
+.l3p2-learning-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;max-width:600px;width:100%;margin:12px 0}
+@media(max-width:500px){.l3p2-learning-grid{grid-template-columns:repeat(2,1fr)}}
+.l3p2-learning-card{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:12px;text-align:center;animation:l3p2-fadein .5s ease forwards;opacity:0}
+.l3p2-learning-card:hover{border-color:rgba(34,197,94,.3);background:rgba(34,197,94,.04);transform:translateY(-2px);transition:all .3s}
+
+/* ═══ TRANSITION BEAM ═══ */
+.l3p2-trans-beam{width:4px;height:80px;background:linear-gradient(180deg,#ffd700,#ff8c00,transparent);border-radius:4px;margin:8px auto;animation:l3p2-beamgrow 1.5s ease infinite;box-shadow:0 0 20px rgba(255,200,0,.4)}
+@keyframes l3p2-beamgrow{0%{height:40px;opacity:.5}50%{height:100px;opacity:1}100%{height:40px;opacity:.5}}
+
+/* ═══ WEATHER INDICATOR (wind segment) ═══ */
+.l3p2-weather-panel{position:absolute;bottom:80px;right:12px;background:rgba(8,8,8,.92);border:1px solid rgba(59,130,246,.25);border-radius:16px;padding:14px;z-index:20;backdrop-filter:blur(8px);min-width:170px}
+.l3p2-weather-label{font-size:11px;color:#60a5fa;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+.l3p2-weather-bars{display:flex;flex-direction:column;gap:6px}
+.l3p2-weather-bar{display:flex;align-items:center;gap:6px;font-size:11px;color:#ccc}
+.l3p2-weather-bar-fill{height:6px;border-radius:3px;transition:width .8s ease,background .5s}
+
+/* ═══ ENHANCED ANIMATIONS ═══ */
+@keyframes l3p2-glow{0%,100%{box-shadow:0 0 5px currentColor}50%{box-shadow:0 0 20px currentColor}}
+@keyframes l3p2-float-gentle{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+.l3p2-intro-teacher{animation:l3p2-float-gentle 3s ease infinite}
+.l3p2-seg-icon{animation:l3p2-float-gentle 2.5s ease infinite}
+.l3p2-done-badge{animation:l3p2-float-gentle 2s ease infinite}
