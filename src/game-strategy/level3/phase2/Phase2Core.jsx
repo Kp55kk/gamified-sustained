@@ -14,6 +14,7 @@ import {
   HotspotMarker, BatteryUnit, InverterBox, PowerCable,
   ArjunCharacter, WorkerCharacter, ConstructionVehicle,
   Ladder, ActionParticles, IrrigationSystem,
+  PlantingHole, SeedInHole,
 } from './Phase2Scenes';
 
 // ─── Audio Context ───
@@ -101,25 +102,57 @@ export function DroneIntroCamera({ active, onComplete }) {
   return null;
 }
 
-// ─── Camera orbiting the house — segment-specific angles ───
-function AutoCamera({ segment = 'trees' }) {
+// ─── Task-aware camera — stays focused on action, orbits only when told to ───
+function TaskCamera({
+  target = [0, 2, 0],      // Where the camera looks
+  offset = [0, 10, 20],    // Camera position offset from target
+  orbit = false,            // Whether to slowly orbit
+  orbitSpeed = 0.03,
+  orbitRadius = 24,
+  orbitHeight = 10,
+  lerpSpeed = 0.03,
+}) {
   const { camera } = useThree();
-  const config = segment === 'solar'
-    ? { radius: 20, height: 14, targetY: 4, speed: 0.04 }
-    : segment === 'wind'
-    ? { radius: 35, height: 14, targetY: 3, speed: 0.03 }
-    : { radius: 24, height: 10, targetY: 2, speed: 0.05 };
+  const targetVec = useRef(new THREE.Vector3(0, 2, 0));
+  const posVec = useRef(new THREE.Vector3(0, 10, 20));
 
   useFrame(() => {
-    const t = performance.now() * 0.001 * config.speed;
-    camera.position.set(
-      Math.cos(t) * config.radius,
-      config.height,
-      Math.sin(t) * config.radius
-    );
-    camera.lookAt(0, config.targetY, 0);
+    if (orbit) {
+      // Slow orbit mode (observe/auto tasks)
+      const t = performance.now() * 0.001 * orbitSpeed;
+      posVec.current.set(
+        Math.cos(t) * orbitRadius,
+        orbitHeight,
+        Math.sin(t) * orbitRadius
+      );
+      targetVec.current.set(target[0], target[1], target[2]);
+    } else {
+      // Fixed camera — smooth lerp to configured position
+      posVec.current.set(
+        target[0] + offset[0],
+        target[1] + offset[1],
+        target[2] + offset[2]
+      );
+      targetVec.current.set(target[0], target[1], target[2]);
+    }
+
+    camera.position.lerp(posVec.current, lerpSpeed);
+    const lookTarget = new THREE.Vector3();
+    lookTarget.copy(camera.userData._lookTarget || targetVec.current);
+    lookTarget.lerp(targetVec.current, lerpSpeed);
+    camera.userData._lookTarget = lookTarget.clone();
+    camera.lookAt(lookTarget);
   });
   return null;
+}
+// Legacy alias for backward compat
+function AutoCamera({ segment = 'trees' }) {
+  const config = segment === 'solar'
+    ? { orbit: true, orbitRadius: 20, orbitHeight: 14, target: [0, 4, 0] }
+    : segment === 'wind'
+    ? { orbit: true, orbitRadius: 35, orbitHeight: 14, target: [0, 3, 0] }
+    : { orbit: true, orbitRadius: 24, orbitHeight: 10, target: [0, 2, 0] };
+  return <TaskCamera {...config} orbitSpeed={segment === 'wind' ? 0.03 : segment === 'solar' ? 0.04 : 0.05} />;
 }
 
 // ─── ROOFTOP panel positions (4 panels now) ───
@@ -164,6 +197,10 @@ export function HouseScene3D({
   particlePos = [0, 0, 0], particleType = 'none', particlesActive = false,
   showLadder = false, showVehicle = false, vehicleArriving = false,
   showWorkers = false, irrigationVisible = false,
+  // Camera control — replaces the always-rotating AutoCamera
+  cameraConfig = null,
+  // Digging & planting visuals
+  diggingHoles = [], seedsPlanted = [],
 }) {
   const treePositions = trees.filter(t => t.growth >= 3).map(t => t.pos);
   const dustIntensity = 1 - greenLevel;
@@ -171,10 +208,21 @@ export function HouseScene3D({
   const showPrevTrees = (segment === 'solar' || segment === 'wind') && treesComplete;
   const showPrevSolar = segment === 'wind' && solarComplete;
 
+  // Determine camera: use cameraConfig if provided, else fallback to orbiting
+  const cam = cameraConfig || { orbit: true };
+
   return (
     <>
       <HouseEnvironment greenLevel={effectiveGreen} segment={segment} />
-      <AutoCamera segment={segment} />
+      <TaskCamera
+        target={cam.target || [0, 2, 0]}
+        offset={cam.offset || [0, 10, 20]}
+        orbit={cam.orbit || false}
+        orbitSpeed={cam.orbitSpeed || (segment === 'wind' ? 0.03 : segment === 'solar' ? 0.04 : 0.05)}
+        orbitRadius={cam.orbitRadius || (segment === 'wind' ? 35 : segment === 'solar' ? 20 : 24)}
+        orbitHeight={cam.orbitHeight || (segment === 'wind' ? 14 : segment === 'solar' ? 14 : 10)}
+        lerpSpeed={cam.lerpSpeed || 0.03}
+      />
       <House damageLevel={Math.max(0, 0.8 - effectiveGreen * 0.8)} />
       <DustParticles intensity={dustIntensity} />
       <GrassPatches greenLevel={effectiveGreen} />
@@ -189,6 +237,16 @@ export function HouseScene3D({
           <O2Particles active={co2Active} treePositions={treePositions} />
           <DebrisObjects positions={DEBRIS_POSITIONS} cleared={debrisCleared} />
           {hotspots.map((h, i) => <HotspotMarker key={h.id} position={h.pos} active={i === activeHotspot} color="#f59e0b" />)}
+          {/* Planting holes — visible dug holes in the ground */}
+          {diggingHoles.map((pos, i) => (
+            <PlantingHole key={`hole-${i}`} position={pos} hasSeed={seedsPlanted.includes(i)} />
+          ))}
+          {/* Seeds visible in holes */}
+          {seedsPlanted.map((idx) => {
+            const pos = diggingHoles[idx];
+            if (!pos) return null;
+            return <SeedInHole key={`seed-${idx}`} position={pos} />;
+          })}
         </>
       )}
       {showPrevTrees && GARDEN_TREE_SPOTS.map((pos, i) => (

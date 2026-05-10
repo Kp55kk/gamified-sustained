@@ -56,6 +56,10 @@ const[showTurbineSelect,setShowTurbineSelect]=useState(false);
 const[wiringVisible,setWiringVisible]=useState(false);
 const[inverterInstalled,setInverterInstalled]=useState(false);
 const[soilScanned,setSoilScanned]=useState(0);
+const[diggingHoles,setDiggingHoles]=useState([]);
+const[seedsPlanted,setSeedsPlanted]=useState([]);
+const[ladderFetched,setLadderFetched]=useState(false);
+const[arjunOnRoof,setArjunOnRoof]=useState(false);
 const autoTimerRef=useRef(null);
 const teacherTimerRef=useRef(null);
 const handleInteractRef=useRef(null);
@@ -143,12 +147,12 @@ function handleInteract(){
       });
     }
     else if(task.id==='select_trees'){setShowTreeAnalysis(true);}
-    else if(task.id==='dig_holes'){playDig();showFB(task.feedback,'success');advanceTask();}
+    else if(task.id==='dig_holes'){playDig();const sp=GARDEN_TREE_SPOTS[trees.length]||GARDEN_TREE_SPOTS[0];setDiggingHoles(p=>[...p,sp]);showFB(task.feedback,'success');advanceTask();}
     else if(task.id.startsWith('plant_tree')){
-      setTrees(p=>{
-        const pos=GARDEN_TREE_SPOTS[p.length]||GARDEN_TREE_SPOTS[0];
-        return[...p,{pos,growth:1,absorbing:false}];
-      });
+      const idx=trees.length;
+      const pos=GARDEN_TREE_SPOTS[idx]||GARDEN_TREE_SPOTS[0];
+      setSeedsPlanted(p=>[...p,idx]);
+      setTrees(p=>[...p,{pos,growth:1,absorbing:false}]);
       showFB(task.feedback,'success');advanceTask();
     }
     else if(task.id==='setup_irrigation'){playInstall();showFB(task.feedback,'success');advanceTask();}
@@ -158,6 +162,9 @@ function handleInteract(){
     if(task.id==='assess_roof'){showFB(task.feedback,'success');advanceTask();}
     else if(task.id==='energy_scan'){setShowScanner(true);}
     else if(task.id==='choose_panel_type'){setShowPanelSelect(true);}
+    else if(task.id==='fetch_ladder'){playAction();showFB(task.feedback,'success');advanceTask();}
+    else if(task.id==='carry_ladder_out'){playAction();setLadderFetched(true);showFB(task.feedback,'success');advanceTask();}
+    else if(task.id==='climb_roof'){playAction();setArjunOnRoof(true);showFB(task.feedback,'success');advanceTask();}
     else if(task.id==='install_mounting'){playInstall();showFB(task.feedback,'success');advanceTask();}
     else if(task.id.startsWith('place_panel')){playInstall();setPanelsPlaced(p=>p+1);showFB(task.feedback,'success');advanceTask();}
     else if(task.id==='wire_panels'){playWire();setWiringVisible(true);showFB(task.feedback,'success');advanceTask();}
@@ -165,6 +172,7 @@ function handleInteract(){
     else if(task.id==='solar_mode'){setPowerMode('solar');showFB(task.feedback,'success');advanceTask();}
     else if(task.id==='install_battery'){playInstall();setBatteryActive(true);setInverterInstalled(true);showFB(task.feedback,'success');advanceTask();}
     else if(task.id==='peak_hour'){setBatteryActive(true);showFB(task.feedback,'success');advanceTask();}
+    else if(task.id==='climb_down'){playAction();setArjunOnRoof(false);showFB(task.feedback,'success');advanceTask();}
   }else if(segId==='wind'){
     if(task.id==='field_survey'){showFB(task.feedback,'success');advanceTask();}
     else if(task.id==='wind_analysis'){showFB(task.feedback,'success');advanceTask();}
@@ -200,8 +208,8 @@ function handleDataClose(){
   setSegsComplete(p=>p+1);
   setCompletedSegs(prev=>({...prev,[segId]:true}));
   setCo2(segId==='trees'?CO2_REDUCTION_LEVELS.afterTrees:segId==='solar'?CO2_REDUCTION_LEVELS.afterSolar:CO2_REDUCTION_LEVELS.afterWind);
-  if(nextSeg>=SEGMENTS.length){setPhase('transformation');setTransStep(0);setWiringVisible(false);setInverterInstalled(false);}
-  else{setWiringVisible(false);setInverterInstalled(false);setSegIdx(nextSeg);setTaskIdx(0);setSegPhase('intro');setPanelsPlaced(0);setPanelAngle(0);setOrientIdx(0);setSunProgress(0);setEnergyFlowing(false);setTurbineInstalled(false);setWindSpeed(0);setCurrentSpot(p=>p+1);setShowScanner(false);setScannedAppliances([]);setPowerMode('grid');setBatteryCharge(0);setBatteryActive(false);setFieldTurbineIdx(0);}
+  if(nextSeg>=SEGMENTS.length){setPhase('transformation');setTransStep(0);setWiringVisible(false);setInverterInstalled(false);setLadderFetched(false);setArjunOnRoof(false);}
+  else{setWiringVisible(false);setInverterInstalled(false);setLadderFetched(false);setArjunOnRoof(false);setSegIdx(nextSeg);setTaskIdx(0);setSegPhase('intro');setPanelsPlaced(0);setPanelAngle(0);setOrientIdx(0);setSunProgress(0);setEnergyFlowing(false);setTurbineInstalled(false);setWindSpeed(0);setCurrentSpot(p=>p+1);setShowScanner(false);setScannedAppliances([]);setPowerMode('grid');setBatteryCharge(0);setBatteryActive(false);setFieldTurbineIdx(0);}
 }
 
 function handlePlantMore(){
@@ -233,74 +241,92 @@ useEffect(()=>{
   window.addEventListener('keydown',h);return()=>window.removeEventListener('keydown',h);
 },[]);
 
-// ─── Character animation logic (maps current task → position, action, particles) ───
+// ─── Character animation + camera config (maps current task → position, action, camera) ───
 const charState=useMemo(()=>{
-  if(segPhase!=='playing'||!task) return {pos:[0,0,8],action:'idle',angle:0,pPos:[0,0,0],pType:'none',pActive:false};
+  const def={pos:[0,0,8],action:'idle',angle:0,pPos:[0,0,0],pType:'none',pActive:false,cam:{orbit:true}};
+  if(segPhase!=='playing'||!task) return def;
   const tid=task.id;
-  // Default
   let pos=[0,0,8],action='idle',angle=0,pPos=[0,0,0],pType='none',pActive=false;
+  // cam: orbit=false → fixed camera focused on action; orbit=true → slow orbit
+  let cam={orbit:true};
   if(segId==='trees'){
-    if(tid==='survey'){pos=[-5,0,4];action='scan';angle=0.5;}
+    if(tid==='survey'){pos=[-5,0,4];action='scan';angle=0.5;cam={target:[-5,1,4],offset:[8,6,8]};}
     else if(tid==='clear_debris'){
       const dIdx=Math.min(debrisCleared.length,DEBRIS_POSITIONS.length-1);
       const dp=DEBRIS_POSITIONS[dIdx]||DEBRIS_POSITIONS[0];
       pos=[dp[0],0,dp[2]];action='sweep';angle=Math.atan2(dp[0],dp[2]);pPos=[dp[0],0.1,dp[2]];pType='sweep';pActive=true;
+      cam={target:[dp[0],0.5,dp[2]],offset:[6,5,6]};
     }
     else if(tid==='analyze_soil'){
       const h=ENV_HOTSPOTS[Math.min(soilScanned,ENV_HOTSPOTS.length-1)];
       if(h)pos=[h.pos[0],0,h.pos[2]];action='scan';angle=0.3;
+      cam={target:[pos[0],1,pos[2]],offset:[6,5,6]};
     }
-    else if(tid==='select_trees'){pos=[0,0,6];action='observe';angle=0;}
+    else if(tid==='select_trees'){pos=[0,0,6];action='observe';angle=0;cam={orbit:true,orbitRadius:18,orbitHeight:8};}
     else if(tid==='dig_holes'){
       const sp=GARDEN_TREE_SPOTS[trees.length]||GARDEN_TREE_SPOTS[0];
       pos=[sp[0],0,sp[2]];action='dig';angle=Math.atan2(sp[0],sp[2]);pPos=[sp[0],0.1,sp[2]];pType='dig';pActive=true;
+      // Close-up focused camera — character + hole visible
+      cam={target:[sp[0],0.3,sp[2]],offset:[3,3,4]};
     }
     else if(tid.startsWith('plant_tree')){
       const sp=GARDEN_TREE_SPOTS[trees.length]||GARDEN_TREE_SPOTS[0];
       pos=[sp[0],0,sp[2]];action='plant';angle=Math.atan2(sp[0],sp[2]);pPos=[sp[0],0.1,sp[2]];pType='dig';pActive=true;
+      // Close-up — see seeds going into hole
+      cam={target:[sp[0],0.3,sp[2]],offset:[3,2.5,3.5]};
     }
-    else if(tid==='setup_irrigation'){pos=[-8,0,0];action='install';angle=1.0;}
+    else if(tid==='setup_irrigation'){pos=[-8,0,0];action='install';angle=1.0;cam={target:[-8,1,0],offset:[6,5,6]};}
     else if(tid==='water_trees'){
       const sp=GARDEN_TREE_SPOTS[0];
       pos=[sp[0]+1,0,sp[2]];action='water';angle=Math.atan2(sp[0],sp[2]);pPos=[sp[0],0.2,sp[2]];pType='water';pActive=true;
+      cam={target:[sp[0],1,sp[2]],offset:[5,4,5]};
     }
-    else if(tid.startsWith('observe_growth')){pos=[0,0,8];action='observe';angle=0;}
-    else if(tid==='measure_results'){pos=[0,0,6];action='scan';angle=0;}
+    else if(tid.startsWith('observe_growth')){pos=[0,0,8];action='observe';angle=0;cam={orbit:true,orbitRadius:22,orbitHeight:10};}
+    else if(tid==='measure_results'){pos=[0,0,6];action='scan';angle=0;cam={target:[0,2,6],offset:[8,6,8]};}
   }else if(segId==='solar'){
-    if(tid==='assess_roof'){pos=[-12,0,-4];action='scan';angle=-1.5;}
-    else if(tid==='energy_scan'){pos=[0,0,6];action='scan';angle=Math.PI;}
-    else if(tid==='calculate_load'){pos=[0,0,6];action='observe';angle=Math.PI;}
-    else if(tid==='choose_panel_type'){pos=[0,0,6];action='observe';angle=Math.PI;}
-    else if(tid==='install_mounting'){pos=[-5,3.3,-3];action='install';angle=0;pPos=[-5,3.4,-3];pType='sparks';pActive=true;}
+    if(tid==='assess_roof'){pos=[-12,0,-4];action='scan';angle=-1.5;cam={target:[-6,2,-4],offset:[8,8,8]};}
+    else if(tid==='energy_scan'){pos=[0,0,6];action='scan';angle=Math.PI;cam={target:[0,2,0],offset:[0,10,16]};}
+    else if(tid==='calculate_load'){pos=[0,0,6];action='observe';angle=Math.PI;cam={orbit:true,orbitRadius:18,orbitHeight:10};}
+    else if(tid==='choose_panel_type'){pos=[0,0,6];action='observe';angle=Math.PI;cam={target:[0,2,0],offset:[0,10,16]};}
+    // Ladder tasks — step by step
+    else if(tid==='fetch_ladder'){pos=[-4,0,0];action='walk';angle=-Math.PI/2;cam={target:[-4,1,0],offset:[6,4,6]};}
+    else if(tid==='carry_ladder_out'){pos=[-10,0,-3];action='walk';angle=-Math.PI/2;cam={target:[-10,1.5,-3],offset:[5,4,5]};}
+    else if(tid==='climb_roof'){pos=[-10.5,1.6,-3];action='climb';angle=Math.PI;cam={target:[-10.5,2,-3],offset:[5,3,5]};}
+    else if(tid==='install_mounting'){pos=[-5,3.3,-3];action='install';angle=0;pPos=[-5,3.4,-3];pType='sparks';pActive=true;cam={target:[-5,3.5,-3],offset:[4,3,4]};}
     else if(tid.startsWith('place_panel')){
       const pi=panelsPlaced;const pp=[[-5,3.35,-3],[-1.5,3.35,-3],[2,3.35,-3],[5.5,3.35,-3]];
       const tp=pp[Math.min(pi,3)];pos=[tp[0],tp[1],tp[2]+0.5];action='install';angle=0;pPos=[tp[0],tp[1]+0.1,tp[2]];pType='sparks';pActive=true;
+      cam={target:[tp[0],3.5,tp[2]],offset:[3,3,4]};
     }
-    else if(tid==='wire_panels'){pos=[0,3.3,-2];action='install';angle=0;pPos=[0,3.3,-2.5];pType='sparks';pActive=true;}
-    else if(tid==='orient'){pos=[-3,3.3,-3];action='install';angle=0;}
-    else if(tid==='sun_sim'){pos=[0,0,8];action='observe';angle=0;}
-    else if(tid==='solar_mode'){pos=[5,0,5];action='install';angle=Math.PI;}
-    else if(tid==='install_battery'){pos=[5,0,4];action='install';angle=Math.PI;pPos=[5,0.5,4];pType='sparks';pActive=true;}
-    else if(tid==='peak_hour'){pos=[5,0,5];action='observe';angle=Math.PI;}
+    else if(tid==='wire_panels'){pos=[0,3.3,-2];action='install';angle=0;pPos=[0,3.3,-2.5];pType='sparks';pActive=true;cam={target:[0,3.5,-2],offset:[4,3,4]};}
+    else if(tid==='orient'){pos=[-3,3.3,-3];action='install';angle=0;cam={target:[0,3.5,-3],offset:[0,5,8]};}
+    else if(tid==='sun_sim'){pos=[0,0,8];action='observe';angle=0;cam={orbit:true,orbitRadius:20,orbitHeight:12};}
+    else if(tid==='solar_mode'){pos=[5,0,5];action='install';angle=Math.PI;cam={target:[5,1,5],offset:[6,5,6]};}
+    else if(tid==='install_battery'){pos=[5,0,4];action='install';angle=Math.PI;pPos=[5,0.5,4];pType='sparks';pActive=true;cam={target:[5,1,4],offset:[5,4,5]};}
+    else if(tid==='peak_hour'){pos=[5,0,5];action='observe';angle=Math.PI;cam={target:[5,1,5],offset:[6,5,6]};}
+    else if(tid==='climb_down'){pos=[-10.5,1.6,-3];action='climb';angle=0;cam={target:[-10.5,2,-3],offset:[5,3,5]};}
   }else if(segId==='wind'){
-    if(tid==='field_survey'){pos=[-15,0,-10];action='walk';angle=0.5;}
-    else if(tid==='wind_analysis'){pos=[-20,0,-15];action='scan';angle=0;}
-    else if(tid==='choose_turbine'){pos=[0,0,8];action='observe';angle=0;}
+    if(tid==='field_survey'){pos=[-15,0,-10];action='walk';angle=0.5;cam={target:[-15,1,-10],offset:[10,8,10]};}
+    else if(tid==='wind_analysis'){pos=[-20,0,-15];action='scan';angle=0;cam={target:[-20,2,-15],offset:[8,6,8]};}
+    else if(tid==='choose_turbine'){pos=[0,0,8];action='observe';angle=0;cam={target:[0,2,0],offset:[0,10,16]};}
     else if(tid==='prepare_foundation'){
       const fp=[-25,0,-20];pos=[fp[0]+2,0,fp[2]];action='dig';angle=Math.atan2(fp[0],fp[2]);pPos=[fp[0],0.1,fp[2]];pType='concrete';pActive=true;
+      // Wide angle to see vehicle arrival too
+      cam={target:[fp[0],2,fp[2]],offset:[10,8,10]};
     }
     else if(tid.startsWith('install_turbine')){
       const fi=fieldTurbineIdx;const fps=[[-25,0,-20],[25,0,-18],[-22,0,22]];
       const fp=fps[Math.min(fi,2)];pos=[fp[0]+3,0,fp[2]];action='install';angle=Math.atan2(-fp[0],-fp[2]);
+      cam={target:[fp[0],4,fp[2]],offset:[10,10,10]};
     }
-    else if(tid==='connect_grid'){pos=[0,0,-5];action='install';angle=Math.PI;pPos=[0,0.1,-5];pType='sparks';pActive=true;}
-    else if(tid==='wind_test'){pos=[0,0,10];action='observe';angle=0;}
-    else if(tid==='weather_scenarios'){pos=[0,0,10];action='observe';angle=0;}
-    else if(tid==='combined_solar_wind'){pos=[0,0,10];action='observe';angle=0;}
-    else if(tid==='night_mode'){pos=[0,0,10];action='observe';angle=0;}
-    else if(tid==='storm_mode'){pos=[0,0,10];action='observe';angle=0;}
+    else if(tid==='connect_grid'){pos=[0,0,-5];action='install';angle=Math.PI;pPos=[0,0.1,-5];pType='sparks';pActive=true;cam={target:[0,1,-5],offset:[6,5,6]};}
+    else if(tid==='wind_test'){pos=[0,0,10];action='observe';angle=0;cam={orbit:true,orbitRadius:30,orbitHeight:12};}
+    else if(tid==='weather_scenarios'){pos=[0,0,10];action='observe';angle=0;cam={orbit:true,orbitRadius:30,orbitHeight:12};}
+    else if(tid==='combined_solar_wind'){pos=[0,0,10];action='observe';angle=0;cam={orbit:true,orbitRadius:30,orbitHeight:12};}
+    else if(tid==='night_mode'){pos=[0,0,10];action='observe';angle=0;cam={orbit:true,orbitRadius:30,orbitHeight:12};}
+    else if(tid==='storm_mode'){pos=[0,0,10];action='observe';angle=0;cam={orbit:true,orbitRadius:30,orbitHeight:12};}
   }
-  return {pos,action,angle,pPos,pType,pActive};
+  return {pos,action,angle,pPos,pType,pActive,cam};
 },[segPhase,segId,task,taskIdx,debrisCleared.length,soilScanned,trees.length,panelsPlaced,fieldTurbineIdx]);
 
 // Shared scene props
@@ -312,11 +338,16 @@ const sceneProps={segment:segId,trees,plantSpots:GARDEN_TREE_SPOTS,currentSpot,c
   // Character & animation
   characterPos:charState.pos,characterAction:charState.action,characterAngle:charState.angle,
   particlePos:charState.pPos,particleType:charState.pType,particlesActive:charState.pActive,
-  showLadder:segId==='solar'&&segPhase==='playing',
+  // Ladder only shows after carry_ladder_out task
+  showLadder:segId==='solar'&&segPhase==='playing'&&ladderFetched,
   showVehicle:segId==='wind'&&segPhase==='playing',
   vehicleArriving:segId==='wind'&&task?.id==='prepare_foundation',
   showWorkers:segId==='wind'&&segPhase==='playing'&&(task?.id?.startsWith('install_turbine')||task?.id==='connect_grid'),
   irrigationVisible:segId==='trees'&&trees.length>0&&(task?.id==='setup_irrigation'||task?.id==='water_trees'||task?.id?.startsWith('observe_growth')||task?.id==='measure_results'),
+  // Camera config — per-task focused camera (no constant rotation)
+  cameraConfig:charState.cam,
+  // Digging & planting visuals
+  diggingHoles,seedsPlanted,
 };
 
 // ═══ INTRO — Cinematic drone shot + dialogue ═══

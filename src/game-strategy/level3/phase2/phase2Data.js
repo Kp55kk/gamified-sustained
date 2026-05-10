@@ -290,10 +290,34 @@ export const SOLAR_TASKS = [
   {
     id: 'choose_panel_type', label: 'Choose panel type', icon: '⚡',
     instruction: 'Select: Monocrystalline (efficient) or Polycrystalline (affordable)',
-    feedback: 'Panel type selected! Now let us install the mounting.',
+    feedback: 'Panel type selected! Now let us get the ladder to reach the roof.',
     sfx: 'toggle', interactive: 'panel_select',
     teacherLine: 'Monocrystalline panels are 20% more efficient but cost more.',
     visualDemo: 'Two panel types shown side by side with specs comparison',
+  },
+  {
+    id: 'fetch_ladder', label: 'Fetch the ladder', icon: '🪜',
+    instruction: 'Press E — Arjun goes inside the house to get the ladder',
+    feedback: 'Arjun found the ladder inside the house!',
+    sfx: 'whoosh',
+    teacherLine: 'We need a ladder to safely access the rooftop for installation.',
+    visualDemo: 'Arjun walks inside the house and picks up the ladder',
+  },
+  {
+    id: 'carry_ladder_out', label: 'Carry ladder outside', icon: '🚶',
+    instruction: 'Press E — Arjun carries the ladder and places it against the wall',
+    feedback: 'Ladder placed securely against the house wall!',
+    sfx: 'mount',
+    teacherLine: 'Position the ladder at a safe angle — not too steep, not too flat.',
+    visualDemo: 'Arjun walks out with ladder, leans it against house wall',
+  },
+  {
+    id: 'climb_roof', label: 'Climb to rooftop', icon: '⬆️',
+    instruction: 'Press E — Arjun climbs the ladder to reach the roof',
+    feedback: 'On the rooftop! Ready to install mounting rails.',
+    sfx: 'mount',
+    teacherLine: 'Always maintain 3 points of contact when climbing a ladder!',
+    visualDemo: 'Arjun climbs the ladder step by step to the rooftop',
   },
   {
     id: 'install_mounting', label: 'Install rail mounts', icon: '🔧',
@@ -382,6 +406,14 @@ export const SOLAR_TASKS = [
     sfx: 'charge',
     teacherLine: 'Peak hour grid rates are ₹12/unit. Battery power is free!',
     visualDemo: 'Sky darkens to evening, battery discharges to power house',
+  },
+  {
+    id: 'climb_down', label: 'Climb down safely', icon: '⬇️',
+    instruction: 'Press E — Arjun climbs down the ladder back to ground',
+    feedback: 'Safely back on the ground! Solar installation complete!',
+    sfx: 'mount',
+    teacherLine: 'Always climb down facing the ladder — never jump from a roof!',
+    visualDemo: 'Arjun climbs down the ladder step by step',
   },
 ];
 

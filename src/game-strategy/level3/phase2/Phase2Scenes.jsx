@@ -819,3 +819,69 @@ export function IrrigationSystem({ treePositions = [], visible = false }) {
   );
 }
 
+// ─── PLANTING HOLE — visible dug hole in the ground ───
+export function PlantingHole({ position, hasSeed = false }) {
+  return (
+    <group position={position}>
+      {/* Dark circular depression — the hole */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.01, 0]}>
+        <circleGeometry args={[0.5, 16]} />
+        <meshStandardMaterial color="#2a1a0a" roughness={1} />
+      </mesh>
+      {/* Inner deeper pit */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.005, 0]}>
+        <circleGeometry args={[0.3, 12]} />
+        <meshStandardMaterial color="#1a0e04" roughness={1} />
+      </mesh>
+      {/* Soil ring around the hole (dug-up earth) */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.04, 0]}>
+        <ringGeometry args={[0.45, 0.7, 16]} />
+        <meshStandardMaterial color="#6b4520" roughness={0.9} />
+      </mesh>
+      {/* Small mound of dug-up soil */}
+      {[0, 1.2, 2.4, 3.6, 4.8].map((a, i) => (
+        <mesh key={i} position={[Math.cos(a) * 0.55, 0.06, Math.sin(a) * 0.55]}>
+          <sphereGeometry args={[0.08 + Math.random() * 0.04, 6, 6]} />
+          <meshStandardMaterial color="#8B6914" roughness={0.9} />
+        </mesh>
+      ))}
+      {/* Glow ring when active and no seed yet */}
+      {!hasSeed && (
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.05, 0]}>
+          <ringGeometry args={[0.6, 0.65, 16]} />
+          <meshBasicMaterial color="#22c55e" transparent opacity={0.4} side={THREE.DoubleSide} />
+        </mesh>
+      )}
+    </group>
+  );
+}
+
+// ─── SEED IN HOLE — small seeds visible inside a planting hole ───
+export function SeedInHole({ position }) {
+  return (
+    <group position={position}>
+      {/* 3-4 small seeds scattered inside the hole */}
+      {[
+        [0.05, 0.03, 0.02],
+        [-0.06, 0.03, 0.04],
+        [0.02, 0.03, -0.05],
+        [-0.03, 0.03, -0.02],
+      ].map((off, i) => (
+        <mesh key={i} position={off}>
+          <sphereGeometry args={[0.04, 6, 6]} />
+          <meshStandardMaterial color="#5c3d1a" roughness={0.8} />
+        </mesh>
+      ))}
+      {/* Tiny seedling sprout emerging */}
+      <mesh position={[0, 0.06, 0]}>
+        <coneGeometry args={[0.03, 0.1, 4]} />
+        <meshStandardMaterial color="#4CAF50" roughness={0.7} />
+      </mesh>
+      {/* Green glow indicating planted */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.05, 0]}>
+        <ringGeometry args={[0.25, 0.35, 12]} />
+        <meshBasicMaterial color="#4ade80" transparent opacity={0.3} side={THREE.DoubleSide} />
+      </mesh>
+    </group>
+  );
+}
