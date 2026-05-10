@@ -237,3 +237,15 @@
 .l3p2-intro-teacher{animation:l3p2-float-gentle 3s ease infinite}
 .l3p2-seg-icon{animation:l3p2-float-gentle 2.5s ease infinite}
 .l3p2-done-badge{animation:l3p2-float-gentle 2s ease infinite}
+
+/* ═══ TEACHER SPEECH BUBBLE ═══ */
+.l3p2-teacher-bubble{position:absolute;bottom:20px;left:16px;display:flex;align-items:flex-start;gap:10px;background:rgba(8,8,8,.92);border:1px solid rgba(251,191,36,.3);border-radius:16px;padding:12px 18px;z-index:22;max-width:380px;backdrop-filter:blur(10px);animation:l3p2-bubble-in .4s ease;box-shadow:0 0 24px rgba(251,191,36,.08)}
+.l3p2-teacher-emoji{font-size:28px;flex-shrink:0;filter:drop-shadow(0 0 8px rgba(255,200,0,.4))}
+.l3p2-teacher-text{font-size:14px;color:#fde68a;line-height:1.5;font-style:italic}
+@keyframes l3p2-bubble-in{from{opacity:0;transform:translateY(12px) scale(.95)}to{opacity:1;transform:translateY(0) scale(1)}}
+
+/* ═══ AUTO-TASK PROGRESS TIMER ═══ */
+.l3p2-progress-timer{position:absolute;bottom:0;left:0;right:0;height:4px;background:rgba(255,255,255,.08);z-index:22;overflow:hidden}
+.l3p2-progress-fill{height:100%;background:linear-gradient(90deg,#22c55e,#4ade80);border-radius:0 4px 4px 0;animation:l3p2-progress-grow linear forwards;width:0}
+@keyframes l3p2-progress-grow{from{width:0}to{width:100%}}
+

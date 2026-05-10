@@ -1,5 +1,6 @@
 // ═══════════════════════════════════════════════════════════
 //  LEVEL 3 PHASE 2 — Core: Audio + Unified House Scene
+//  Rooftop turbine REMOVED — only field turbines remain
 // ═══════════════════════════════════════════════════════════
 import React, { Suspense, useRef, useEffect } from 'react';
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
@@ -8,16 +9,38 @@ import {
   House, HouseEnvironment, DustParticles,
   GrowingTree, CO2Particles, O2Particles, PlantSpot,
   SolarPanel, AnimatedSun, EnergyFlowLines,
-  WindTurbine, WindParticles,
+  WindParticles,
   Birds, GrassPatches, DebrisObjects, FieldWindTurbine,
-  HotspotMarker, BatteryUnit,
+  HotspotMarker, BatteryUnit, InverterBox, PowerCable,
+  ArjunCharacter, WorkerCharacter, ConstructionVehicle,
+  Ladder, ActionParticles, IrrigationSystem,
 } from './Phase2Scenes';
 
-// ─── Audio ───
+// ─── Audio Context ───
 let audioCtx = null;
 function getCtx() {
   if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   return audioCtx;
+}
+
+// ─── Generic SFX player using SFX configs ───
+export function playSFX(config) {
+  if (!config) return;
+  try {
+    const ctx = getCtx();
+    const freqs = Array.isArray(config.freq) ? config.freq : [config.freq];
+    freqs.forEach((f, i) => {
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.connect(g); g.connect(ctx.destination);
+      o.type = config.type || 'sine';
+      const t0 = ctx.currentTime + i * (config.dur / freqs.length);
+      o.frequency.setValueAtTime(f, t0);
+      g.gain.setValueAtTime(config.vol || 0.08, t0);
+      g.gain.exponentialRampToValueAtTime(0.001, t0 + config.dur);
+      o.start(t0); o.stop(t0 + config.dur);
+    });
+  } catch (e) {}
 }
 
 export function playAction() {
@@ -35,6 +58,15 @@ export function playCorrect() {
 export function playWrong() {
   try { const ctx = getCtx(); const o = ctx.createOscillator(); const g = ctx.createGain(); o.connect(g); g.connect(ctx.destination); o.type = 'sawtooth'; o.frequency.setValueAtTime(200, ctx.currentTime); o.frequency.linearRampToValueAtTime(100, ctx.currentTime + 0.3); g.gain.setValueAtTime(0.08, ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4); o.start(ctx.currentTime); o.stop(ctx.currentTime + 0.4); } catch (e) {}
 }
+
+// Premium SFX helpers
+export function playDig() { playSFX({ freq: [120, 80, 100], dur: 0.25, type: 'sawtooth', vol: 0.08 }); }
+export function playWater() { playSFX({ freq: [600, 900, 1200], dur: 0.4, type: 'sine', vol: 0.06 }); }
+export function playInstall() { playSFX({ freq: [400, 600, 500], dur: 0.2, type: 'triangle', vol: 0.08 }); }
+export function playWind() { playSFX({ freq: [200, 150, 180], dur: 0.5, type: 'sine', vol: 0.04 }); }
+export function playBirdChirp() { playSFX({ freq: [1200, 1600, 1400, 1800], dur: 0.3, type: 'sine', vol: 0.04 }); }
+export function playSweep() { playSFX({ freq: [300, 600, 800], dur: 0.25, type: 'sine', vol: 0.08 }); }
+export function playWire() { playSFX({ freq: [600, 800, 600], dur: 0.2, type: 'square', vol: 0.05 }); }
 
 // ─── DRONE INTRO CAMERA — sweeps from bird's eye to eye-level ───
 export function DroneIntroCamera({ active, onComplete }) {
@@ -69,14 +101,14 @@ export function DroneIntroCamera({ active, onComplete }) {
   return null;
 }
 
-// ─── Camera orbiting the house ───
+// ─── Camera orbiting the house — segment-specific angles ───
 function AutoCamera({ segment = 'trees' }) {
   const { camera } = useThree();
   const config = segment === 'solar'
-    ? { radius: 22, height: 14, targetY: 4, speed: 0.04 }
+    ? { radius: 20, height: 14, targetY: 4, speed: 0.04 }
     : segment === 'wind'
-    ? { radius: 30, height: 12, targetY: 3, speed: 0.03 }
-    : { radius: 26, height: 10, targetY: 2, speed: 0.05 };
+    ? { radius: 35, height: 14, targetY: 3, speed: 0.03 }
+    : { radius: 24, height: 10, targetY: 2, speed: 0.05 };
 
   useFrame(() => {
     const t = performance.now() * 0.001 * config.speed;
@@ -90,20 +122,17 @@ function AutoCamera({ segment = 'trees' }) {
   return null;
 }
 
-// ─── ROOFTOP panel positions (on the real house roof at y=3.3) ───
-const ROOFTOP_PANEL_POSITIONS = [[-4, 3.35, -3], [0, 3.35, -3], [4, 3.35, -3]];
+// ─── ROOFTOP panel positions (4 panels now) ───
+const ROOFTOP_PANEL_POSITIONS = [[-5, 3.35, -3], [-1.5, 3.35, -3], [2, 3.35, -3], [5.5, 3.35, -3]];
 
 // ─── GARDEN tree spots (outside the real house walls) ───
 const GARDEN_TREE_SPOTS = [
   [-16, 0, -12], [-16, 0, 12], [16, 0, -12], [16, 0, 12], [0, 0, 14],
 ];
 
-// ─── WIND turbine position (on roof) ───
-const TURBINE_POS = [6, 3.3, -5];
-
-// ─── FIELD turbine positions (far from house) ───
+// ─── FIELD turbine positions — closer and more visible ───
 const FIELD_TURBINE_POSITIONS = [
-  [-30, 0, -25], [30, 0, -25], [-30, 0, 25],
+  [-25, 0, -20], [25, 0, -18], [-22, 0, 22],
 ];
 
 // ─── DEBRIS positions (around the garden outside the house) ───
@@ -114,19 +143,27 @@ const DEBRIS_POSITIONS = [
 
 // ═══ UNIFIED HOUSE SCENE ═══
 // Shows the same house always, with progressive additions
+// NO rooftop turbine — only field turbines at ground level
 export function HouseScene3D({
   segment = 'trees',
   // Tree state
   trees = [], plantSpots = GARDEN_TREE_SPOTS, currentSpot = 0, co2Active = false, greenLevel = 0,
   // Solar state
   panelsPlaced = 0, panelAngle = 0, sunProgress = 0.5, energyFlowing = false,
+  wiringVisible = false,
   // Wind state
-  turbineInstalled = false, windSpeed = 0,
+  windSpeed = 0,
   // Completed segments tracking
   treesComplete = false, solarComplete = false,
-  // New enhanced props
+  // Enhanced props
   debrisCleared = [], hotspots = [], activeHotspot = -1,
   fieldTurbines = [false, false, false], batteryCharge = 0, batteryActive = false,
+  inverterInstalled = false,
+  // Character & animation props
+  characterPos = [0, 0, 5], characterAction = 'idle', characterAngle = 0,
+  particlePos = [0, 0, 0], particleType = 'none', particlesActive = false,
+  showLadder = false, showVehicle = false, vehicleArriving = false,
+  showWorkers = false, irrigationVisible = false,
 }) {
   const treePositions = trees.filter(t => t.growth >= 3).map(t => t.pos);
   const dustIntensity = 1 - greenLevel;
@@ -147,7 +184,7 @@ export function HouseScene3D({
       {segment === 'trees' && (
         <>
           {plantSpots.map((pos, i) => <PlantSpot key={i} position={pos} active={i === currentSpot} />)}
-          {trees.map((t, i) => <GrowingTree key={i} position={t.pos} growthPhase={t.growth} absorbing={t.absorbing} />)}
+          {trees.map((t, i) => <GrowingTree key={i} position={t.pos} growthPhase={t.growth} absorbing={t.absorbing} treeType={t.type} />)}
           <CO2Particles active={co2Active} treePositions={treePositions} />
           <O2Particles active={co2Active} treePositions={treePositions} />
           <DebrisObjects positions={DEBRIS_POSITIONS} cleared={debrisCleared} />
@@ -170,24 +207,48 @@ export function HouseScene3D({
           {segment === 'solar' && <AnimatedSun progress={sunProgress} />}
           {segment === 'solar' && <EnergyFlowLines active={energyFlowing} panelPositions={ROOFTOP_PANEL_POSITIONS.slice(0, panelsPlaced)} />}
           {segment === 'solar' && <BatteryUnit chargeLevel={batteryCharge} active={batteryActive} />}
+          {segment === 'solar' && inverterInstalled && <InverterBox />}
+          {segment === 'solar' && wiringVisible && <PowerCable from={[0, 3.35, -3]} to={[5, 1.5, 4]} />}
         </>
       )}
 
-      {/* Wind — field turbines + rooftop turbine */}
+      {/* Wind — field turbines ONLY, no rooftop turbine */}
       {segment === 'wind' && (
         <>
-          <WindTurbine position={TURBINE_POS} installed={turbineInstalled} windSpeed={windSpeed} />
           <WindParticles windSpeed={windSpeed} />
           {FIELD_TURBINE_POSITIONS.map((pos, i) => (
             <FieldWindTurbine key={i} position={pos} installed={fieldTurbines[i]} windSpeed={windSpeed} />
           ))}
         </>
       )}
+
+      {/* Arjun Character — always visible during gameplay */}
+      <ArjunCharacter position={characterPos} action={characterAction} facingAngle={characterAngle} scale={1.2} />
+
+      {/* Action particles at character's work position */}
+      <ActionParticles position={particlePos} type={particleType} active={particlesActive} />
+
+      {/* Ladder for solar rooftop access */}
+      <Ladder position={[-10.5, 0, -3]} visible={showLadder} />
+
+      {/* Construction vehicle for wind turbine delivery */}
+      <ConstructionVehicle position={[-30, 0, -20]} visible={showVehicle} arriving={vehicleArriving} />
+
+      {/* Workers near turbine sites */}
+      {showWorkers && FIELD_TURBINE_POSITIONS.map((pos, i) => (
+        <group key={`workers-${i}`}>
+          <WorkerCharacter position={[pos[0] + 1.5, pos[1], pos[2]]} action={fieldTurbines[i] ? 'idle' : 'work'} facingAngle={Math.PI * 0.3 * i} />
+          <WorkerCharacter position={[pos[0] - 1, pos[1], pos[2] + 1]} action={fieldTurbines[i] ? 'idle' : 'work'} facingAngle={Math.PI * 0.5 + i} />
+        </group>
+      ))}
+
+      {/* Irrigation system connecting to planted trees */}
+      <IrrigationSystem treePositions={trees.map(t => t.pos)} visible={irrigationVisible} />
     </>
   );
 }
 
-export { ROOFTOP_PANEL_POSITIONS, GARDEN_TREE_SPOTS, TURBINE_POS, FIELD_TURBINE_POSITIONS, DEBRIS_POSITIONS };
+export { ROOFTOP_PANEL_POSITIONS, GARDEN_TREE_SPOTS, FIELD_TURBINE_POSITIONS, DEBRIS_POSITIONS };
 
 // ─── 3D Canvas wrapper ───
 // Uses the SAME pattern as Phase 1's working Canvas (gl={{ antialias: false }}, toneMapping = 1)

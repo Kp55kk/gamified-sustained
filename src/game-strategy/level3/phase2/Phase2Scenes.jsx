@@ -213,26 +213,55 @@ export function PlantSpot({ position, active = false }) {
   );
 }
 
-// ─── SOLAR PANEL (on rooftop) ───
+// ─── REALISTIC SOLAR PANEL (Level 4 quality) ───
 export function SolarPanel({ position, placed = false, glowing = false, angle = 0 }) {
   const flowRef = useRef();
   useFrame(() => { if (flowRef.current && glowing) { flowRef.current.material.emissiveIntensity = 0.5 + Math.sin(performance.now() * 0.006) * 0.3; } });
 
   if (!placed) return (
     <group position={position}>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 0]}><planeGeometry args={[1.2, 0.8]} /><meshStandardMaterial color="#ddd" transparent opacity={0.3} side={THREE.DoubleSide} /></mesh>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 0]}><planeGeometry args={[1.4, 0.9]} /><meshStandardMaterial color="#ddd" transparent opacity={0.3} side={THREE.DoubleSide} /></mesh>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.03, 0]}><ringGeometry args={[0.5, 0.55, 4]} /><meshBasicMaterial color="#f59e0b" transparent opacity={0.5} side={THREE.DoubleSide} /></mesh>
     </group>
   );
 
   return (
     <group position={position} rotation={[0, (angle * Math.PI) / 180, 0]}>
-      <mesh position={[0, 0.15, 0]} rotation={[-0.5, 0, 0]}><boxGeometry args={[1.1, 0.04, 0.7]} /><meshStandardMaterial color="#1a237e" metalness={0.5} roughness={0.3} /></mesh>
-      {[-0.3, 0, 0.3].map((offX, xi) => [-0.15, 0.15].map((offZ, zi) => (
-        <mesh key={`${xi}-${zi}`} position={[offX, 0.18, offZ]} rotation={[-0.5, 0, 0]}><boxGeometry args={[0.3, 0.01, 0.25]} /><meshStandardMaterial color="#0d47a1" metalness={0.7} roughness={0.2} /></mesh>
-      )))}
-      <mesh position={[0, 0.07, 0.2]}><boxGeometry args={[0.05, 0.14, 0.05]} /><meshStandardMaterial color="#888" metalness={0.6} /></mesh>
-      {glowing && (<mesh ref={flowRef} position={[0, 0.2, 0]} rotation={[-0.5, 0, 0]}><boxGeometry args={[1.2, 0.08, 0.8]} /><meshStandardMaterial color="#ffd700" emissive="#ffd700" emissiveIntensity={0.5} transparent opacity={0.2} depthWrite={false} /></mesh>)}
+      {/* Aluminum frame */}
+      <mesh position={[0, 0.14, 0]} rotation={[-0.44, 0, 0]}>
+        <boxGeometry args={[1.35, 0.05, 0.85]} />
+        <meshStandardMaterial color="#c0c0c0" metalness={0.8} roughness={0.25} />
+      </mesh>
+      {/* Dark photovoltaic surface */}
+      <mesh position={[0, 0.17, 0]} rotation={[-0.44, 0, 0]}>
+        <boxGeometry args={[1.25, 0.02, 0.75]} />
+        <meshStandardMaterial color="#0d1b3e" metalness={0.6} roughness={0.2} />
+      </mesh>
+      {/* Cell grid lines (silver strips) */}
+      {[-0.4, -0.2, 0, 0.2, 0.4].map((offX, i) => (
+        <mesh key={`h${i}`} position={[offX, 0.185, 0]} rotation={[-0.44, 0, 0]}>
+          <boxGeometry args={[0.008, 0.005, 0.72]} />
+          <meshStandardMaterial color="#888" metalness={0.9} roughness={0.2} />
+        </mesh>
+      ))}
+      {[-0.2, 0, 0.2].map((offZ, i) => (
+        <mesh key={`v${i}`} position={[0, 0.185, offZ]} rotation={[-0.44, 0, 0]}>
+          <boxGeometry args={[1.22, 0.005, 0.008]} />
+          <meshStandardMaterial color="#888" metalness={0.9} roughness={0.2} />
+        </mesh>
+      ))}
+      {/* Glass surface overlay */}
+      <mesh position={[0, 0.19, 0]} rotation={[-0.44, 0, 0]}>
+        <boxGeometry args={[1.24, 0.005, 0.74]} />
+        <meshStandardMaterial color="#1a237e" transparent opacity={0.15} metalness={0.9} roughness={0.1} />
+      </mesh>
+      {/* Mounting bracket legs */}
+      <mesh position={[-0.3, 0.06, 0.25]}><cylinderGeometry args={[0.02, 0.02, 0.12, 6]} /><meshStandardMaterial color="#999" metalness={0.7} roughness={0.3} /></mesh>
+      <mesh position={[0.3, 0.06, 0.25]}><cylinderGeometry args={[0.02, 0.02, 0.12, 6]} /><meshStandardMaterial color="#999" metalness={0.7} roughness={0.3} /></mesh>
+      <mesh position={[-0.3, 0.12, -0.15]}><cylinderGeometry args={[0.02, 0.02, 0.24, 6]} /><meshStandardMaterial color="#999" metalness={0.7} roughness={0.3} /></mesh>
+      <mesh position={[0.3, 0.12, -0.15]}><cylinderGeometry args={[0.02, 0.02, 0.24, 6]} /><meshStandardMaterial color="#999" metalness={0.7} roughness={0.3} /></mesh>
+      {/* Energy glow when active */}
+      {glowing && (<mesh ref={flowRef} position={[0, 0.22, 0]} rotation={[-0.44, 0, 0]}><boxGeometry args={[1.4, 0.1, 0.9]} /><meshStandardMaterial color="#ffd700" emissive="#ffd700" emissiveIntensity={0.5} transparent opacity={0.15} depthWrite={false} /></mesh>)}
     </group>
   );
 }
@@ -261,35 +290,11 @@ export function EnergyFlowLines({ active, panelPositions = [] }) {
   );
 }
 
-// ─── WIND TURBINE (small rooftop) ───
-export function WindTurbine({ position, installed = false, windSpeed = 0 }) {
-  const bladeGroupRef = useRef();
-  useFrame((_, delta) => { if (bladeGroupRef.current && installed) bladeGroupRef.current.rotation.z += windSpeed * 0.15 * delta; });
+// ─── WindTurbine (rooftop) — REMOVED ───
+// All turbines are now FieldWindTurbine in the open field.
+// This export is kept as a no-op for any stale imports.
+export function WindTurbine() { return null; }
 
-  if (!installed) return (
-    <group position={position}>
-      <mesh position={[0, 0.02, 0]} rotation={[-Math.PI / 2, 0, 0]}><circleGeometry args={[0.5, 16]} /><meshStandardMaterial color="#555" transparent opacity={0.3} /></mesh>
-      <mesh position={[0, 0.1, 0]}><cylinderGeometry args={[0.4, 0.5, 0.15, 12]} /><meshStandardMaterial color="#777" roughness={0.6} /></mesh>
-    </group>
-  );
-
-  return (
-    <group position={position}>
-      <mesh position={[0, 0.1, 0]}><cylinderGeometry args={[0.4, 0.5, 0.15, 12]} /><meshStandardMaterial color="#888" roughness={0.5} /></mesh>
-      <mesh position={[0, 2, 0]}><cylinderGeometry args={[0.08, 0.15, 3.5, 8]} /><meshStandardMaterial color="#e0e0e0" roughness={0.4} metalness={0.3} /></mesh>
-      <mesh position={[0, 3.8, 0.15]}><boxGeometry args={[0.3, 0.25, 0.6]} /><meshStandardMaterial color="#ddd" roughness={0.3} metalness={0.4} /></mesh>
-      <mesh position={[0, 3.8, 0.45]}><sphereGeometry args={[0.1, 8, 8]} /><meshStandardMaterial color="#ccc" metalness={0.5} /></mesh>
-      <group ref={bladeGroupRef} position={[0, 3.8, 0.5]}>
-        {[0, 120, 240].map((a, i) => (
-          <mesh key={i} rotation={[0, 0, (a * Math.PI) / 180]} position={[0, 0.9, 0]}>
-            <boxGeometry args={[0.06, 1.8, 0.02]} /><meshStandardMaterial color="#f5f5f5" roughness={0.3} />
-          </mesh>
-        ))}
-      </group>
-      {windSpeed > 3 && <pointLight position={[0, 4, 0]} intensity={windSpeed * 0.08} distance={5} color="#4ade80" />}
-    </group>
-  );
-}
 
 export function WindParticles({ windSpeed = 0 }) {
   const groupRef = useRef();
@@ -392,37 +397,56 @@ export function DebrisObjects({ positions = [], cleared = [] }) {
   );
 }
 
-// ─── FIELD WIND TURBINE (larger, placed in open field) ───
+// ─── ENHANCED FIELD WIND TURBINE ───
 export function FieldWindTurbine({ position, installed = false, windSpeed = 0 }) {
   const bladeRef = useRef();
-  useFrame((_, delta) => { if (bladeRef.current && installed) bladeRef.current.rotation.z += windSpeed * 0.12 * delta; });
+  const lightRef = useRef();
+  useFrame((_, delta) => {
+    if (bladeRef.current && installed) bladeRef.current.rotation.z += windSpeed * 0.12 * delta;
+    if (lightRef.current && installed) {
+      lightRef.current.material.emissiveIntensity = Math.sin(performance.now() * 0.003) > 0 ? 1.5 : 0;
+    }
+  });
 
   if (!installed) return (
     <group position={position}>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.05, 0]}><circleGeometry args={[1.2, 16]} /><meshStandardMaterial color="#555" transparent opacity={0.25} /></mesh>
-      <mesh position={[0, 0.3, 0]}><cylinderGeometry args={[0.8, 1.0, 0.3, 12]} /><meshStandardMaterial color="#777" roughness={0.6} /></mesh>
+      {/* Octagonal foundation pad placeholder */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.05, 0]}><circleGeometry args={[1.5, 8]} /><meshStandardMaterial color="#555" transparent opacity={0.25} /></mesh>
+      <mesh position={[0, 0.15, 0]}><cylinderGeometry args={[0.8, 1.0, 0.3, 8]} /><meshStandardMaterial color="#777" roughness={0.6} /></mesh>
     </group>
   );
 
   return (
     <group position={position}>
-      {/* Foundation */}
-      <mesh position={[0, 0.15, 0]}><cylinderGeometry args={[0.8, 1.0, 0.3, 12]} /><meshStandardMaterial color="#888" roughness={0.5} /></mesh>
-      {/* Tower */}
-      <mesh position={[0, 4, 0]}><cylinderGeometry args={[0.12, 0.25, 7.5, 8]} /><meshStandardMaterial color="#e8e8e8" roughness={0.3} metalness={0.4} /></mesh>
-      {/* Nacelle */}
-      <mesh position={[0, 7.8, 0.25]}><boxGeometry args={[0.5, 0.4, 1.0]} /><meshStandardMaterial color="#ddd" roughness={0.3} metalness={0.4} /></mesh>
-      <mesh position={[0, 7.8, 0.8]}><sphereGeometry args={[0.18, 8, 8]} /><meshStandardMaterial color="#ccc" metalness={0.5} /></mesh>
-      {/* Blades */}
-      <group ref={bladeRef} position={[0, 7.8, 0.9]}>
+      {/* Octagonal concrete foundation */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 0]}><circleGeometry args={[1.5, 8]} /><meshStandardMaterial color="#9ca3af" roughness={0.9} /></mesh>
+      <mesh position={[0, 0.15, 0]}><cylinderGeometry args={[0.8, 1.0, 0.3, 8]} /><meshStandardMaterial color="#888" roughness={0.5} /></mesh>
+      {/* Tapered tower */}
+      <mesh position={[0, 4, 0]}><cylinderGeometry args={[0.1, 0.3, 7.5, 8]} /><meshStandardMaterial color="#e8e8e8" roughness={0.3} metalness={0.5} /></mesh>
+      {/* Nacelle — rounded housing */}
+      <mesh position={[0, 7.8, 0.2]}><boxGeometry args={[0.45, 0.35, 0.9]} /><meshStandardMaterial color="#ddd" roughness={0.3} metalness={0.4} /></mesh>
+      <mesh position={[0, 7.8, 0.7]}><sphereGeometry args={[0.18, 8, 8]} /><meshStandardMaterial color="#ccc" metalness={0.5} /></mesh>
+      {/* Tapered blades */}
+      <group ref={bladeRef} position={[0, 7.8, 0.85]}>
         {[0, 120, 240].map((a, i) => (
-          <mesh key={i} rotation={[0, 0, (a * Math.PI) / 180]} position={[0, 1.8, 0]}>
-            <boxGeometry args={[0.1, 3.6, 0.03]} /><meshStandardMaterial color="#f5f5f5" roughness={0.3} />
-          </mesh>
+          <group key={i} rotation={[0, 0, (a * Math.PI) / 180]}>
+            <mesh position={[0, 1.0, 0]}><boxGeometry args={[0.14, 1.2, 0.025]} /><meshStandardMaterial color="#f5f5f5" roughness={0.3} /></mesh>
+            <mesh position={[0, 2.3, 0]}><boxGeometry args={[0.09, 1.4, 0.02]} /><meshStandardMaterial color="#f5f5f5" roughness={0.3} /></mesh>
+            <mesh position={[0, 3.3, 0]}><boxGeometry args={[0.05, 0.6, 0.015]} /><meshStandardMaterial color="#fafafa" roughness={0.3} /></mesh>
+          </group>
         ))}
       </group>
-      {/* Light on top */}
-      {windSpeed > 3 && <pointLight position={[0, 8.2, 0]} intensity={windSpeed * 0.06} distance={8} color="#4ade80" />}
+      {/* Red aviation warning light */}
+      <mesh ref={lightRef} position={[0, 8.05, 0]}>
+        <sphereGeometry args={[0.06, 6, 6]} />
+        <meshStandardMaterial color="#ff0000" emissive="#ff0000" emissiveIntensity={1.5} />
+      </mesh>
+      {/* Power cable running toward house */}
+      <mesh position={[position[0] > 0 ? -2 : 2, 0.05, 0]} rotation={[0, 0, Math.PI / 2]}>
+        <cylinderGeometry args={[0.02, 0.02, 4, 4]} />
+        <meshStandardMaterial color="#333" roughness={0.8} />
+      </mesh>
+      {windSpeed > 3 && <pointLight position={[0, 8.2, 0]} intensity={windSpeed * 0.06} distance={10} color="#4ade80" />}
     </group>
   );
 }
@@ -454,12 +478,344 @@ export function BatteryUnit({ position = [5, 0, 4], chargeLevel = 0, active = fa
   });
   return (
     <group position={position}>
-      {/* Battery box */}
       <mesh position={[0, 0.5, 0]}><boxGeometry args={[0.8, 1.0, 0.5]} /><meshStandardMaterial color="#374151" roughness={0.4} metalness={0.5} /></mesh>
-      {/* Charge indicator */}
-      <mesh position={[0, 0.5, 0.26]}><boxGeometry args={[0.6, 0.8 * chargeLevel, 0.02]} /><meshStandardMaterial color={chargeLevel > 0.6 ? '#22c55e' : chargeLevel > 0.3 ? '#f59e0b' : '#ef4444'} emissive={chargeLevel > 0.6 ? '#22c55e' : '#f59e0b'} emissiveIntensity={0.3} /></mesh>
-      {/* Glow when active */}
+      <mesh position={[0, 0.5, 0.26]}><boxGeometry args={[0.6, 0.8 * Math.max(0.01, chargeLevel), 0.02]} /><meshStandardMaterial color={chargeLevel > 0.6 ? '#22c55e' : chargeLevel > 0.3 ? '#f59e0b' : '#ef4444'} emissive={chargeLevel > 0.6 ? '#22c55e' : '#f59e0b'} emissiveIntensity={0.3} /></mesh>
       {active && <mesh ref={glowRef} position={[0, 0.5, 0]}><boxGeometry args={[0.9, 1.1, 0.6]} /><meshStandardMaterial color="#22c55e" emissive="#22c55e" emissiveIntensity={0.3} transparent opacity={0.1} depthWrite={false} /></mesh>}
     </group>
   );
 }
+
+// ─── INVERTER BOX (wall-mounted) ───
+export function InverterBox({ position = [5, 1.8, -8] }) {
+  const ledRef = useRef();
+  useFrame(() => {
+    if (ledRef.current) ledRef.current.material.emissiveIntensity = 0.5 + Math.sin(performance.now() * 0.005) * 0.3;
+  });
+  return (
+    <group position={position}>
+      <mesh><boxGeometry args={[0.6, 0.8, 0.2]} /><meshStandardMaterial color="#4b5563" roughness={0.4} metalness={0.6} /></mesh>
+      {/* LED indicators */}
+      <mesh ref={ledRef} position={[-0.15, 0.2, 0.11]}><sphereGeometry args={[0.03, 6, 6]} /><meshStandardMaterial color="#22c55e" emissive="#22c55e" emissiveIntensity={0.5} /></mesh>
+      <mesh position={[0, 0.2, 0.11]}><sphereGeometry args={[0.03, 6, 6]} /><meshStandardMaterial color="#fbbf24" emissive="#fbbf24" emissiveIntensity={0.3} /></mesh>
+      <mesh position={[0.15, 0.2, 0.11]}><sphereGeometry args={[0.03, 6, 6]} /><meshStandardMaterial color="#22c55e" emissive="#22c55e" emissiveIntensity={0.3} /></mesh>
+      {/* Label */}
+      <mesh position={[0, -0.1, 0.11]}><boxGeometry args={[0.4, 0.15, 0.01]} /><meshStandardMaterial color="#1f2937" roughness={0.5} /></mesh>
+    </group>
+  );
+}
+
+// ─── POWER CABLE (visible connection line) ───
+export function PowerCable({ from = [0, 3, 0], to = [5, 1.5, 4] }) {
+  const ref = useRef();
+  useFrame(() => {
+    if (ref.current) ref.current.material.opacity = 0.4 + Math.sin(performance.now() * 0.004) * 0.2;
+  });
+  const midX = (from[0] + to[0]) / 2, midY = Math.max(from[1], to[1]) + 0.5, midZ = (from[2] + to[2]) / 2;
+  return (
+    <group>
+      {/* Simple line segments from → mid → to */}
+      <mesh ref={ref} position={[(from[0] + midX) / 2, (from[1] + midY) / 2, (from[2] + midZ) / 2]}>
+        <boxGeometry args={[0.03, 0.03, 3]} />
+        <meshBasicMaterial color="#ffd700" transparent opacity={0.5} />
+      </mesh>
+    </group>
+  );
+}
+
+// ─── ARJUN CHARACTER (animated per task) ───
+export function ArjunCharacter({ position = [0, 0, 0], action = 'idle', facingAngle = 0, scale = 1 }) {
+  const groupRef = useRef();
+  const bodyRef = useRef();
+  const leftArmRef = useRef();
+  const rightArmRef = useRef();
+  const leftLegRef = useRef();
+  const rightLegRef = useRef();
+  const targetPos = useRef(new THREE.Vector3(...position));
+
+  useFrame(() => {
+    if (!groupRef.current) return;
+    // Smooth position interpolation (walk to target)
+    targetPos.current.set(position[0], position[1], position[2]);
+    groupRef.current.position.lerp(targetPos.current, 0.04);
+    // Smooth rotation
+    const targetRot = facingAngle;
+    const cur = groupRef.current.rotation.y;
+    groupRef.current.rotation.y += (targetRot - cur) * 0.06;
+
+    const t = performance.now() * 0.001;
+    if (!bodyRef.current) return;
+
+    if (action === 'walk') {
+      bodyRef.current.position.y = Math.sin(t * 8) * 0.06;
+      if (leftArmRef.current) leftArmRef.current.rotation.x = Math.sin(t * 8) * 0.6;
+      if (rightArmRef.current) rightArmRef.current.rotation.x = Math.sin(t * 8 + Math.PI) * 0.6;
+      if (leftLegRef.current) leftLegRef.current.rotation.x = Math.sin(t * 8 + Math.PI) * 0.5;
+      if (rightLegRef.current) rightLegRef.current.rotation.x = Math.sin(t * 8) * 0.5;
+    } else if (action === 'dig') {
+      bodyRef.current.position.y = -0.15;
+      bodyRef.current.rotation.x = 0.3;
+      if (rightArmRef.current) rightArmRef.current.rotation.x = -1.2 + Math.sin(t * 5) * 0.6;
+      if (leftArmRef.current) leftArmRef.current.rotation.x = -0.8 + Math.sin(t * 5 + 1) * 0.4;
+      if (leftLegRef.current) leftLegRef.current.rotation.x = -0.3;
+      if (rightLegRef.current) rightLegRef.current.rotation.x = 0.1;
+    } else if (action === 'sweep') {
+      if (rightArmRef.current) rightArmRef.current.rotation.x = -0.5 + Math.sin(t * 6) * 0.8;
+      if (leftArmRef.current) leftArmRef.current.rotation.x = -0.3 + Math.sin(t * 6 + 0.5) * 0.5;
+      if (rightArmRef.current) rightArmRef.current.rotation.z = Math.sin(t * 6) * 0.3;
+      bodyRef.current.rotation.y = Math.sin(t * 3) * 0.15;
+    } else if (action === 'plant') {
+      bodyRef.current.position.y = -0.2;
+      bodyRef.current.rotation.x = 0.5;
+      if (rightArmRef.current) rightArmRef.current.rotation.x = -1.5 + Math.sin(t * 3) * 0.3;
+      if (leftArmRef.current) leftArmRef.current.rotation.x = -1.5 + Math.sin(t * 3 + 1) * 0.3;
+      if (leftLegRef.current) leftLegRef.current.rotation.x = -0.6;
+      if (rightLegRef.current) rightLegRef.current.rotation.x = -0.2;
+    } else if (action === 'water') {
+      if (rightArmRef.current) rightArmRef.current.rotation.x = -0.8;
+      if (rightArmRef.current) rightArmRef.current.rotation.z = Math.sin(t * 2) * 0.3;
+      if (leftArmRef.current) leftArmRef.current.rotation.x = -0.3;
+    } else if (action === 'climb') {
+      bodyRef.current.position.y = Math.sin(t * 4) * 0.08;
+      if (rightArmRef.current) rightArmRef.current.rotation.x = -2.0 + Math.sin(t * 4) * 0.4;
+      if (leftArmRef.current) leftArmRef.current.rotation.x = -2.0 + Math.sin(t * 4 + Math.PI) * 0.4;
+      if (leftLegRef.current) leftLegRef.current.rotation.x = Math.sin(t * 4 + Math.PI) * 0.5;
+      if (rightLegRef.current) rightLegRef.current.rotation.x = Math.sin(t * 4) * 0.5;
+    } else if (action === 'install') {
+      if (rightArmRef.current) rightArmRef.current.rotation.x = -1.8 + Math.sin(t * 6) * 0.3;
+      if (leftArmRef.current) leftArmRef.current.rotation.x = -1.5 + Math.sin(t * 6 + 1) * 0.2;
+      bodyRef.current.position.y = Math.sin(t * 2) * 0.02;
+    } else if (action === 'scan') {
+      if (rightArmRef.current) rightArmRef.current.rotation.x = -1.2;
+      if (rightArmRef.current) rightArmRef.current.rotation.z = Math.sin(t * 1.5) * 0.15;
+      bodyRef.current.rotation.y = Math.sin(t * 0.8) * 0.3;
+    } else if (action === 'observe') {
+      bodyRef.current.position.y = Math.sin(t * 1.5) * 0.02;
+      if (rightArmRef.current) rightArmRef.current.rotation.x = 0;
+      if (leftArmRef.current) leftArmRef.current.rotation.x = 0;
+      bodyRef.current.rotation.y = Math.sin(t * 0.3) * 0.1;
+    } else {
+      // idle: gentle breathing
+      bodyRef.current.position.y = Math.sin(t * 2) * 0.02;
+      bodyRef.current.rotation.x = 0;
+      if (leftArmRef.current) { leftArmRef.current.rotation.x = 0; leftArmRef.current.rotation.z = -0.05; }
+      if (rightArmRef.current) { rightArmRef.current.rotation.x = 0; rightArmRef.current.rotation.z = 0.05; }
+      if (leftLegRef.current) leftLegRef.current.rotation.x = 0;
+      if (rightLegRef.current) rightLegRef.current.rotation.x = 0;
+    }
+  });
+
+  const skin = '#c68642', shirt = '#22c55e', pants = '#2563eb', hair = '#1a1a2e', shoe = '#333';
+  return (
+    <group ref={groupRef} position={position} scale={[scale, scale, scale]}>
+      <group ref={bodyRef}>
+        {/* Legs */}
+        <group ref={leftLegRef} position={[-0.12, 0.6, 0]}>
+          <mesh position={[0, -0.13, 0]}><cylinderGeometry args={[0.08, 0.07, 0.25]} /><meshStandardMaterial color={pants} /></mesh>
+          <mesh position={[0, -0.35, 0]}><cylinderGeometry args={[0.065, 0.055, 0.25]} /><meshStandardMaterial color={pants} /></mesh>
+          <mesh position={[0, -0.5, 0.04]}><boxGeometry args={[0.12, 0.1, 0.2]} /><meshStandardMaterial color={shoe} /></mesh>
+        </group>
+        <group ref={rightLegRef} position={[0.12, 0.6, 0]}>
+          <mesh position={[0, -0.13, 0]}><cylinderGeometry args={[0.08, 0.07, 0.25]} /><meshStandardMaterial color={pants} /></mesh>
+          <mesh position={[0, -0.35, 0]}><cylinderGeometry args={[0.065, 0.055, 0.25]} /><meshStandardMaterial color={pants} /></mesh>
+          <mesh position={[0, -0.5, 0.04]}><boxGeometry args={[0.12, 0.1, 0.2]} /><meshStandardMaterial color={shoe} /></mesh>
+        </group>
+        {/* Torso */}
+        <mesh position={[0, 0.85, 0]}><boxGeometry args={[0.45, 0.55, 0.25]} /><meshStandardMaterial color={shirt} /></mesh>
+        {/* Arms */}
+        <group ref={leftArmRef} position={[-0.3, 1.0, 0]}>
+          <mesh position={[0, -0.12, 0]}><cylinderGeometry args={[0.055, 0.05, 0.25]} /><meshStandardMaterial color={shirt} /></mesh>
+          <mesh position={[0, -0.32, 0]}><cylinderGeometry args={[0.045, 0.04, 0.2]} /><meshStandardMaterial color={skin} /></mesh>
+        </group>
+        <group ref={rightArmRef} position={[0.3, 1.0, 0]}>
+          <mesh position={[0, -0.12, 0]}><cylinderGeometry args={[0.055, 0.05, 0.25]} /><meshStandardMaterial color={shirt} /></mesh>
+          <mesh position={[0, -0.32, 0]}><cylinderGeometry args={[0.045, 0.04, 0.2]} /><meshStandardMaterial color={skin} /></mesh>
+        </group>
+        {/* Neck + Head */}
+        <mesh position={[0, 1.15, 0]}><cylinderGeometry args={[0.06, 0.06, 0.08]} /><meshStandardMaterial color={skin} /></mesh>
+        <group position={[0, 1.38, 0]}>
+          <mesh><sphereGeometry args={[0.2, 16, 16]} /><meshStandardMaterial color={skin} /></mesh>
+          <mesh position={[0, 0.08, -0.02]}><sphereGeometry args={[0.21, 16, 12, 0, Math.PI * 2, 0, Math.PI / 2]} /><meshStandardMaterial color={hair} /></mesh>
+          <mesh position={[-0.07, 0.02, 0.18]}><sphereGeometry args={[0.035, 8, 8]} /><meshStandardMaterial color="#fff" /></mesh>
+          <mesh position={[-0.07, 0.02, 0.2]}><sphereGeometry args={[0.018, 8, 8]} /><meshStandardMaterial color="#1a1a2e" /></mesh>
+          <mesh position={[0.07, 0.02, 0.18]}><sphereGeometry args={[0.035, 8, 8]} /><meshStandardMaterial color="#fff" /></mesh>
+          <mesh position={[0.07, 0.02, 0.2]}><sphereGeometry args={[0.018, 8, 8]} /><meshStandardMaterial color="#1a1a2e" /></mesh>
+        </group>
+        {/* Shadow */}
+        <mesh position={[0, 0.01, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+          <circleGeometry args={[0.3, 16]} /><meshBasicMaterial color="#000" transparent opacity={0.15} />
+        </mesh>
+      </group>
+    </group>
+  );
+}
+
+// ─── WORKER CHARACTER (smaller, different colors) ───
+export function WorkerCharacter({ position = [0, 0, 0], action = 'idle', facingAngle = 0 }) {
+  const groupRef = useRef();
+  const bodyRef = useRef();
+  const lArmRef = useRef();
+  const rArmRef = useRef();
+
+  useFrame(() => {
+    if (!groupRef.current || !bodyRef.current) return;
+    const t = performance.now() * 0.001;
+    if (action === 'work') {
+      if (rArmRef.current) rArmRef.current.rotation.x = -1.5 + Math.sin(t * 5) * 0.4;
+      if (lArmRef.current) lArmRef.current.rotation.x = -1.2 + Math.sin(t * 5 + 1) * 0.3;
+      bodyRef.current.position.y = Math.sin(t * 3) * 0.03;
+    } else {
+      bodyRef.current.position.y = Math.sin(t * 2) * 0.02;
+      if (rArmRef.current) rArmRef.current.rotation.x = 0;
+      if (lArmRef.current) lArmRef.current.rotation.x = 0;
+    }
+  });
+
+  const skin = '#b5651d', vest = '#f97316', pants = '#374151', helmet = '#fbbf24';
+  return (
+    <group ref={groupRef} position={position} rotation={[0, facingAngle, 0]} scale={[0.9, 0.9, 0.9]}>
+      <group ref={bodyRef}>
+        <mesh position={[0, 0.35, 0]}><cylinderGeometry args={[0.07, 0.06, 0.5, 6]} /><meshStandardMaterial color={pants} /></mesh>
+        <mesh position={[0, 0.75, 0]}><boxGeometry args={[0.4, 0.45, 0.22]} /><meshStandardMaterial color={vest} /></mesh>
+        <group ref={lArmRef} position={[-0.26, 0.9, 0]}>
+          <mesh position={[0, -0.15, 0]}><cylinderGeometry args={[0.04, 0.035, 0.3]} /><meshStandardMaterial color={vest} /></mesh>
+          <mesh position={[0, -0.3, 0]}><cylinderGeometry args={[0.035, 0.03, 0.15]} /><meshStandardMaterial color={skin} /></mesh>
+        </group>
+        <group ref={rArmRef} position={[0.26, 0.9, 0]}>
+          <mesh position={[0, -0.15, 0]}><cylinderGeometry args={[0.04, 0.035, 0.3]} /><meshStandardMaterial color={vest} /></mesh>
+          <mesh position={[0, -0.3, 0]}><cylinderGeometry args={[0.035, 0.03, 0.15]} /><meshStandardMaterial color={skin} /></mesh>
+        </group>
+        <mesh position={[0, 1.1, 0]}><sphereGeometry args={[0.16, 12, 12]} /><meshStandardMaterial color={skin} /></mesh>
+        {/* Hard hat */}
+        <mesh position={[0, 1.26, 0]}><sphereGeometry args={[0.18, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2]} /><meshStandardMaterial color={helmet} /></mesh>
+        <mesh position={[0, 1.2, 0]} rotation={[-Math.PI / 2, 0, 0]}><circleGeometry args={[0.22, 12]} /><meshStandardMaterial color={helmet} side={THREE.DoubleSide} /></mesh>
+      </group>
+    </group>
+  );
+}
+
+// ─── CONSTRUCTION VEHICLE (truck that arrives for wind turbine) ───
+export function ConstructionVehicle({ position = [0, 0, 0], visible = false, arriving = false }) {
+  const groupRef = useRef();
+  const startX = position[0] + 40;
+
+  useFrame(() => {
+    if (!groupRef.current || !visible) return;
+    if (arriving) {
+      const targetX = position[0];
+      groupRef.current.position.x += (targetX - groupRef.current.position.x) * 0.02;
+    }
+  });
+
+  if (!visible) return null;
+  return (
+    <group ref={groupRef} position={[arriving ? startX : position[0], position[1], position[2]]}>
+      {/* Truck cab */}
+      <mesh position={[-1.5, 0.8, 0]}><boxGeometry args={[1.2, 1.2, 1.4]} /><meshStandardMaterial color="#f59e0b" roughness={0.4} /></mesh>
+      {/* Windshield */}
+      <mesh position={[-1.0, 1.0, 0]}><boxGeometry args={[0.05, 0.6, 1.0]} /><meshStandardMaterial color="#87ceeb" transparent opacity={0.6} metalness={0.8} /></mesh>
+      {/* Flatbed */}
+      <mesh position={[0.8, 0.4, 0]}><boxGeometry args={[3.0, 0.2, 1.6]} /><meshStandardMaterial color="#6b7280" roughness={0.6} /></mesh>
+      {/* Side rails */}
+      <mesh position={[0.8, 0.7, 0.75]}><boxGeometry args={[3.0, 0.4, 0.05]} /><meshStandardMaterial color="#4b5563" /></mesh>
+      <mesh position={[0.8, 0.7, -0.75]}><boxGeometry args={[3.0, 0.4, 0.05]} /><meshStandardMaterial color="#4b5563" /></mesh>
+      {/* Wheels */}
+      {[[-1.8, 0.2, 0.8], [-1.8, 0.2, -0.8], [0.3, 0.2, 0.8], [0.3, 0.2, -0.8], [1.6, 0.2, 0.8], [1.6, 0.2, -0.8]].map((wp, i) => (
+        <mesh key={i} position={wp} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[0.2, 0.2, 0.15, 12]} /><meshStandardMaterial color="#1a1a1a" /></mesh>
+      ))}
+      {/* Turbine blade on the flatbed */}
+      <mesh position={[0.8, 0.6, 0]} rotation={[0, 0, Math.PI / 2]}><boxGeometry args={[0.1, 2.5, 0.03]} /><meshStandardMaterial color="#f5f5f5" /></mesh>
+      {/* Warning light */}
+      <mesh position={[-1.5, 1.5, 0]}><sphereGeometry args={[0.08, 8, 8]} /><meshStandardMaterial color="#ef4444" emissive="#ef4444" emissiveIntensity={1.0} /></mesh>
+    </group>
+  );
+}
+
+// ─── LADDER (for rooftop access) ───
+export function Ladder({ position = [-10.5, 0, -3], visible = false }) {
+  if (!visible) return null;
+  const rungs = 10;
+  return (
+    <group position={position} rotation={[0, 0, -0.15]}>
+      {/* Side rails */}
+      <mesh position={[-0.15, 1.6, 0]}><boxGeometry args={[0.05, 3.4, 0.05]} /><meshStandardMaterial color="#d97706" roughness={0.5} /></mesh>
+      <mesh position={[0.15, 1.6, 0]}><boxGeometry args={[0.05, 3.4, 0.05]} /><meshStandardMaterial color="#d97706" roughness={0.5} /></mesh>
+      {/* Rungs */}
+      {Array.from({ length: rungs }, (_, i) => (
+        <mesh key={i} position={[0, 0.2 + i * 0.3, 0]}><boxGeometry args={[0.28, 0.03, 0.05]} /><meshStandardMaterial color="#b45309" roughness={0.6} /></mesh>
+      ))}
+    </group>
+  );
+}
+
+// ─── ACTION PARTICLES (dust/dirt/water/sparks per action type) ───
+export function ActionParticles({ position = [0, 0, 0], type = 'none', active = false }) {
+  const groupRef = useRef();
+  const particles = useMemo(() =>
+    Array.from({ length: 20 }, () => ({
+      vx: (Math.random() - 0.5) * 2, vy: Math.random() * 3 + 1, vz: (Math.random() - 0.5) * 2,
+      life: Math.random(), size: 0.04 + Math.random() * 0.08,
+    })), []);
+
+  useFrame((_, delta) => {
+    if (!groupRef.current || !active) return;
+    groupRef.current.children.forEach((child, i) => {
+      const p = particles[i]; if (!p) return;
+      p.life -= delta * 1.5;
+      if (p.life <= 0) {
+        p.life = 1;
+        child.position.set(0, 0.1, 0);
+        p.vx = (Math.random() - 0.5) * 2;
+        p.vy = Math.random() * 3 + 1;
+        p.vz = (Math.random() - 0.5) * 2;
+      }
+      child.position.x += p.vx * delta;
+      child.position.y += p.vy * delta - 3 * delta;
+      child.position.z += p.vz * delta;
+      child.material.opacity = Math.max(0, p.life * 0.6);
+      child.scale.setScalar(p.size * p.life * 3);
+    });
+  });
+
+  if (!active) return null;
+  const color = type === 'dig' ? '#8B7355' : type === 'sweep' ? '#9CA3AF' : type === 'water' ? '#60a5fa'
+    : type === 'sparks' ? '#fbbf24' : type === 'concrete' ? '#9ca3af' : '#887766';
+  return (
+    <group ref={groupRef} position={position}>
+      {particles.map((p, i) => (
+        <mesh key={i} position={[0, 0.1, 0]}>
+          <sphereGeometry args={[p.size, 6, 6]} />
+          <meshBasicMaterial color={color} transparent opacity={0.5} depthWrite={false} />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
+// ─── IRRIGATION DRIP LINES (visible connecting to trees) ───
+export function IrrigationSystem({ treePositions = [], visible = false }) {
+  if (!visible || treePositions.length === 0) return null;
+  const pipeRef = useRef();
+  useFrame(() => {
+    if (pipeRef.current) {
+      pipeRef.current.children.forEach(c => {
+        if (c.material && c.material.emissive) c.material.emissiveIntensity = 0.2 + Math.sin(performance.now() * 0.003) * 0.15;
+      });
+    }
+  });
+  return (
+    <group ref={pipeRef}>
+      {treePositions.map((pos, i) => (
+        <group key={i}>
+          <mesh position={[pos[0] / 2, 0.03, pos[2] / 2]} rotation={[0, Math.atan2(pos[0], pos[2]), 0]}>
+            <boxGeometry args={[0.04, 0.04, Math.sqrt(pos[0] * pos[0] + pos[2] * pos[2])]} />
+            <meshStandardMaterial color="#1e40af" emissive="#3b82f6" emissiveIntensity={0.2} />
+          </mesh>
+          <mesh position={pos} rotation={[-Math.PI / 2, 0, 0]}>
+            <ringGeometry args={[0.1, 0.15, 8]} /><meshStandardMaterial color="#2563eb" emissive="#60a5fa" emissiveIntensity={0.3} side={THREE.DoubleSide} />
+          </mesh>
+        </group>
+      ))}
+    </group>
+  );
+}
+

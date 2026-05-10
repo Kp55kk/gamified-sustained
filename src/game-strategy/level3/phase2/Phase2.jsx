@@ -1,6 +1,6 @@
 import React,{useState,useEffect,useCallback,useMemo,useRef} from'react';
-import{INTRO_DIALOGUE,SEGMENTS,TREE_TASKS,SOLAR_TASKS,WIND_TASKS,TOTAL_TREES_TO_PLANT,PANEL_ORIENTATIONS,WIND_SPEED_SEQUENCE,DATA_POPUPS,COMPARISON_DATA,REALIZATION_LINES,TRANSITION_LINE,PHASE2_QUIZ,PHASE2_BADGE,calculateP2Stars,CO2_REDUCTION_LEVELS,ENV_HOTSPOTS,TREE_ANALYSIS,GROWTH_TIMELINE,SCANNER_APPLIANCES,LIVE_COMPARISON,BATTERY_DATA,WEATHER_SCENARIOS,TRANSFORMATION_BEFORE,TRANSFORMATION_AFTER,FINAL_TEACHER_DIALOGUE,LEVEL4_TRANSITION_TEXT,LEARNING_OUTCOMES}from'./phase2Data';
-import{HouseScene3D,Scene3DCanvas,DroneIntroCamera,GARDEN_TREE_SPOTS,DEBRIS_POSITIONS,playAction,playSuccess,playCorrect,playWrong}from'./Phase2Core';
+import{INTRO_DIALOGUE,SEGMENTS,TREE_TASKS,SOLAR_TASKS,WIND_TASKS,TOTAL_TREES_TO_PLANT,PANEL_ORIENTATIONS,WIND_SPEED_SEQUENCE,DATA_POPUPS,COMPARISON_DATA,REALIZATION_LINES,TRANSITION_LINE,PHASE2_QUIZ,PHASE2_BADGE,calculateP2Stars,CO2_REDUCTION_LEVELS,ENV_HOTSPOTS,TREE_ANALYSIS,GROWTH_TIMELINE,SCANNER_APPLIANCES,LIVE_COMPARISON,BATTERY_DATA,WEATHER_SCENARIOS,TRANSFORMATION_BEFORE,TRANSFORMATION_AFTER,FINAL_TEACHER_DIALOGUE,LEVEL4_TRANSITION_TEXT,LEARNING_OUTCOMES,PANEL_TYPES,TURBINE_TYPES}from'./phase2Data';
+import{HouseScene3D,Scene3DCanvas,DroneIntroCamera,GARDEN_TREE_SPOTS,DEBRIS_POSITIONS,playAction,playSuccess,playCorrect,playWrong,playSFX,playDig,playWater,playInstall,playWire,playSweep}from'./Phase2Core';
 import'./Phase2.css';
 
 export default function Phase2({onComplete}){
@@ -50,7 +50,16 @@ const[growthPhaseIdx,setGrowthPhaseIdx]=useState(0);
 const[showTransformation,setShowTransformation]=useState(false);
 const[transStep,setTransStep]=useState(0);
 const[finalDialogIdx,setFinalDialogIdx]=useState(0);
+const[teacherLine,setTeacherLine]=useState(null);
+const[showPanelSelect,setShowPanelSelect]=useState(false);
+const[showTurbineSelect,setShowTurbineSelect]=useState(false);
+const[wiringVisible,setWiringVisible]=useState(false);
+const[inverterInstalled,setInverterInstalled]=useState(false);
+const[soilScanned,setSoilScanned]=useState(0);
 const autoTimerRef=useRef(null);
+const teacherTimerRef=useRef(null);
+const handleInteractRef=useRef(null);
+const handleOrientConfirmRef=useRef(null);
 
 const segId=SEGMENTS[segIdx]?.id;
 const segColor=SEGMENTS[segIdx]?.color||'#22c55e';
@@ -63,9 +72,17 @@ const showFB=useCallback((t,type='info',dur=3000)=>{
 
 const greenLevel=useMemo(()=>Math.min(1,trees.filter(t=>t.growth>=3).length/TOTAL_TREES_TO_PLANT),[trees]);
 
+// Show teacher line when task changes
+useEffect(()=>{
+  if(segPhase!=='playing'||!task)return;
+  if(task.teacherLine){setTeacherLine(task.teacherLine);clearTimeout(teacherTimerRef.current);teacherTimerRef.current=setTimeout(()=>setTeacherLine(null),6000);}
+  else setTeacherLine(null);
+  return()=>clearTimeout(teacherTimerRef.current);
+},[taskIdx,segPhase]);
+
 useEffect(()=>{
   if(segPhase!=='playing'||!task?.auto)return;
-  const dur=task.autoDur||(segId==='trees'?3000:segId==='solar'?4000:3000);
+  const dur=task.autoDur||6000;
   autoTimerRef.current=setTimeout(()=>{showFB(task.feedback,'success');playAction();advanceTask();},dur);
   return()=>clearTimeout(autoTimerRef.current);
 },[taskIdx,segPhase]);
@@ -83,16 +100,13 @@ useEffect(()=>{
   run();return()=>clearTimeout(autoTimerRef.current);
 },[turbineInstalled,segPhase]);
 
+// Growth animation for observe_growth tasks
 useEffect(()=>{
-  if(segId!=='trees'||segPhase!=='playing'||!task||task.id!=='grow')return;
-  let g=1;const iv=setInterval(()=>{g++;setTrees(prev=>{const n=[...prev];const last=n[n.length-1];if(last)n[n.length-1]={...last,growth:Math.min(4,g)};return n;});if(g>=4){clearInterval(iv);setTreeGrowth(4);}},800);
-  return()=>clearInterval(iv);
+  if(segId!=='trees'||segPhase!=='playing'||!task)return;
+  if(task.id==='observe_growth_y1'){setTrees(p=>p.map(t=>({...t,growth:Math.min(2,t.growth+1)})));}
+  if(task.id==='observe_growth_y5'){setTrees(p=>p.map(t=>({...t,growth:3})));}
+  if(task.id==='observe_growth_y10'){setTrees(p=>p.map(t=>({...t,growth:4,absorbing:true})));}
 },[taskIdx,segPhase]);
-
-useEffect(()=>{
-  if(segId!=='trees'&&task?.id!=='absorb')return;
-  if(task?.id==='absorb')setTrees(prev=>prev.map(t=>({...t,absorbing:true})));
-},[taskIdx]);
 
 function advanceTask(){
   const next=taskIdx+1;
@@ -104,30 +118,68 @@ function handleInteract(){
   if(segPhase!=='playing'||!task||task.auto)return;
   playAction();
   if(segId==='trees'){
-    if(task.id==='survey'){setActiveHotspot(p=>(p+1)%ENV_HOTSPOTS.length);if(activeHotspot>=ENV_HOTSPOTS.length-1){showFB(task.feedback,'success');advanceTask();}else showFB(ENV_HOTSPOTS[activeHotspot]?.detail||'','info');}
+    if(task.id==='survey'){
+      setActiveHotspot(p=>{
+        const next=p+1;
+        if(next>=ENV_HOTSPOTS.length){showFB(task.feedback,'success');advanceTask();return 0;}
+        else{showFB(ENV_HOTSPOTS[next]?.detail||'','info');return next;}
+      });
+    }
+    else if(task.id==='clear_debris'){
+      playSweep();
+      setDebrisCleared(p=>{
+        const next=[...p,p.length];
+        if(next.length>=DEBRIS_POSITIONS.length){showFB(task.feedback,'success');advanceTask();}
+        else showFB(`Cleared ${next.length}/${DEBRIS_POSITIONS.length} debris piles`,'info');
+        return next;
+      });
+    }
+    else if(task.id==='analyze_soil'){
+      setSoilScanned(p=>{
+        const n=p+1;
+        if(n>=ENV_HOTSPOTS.length){showFB(task.feedback,'success');advanceTask();}
+        else{setActiveHotspot(n);showFB(ENV_HOTSPOTS[n]?.detail||'Scanning...','info');}
+        return n;
+      });
+    }
     else if(task.id==='select_trees'){setShowTreeAnalysis(true);}
-    else if(task.id==='plant'){
-      const pos=GARDEN_TREE_SPOTS[currentSpot]||[0,0,0];
-      setTrees(p=>[...p,{pos,growth:1,absorbing:false}]);showFB(task.feedback,'success');advanceTask();
-    }else if(task.id==='water'){
-      setTrees(p=>{const n=[...p];const l=n[n.length-1];if(l)n[n.length-1]={...l,growth:1};return n;});
+    else if(task.id==='dig_holes'){playDig();showFB(task.feedback,'success');advanceTask();}
+    else if(task.id.startsWith('plant_tree')){
+      setTrees(p=>{
+        const pos=GARDEN_TREE_SPOTS[p.length]||GARDEN_TREE_SPOTS[0];
+        return[...p,{pos,growth:1,absorbing:false}];
+      });
       showFB(task.feedback,'success');advanceTask();
     }
+    else if(task.id==='setup_irrigation'){playInstall();showFB(task.feedback,'success');advanceTask();}
+    else if(task.id==='water_trees'){playWater();setTrees(p=>p.map(t=>({...t,growth:Math.min(2,t.growth+1)})));showFB(task.feedback,'success');advanceTask();}
+    else if(task.id==='measure_results'){showFB(task.feedback,'success');advanceTask();}
   }else if(segId==='solar'){
-    if(task.id==='energy_scan'){setShowScanner(true);}
-    else if(task.id==='roof_inspect'){showFB(task.feedback,'success');advanceTask();}
-    else if(task.id.startsWith('place_panel')){setPanelsPlaced(p=>p+1);showFB(task.feedback,'success');advanceTask();}
+    if(task.id==='assess_roof'){showFB(task.feedback,'success');advanceTask();}
+    else if(task.id==='energy_scan'){setShowScanner(true);}
+    else if(task.id==='choose_panel_type'){setShowPanelSelect(true);}
+    else if(task.id==='install_mounting'){playInstall();showFB(task.feedback,'success');advanceTask();}
+    else if(task.id.startsWith('place_panel')){playInstall();setPanelsPlaced(p=>p+1);showFB(task.feedback,'success');advanceTask();}
+    else if(task.id==='wire_panels'){playWire();setWiringVisible(true);showFB(task.feedback,'success');advanceTask();}
     else if(task.id==='orient')setShowOrient(true);
     else if(task.id==='solar_mode'){setPowerMode('solar');showFB(task.feedback,'success');advanceTask();}
+    else if(task.id==='install_battery'){playInstall();setBatteryActive(true);setInverterInstalled(true);showFB(task.feedback,'success');advanceTask();}
     else if(task.id==='peak_hour'){setBatteryActive(true);showFB(task.feedback,'success');advanceTask();}
   }else if(segId==='wind'){
-    if(task.id==='install_turbine'||task.id.startsWith('install_turbine_')){
-      const idx=fieldTurbineIdx;
-      setFieldTurbines(p=>{const n=[...p];n[idx]=true;return n;});
-      setFieldTurbineIdx(p=>p+1);
-      if(!turbineInstalled)setTurbineInstalled(true);
+    if(task.id==='field_survey'){showFB(task.feedback,'success');advanceTask();}
+    else if(task.id==='wind_analysis'){showFB(task.feedback,'success');advanceTask();}
+    else if(task.id==='choose_turbine'){setShowTurbineSelect(true);}
+    else if(task.id==='prepare_foundation'){playDig();showFB(task.feedback,'success');advanceTask();}
+    else if(task.id.startsWith('install_turbine')){
+      setFieldTurbineIdx(prev=>{
+        setFieldTurbines(p=>{const n=[...p];n[prev]=true;return n;});
+        return prev+1;
+      });
+      setTurbineInstalled(true);
       showFB(task.feedback,'success');advanceTask();
     }
+    else if(task.id==='connect_grid'){playWire();showFB(task.feedback,'success');advanceTask();}
+    else if(task.id==='weather_scenarios'){setShowWeather(true);}
   }
 }
 
@@ -138,14 +190,18 @@ function handleOrientConfirm(){
   advanceTask();setTimeout(()=>setEnergyFlowing(true),1500);
 }
 
+// Keep refs always pointing to the latest function (fixes stale closures in keydown listener)
+handleInteractRef.current=handleInteract;
+handleOrientConfirmRef.current=handleOrientConfirm;
+
 function handleDataClose(){
   setShowData(false);
   const nextSeg=segIdx+1;
   setSegsComplete(p=>p+1);
   setCompletedSegs(prev=>({...prev,[segId]:true}));
   setCo2(segId==='trees'?CO2_REDUCTION_LEVELS.afterTrees:segId==='solar'?CO2_REDUCTION_LEVELS.afterSolar:CO2_REDUCTION_LEVELS.afterWind);
-  if(nextSeg>=SEGMENTS.length){setPhase('transformation');setTransStep(0);}
-  else{setSegIdx(nextSeg);setTaskIdx(0);setSegPhase('intro');setPanelsPlaced(0);setPanelAngle(0);setOrientIdx(0);setSunProgress(0);setEnergyFlowing(false);setTurbineInstalled(false);setWindSpeed(0);setCurrentSpot(p=>p+1);setShowScanner(false);setScannedAppliances([]);setPowerMode('grid');setBatteryCharge(0);setBatteryActive(false);setFieldTurbineIdx(0);}
+  if(nextSeg>=SEGMENTS.length){setPhase('transformation');setTransStep(0);setWiringVisible(false);setInverterInstalled(false);}
+  else{setWiringVisible(false);setInverterInstalled(false);setSegIdx(nextSeg);setTaskIdx(0);setSegPhase('intro');setPanelsPlaced(0);setPanelAngle(0);setOrientIdx(0);setSunProgress(0);setEnergyFlowing(false);setTurbineInstalled(false);setWindSpeed(0);setCurrentSpot(p=>p+1);setShowScanner(false);setScannedAppliances([]);setPowerMode('grid');setBatteryCharge(0);setBatteryActive(false);setFieldTurbineIdx(0);}
 }
 
 function handlePlantMore(){
@@ -164,22 +220,104 @@ function handleQuizNext(){
   else{setQuizIdx(next);setQuizSel(null);setShowExp(false);}
 }
 
+const showOrientRef=useRef(showOrient);
+showOrientRef.current=showOrient;
+
 useEffect(()=>{
   const h=e=>{
-    if(e.key==='e'||e.key==='E')handleInteract();
-    if(e.key==='ArrowLeft'&&showOrient)setOrientIdx(p=>(p-1+4)%4);
-    if(e.key==='ArrowRight'&&showOrient)setOrientIdx(p=>(p+1)%4);
-    if(e.key==='Enter'&&showOrient)handleOrientConfirm();
+    if(e.key==='e'||e.key==='E'){if(handleInteractRef.current)handleInteractRef.current();}
+    if(e.key==='ArrowLeft'&&showOrientRef.current)setOrientIdx(p=>(p-1+4)%4);
+    if(e.key==='ArrowRight'&&showOrientRef.current)setOrientIdx(p=>(p+1)%4);
+    if(e.key==='Enter'&&showOrientRef.current){if(handleOrientConfirmRef.current)handleOrientConfirmRef.current();}
   };
   window.addEventListener('keydown',h);return()=>window.removeEventListener('keydown',h);
-},[segPhase,taskIdx,showOrient,orientIdx]);
+},[]);
+
+// ─── Character animation logic (maps current task → position, action, particles) ───
+const charState=useMemo(()=>{
+  if(segPhase!=='playing'||!task) return {pos:[0,0,8],action:'idle',angle:0,pPos:[0,0,0],pType:'none',pActive:false};
+  const tid=task.id;
+  // Default
+  let pos=[0,0,8],action='idle',angle=0,pPos=[0,0,0],pType='none',pActive=false;
+  if(segId==='trees'){
+    if(tid==='survey'){pos=[-5,0,4];action='scan';angle=0.5;}
+    else if(tid==='clear_debris'){
+      const dIdx=Math.min(debrisCleared.length,DEBRIS_POSITIONS.length-1);
+      const dp=DEBRIS_POSITIONS[dIdx]||DEBRIS_POSITIONS[0];
+      pos=[dp[0],0,dp[2]];action='sweep';angle=Math.atan2(dp[0],dp[2]);pPos=[dp[0],0.1,dp[2]];pType='sweep';pActive=true;
+    }
+    else if(tid==='analyze_soil'){
+      const h=ENV_HOTSPOTS[Math.min(soilScanned,ENV_HOTSPOTS.length-1)];
+      if(h)pos=[h.pos[0],0,h.pos[2]];action='scan';angle=0.3;
+    }
+    else if(tid==='select_trees'){pos=[0,0,6];action='observe';angle=0;}
+    else if(tid==='dig_holes'){
+      const sp=GARDEN_TREE_SPOTS[trees.length]||GARDEN_TREE_SPOTS[0];
+      pos=[sp[0],0,sp[2]];action='dig';angle=Math.atan2(sp[0],sp[2]);pPos=[sp[0],0.1,sp[2]];pType='dig';pActive=true;
+    }
+    else if(tid.startsWith('plant_tree')){
+      const sp=GARDEN_TREE_SPOTS[trees.length]||GARDEN_TREE_SPOTS[0];
+      pos=[sp[0],0,sp[2]];action='plant';angle=Math.atan2(sp[0],sp[2]);pPos=[sp[0],0.1,sp[2]];pType='dig';pActive=true;
+    }
+    else if(tid==='setup_irrigation'){pos=[-8,0,0];action='install';angle=1.0;}
+    else if(tid==='water_trees'){
+      const sp=GARDEN_TREE_SPOTS[0];
+      pos=[sp[0]+1,0,sp[2]];action='water';angle=Math.atan2(sp[0],sp[2]);pPos=[sp[0],0.2,sp[2]];pType='water';pActive=true;
+    }
+    else if(tid.startsWith('observe_growth')){pos=[0,0,8];action='observe';angle=0;}
+    else if(tid==='measure_results'){pos=[0,0,6];action='scan';angle=0;}
+  }else if(segId==='solar'){
+    if(tid==='assess_roof'){pos=[-12,0,-4];action='scan';angle=-1.5;}
+    else if(tid==='energy_scan'){pos=[0,0,6];action='scan';angle=Math.PI;}
+    else if(tid==='calculate_load'){pos=[0,0,6];action='observe';angle=Math.PI;}
+    else if(tid==='choose_panel_type'){pos=[0,0,6];action='observe';angle=Math.PI;}
+    else if(tid==='install_mounting'){pos=[-5,3.3,-3];action='install';angle=0;pPos=[-5,3.4,-3];pType='sparks';pActive=true;}
+    else if(tid.startsWith('place_panel')){
+      const pi=panelsPlaced;const pp=[[-5,3.35,-3],[-1.5,3.35,-3],[2,3.35,-3],[5.5,3.35,-3]];
+      const tp=pp[Math.min(pi,3)];pos=[tp[0],tp[1],tp[2]+0.5];action='install';angle=0;pPos=[tp[0],tp[1]+0.1,tp[2]];pType='sparks';pActive=true;
+    }
+    else if(tid==='wire_panels'){pos=[0,3.3,-2];action='install';angle=0;pPos=[0,3.3,-2.5];pType='sparks';pActive=true;}
+    else if(tid==='orient'){pos=[-3,3.3,-3];action='install';angle=0;}
+    else if(tid==='sun_sim'){pos=[0,0,8];action='observe';angle=0;}
+    else if(tid==='solar_mode'){pos=[5,0,5];action='install';angle=Math.PI;}
+    else if(tid==='install_battery'){pos=[5,0,4];action='install';angle=Math.PI;pPos=[5,0.5,4];pType='sparks';pActive=true;}
+    else if(tid==='peak_hour'){pos=[5,0,5];action='observe';angle=Math.PI;}
+  }else if(segId==='wind'){
+    if(tid==='field_survey'){pos=[-15,0,-10];action='walk';angle=0.5;}
+    else if(tid==='wind_analysis'){pos=[-20,0,-15];action='scan';angle=0;}
+    else if(tid==='choose_turbine'){pos=[0,0,8];action='observe';angle=0;}
+    else if(tid==='prepare_foundation'){
+      const fp=[-25,0,-20];pos=[fp[0]+2,0,fp[2]];action='dig';angle=Math.atan2(fp[0],fp[2]);pPos=[fp[0],0.1,fp[2]];pType='concrete';pActive=true;
+    }
+    else if(tid.startsWith('install_turbine')){
+      const fi=fieldTurbineIdx;const fps=[[-25,0,-20],[25,0,-18],[-22,0,22]];
+      const fp=fps[Math.min(fi,2)];pos=[fp[0]+3,0,fp[2]];action='install';angle=Math.atan2(-fp[0],-fp[2]);
+    }
+    else if(tid==='connect_grid'){pos=[0,0,-5];action='install';angle=Math.PI;pPos=[0,0.1,-5];pType='sparks';pActive=true;}
+    else if(tid==='wind_test'){pos=[0,0,10];action='observe';angle=0;}
+    else if(tid==='weather_scenarios'){pos=[0,0,10];action='observe';angle=0;}
+    else if(tid==='combined_solar_wind'){pos=[0,0,10];action='observe';angle=0;}
+    else if(tid==='night_mode'){pos=[0,0,10];action='observe';angle=0;}
+    else if(tid==='storm_mode'){pos=[0,0,10];action='observe';angle=0;}
+  }
+  return {pos,action,angle,pPos,pType,pActive};
+},[segPhase,segId,task,taskIdx,debrisCleared.length,soilScanned,trees.length,panelsPlaced,fieldTurbineIdx]);
 
 // Shared scene props
 const sceneProps={segment:segId,trees,plantSpots:GARDEN_TREE_SPOTS,currentSpot,co2Active:trees.some(t=>t.absorbing),greenLevel,
-  panelsPlaced,panelAngle,sunProgress,energyFlowing,turbineInstalled,windSpeed,
+  panelsPlaced,panelAngle,sunProgress,energyFlowing,windSpeed,
   treesComplete:completedSegs.trees,solarComplete:completedSegs.solar,
-  debrisCleared,hotspots:ENV_HOTSPOTS,activeHotspot:segId==='trees'&&task?.id==='survey'?activeHotspot:-1,
-  fieldTurbines,batteryCharge,batteryActive};
+  debrisCleared,hotspots:ENV_HOTSPOTS,activeHotspot:(segId==='trees'&&(task?.id==='survey'||task?.id==='analyze_soil'))?activeHotspot:-1,
+  fieldTurbines,batteryCharge,batteryActive,wiringVisible,inverterInstalled,
+  // Character & animation
+  characterPos:charState.pos,characterAction:charState.action,characterAngle:charState.angle,
+  particlePos:charState.pPos,particleType:charState.pType,particlesActive:charState.pActive,
+  showLadder:segId==='solar'&&segPhase==='playing',
+  showVehicle:segId==='wind'&&segPhase==='playing',
+  vehicleArriving:segId==='wind'&&task?.id==='prepare_foundation',
+  showWorkers:segId==='wind'&&segPhase==='playing'&&(task?.id?.startsWith('install_turbine')||task?.id==='connect_grid'),
+  irrigationVisible:segId==='trees'&&trees.length>0&&(task?.id==='setup_irrigation'||task?.id==='water_trees'||task?.id?.startsWith('observe_growth')||task?.id==='measure_results'),
+};
 
 // ═══ INTRO — Cinematic drone shot + dialogue ═══
 if(phase==='intro'){
@@ -278,10 +416,16 @@ if(phase==='segments'&&(segPhase==='playing'||segPhase==='data')){
       </div>
     )}
 
+    {/* Teacher speech bubble */}
+    {teacherLine&&(<div className="l3p2-teacher-bubble"><span className="l3p2-teacher-emoji">🧑‍🏫</span><span className="l3p2-teacher-text">{teacherLine}</span></div>)}
+
     {/* Interact prompt */}
-    {segPhase==='playing'&&task&&!task.auto&&!showOrient&&(
+    {segPhase==='playing'&&task&&!task.auto&&!showOrient&&!showScanner&&!showTreeAnalysis&&!showPanelSelect&&!showTurbineSelect&&!showWeather&&(
       <div className="l3p2-prompt">Press <span className="l3p2-key">E</span> {task.instruction}</div>
     )}
+
+    {/* Auto-task progress timer */}
+    {segPhase==='playing'&&task&&task.auto&&(<div className="l3p2-progress-timer"><div className="l3p2-progress-fill" style={{animationDuration:`${task.autoDur||6000}ms`}}/></div>)}
 
     {/* Wind speed meter — dark theme */}
     {segId==='wind'&&turbineInstalled&&segPhase==='playing'&&(
@@ -352,6 +496,63 @@ if(phase==='segments'&&(segPhase==='playing'||segPhase==='data')){
     )}
 
     {/* Energy Scanner */}
+    {/* Panel Type Selection */}
+    {showPanelSelect&&(
+      <div className="l3p2-orient-overlay"><div className="l3p2-orient-card" style={{maxWidth:500}}>
+        <div className="l3p2-orient-title">⚡ Choose Panel Type</div>
+        <div style={{display:'flex',gap:12,margin:'16px 0'}}>
+          {PANEL_TYPES.map((pt,i)=>(
+            <div key={pt.id} className="l3p2-tree-option" style={{'--tc':pt.color,flex:1,cursor:'pointer'}} onClick={()=>{setShowPanelSelect(false);playCorrect();showFB(`${pt.name} selected — ${pt.efficiency} efficiency!`,'success');advanceTask();}}>
+              <div style={{fontSize:32}}>{pt.icon}</div>
+              <div style={{fontWeight:700,color:'#fff',fontSize:14}}>{pt.name}</div>
+              <div style={{fontSize:12,color:'#aaa'}}>{pt.efficiency} efficient</div>
+              <div style={{fontSize:11,color:'#888',marginTop:4}}>{pt.description}</div>
+              <div style={{fontSize:12,color:pt.color,fontWeight:600,marginTop:6}}>Cost: {pt.cost}</div>
+            </div>
+          ))}
+        </div>
+      </div></div>
+    )}
+
+    {/* Turbine Type Selection */}
+    {showTurbineSelect&&(
+      <div className="l3p2-orient-overlay"><div className="l3p2-orient-card" style={{maxWidth:500}}>
+        <div className="l3p2-orient-title">⚙️ Choose Turbine Type</div>
+        <div style={{display:'flex',gap:12,margin:'16px 0'}}>
+          {TURBINE_TYPES.map((tt)=>(
+            <div key={tt.id} className={`l3p2-tree-option ${tt.recommended?'selected':''}`} style={{'--tc':'#3b82f6',flex:1,cursor:'pointer'}} onClick={()=>{setShowTurbineSelect(false);playCorrect();showFB(`${tt.name} selected!`,'success');advanceTask();}}>
+              <div style={{fontSize:32}}>{tt.icon}</div>
+              <div style={{fontWeight:700,color:'#fff',fontSize:14}}>{tt.name}</div>
+              <div style={{fontSize:12,color:'#aaa'}}>Efficiency: {tt.efficiency}</div>
+              <div style={{fontSize:11,color:'#888',marginTop:4}}>{tt.description}</div>
+              {tt.recommended&&<div style={{fontSize:11,color:'#4ade80',fontWeight:700,marginTop:4}}>✓ RECOMMENDED</div>}
+            </div>
+          ))}
+        </div>
+      </div></div>
+    )}
+
+    {/* Weather Scenarios */}
+    {showWeather&&(
+      <div className="l3p2-orient-overlay"><div className="l3p2-orient-card" style={{maxWidth:520}}>
+        <div className="l3p2-orient-title">🌤️ Weather Scenarios</div>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:10,margin:'16px 0'}}>
+          {WEATHER_SCENARIOS.map((ws)=>(
+            <div key={ws.id} className="l3p2-tree-option" style={{'--tc':ws.skyColor,cursor:'pointer',padding:12}} onClick={()=>{setWeatherIdx(WEATHER_SCENARIOS.indexOf(ws));playAction();}}>
+              <div style={{fontSize:28}}>{ws.icon}</div>
+              <div style={{fontWeight:700,color:'#fff',fontSize:13}}>{ws.label}</div>
+              <div style={{display:'flex',gap:8,marginTop:6,fontSize:11}}>
+                <span style={{color:'#fbbf24'}}>☀️{ws.solarOutput}%</span>
+                <span style={{color:'#60a5fa'}}>🌬️{ws.windOutput}%</span>
+              </div>
+              <div style={{fontSize:10,color:'#888',marginTop:4}}>{ws.learning}</div>
+            </div>
+          ))}
+        </div>
+        <button className="l3p2-orient-confirm" style={{background:'linear-gradient(135deg,#3b82f6,#2563eb)'}} onClick={()=>{setShowWeather(false);showFB(task.feedback,'success');playSuccess();advanceTask();}}>Complete Weather Analysis →</button>
+      </div></div>
+    )}
+
     {showScanner&&(
       <div className="l3p2-orient-overlay">
         <div className="l3p2-scanner-card">
@@ -414,19 +615,6 @@ if(phase==='segments'&&(segPhase==='playing'||segPhase==='data')){
     {/* Feedback Toast */}
     {feedback&&(<div className={`l3p2-feedback ${feedback.type}`}>{feedback.text}</div>)}
 
-    {/* Multi-tree prompt — dark */}
-    {segId==='trees'&&segPhase==='playing'&&taskIdx>=tasks.length-1&&trees.length<TOTAL_TREES_TO_PLANT&&(
-      <div style={{position:'absolute',bottom:20,left:'50%',transform:'translateX(-50%)',zIndex:25,
-        background:'rgba(34,197,94,0.15)',border:'2px solid rgba(34,197,94,0.4)',borderRadius:14,
-        padding:'12px 24px',color:'#86efac',fontWeight:700,fontSize:15,textAlign:'center',backdropFilter:'blur(8px)'}}>
-        🌳 {trees.length}/{TOTAL_TREES_TO_PLANT} trees planted
-        <button onClick={handlePlantMore} style={{display:'block',marginTop:8,background:'#22c55e',
-          border:'none',color:'#000',padding:'8px 20px',borderRadius:8,fontWeight:700,cursor:'pointer',
-          fontFamily:"'Fredoka',sans-serif",width:'100%'}}>
-          Plant Next Tree →
-        </button>
-      </div>
-    )}
   </div>);
 }
 
