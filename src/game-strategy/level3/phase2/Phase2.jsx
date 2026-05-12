@@ -71,9 +71,9 @@ const segColor=SEGMENTS[segIdx]?.color||'#22c55e';
 const tasks=segId==='trees'?TREE_TASKS:segId==='solar'?SOLAR_TASKS:WIND_TASKS;
 const task=tasks[taskIdx];
 
-const showFB=useCallback((t,type='info',dur=3000)=>{
+const showFB=useCallback((t,type='info',dur=6000)=>{
   setFeedback({text:t,type});setTimeout(()=>setFeedback(null),dur);
-},[]);
+},[]); 
 
 const greenLevel=useMemo(()=>Math.min(1,trees.filter(t=>t.growth>=3).length/TOTAL_TREES_TO_PLANT),[trees]);
 
@@ -105,13 +105,77 @@ useEffect(()=>{
   run();return()=>clearTimeout(autoTimerRef.current);
 },[turbineInstalled,segPhase]);
 
-// Growth animation for observe_growth tasks
+// Growth animation + CO2 reduction for observe_growth tasks
 useEffect(()=>{
   if(segId!=='trees'||segPhase!=='playing'||!task)return;
-  if(task.id==='observe_growth_y1'){setTrees(p=>p.map(t=>({...t,growth:Math.min(2,t.growth+1)})));}
-  if(task.id==='observe_growth_y5'){setTrees(p=>p.map(t=>({...t,growth:3})));}
-  if(task.id==='observe_growth_y10'){setTrees(p=>p.map(t=>({...t,growth:4,absorbing:true})));}
+  if(task.id==='observe_growth_y1'){setTrees(p=>p.map(t=>({...t,growth:Math.min(2,t.growth+1)})));setCo2(prev=>Math.max(75,prev-5));}
+  if(task.id==='observe_growth_y5'){setTrees(p=>p.map(t=>({...t,growth:3})));setCo2(prev=>Math.max(75,prev-10));}
+  if(task.id==='observe_growth_y10'){setTrees(p=>p.map(t=>({...t,growth:4,absorbing:true})));setCo2(75);}
 },[taskIdx,segPhase]);
+
+// Auto-trigger ladder walk tasks (no Press E needed — simulates WASD movement)
+useEffect(()=>{
+  if(segPhase!=='playing'||!task||segId!=='solar')return;
+  if(task.id==='fetch_ladder'){
+    playAction();
+    showFB('🚶 Arjun is walking to the storage room to get the ladder...','info',4000);
+    if(autoTimerRef.current)clearTimeout(autoTimerRef.current);
+    autoTimerRef.current=setTimeout(()=>{
+      showFB('✅ Arjun found the ladder and picked it up!','success',5000);
+      advanceTask();
+    },3500);
+  }
+  else if(task.id==='carry_ladder_out'){
+    playAction();
+    showFB('🚶 Arjun is carrying the ladder to the house wall...','info',4000);
+    if(autoTimerRef.current)clearTimeout(autoTimerRef.current);
+    autoTimerRef.current=setTimeout(()=>{
+      setLadderFetched(true);setClimbStep(0);
+      showFB('✅ Ladder placed securely against the wall at safe 75° angle!','success',5000);
+      advanceTask();
+    },4500);
+  }
+  else if(task.id==='climb_roof'){
+    // Auto-climb: 3 steps at 2s intervals
+    let step=0;
+    const doStep=()=>{
+      step++;
+      setClimbStep(step);
+      playInstall();
+      if(step>=3){
+        setArjunOnRoof(true);
+        showFB('✅ Arjun has reached the rooftop safely!','success',5000);
+        setTimeout(()=>advanceTask(),1500);
+      }else{
+        const msgs=['🧗 Arjun grips the rungs and starts climbing... (step 1/3)','🧗 Halfway up! Maintaining 3 points of contact (step 2/3)','🧗 Almost at the top!'];
+        showFB(msgs[step-1],'info',2500);
+        autoTimerRef.current=setTimeout(doStep,2000);
+      }
+    };
+    showFB('🧗 Arjun begins climbing the ladder...','info',2000);
+    autoTimerRef.current=setTimeout(doStep,1800);
+  }
+  else if(task.id==='climb_down'){
+    // Auto-descend: 3 steps
+    let step=3;
+    const doStep=()=>{
+      step--;
+      setClimbStep(step);
+      playInstall();
+      if(step<=0){
+        setArjunOnRoof(false);
+        showFB('✅ Arjun is safely back on the ground!','success',5000);
+        setTimeout(()=>advanceTask(),1500);
+      }else{
+        showFB(`🧗 Climbing down carefully... (step ${3-step}/3)`,'info',2500);
+        autoTimerRef.current=setTimeout(doStep,2000);
+      }
+    };
+    showFB('🧗 Arjun begins climbing down from the roof...','info',2000);
+    autoTimerRef.current=setTimeout(doStep,1800);
+  }
+  return ()=>{if(autoTimerRef.current)clearTimeout(autoTimerRef.current);};
+},[taskIdx,segPhase,segId]);
 
 function advanceTask(){
   const next=taskIdx+1;
@@ -134,16 +198,16 @@ function handleInteract(){
       playSweep();
       setDebrisCleared(p=>{
         const next=[...p,p.length];
-        if(next.length>=DEBRIS_POSITIONS.length){showFB(task.feedback,'success');advanceTask();}
-        else showFB(`Cleared ${next.length}/${DEBRIS_POSITIONS.length} debris piles`,'info');
+        if(next.length>=DEBRIS_POSITIONS.length){showFB(task.feedback,'success',8000);advanceTask();}
+        else showFB(`Cleared ${next.length}/${DEBRIS_POSITIONS.length} debris piles`,'success',8000);
         return next;
       });
     }
     else if(task.id==='analyze_soil'){
       setSoilScanned(p=>{
         const n=p+1;
-        if(n>=ENV_HOTSPOTS.length){showFB(task.feedback,'success');advanceTask();}
-        else{setActiveHotspot(n);showFB(ENV_HOTSPOTS[n]?.detail||'Scanning...','info');}
+        if(n>=ENV_HOTSPOTS.length){showFB(task.feedback,'success',8000);advanceTask();}
+        else{setActiveHotspot(n);showFB('🔬 '+ENV_HOTSPOTS[n]?.detail||'Scanning...','success',8000);}
         return n;
       });
     }
@@ -154,6 +218,8 @@ function handleInteract(){
       const pos=GARDEN_TREE_SPOTS[idx]||GARDEN_TREE_SPOTS[0];
       setSeedsPlanted(p=>[...p,idx]);
       setTrees(p=>[...p,{pos,growth:1,absorbing:false}]);
+      // Reduce CO2 incrementally as trees are planted
+      setCo2(prev=>Math.max(75, prev - 5));
       showFB(task.feedback,'success');advanceTask();
     }
     else if(task.id==='setup_irrigation'){playInstall();showFB(task.feedback,'success');advanceTask();}
@@ -163,33 +229,9 @@ function handleInteract(){
     if(task.id==='assess_roof'){showFB(task.feedback,'success');advanceTask();}
     else if(task.id==='energy_scan'){setShowScanner(true);}
     else if(task.id==='choose_panel_type'){setShowPanelSelect(true);}
-    // Multi-step ladder: fetch → carry → climb (3 steps) → on roof
-    else if(task.id==='fetch_ladder'){
-      playAction();
-      showFB('Arjun found the ladder inside the house!','success');
-      advanceTask();
-    }
-    else if(task.id==='carry_ladder_out'){
-      playAction();setLadderFetched(true);setClimbStep(0);
-      showFB('Ladder placed securely against the house wall!','success');
-      advanceTask();
-    }
-    else if(task.id==='climb_roof'){
-      // Multi-step: press E 3 times to climb — bottom → mid → top → on roof
-      playInstall();
-      setClimbStep(prev=>{
-        const next=prev+1;
-        if(next>=3){
-          setArjunOnRoof(true);
-          showFB(task.feedback,'success');
-          advanceTask();
-          return 3;
-        }else{
-          const msgs=['Climbing... grip the rungs! (step 1/3)','Halfway up! Keep climbing! (step 2/3)','Almost there! One more step!'];
-          showFB(msgs[next-1]||'Climbing...','info');
-          return next;
-        }
-      });
+    // Ladder tasks are now auto-triggered (see useEffect above) — pressing E is a no-op
+    else if(['fetch_ladder','carry_ladder_out','climb_roof','climb_down'].includes(task.id)){
+      return; // handled by auto-trigger useEffect
     }
     else if(task.id==='install_mounting'){playInstall();showFB(task.feedback,'success');advanceTask();}
     else if(task.id.startsWith('place_panel')){
@@ -204,23 +246,6 @@ function handleInteract(){
     else if(task.id==='solar_mode'){setPowerMode('solar');showFB(task.feedback,'success');advanceTask();}
     else if(task.id==='install_battery'){playInstall();setBatteryActive(true);setInverterInstalled(true);showFB(task.feedback,'success');advanceTask();}
     else if(task.id==='peak_hour'){setBatteryActive(true);showFB(task.feedback,'success');advanceTask();}
-    else if(task.id==='climb_down'){
-      // Multi-step climb down: 3 presses
-      playAction();
-      setClimbStep(prev=>{
-        const next=prev-1;
-        if(next<=0){
-          setArjunOnRoof(false);setClimbStep(0);
-          showFB(task.feedback,'success');
-          advanceTask();
-          return 0;
-        }else{
-          const msgs=['Climbing down carefully... (step 1/3)','Almost at the bottom... (step 2/3)'];
-          showFB(msgs[3-next-1]||'Climbing down...','info');
-          return next;
-        }
-      });
-    }
   }else if(segId==='wind'){
     if(task.id==='field_survey'){showFB(task.feedback,'success');advanceTask();}
     else if(task.id==='wind_analysis'){showFB(task.feedback,'success');advanceTask();}
@@ -354,22 +379,22 @@ const charState=useMemo(()=>{
     }
     else if(tid==='calculate_load'){pos=[0,0,-14];action='observe';angle=Math.PI;cam={target:[0,3,0],offset:[0,8,18]};}
     else if(tid==='choose_panel_type'){pos=[0,0,-14];action='observe';angle=Math.PI;cam={target:[0,3,0],offset:[0,8,18]};}
-    // Ladder tasks — Arjun goes to storage → carries ladder to wall → climbs
+    // Ladder tasks — camera OUTSIDE house, far left, looking at wall+ladder
     else if(tid==='fetch_ladder'){
-      // Arjun walks to side of house where storage is
+      // Camera far outside left side of house, looking at storage area
       pos=[-6,0,-10];action='walk';angle=Math.PI*0.7;
-      cam={target:[-6,1.5,-10],offset:[6,4,8]};
+      cam={target:[-6,1,-8],offset:[-12,3,8]};
     }
     else if(tid==='carry_ladder_out'){
-      // Arjun carries ladder to the house wall exterior
+      // Camera outside left wall, watching Arjun carry ladder
       pos=[-10.5,0,-3];action='walk';angle=0;
-      cam={target:[-10.5,2,-3],offset:[8,5,8]};
+      cam={target:[-10.5,1.5,-3],offset:[-10,3,8]};
     }
     else if(tid==='climb_roof'){
-      // Multi-step climb: position moves up the ladder
+      // Camera outside left, slightly elevated to watch climbing
       const climbY=climbStep*1.1;
       pos=[-10.5,climbY,-3];action='climb';angle=Math.PI;
-      cam={target:[-10.5,climbY+1,-3],offset:[6,3,6]};
+      cam={target:[-10.5,climbY+1.5,-3],offset:[-10,3,8]};
     }
     else if(tid==='install_mounting'){
       pos=[-5,3.3,-4];action='install';angle=0;pPos=[-5,3.4,-4];pType='sparks';pActive=true;
@@ -400,9 +425,10 @@ const charState=useMemo(()=>{
       cam={target:[11,1.5,0],offset:[6,4,6]};
     }
     else if(tid==='climb_down'){
+      // Camera outside left, watching Arjun descend
       const climbY=Math.max(0,(2-climbStep)*1.1);
       pos=[-10.5,climbY,-3];action='climb';angle=0;
-      cam={target:[-10.5,climbY+1,-3],offset:[6,3,6]};
+      cam={target:[-10.5,climbY+1.5,-3],offset:[-10,3,8]};
     }
   }else if(segId==='wind'){
     // Wind cameras focus on the OPEN FIELD far from house
@@ -552,13 +578,16 @@ if(phase==='segments'&&(segPhase==='playing'||segPhase==='data')){
     {/* Teacher speech bubble */}
     {teacherLine&&(<div className="l3p2-teacher-bubble"><span className="l3p2-teacher-emoji">🧑‍🏫</span><span className="l3p2-teacher-text">{teacherLine}</span></div>)}
 
-    {/* Interact prompt */}
-    {segPhase==='playing'&&task&&!task.auto&&!showOrient&&!showScanner&&!showTreeAnalysis&&!showPanelSelect&&!showTurbineSelect&&!showWeather&&(
-      <div className="l3p2-prompt">Press <span className="l3p2-key">E</span> {
-        task.id==='climb_roof'?`Climb the ladder (step ${climbStep+1}/3)`:
-        task.id==='climb_down'?`Climb down safely (step ${4-climbStep}/3)`:
-        task.instruction
-      }</div>
+    {/* Ladder walking progress — auto-advancing */}
+    {segPhase==='playing'&&task&&['fetch_ladder','carry_ladder_out'].includes(task.id)&&(
+      <div className="l3p2-walk-progress">
+        <div className="l3p2-walk-label">🚶 {task.id==='fetch_ladder'?'Arjun is walking to get the ladder...':'Arjun is carrying the ladder outside...'}</div>
+        <div className="l3p2-progress-timer"><div className="l3p2-progress-fill" style={{animationDuration:task.id==='fetch_ladder'?'3000ms':'4000ms'}}/></div>
+      </div>
+    )}
+    {segPhase==='playing'&&task&&!task.auto&&!showOrient&&!showScanner&&!showTreeAnalysis&&!showPanelSelect&&!showTurbineSelect&&!showWeather&&
+      !['fetch_ladder','carry_ladder_out','climb_roof','climb_down'].includes(task.id)&&(
+      <div className="l3p2-prompt">Press <span className="l3p2-key">E</span> {task.instruction}</div>
     )}
 
     {/* Auto-task progress timer */}

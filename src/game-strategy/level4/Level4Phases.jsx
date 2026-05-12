@@ -1,8 +1,4 @@
-// ═══════════════════════════════════════════════════════════
-//  LEVEL 4 — New Phase Components (Phases 2-10)
-//  Phase 1 (Install) stays in Level4.jsx
-// ═══════════════════════════════════════════════════════════
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
   L4_ICONS, ENERGY_FLOW_STEPS, BATTERY_CAPACITY_KWH,
   TIME_PERIODS, SCHEDULABLE_APPLIANCES, TARIFF_NORMAL, TARIFF_PEAK, PEAK_HOURS,
@@ -11,13 +7,32 @@ import {
   calcPeakSavings,
 } from './level4Data';
 
+// ─── Shared Audio ───
+let _ac=null;
+function getAC(){if(!_ac)_ac=new(window.AudioContext||window.webkitAudioContext)();return _ac;}
+function playPhaseSound(type){try{const c=getAC(),o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);g.gain.value=0.07;
+  if(type==='start'){o.type='triangle';o.frequency.setValueAtTime(523,c.currentTime);o.frequency.setValueAtTime(659,c.currentTime+0.1);o.frequency.setValueAtTime(784,c.currentTime+0.2);g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+0.5);}
+  else if(type==='click'){o.type='sine';o.frequency.setValueAtTime(600,c.currentTime);g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+0.15);}
+  else if(type==='done'){o.type='triangle';[523,659,784,1047].forEach((f,i)=>{o.frequency.setValueAtTime(f,c.currentTime+i*0.12);});g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+0.6);}
+  else if(type==='learn'){o.type='sine';o.frequency.setValueAtTime(880,c.currentTime);o.frequency.exponentialRampToValueAtTime(1200,c.currentTime+0.15);g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+0.3);}
+  else{o.type='sine';o.frequency.setValueAtTime(440,c.currentTime);g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+0.2);}
+  o.start();o.stop(c.currentTime+1);}catch(e){}}
+
+// ─── Animated Counter ───
+function AnimCount({value,suffix='',prefix='',duration=800}){
+  const[disp,setDisp]=useState(0);const ref=useRef(null);
+  useEffect(()=>{let cur=0;const step=()=>{const d=value-cur;if(Math.abs(d)<1){setDisp(value);return;}cur+=d*0.15;setDisp(Math.round(cur));ref.current=requestAnimationFrame(step);};ref.current=requestAnimationFrame(step);return()=>{if(ref.current)cancelAnimationFrame(ref.current);};},[value]);
+  return <span>{prefix}{typeof disp==='number'?disp.toLocaleString():disp}{suffix}</span>;
+}
+
 // ─── Shared Phase Wrapper ───
 function PhaseWrap({ title, icon, children, onComplete, btnLabel='Continue →' }) {
+  useEffect(()=>{playPhaseSound('start');},[]);
   return (
     <div className="l4-phase-wrap">
       <div className="l4-phase-header"><span className="l4-phase-icon">{icon}</span><span>{title}</span></div>
       <div className="l4-phase-body">{children}</div>
-      {onComplete && <button className="l4-modal-btn green" onClick={onComplete}>{btnLabel}</button>}
+      {onComplete && <button className="l4-modal-btn green" onClick={()=>{playPhaseSound('done');onComplete();}}>{btnLabel}</button>}
     </div>
   );
 }
@@ -58,7 +73,7 @@ export function EnergyFlowPhase({ solarW, onComplete }) {
           <button className="l4-modal-btn" onClick={() => setStep(p => Math.min(p + 1, ENERGY_FLOW_STEPS.length - 1))}>Next Step →</button>
         </div>
       )}
-      <div className="l4-phase-learning">{L4_ICONS.bulb} Solar panels convert DC → AC via inverter. Excess goes to battery. Grid is only backup.</div>
+      <div className="l4-phase-learning">{L4_ICONS.bulb} In India, a 1kW panel generates ~4.5 kWh/day (1,600 kWh/year). Panels produce DC → inverter converts to AC → powers your home. Excess goes to battery or grid via net metering (MNRE policy). Grid is only backup!</div>
     </PhaseWrap>
   );
 }
@@ -110,7 +125,7 @@ export function BatteryPhase({ solarW, houseW, onComplete }) {
         <div><span>{L4_ICONS.house}</span> House: {houseW}W</div>
         <div><span>{excess > 0 ? '📥' : '📤'}</span> {excess > 0 ? `Excess: ${excess}W` : `Need: ${deficit}W`}</div>
       </div>
-      <div className="l4-phase-learning">{L4_ICONS.bulb} Charge at noon (peak solar), use at night. A 10kWh battery powers a home for 6-8 hours!</div>
+      <div className="l4-phase-learning">{L4_ICONS.bulb} Lithium-ion batteries (like Tesla Powerwall) store excess solar. In India, a 10kWh battery costs ₹4-6 lakh but saves ₹15,000+/year. Charge at 10AM-3PM (peak solar), use at 6PM-6AM. MNRE offers 40% subsidy on residential solar+battery!</div>
     </PhaseWrap>
   );
 }
@@ -124,7 +139,7 @@ export function PeakHourPhase({ onComplete }) {
   const savings = calcPeakSavings(shiftedIds);
   const allDecided = shiftable.every(a => scheduled[a.id]);
 
-  const toggle = id => setScheduled(p => ({ ...p, [id]: p[id] === 'solar' ? 'peak' : 'solar' }));
+  const toggle = id => {playPhaseSound('click');setScheduled(p => ({ ...p, [id]: p[id] === 'solar' ? 'peak' : 'solar' }));};
 
   return (
     <PhaseWrap title="Peak Hour Management" icon={L4_ICONS.chart} onComplete={allDecided ? onComplete : null}>
@@ -149,7 +164,7 @@ export function PeakHourPhase({ onComplete }) {
         <span key={a.id} className="l4-peak-fixed-item">{a.icon} {a.name}</span>
       ))}</div>
       {savings > 0 && <div className="l4-peak-savings">{L4_ICONS.money} Monthly savings: ₹{savings} by shifting to solar hours!</div>}
-      <div className="l4-phase-learning">{L4_ICONS.bulb} Run washing, EV charging, and geysers during noon = free solar power!</div>
+      <div className="l4-phase-learning">{L4_ICONS.bulb} Indian electricity uses slab pricing: ₹3-8/unit depending on usage. Peak hours (6-10 PM) cost most. By shifting washing machine (2000W), geyser (3000W), and EV charging to solar hours (10AM-3PM), you use FREE solar power and save ₹800-1,500/month!</div>
     </PhaseWrap>
   );
 }
@@ -190,7 +205,7 @@ export function SmartCoolingPhase({ onComplete }) {
           </div>
         ))}
       </div>
-      <div className="l4-phase-learning">{L4_ICONS.bulb} Cool roof + insulation + fan = {COOLING_DATA.comfortTemp}°C comfort at only {COOLING_DATA.fanWatts}W vs {COOLING_DATA.acWatts}W AC!</div>
+      <div className="l4-phase-learning">{L4_ICONS.bulb} ECBC 2017 says 24±1°C is ideal comfort. Cool roof (white coating) reflects 70% sunlight, reducing indoor temp by 3-5°C. Combined with insulation + ceiling fan ({COOLING_DATA.fanWatts}W), you avoid running AC ({COOLING_DATA.acWatts}W) — saving 80% cooling energy!</div>
     </PhaseWrap>
   );
 }
@@ -202,7 +217,7 @@ export function AutomationPhase({ onComplete }) {
   const installed = sensors.filter(s => s.installed).length;
   const totalSavings = sensors.filter(s => s.installed).reduce((s, r) => s + r.savings, 0);
 
-  const installSensor = id => setSensors(p => p.map(s => s.id === id ? { ...s, installed: true } : s));
+  const installSensor = id => {playPhaseSound('click');setSensors(p => p.map(s => s.id === id ? { ...s, installed: true } : s));};
 
   return (
     <PhaseWrap title="Smart Automation" icon="🤖" onComplete={installed >= 3 ? onComplete : null}>
@@ -230,7 +245,7 @@ export function AutomationPhase({ onComplete }) {
       <div className="l4-auto-savings">
         <span>{L4_ICONS.check}</span> {installed}/4 sensors installed — {totalSavings}% energy saved
       </div>
-      <div className="l4-phase-learning">{L4_ICONS.bulb} Occupancy sensors save 15-25% energy by eliminating waste in empty rooms!</div>
+      <div className="l4-phase-learning">{L4_ICONS.bulb} PIR (Passive Infrared) occupancy sensors cost ₹300-800 each and save 15-25% energy. BIS IS 17323 recommends auto-off within 15 minutes of room vacancy. Installing in 4 rooms saves ~₹500/month on wasted lighting and fan energy!</div>
     </PhaseWrap>
   );
 }
@@ -269,7 +284,7 @@ export function EVChargingPhase({ onComplete }) {
             : `⚠️ Grid charging costs ₹${EV_DATA.gridCost} and generates CO₂. Try solar!`}
         </div>
       )}
-      <div className="l4-phase-learning">{L4_ICONS.bulb} Solar EV charging = free fuel + zero pollution. Schedule charging 10 AM - 3 PM!</div>
+      <div className="l4-phase-learning">{L4_ICONS.bulb} India's FAME II policy promotes EVs. A Tata Nexon EV needs ~30 kWh for 300km range. Solar charging at home costs ₹0/km vs ₹1.5/km for grid. That's ₹45,000/year saved! Schedule charging 10AM-3PM when solar output peaks at 4-5 kWh/kW.</div>
     </PhaseWrap>
   );
 }
@@ -309,7 +324,7 @@ export function WeatherPhase({ solarW, batteryCharge, onComplete }) {
         )}
         {responded.includes(scenarioIdx) && <div className="l4-weather-done">✅ Adapted!</div>}
       </div>
-      <div className="l4-phase-learning">{L4_ICONS.bulb} Smart homes adapt to weather: sunny = charge, cloudy = conserve, rain = battery mode!</div>
+      <div className="l4-phase-learning">{L4_ICONS.bulb} India gets 300+ sunny days/year, but monsoon (Jun-Sep) reduces output by 30-50%. Smart homes auto-switch: sunny → charge battery + export to grid, cloudy → reduce non-essential loads, rain/night → battery mode. IMD weather data helps predict solar output 24hrs ahead!</div>
     </PhaseWrap>
   );
 }
@@ -326,7 +341,7 @@ export function DashboardPhase({ metrics, onComplete }) {
         {DASHBOARD_METRICS.map((m, i) => (
           <div key={m.id} className={`l4-dash-card ${animated ? 'show' : ''}`} style={{ '--delay': `${i * 0.15}s`, '--card-color': m.color }}>
             <div className="l4-dash-icon">{m.icon}</div>
-            <div className="l4-dash-value">{metrics[m.id] || 0}</div>
+            <div className="l4-dash-value"><AnimCount value={Number(metrics[m.id]) || 0}/></div>
             <div className="l4-dash-unit">{m.unit}</div>
             <div className="l4-dash-label">{m.label}</div>
           </div>
@@ -335,7 +350,7 @@ export function DashboardPhase({ metrics, onComplete }) {
       <div className="l4-dash-summary">
         {L4_ICONS.sparkle} You're saving the planet one kilowatt at a time!
       </div>
-      <div className="l4-phase-learning">{L4_ICONS.bulb} Small changes × millions of homes = massive environmental impact!</div>
+      <div className="l4-phase-learning">{L4_ICONS.bulb} India's National Solar Mission targets 100 GW by 2026. A single 5kW home system prevents 7,500 kg CO₂/year (= 340 trees). If 10 million homes adopt solar, India saves 75 billion kg CO₂/year — equal to taking 16 million cars off the road!</div>
     </PhaseWrap>
   );
 }
