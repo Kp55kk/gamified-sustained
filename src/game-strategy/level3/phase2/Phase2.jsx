@@ -60,6 +60,7 @@ const[diggingHoles,setDiggingHoles]=useState([]);
 const[seedsPlanted,setSeedsPlanted]=useState([]);
 const[ladderFetched,setLadderFetched]=useState(false);
 const[arjunOnRoof,setArjunOnRoof]=useState(false);
+const[climbStep,setClimbStep]=useState(0); // 0=ground, 1=lower, 2=mid, 3=top → on roof
 const autoTimerRef=useRef(null);
 const teacherTimerRef=useRef(null);
 const handleInteractRef=useRef(null);
@@ -162,17 +163,64 @@ function handleInteract(){
     if(task.id==='assess_roof'){showFB(task.feedback,'success');advanceTask();}
     else if(task.id==='energy_scan'){setShowScanner(true);}
     else if(task.id==='choose_panel_type'){setShowPanelSelect(true);}
-    else if(task.id==='fetch_ladder'){playAction();showFB(task.feedback,'success');advanceTask();}
-    else if(task.id==='carry_ladder_out'){playAction();setLadderFetched(true);showFB(task.feedback,'success');advanceTask();}
-    else if(task.id==='climb_roof'){playAction();setArjunOnRoof(true);showFB(task.feedback,'success');advanceTask();}
+    // Multi-step ladder: fetch → carry → climb (3 steps) → on roof
+    else if(task.id==='fetch_ladder'){
+      playAction();
+      showFB('Arjun found the ladder inside the house!','success');
+      advanceTask();
+    }
+    else if(task.id==='carry_ladder_out'){
+      playAction();setLadderFetched(true);setClimbStep(0);
+      showFB('Ladder placed securely against the house wall!','success');
+      advanceTask();
+    }
+    else if(task.id==='climb_roof'){
+      // Multi-step: press E 3 times to climb — bottom → mid → top → on roof
+      playInstall();
+      setClimbStep(prev=>{
+        const next=prev+1;
+        if(next>=3){
+          setArjunOnRoof(true);
+          showFB(task.feedback,'success');
+          advanceTask();
+          return 3;
+        }else{
+          const msgs=['Climbing... grip the rungs! (step 1/3)','Halfway up! Keep climbing! (step 2/3)','Almost there! One more step!'];
+          showFB(msgs[next-1]||'Climbing...','info');
+          return next;
+        }
+      });
+    }
     else if(task.id==='install_mounting'){playInstall();showFB(task.feedback,'success');advanceTask();}
-    else if(task.id.startsWith('place_panel')){playInstall();setPanelsPlaced(p=>p+1);showFB(task.feedback,'success');advanceTask();}
+    else if(task.id.startsWith('place_panel')){
+      playInstall();
+      const panelNum=panelsPlaced+1;
+      setPanelsPlaced(p=>p+1);
+      showFB(`Panel ${panelNum} secured on the roof!`,'success');
+      advanceTask();
+    }
     else if(task.id==='wire_panels'){playWire();setWiringVisible(true);showFB(task.feedback,'success');advanceTask();}
     else if(task.id==='orient')setShowOrient(true);
     else if(task.id==='solar_mode'){setPowerMode('solar');showFB(task.feedback,'success');advanceTask();}
     else if(task.id==='install_battery'){playInstall();setBatteryActive(true);setInverterInstalled(true);showFB(task.feedback,'success');advanceTask();}
     else if(task.id==='peak_hour'){setBatteryActive(true);showFB(task.feedback,'success');advanceTask();}
-    else if(task.id==='climb_down'){playAction();setArjunOnRoof(false);showFB(task.feedback,'success');advanceTask();}
+    else if(task.id==='climb_down'){
+      // Multi-step climb down: 3 presses
+      playAction();
+      setClimbStep(prev=>{
+        const next=prev-1;
+        if(next<=0){
+          setArjunOnRoof(false);setClimbStep(0);
+          showFB(task.feedback,'success');
+          advanceTask();
+          return 0;
+        }else{
+          const msgs=['Climbing down carefully... (step 1/3)','Almost at the bottom... (step 2/3)'];
+          showFB(msgs[3-next-1]||'Climbing down...','info');
+          return next;
+        }
+      });
+    }
   }else if(segId==='wind'){
     if(task.id==='field_survey'){showFB(task.feedback,'success');advanceTask();}
     else if(task.id==='wind_analysis'){showFB(task.feedback,'success');advanceTask();}
@@ -208,8 +256,8 @@ function handleDataClose(){
   setSegsComplete(p=>p+1);
   setCompletedSegs(prev=>({...prev,[segId]:true}));
   setCo2(segId==='trees'?CO2_REDUCTION_LEVELS.afterTrees:segId==='solar'?CO2_REDUCTION_LEVELS.afterSolar:CO2_REDUCTION_LEVELS.afterWind);
-  if(nextSeg>=SEGMENTS.length){setPhase('transformation');setTransStep(0);setWiringVisible(false);setInverterInstalled(false);setLadderFetched(false);setArjunOnRoof(false);}
-  else{setWiringVisible(false);setInverterInstalled(false);setLadderFetched(false);setArjunOnRoof(false);setSegIdx(nextSeg);setTaskIdx(0);setSegPhase('intro');setPanelsPlaced(0);setPanelAngle(0);setOrientIdx(0);setSunProgress(0);setEnergyFlowing(false);setTurbineInstalled(false);setWindSpeed(0);setCurrentSpot(p=>p+1);setShowScanner(false);setScannedAppliances([]);setPowerMode('grid');setBatteryCharge(0);setBatteryActive(false);setFieldTurbineIdx(0);}
+  if(nextSeg>=SEGMENTS.length){setPhase('transformation');setTransStep(0);setWiringVisible(false);setInverterInstalled(false);setLadderFetched(false);setArjunOnRoof(false);setClimbStep(0);}
+  else{setWiringVisible(false);setInverterInstalled(false);setLadderFetched(false);setArjunOnRoof(false);setClimbStep(0);setSegIdx(nextSeg);setTaskIdx(0);setSegPhase('intro');setPanelsPlaced(0);setPanelAngle(0);setOrientIdx(0);setSunProgress(0);setEnergyFlowing(false);setTurbineInstalled(false);setWindSpeed(0);setCurrentSpot(p=>p+1);setShowScanner(false);setScannedAppliances([]);setPowerMode('grid');setBatteryCharge(0);setBatteryActive(false);setFieldTurbineIdx(0);}
 }
 
 function handlePlantMore(){
@@ -242,92 +290,146 @@ useEffect(()=>{
 },[]);
 
 // ─── Character animation + camera config (maps current task → position, action, camera) ───
+// ALL cameras now focus OUTSIDE the house — on garden, rooftop exterior, or open field
 const charState=useMemo(()=>{
-  const def={pos:[0,0,8],action:'idle',angle:0,pPos:[0,0,0],pType:'none',pActive:false,cam:{orbit:true}};
+  const def={pos:[0,0,14],action:'idle',angle:0,pPos:[0,0,0],pType:'none',pActive:false,cam:{orbit:true,orbitRadius:28,orbitHeight:12}};
   if(segPhase!=='playing'||!task) return def;
   const tid=task.id;
-  let pos=[0,0,8],action='idle',angle=0,pPos=[0,0,0],pType='none',pActive=false;
-  // cam: orbit=false → fixed camera focused on action; orbit=true → slow orbit
-  let cam={orbit:true};
+  let pos=[0,0,14],action='idle',angle=0,pPos=[0,0,0],pType='none',pActive=false;
+  let cam={orbit:true,orbitRadius:28,orbitHeight:12};
   if(segId==='trees'){
-    if(tid==='survey'){pos=[-5,0,4];action='scan';angle=0.5;cam={target:[-5,1,4],offset:[8,6,8]};}
+    // All tree cameras focus on the GARDEN area (outside the house walls)
+    if(tid==='survey'){
+      const h=ENV_HOTSPOTS[Math.min(activeHotspot,ENV_HOTSPOTS.length-1)];
+      const hPos=h?[h.pos[0],0,h.pos[2]]:[-14,0,-10];
+      pos=[hPos[0]+2,0,hPos[2]+2];action='scan';angle=Math.atan2(hPos[0],hPos[2]);
+      cam={target:[hPos[0],1,hPos[2]],offset:[8,6,10]};
+    }
     else if(tid==='clear_debris'){
       const dIdx=Math.min(debrisCleared.length,DEBRIS_POSITIONS.length-1);
       const dp=DEBRIS_POSITIONS[dIdx]||DEBRIS_POSITIONS[0];
-      pos=[dp[0],0,dp[2]];action='sweep';angle=Math.atan2(dp[0],dp[2]);pPos=[dp[0],0.1,dp[2]];pType='sweep';pActive=true;
-      cam={target:[dp[0],0.5,dp[2]],offset:[6,5,6]};
+      pos=[dp[0]+1,0,dp[2]+1];action='sweep';angle=Math.atan2(-1,-1);pPos=[dp[0],0.1,dp[2]];pType='sweep';pActive=true;
+      cam={target:[dp[0],0.5,dp[2]],offset:[5,4,7]};
     }
     else if(tid==='analyze_soil'){
       const h=ENV_HOTSPOTS[Math.min(soilScanned,ENV_HOTSPOTS.length-1)];
-      if(h)pos=[h.pos[0],0,h.pos[2]];action='scan';angle=0.3;
-      cam={target:[pos[0],1,pos[2]],offset:[6,5,6]};
+      const hPos=h?[h.pos[0],0,h.pos[2]]:[-14,0,-10];
+      pos=[hPos[0]+1.5,0,hPos[2]+1.5];action='scan';angle=Math.atan2(-1.5,-1.5);
+      cam={target:[hPos[0],1,hPos[2]],offset:[6,5,8]};
     }
-    else if(tid==='select_trees'){pos=[0,0,6];action='observe';angle=0;cam={orbit:true,orbitRadius:18,orbitHeight:8};}
+    else if(tid==='select_trees'){pos=[0,0,16];action='observe';angle=Math.PI;cam={orbit:true,orbitRadius:30,orbitHeight:12};}
     else if(tid==='dig_holes'){
       const sp=GARDEN_TREE_SPOTS[trees.length]||GARDEN_TREE_SPOTS[0];
-      pos=[sp[0],0,sp[2]];action='dig';angle=Math.atan2(sp[0],sp[2]);pPos=[sp[0],0.1,sp[2]];pType='dig';pActive=true;
-      // Close-up focused camera — character + hole visible
-      cam={target:[sp[0],0.3,sp[2]],offset:[3,3,4]};
+      pos=[sp[0]+1,0,sp[2]+1];action='dig';angle=Math.atan2(-1,-1);pPos=[sp[0],0.1,sp[2]];pType='dig';pActive=true;
+      cam={target:[sp[0],0.5,sp[2]],offset:[4,3,5]};
     }
     else if(tid.startsWith('plant_tree')){
       const sp=GARDEN_TREE_SPOTS[trees.length]||GARDEN_TREE_SPOTS[0];
-      pos=[sp[0],0,sp[2]];action='plant';angle=Math.atan2(sp[0],sp[2]);pPos=[sp[0],0.1,sp[2]];pType='dig';pActive=true;
-      // Close-up — see seeds going into hole
-      cam={target:[sp[0],0.3,sp[2]],offset:[3,2.5,3.5]};
+      pos=[sp[0]+1,0,sp[2]+1];action='plant';angle=Math.atan2(-1,-1);pPos=[sp[0],0.1,sp[2]];pType='dig';pActive=true;
+      cam={target:[sp[0],0.5,sp[2]],offset:[4,3,5]};
     }
-    else if(tid==='setup_irrigation'){pos=[-8,0,0];action='install';angle=1.0;cam={target:[-8,1,0],offset:[6,5,6]};}
+    else if(tid==='setup_irrigation'){
+      const sp=GARDEN_TREE_SPOTS[0];
+      pos=[sp[0]+2,0,sp[2]];action='install';angle=Math.atan2(-2,0);
+      cam={target:[sp[0],0.5,sp[2]],offset:[6,4,8]};
+    }
     else if(tid==='water_trees'){
       const sp=GARDEN_TREE_SPOTS[0];
-      pos=[sp[0]+1,0,sp[2]];action='water';angle=Math.atan2(sp[0],sp[2]);pPos=[sp[0],0.2,sp[2]];pType='water';pActive=true;
-      cam={target:[sp[0],1,sp[2]],offset:[5,4,5]};
+      pos=[sp[0]+1.5,0,sp[2]+1];action='water';angle=Math.atan2(-1.5,-1);pPos=[sp[0],0.2,sp[2]];pType='water';pActive=true;
+      cam={target:[sp[0],1,sp[2]],offset:[5,4,6]};
     }
-    else if(tid.startsWith('observe_growth')){pos=[0,0,8];action='observe';angle=0;cam={orbit:true,orbitRadius:22,orbitHeight:10};}
-    else if(tid==='measure_results'){pos=[0,0,6];action='scan';angle=0;cam={target:[0,2,6],offset:[8,6,8]};}
+    else if(tid.startsWith('observe_growth')){pos=[0,0,20];action='observe';angle=Math.PI;cam={orbit:true,orbitRadius:30,orbitHeight:14};}
+    else if(tid==='measure_results'){pos=[0,0,16];action='scan';angle=Math.PI;cam={target:[0,3,0],offset:[12,8,14]};}
   }else if(segId==='solar'){
-    if(tid==='assess_roof'){pos=[-12,0,-4];action='scan';angle=-1.5;cam={target:[-6,2,-4],offset:[8,8,8]};}
-    else if(tid==='energy_scan'){pos=[0,0,6];action='scan';angle=Math.PI;cam={target:[0,2,0],offset:[0,10,16]};}
-    else if(tid==='calculate_load'){pos=[0,0,6];action='observe';angle=Math.PI;cam={orbit:true,orbitRadius:18,orbitHeight:10};}
-    else if(tid==='choose_panel_type'){pos=[0,0,6];action='observe';angle=Math.PI;cam={target:[0,2,0],offset:[0,10,16]};}
-    // Ladder tasks — step by step
-    else if(tid==='fetch_ladder'){pos=[-4,0,0];action='walk';angle=-Math.PI/2;cam={target:[-4,1,0],offset:[6,4,6]};}
-    else if(tid==='carry_ladder_out'){pos=[-10,0,-3];action='walk';angle=-Math.PI/2;cam={target:[-10,1.5,-3],offset:[5,4,5]};}
-    else if(tid==='climb_roof'){pos=[-10.5,1.6,-3];action='climb';angle=Math.PI;cam={target:[-10.5,2,-3],offset:[5,3,5]};}
-    else if(tid==='install_mounting'){pos=[-5,3.3,-3];action='install';angle=0;pPos=[-5,3.4,-3];pType='sparks';pActive=true;cam={target:[-5,3.5,-3],offset:[4,3,4]};}
-    else if(tid.startsWith('place_panel')){
-      const pi=panelsPlaced;const pp=[[-5,3.35,-3],[-1.5,3.35,-3],[2,3.35,-3],[5.5,3.35,-3]];
-      const tp=pp[Math.min(pi,3)];pos=[tp[0],tp[1],tp[2]+0.5];action='install';angle=0;pPos=[tp[0],tp[1]+0.1,tp[2]];pType='sparks';pActive=true;
-      cam={target:[tp[0],3.5,tp[2]],offset:[3,3,4]};
+    // Solar cameras focus on EXTERIOR wall, ladder, rooftop — never inside house
+    if(tid==='assess_roof'){
+      // Stand outside looking at roof from front
+      pos=[0,0,-14];action='scan';angle=Math.PI;
+      cam={target:[0,4,0],offset:[0,6,16]};
     }
-    else if(tid==='wire_panels'){pos=[0,3.3,-2];action='install';angle=0;pPos=[0,3.3,-2.5];pType='sparks';pActive=true;cam={target:[0,3.5,-2],offset:[4,3,4]};}
-    else if(tid==='orient'){pos=[-3,3.3,-3];action='install';angle=0;cam={target:[0,3.5,-3],offset:[0,5,8]};}
-    else if(tid==='sun_sim'){pos=[0,0,8];action='observe';angle=0;cam={orbit:true,orbitRadius:20,orbitHeight:12};}
-    else if(tid==='solar_mode'){pos=[5,0,5];action='install';angle=Math.PI;cam={target:[5,1,5],offset:[6,5,6]};}
-    else if(tid==='install_battery'){pos=[5,0,4];action='install';angle=Math.PI;pPos=[5,0.5,4];pType='sparks';pActive=true;cam={target:[5,1,4],offset:[5,4,5]};}
-    else if(tid==='peak_hour'){pos=[5,0,5];action='observe';angle=Math.PI;cam={target:[5,1,5],offset:[6,5,6]};}
-    else if(tid==='climb_down'){pos=[-10.5,1.6,-3];action='climb';angle=0;cam={target:[-10.5,2,-3],offset:[5,3,5]};}
+    else if(tid==='energy_scan'){
+      // Stand outside the house looking in through window concept
+      pos=[0,0,-14];action='scan';angle=Math.PI;
+      cam={target:[0,2,0],offset:[0,8,18]};
+    }
+    else if(tid==='calculate_load'){pos=[0,0,-14];action='observe';angle=Math.PI;cam={target:[0,3,0],offset:[0,8,18]};}
+    else if(tid==='choose_panel_type'){pos=[0,0,-14];action='observe';angle=Math.PI;cam={target:[0,3,0],offset:[0,8,18]};}
+    // Ladder tasks — Arjun goes to storage → carries ladder to wall → climbs
+    else if(tid==='fetch_ladder'){
+      // Arjun walks to side of house where storage is
+      pos=[-6,0,-10];action='walk';angle=Math.PI*0.7;
+      cam={target:[-6,1.5,-10],offset:[6,4,8]};
+    }
+    else if(tid==='carry_ladder_out'){
+      // Arjun carries ladder to the house wall exterior
+      pos=[-10.5,0,-3];action='walk';angle=0;
+      cam={target:[-10.5,2,-3],offset:[8,5,8]};
+    }
+    else if(tid==='climb_roof'){
+      // Multi-step climb: position moves up the ladder
+      const climbY=climbStep*1.1;
+      pos=[-10.5,climbY,-3];action='climb';angle=Math.PI;
+      cam={target:[-10.5,climbY+1,-3],offset:[6,3,6]};
+    }
+    else if(tid==='install_mounting'){
+      pos=[-5,3.3,-4];action='install';angle=0;pPos=[-5,3.4,-4];pType='sparks';pActive=true;
+      cam={target:[-5,3.5,-4],offset:[5,3,6]};
+    }
+    else if(tid.startsWith('place_panel')){
+      const pi=panelsPlaced;const pp=[[-5,3.35,-4],[-1.5,3.35,-4],[2,3.35,-4],[5.5,3.35,-4]];
+      const tp=pp[Math.min(pi,3)];pos=[tp[0],tp[1],tp[2]+1];action='install';angle=0;pPos=[tp[0],tp[1]+0.1,tp[2]];pType='sparks';pActive=true;
+      cam={target:[tp[0],4,tp[2]],offset:[4,3,6]};
+    }
+    else if(tid==='wire_panels'){
+      pos=[0,3.3,-4];action='install';angle=0;pPos=[0,3.3,-4.5];pType='sparks';pActive=true;
+      cam={target:[0,4,-4],offset:[5,3,6]};
+    }
+    else if(tid==='orient'){pos=[-3,3.3,-4];action='install';angle=0;cam={target:[0,4,-4],offset:[0,5,10]};}
+    else if(tid==='sun_sim'){pos=[0,0,16];action='observe';angle=Math.PI;cam={orbit:true,orbitRadius:25,orbitHeight:14};}
+    else if(tid==='solar_mode'){
+      pos=[0,0,-14];action='install';angle=Math.PI;
+      cam={target:[0,3,0],offset:[0,6,16]};
+    }
+    else if(tid==='install_battery'){
+      // Battery is outside, near house wall
+      pos=[12,0,0];action='install';angle=-Math.PI/2;pPos=[11,0.5,0];pType='sparks';pActive=true;
+      cam={target:[11,1.5,0],offset:[6,4,6]};
+    }
+    else if(tid==='peak_hour'){
+      pos=[12,0,2];action='observe';angle=-Math.PI/2;
+      cam={target:[11,1.5,0],offset:[6,4,6]};
+    }
+    else if(tid==='climb_down'){
+      const climbY=Math.max(0,(2-climbStep)*1.1);
+      pos=[-10.5,climbY,-3];action='climb';angle=0;
+      cam={target:[-10.5,climbY+1,-3],offset:[6,3,6]};
+    }
   }else if(segId==='wind'){
-    if(tid==='field_survey'){pos=[-15,0,-10];action='walk';angle=0.5;cam={target:[-15,1,-10],offset:[10,8,10]};}
-    else if(tid==='wind_analysis'){pos=[-20,0,-15];action='scan';angle=0;cam={target:[-20,2,-15],offset:[8,6,8]};}
-    else if(tid==='choose_turbine'){pos=[0,0,8];action='observe';angle=0;cam={target:[0,2,0],offset:[0,10,16]};}
+    // Wind cameras focus on the OPEN FIELD far from house
+    if(tid==='field_survey'){pos=[-20,0,-16];action='walk';angle=0.5;cam={target:[-20,2,-16],offset:[12,8,12]};}
+    else if(tid==='wind_analysis'){pos=[-22,0,-18];action='scan';angle=0;cam={target:[-22,3,-18],offset:[10,7,10]};}
+    else if(tid==='choose_turbine'){pos=[-20,0,-16];action='observe';angle=0;cam={target:[-20,3,-16],offset:[10,8,12]};}
     else if(tid==='prepare_foundation'){
-      const fp=[-25,0,-20];pos=[fp[0]+2,0,fp[2]];action='dig';angle=Math.atan2(fp[0],fp[2]);pPos=[fp[0],0.1,fp[2]];pType='concrete';pActive=true;
-      // Wide angle to see vehicle arrival too
-      cam={target:[fp[0],2,fp[2]],offset:[10,8,10]};
+      const fp=[-25,0,-20];pos=[fp[0]+3,0,fp[2]+2];action='dig';angle=Math.atan2(-3,-2);pPos=[fp[0],0.1,fp[2]];pType='concrete';pActive=true;
+      cam={target:[fp[0],2,fp[2]],offset:[12,8,12]};
     }
     else if(tid.startsWith('install_turbine')){
       const fi=fieldTurbineIdx;const fps=[[-25,0,-20],[25,0,-18],[-22,0,22]];
-      const fp=fps[Math.min(fi,2)];pos=[fp[0]+3,0,fp[2]];action='install';angle=Math.atan2(-fp[0],-fp[2]);
-      cam={target:[fp[0],4,fp[2]],offset:[10,10,10]};
+      const fp=fps[Math.min(fi,2)];pos=[fp[0]+4,0,fp[2]+2];action='install';angle=Math.atan2(-4,-2);
+      cam={target:[fp[0],5,fp[2]],offset:[12,10,12]};
     }
-    else if(tid==='connect_grid'){pos=[0,0,-5];action='install';angle=Math.PI;pPos=[0,0.1,-5];pType='sparks';pActive=true;cam={target:[0,1,-5],offset:[6,5,6]};}
-    else if(tid==='wind_test'){pos=[0,0,10];action='observe';angle=0;cam={orbit:true,orbitRadius:30,orbitHeight:12};}
-    else if(tid==='weather_scenarios'){pos=[0,0,10];action='observe';angle=0;cam={orbit:true,orbitRadius:30,orbitHeight:12};}
-    else if(tid==='combined_solar_wind'){pos=[0,0,10];action='observe';angle=0;cam={orbit:true,orbitRadius:30,orbitHeight:12};}
-    else if(tid==='night_mode'){pos=[0,0,10];action='observe';angle=0;cam={orbit:true,orbitRadius:30,orbitHeight:12};}
-    else if(tid==='storm_mode'){pos=[0,0,10];action='observe';angle=0;cam={orbit:true,orbitRadius:30,orbitHeight:12};}
+    else if(tid==='connect_grid'){
+      pos=[-15,0,-12];action='install';angle=0.5;pPos=[-15,0.1,-12];pType='sparks';pActive=true;
+      cam={target:[-15,1,-12],offset:[8,6,8]};
+    }
+    else if(tid==='wind_test'){pos=[-20,0,-10];action='observe';angle=0;cam={orbit:true,orbitRadius:40,orbitHeight:14};}
+    else if(tid==='weather_scenarios'){pos=[-20,0,-10];action='observe';angle=0;cam={orbit:true,orbitRadius:40,orbitHeight:14};}
+    else if(tid==='combined_solar_wind'){pos=[0,0,20];action='observe';angle=Math.PI;cam={orbit:true,orbitRadius:35,orbitHeight:16};}
+    else if(tid==='night_mode'){pos=[0,0,20];action='observe';angle=Math.PI;cam={orbit:true,orbitRadius:35,orbitHeight:14};}
+    else if(tid==='storm_mode'){pos=[0,0,20];action='observe';angle=Math.PI;cam={orbit:true,orbitRadius:35,orbitHeight:14};}
   }
   return {pos,action,angle,pPos,pType,pActive,cam};
-},[segPhase,segId,task,taskIdx,debrisCleared.length,soilScanned,trees.length,panelsPlaced,fieldTurbineIdx]);
+},[segPhase,segId,task,taskIdx,debrisCleared.length,soilScanned,trees.length,panelsPlaced,fieldTurbineIdx,activeHotspot,climbStep]);
 
 // Shared scene props
 const sceneProps={segment:segId,trees,plantSpots:GARDEN_TREE_SPOTS,currentSpot,co2Active:trees.some(t=>t.absorbing),greenLevel,
@@ -452,7 +554,11 @@ if(phase==='segments'&&(segPhase==='playing'||segPhase==='data')){
 
     {/* Interact prompt */}
     {segPhase==='playing'&&task&&!task.auto&&!showOrient&&!showScanner&&!showTreeAnalysis&&!showPanelSelect&&!showTurbineSelect&&!showWeather&&(
-      <div className="l3p2-prompt">Press <span className="l3p2-key">E</span> {task.instruction}</div>
+      <div className="l3p2-prompt">Press <span className="l3p2-key">E</span> {
+        task.id==='climb_roof'?`Climb the ladder (step ${climbStep+1}/3)`:
+        task.id==='climb_down'?`Climb down safely (step ${4-climbStep}/3)`:
+        task.instruction
+      }</div>
     )}
 
     {/* Auto-task progress timer */}

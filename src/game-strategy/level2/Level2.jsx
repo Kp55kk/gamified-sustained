@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useRef, useEffect, useMemo, Suspense } from 'react';
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import * as THREE from 'three';
 import House from '../House';
 import Player, { cameraMode, playerState } from '../Player';
@@ -316,7 +316,9 @@ export default function Level2() {
   const l2t = t?.level2 || {};
   const cameraRef = useRef(null);
 
-  const [levelPhase, setLevelPhase] = useState('phase1'); // 'phase1', 'cutscene', or 'phase2'
+  const [searchParams] = useSearchParams();
+  const initialPhase = searchParams.get('phase') === '2' ? 'phase2' : 'phase1';
+  const [levelPhase, setLevelPhase] = useState(initialPhase); // 'phase1', 'cutscene', or 'phase2'
   const [showLevelIntro, setShowLevelIntro] = useState(true);
   const [phase, setPhase] = useState('intro');
   const [introStep, setIntroStep] = useState(0);

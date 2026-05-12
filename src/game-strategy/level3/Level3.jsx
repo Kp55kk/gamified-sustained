@@ -4,7 +4,7 @@
 //  Phase 2: Coming Soon (placeholder)
 // ═══════════════════════════════════════════════════════════
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useGame } from '../../context/GameContext';
 import LevelIntro from '../LevelIntro';
 import Phase1 from './phase1/Phase1';
@@ -14,7 +14,9 @@ export default function Level3() {
   const navigate = useNavigate();
   const { addCarbonCoins, completeLevel, unlockLevel } = useGame();
 
-  const [levelPhase, setLevelPhase] = useState('phase1');
+  const [searchParams] = useSearchParams();
+  const initialPhase = searchParams.get('phase') === '2' ? 'phase2' : 'phase1';
+  const [levelPhase, setLevelPhase] = useState(initialPhase);
   const [showLevelIntro, setShowLevelIntro] = useState(true);
 
   // ═══════════════════════════════════════════════════════

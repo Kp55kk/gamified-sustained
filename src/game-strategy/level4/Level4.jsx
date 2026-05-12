@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useRef, useEffect, useMemo, Suspense } from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import House from '../House';
 import Level4Player, { l4PlayerState } from './Level4Player';
 import Level2Appliances, { getProximityLevels } from '../level2/Level2Appliances';
@@ -14,7 +14,13 @@ import {
   calcHouseMonthlyKwh, getEfficiencyPct,
   LEVEL3_BEFORE, calculateL4Stars, LEVEL4_BADGE,
   SOLAR_FACTS, ENTRY_DIALOGUE, FINAL_MESSAGE, L4_ICONS, ROOM_ICONS,
+  L4_PHASES, DASHBOARD_METRICS,
 } from './level4Data';
+import {
+  EnergyFlowPhase, BatteryPhase, PeakHourPhase, SmartCoolingPhase,
+  AutomationPhase, EVChargingPhase, WeatherPhase, DashboardPhase, FinalePhase,
+} from './Level4Phases';
+import SolarExplainer from './SolarExplainer';
 import Level4Quiz from './Level4Quiz';
 import LevelIntro from '../LevelIntro';
 import './Level4.css';
@@ -33,17 +39,14 @@ function Scene({appStates,nearest,onRoom,onNearest,onInteract,camRef,proxLevels,
   return(<><CamRef r={camRef}/><Level4Environment recoveryLevel={recovery} timeOfDay={timeOfDay} installedSlots={slots} tiltAngle={tilt} showSlotMarkers={showMarkers}/><House/><Level2Appliances applianceStates={appStates} nearestAppliance={nearest} taskTargetIds={null} proximityLevels={proxLevels}/><Level4Player onRoomChange={onRoom} onNearestApplianceChange={onNearest} onInteract={onInteract} applianceIdList={L2_APPLIANCE_IDS} onRooftopReach={onRooftopReach}/></>);
 }
 
-// ═══ TASKS DEFINITION ═══
-const TASKS = [
-  { id: 'discover', title: 'Solar Discovery', icon: '\u{2600}\u{FE0F}', objective: 'Walk outside and explore the environment', desc: 'Look at the house and the surrounding environment. Explore the area, check out the roof.', hint: 'Use W to walk forward, A/D to turn. Q to look up, Z to look down.' },
-  { id: 'install', title: 'Install Solar Panels', icon: '\u{1F527}', objective: 'Place solar panels on the roof', desc: 'Walk to the front of the house and look up at the roof. Place at least 3 panels.', hint: 'Click the roof grid to place panels. Avoid shadow spots!' },
-  { id: 'optimize', title: 'Optimize Panels', icon: '\u{2699}\u{FE0F}', objective: 'Adjust tilt for max efficiency', desc: 'Set the best panel angle. Target: 80%+ efficiency.', hint: '25\u{00B0} is optimal for India!' },
-  { id: 'energy', title: 'Energy Management', icon: '\u{26A1}', objective: 'Run the house on solar power', desc: 'Go inside and turn on appliances. Watch solar vs grid split.', hint: 'Solar supplies power first. Keep grid usage low!' },
-  { id: 'daynight', title: 'Day-Night Challenge', icon: '\u{1F305}', objective: 'Manage energy across the day', desc: 'Use the time slider to see how solar changes. Use heavy appliances at noon!', hint: 'Slide time to see output change' },
-  { id: 'battery', title: 'Battery Storage', icon: '\u{1F50B}', objective: 'Store solar energy for night use', desc: 'At noon, excess solar charges battery. At night, battery powers house.', hint: 'Slide time to charge/discharge' },
-  { id: 'recovery', title: 'Witness the World Recover', icon: '\u{1F30D}', objective: 'Restore the environment using solar energy', desc: 'Use solar power to reduce CO\u{2082} emissions and grid usage. Watch the environment recover in real-time!', hint: 'Achieve \u{2265}70% solar usage to trigger full environment recovery.' },
-  { id: 'challenge', title: 'Final Challenge', icon: '\u{1F3AF}', objective: 'Run house with minimum grid', desc: 'Max solar usage (70%+), minimize grid. Smart timing!', hint: 'Turn on appliances during noon for best solar coverage' },
+// ═══ BACKWARD-COMPAT: Map old task IDs to phase flow ═══
+// Phase 1 (install) uses sub-tasks: discover → install → optimize → energy test
+const INSTALL_SUBTASKS = [
+  { id: 'discover', title: 'Solar Discovery', icon: '\u{2600}\u{FE0F}', objective: 'Walk outside and explore', desc: 'Look at the house and the surrounding environment.', hint: 'Use W to walk forward, A/D to turn.' },
+  { id: 'install', title: 'Install Panels', icon: '\u{1F527}', objective: 'Place solar panels on the roof', desc: 'Click the roof grid to place panels. Place at least 3!', hint: 'Avoid shadow spots!' },
+  { id: 'optimize', title: 'Optimize Angle', icon: '\u{2699}\u{FE0F}', objective: 'Adjust tilt for max efficiency', desc: 'Set the best panel angle. Target: 80%+ efficiency.', hint: '25\u{00B0} is optimal for India!' },
 ];
+const TOTAL_PHASES = L4_PHASES.length;
 
 // ═══ CONTROLS HELP ═══
 function ControlsHelp(){const[s,setS]=useState(false);
@@ -53,15 +56,26 @@ function ControlsHelp(){const[s,setS]=useState(false);
 // ═══ MAIN ═══
 export default function Level4() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { addCarbonCoins, completeLevel, unlockLevel } = useGame();
   const camRef = useRef(null);
 
-  const [showLevelIntro, setShowLevelIntro] = useState(true);
-  const [phase, setPhase] = useState('entry');
+  // URL-based phase jump: /level4?phase=3 skips to phase 3
+  const urlPhase = searchParams.get('phase');
+  const urlPhaseNum = urlPhase !== null ? parseInt(urlPhase, 10) : null;
+  const skipToPhase = urlPhaseNum !== null && !isNaN(urlPhaseNum) && urlPhaseNum >= 0 && urlPhaseNum < TOTAL_PHASES;
+
+  const [showLevelIntro, setShowLevelIntro] = useState(!skipToPhase);
+  const [phase, setPhase] = useState(skipToPhase ? 'play' : 'entry');
   const [introStep, setIntroStep] = useState(0);
   const [introBg, setIntroBg] = useState('dark');
 
-  // Task system
+  // Phase system (10 phases)
+  const [phaseIdx, setPhaseIdx] = useState(skipToPhase ? urlPhaseNum : 0);
+  const [subTaskIdx, setSubTaskIdx] = useState(0);
+  const [showExplainer, setShowExplainer] = useState(false);
+
+  // Task system (used within phase 0)
   const [taskIdx, setTaskIdx] = useState(0);
   const [taskPhase, setTaskPhase] = useState('objective'); // objective | active | complete
   const [tasksPassed, setTasksPassed] = useState(0);
@@ -133,7 +147,8 @@ export default function Level4() {
   const totalEnergy = houseWatts || 1;
   const liveEfficiency = houseWatts > 0 ? Math.round((usefulEnergy / totalEnergy) * 100) : effPct;
 
-  const currentTask = TASKS[taskIdx];
+  const currentTask = INSTALL_SUBTASKS[taskIdx];
+  const currentPhase = L4_PHASES[phaseIdx];
 
   // Trigger inline compare the first time solar is supplying > 30% in energy/recovery tasks
   useEffect(() => {
@@ -162,7 +177,7 @@ export default function Level4() {
       return stageLevels[Math.min(recoveryStage, 3)];
     }
     // Other tasks: gradual improvement but cap at 0.5 so recovery task has room
-    const base = Math.min(taskIdx / TASKS.length, 1);
+    const base = Math.min(taskIdx / INSTALL_SUBTASKS.length, 1);
     return 0.1 + base * 0.4;
   }, [phase, taskIdx, recoveryStage, taskPhase, currentTask]);
 
@@ -232,10 +247,17 @@ export default function Level4() {
     setTaskPhase('complete');
   }, []);
 
+  const advancePhase = useCallback(() => {
+    const next = phaseIdx + 1;
+    if (next >= TOTAL_PHASES) { setPhase('quiz'); }
+    else { setPhaseIdx(next); setTaskPhase('objective'); }
+  }, [phaseIdx]);
+
   const advanceTask = useCallback(() => {
     const next = taskIdx + 1;
-    if (next >= TASKS.length) {
-      setPhase('compare');
+    if (next >= INSTALL_SUBTASKS.length) {
+      // Phase 0 (install) complete → show "How Solar Works" explainer first
+      setShowExplainer(true);
     } else {
       setTaskIdx(next);
       setTaskPhase('objective');
@@ -349,15 +371,77 @@ export default function Level4() {
     </div></div></div>);
   }
 
-  // ═══ RENDER: TASK OBJECTIVE (briefing before each task) ═══
+  // ═══ RENDER: SOLAR EXPLAINER (How Solar Energy Works) ═══
+  if (phase === 'play' && showExplainer) {
+    return (<div className="l4-container">
+      <div className="l4-hud-top">
+        <button className="l4-back-btn" onClick={() => navigate('/hub')}>← Back</button>
+        <div className="l4-hud-title">☀️ How Solar Energy Works</div>
+        <div className="l4-hud-room">Bonus Lesson</div>
+      </div>
+      <div style={{position:'absolute',top:'55px',left:0,right:0,bottom:0,zIndex:10,overflow:'auto',padding:'60px 16px 20px',display:'flex',alignItems:'center',justifyContent:'center'}}>
+        <SolarExplainer onComplete={() => { setShowExplainer(false); advancePhase(); }} />
+      </div>
+    </div>);
+  }
+
+  // ═══ RENDER: PHASE ROUTING (phases 1-9 use new components) ═══
+  if (phase === 'play' && phaseIdx > 0) {
+    const dashMetrics = {
+      solar_kwh: monthlyKwh, co2_saved: co2Saved, bill_saved: savings.saved,
+      battery_stored: batteryCharge.toFixed(1), grid_reduced: gridPct,
+      trees_equiv: Math.ceil(co2Saved * 12 / 22),
+    };
+    const phaseMap = {
+      1: <EnergyFlowPhase solarW={currentSolarW} onComplete={advancePhase} />,
+      2: <BatteryPhase solarW={currentSolarW} houseW={houseWatts} onComplete={advancePhase} />,
+      3: <PeakHourPhase onComplete={advancePhase} />,
+      4: <SmartCoolingPhase onComplete={advancePhase} />,
+      5: <AutomationPhase onComplete={advancePhase} />,
+      6: <EVChargingPhase onComplete={advancePhase} />,
+      7: <WeatherPhase solarW={currentSolarW} batteryCharge={batteryCharge} onComplete={advancePhase} />,
+      8: <DashboardPhase metrics={dashMetrics} onComplete={advancePhase} />,
+      9: <FinalePhase onComplete={() => setPhase('quiz')} />,
+    };
+    // Phase objective briefing
+    if (taskPhase === 'objective' && currentPhase) {
+      return (<div className="l4-container"><div className="l4-modal-overlay"><div className="l4-modal-card">
+        <div style={{fontSize:'11px',color:'#888',textTransform:'uppercase',letterSpacing:'2px',marginBottom:'6px'}}>Phase {phaseIdx + 1} of {TOTAL_PHASES}</div>
+        <div className="l4-modal-title"><span style={{fontSize:'36px'}}>{currentPhase.icon}</span> {currentPhase.title}</div>
+        <div style={{fontSize:'16px',fontWeight:600,color:'#ffeedd',marginBottom:'8px',lineHeight:1.5}}>{L4_ICONS.target} {currentPhase.objective}</div>
+        <div style={{fontSize:'13px',color:'#999',marginBottom:'12px'}}>{currentPhase.desc}</div>
+        <div style={{padding:'8px 12px',background:'rgba(245,166,35,0.06)',borderRadius:'8px',fontSize:'12px',color:'#f5a623'}}>{L4_ICONS.bulb} {currentPhase.learning}</div>
+        <div style={{fontSize:'11px',color:'#666',marginTop:'8px'}}>⏱️ {currentPhase.duration}</div>
+        <button className="l4-modal-btn" onClick={() => setTaskPhase('active')}>Start Phase →</button>
+      </div></div></div>);
+    }
+    // Active phase
+    return (<div className="l4-container">
+      <div className="l4-hud-top">
+        <button className="l4-back-btn" onClick={() => navigate('/hub')}>← Back</button>
+        <div className="l4-hud-title">{currentPhase?.icon} {currentPhase?.title}</div>
+        <div className="l4-hud-room">Phase {phaseIdx + 1}/{TOTAL_PHASES}</div>
+      </div>
+      <div style={{position:'absolute',top:'55px',left:0,right:0,bottom:0,zIndex:10,overflow:'auto',padding:'60px 16px 20px'}}>
+        {phaseMap[phaseIdx] || <div>Phase {phaseIdx} loading...</div>}
+      </div>
+      <div className="l4-progress-panel">
+        <div className="l4-progress-header">{L4_ICONS.target} Phases</div>
+        <div className="l4-progress-bar-outer"><div className="l4-progress-bar-inner" style={{width:`${(phaseIdx/TOTAL_PHASES)*100}%`}}/></div>
+        <div className="l4-progress-text">{phaseIdx} / {TOTAL_PHASES} complete</div>
+      </div>
+    </div>);
+  }
+
+  // ═══ RENDER: PHASE 0 TASK OBJECTIVE (install sub-tasks briefing) ═══
   if (phase === 'play' && taskPhase === 'objective' && currentTask) {
     return (<div className="l4-container"><div className="l4-modal-overlay"><div className="l4-modal-card">
-      <div style={{fontSize:'11px',color:'#888',textTransform:'uppercase',letterSpacing:'2px',marginBottom:'6px'}}>Task {taskIdx + 1} of {TASKS.length}</div>
+      <div style={{fontSize:'11px',color:'#888',textTransform:'uppercase',letterSpacing:'2px',marginBottom:'6px'}}>Phase 1 — Task {taskIdx + 1} of {INSTALL_SUBTASKS.length}</div>
       <div className="l4-modal-title"><span style={{fontSize:'36px'}}>{currentTask.icon}</span> {currentTask.title}</div>
       <div style={{fontSize:'16px',fontWeight:600,color:'#ffeedd',marginBottom:'8px',lineHeight:1.5}}>{L4_ICONS.target} {currentTask.objective}</div>
       <div style={{fontSize:'13px',color:'#999',marginBottom:'12px'}}>{currentTask.desc}</div>
       <div style={{padding:'8px 12px',background:'rgba(245,166,35,0.06)',borderRadius:'8px',fontSize:'12px',color:'#f5a623'}}>{L4_ICONS.bulb} {currentTask.hint}</div>
-      <button className="l4-modal-btn" onClick={()=>setTaskPhase('active')}>Start Task {'\u{2192}'}</button>
+      <button className="l4-modal-btn" onClick={()=>setTaskPhase('active')}>Start Task →</button>
     </div></div></div>);
   }
 
@@ -382,7 +466,7 @@ export default function Level4() {
           </div>
         ))}
       </div>
-      <button className="l4-modal-btn green" onClick={advanceTask}>{taskIdx+1 >= TASKS.length ? 'See Results' : 'Next Task'} {'\u{2192}'}</button>
+      <button className="l4-modal-btn green" onClick={advanceTask}>{taskIdx+1 >= INSTALL_SUBTASKS.length ? 'See Results' : 'Next Task'} {'\u{2192}'}</button>
     </div></div></div>);
   }
 
@@ -477,7 +561,7 @@ export default function Level4() {
 
       {/* TASK BAR */}
       <div style={{position:'absolute',top:'55px',left:'50%',transform:'translateX(-50%)',zIndex:20,background:'rgba(5,10,20,0.95)',border:'1px solid rgba(34,197,94,0.25)',borderRadius:'12px',padding:'10px 18px',maxWidth:'480px',width:'92%',textAlign:'center'}}>
-        <div style={{fontSize:'10px',color:'#888',textTransform:'uppercase',letterSpacing:'1px'}}>Task {taskIdx+1}/{TASKS.length}</div>
+        <div style={{fontSize:'10px',color:'#888',textTransform:'uppercase',letterSpacing:'1px'}}>Task {taskIdx+1}/{INSTALL_SUBTASKS.length}</div>
         <div style={{fontSize:'14px',fontWeight:700,color:'#22c55e'}}>{L4_ICONS.globe} Restore the Environment Using Solar Energy</div>
         <div style={{fontSize:'12px',color:'#aaa',marginTop:'2px'}}>{L4_ICONS.target} {currentFB.desc}</div>
       </div>
@@ -601,8 +685,8 @@ export default function Level4() {
       {/* PROGRESS */}
       <div className="l4-progress-panel">
         <div className="l4-progress-header">{L4_ICONS.target} Tasks</div>
-        <div className="l4-progress-bar-outer"><div className="l4-progress-bar-inner" style={{width:`${(taskIdx/TASKS.length)*100}%`}}/></div>
-        <div className="l4-progress-text">{tasksPassed} done / {TASKS.length} total</div>
+        <div className="l4-progress-bar-outer"><div className="l4-progress-bar-inner" style={{width:`${(taskIdx/INSTALL_SUBTASKS.length)*100}%`}}/></div>
+        <div className="l4-progress-text">{tasksPassed} done / {INSTALL_SUBTASKS.length} total</div>
       </div>
 
       <ControlsHelp/>
@@ -643,7 +727,7 @@ export default function Level4() {
 
     {/* TASK BAR */}
     <div style={{position:'absolute',top:'55px',left:'50%',transform:'translateX(-50%)',zIndex:20,background:'rgba(5,10,20,0.95)',border:'1px solid rgba(245,166,35,0.25)',borderRadius:'12px',padding:'10px 18px',maxWidth:'420px',width:'90%',textAlign:'center'}}>
-      <div style={{fontSize:'10px',color:'#888',textTransform:'uppercase',letterSpacing:'1px'}}>Task {taskIdx+1}/{TASKS.length}</div>
+      <div style={{fontSize:'10px',color:'#888',textTransform:'uppercase',letterSpacing:'1px'}}>Task {taskIdx+1}/{INSTALL_SUBTASKS.length}</div>
       <div style={{fontSize:'14px',fontWeight:700,color:'#f5a623'}}>{currentTask?.icon} {currentTask?.title}</div>
       <div style={{fontSize:'12px',color:'#aaa',marginTop:'2px'}}>{L4_ICONS.target} {currentTask?.objective}</div>
       {currentTask?.id === 'discover' && <div style={{fontSize:'11px',color:'#88ccff',marginTop:'4px'}}>{L4_ICONS.check} Outside! {' \u2022 '} Q=Look Up, Z=Look Down</div>}
@@ -866,8 +950,8 @@ export default function Level4() {
     {/* PROGRESS */}
     <div className="l4-progress-panel">
       <div className="l4-progress-header">{L4_ICONS.target} Tasks</div>
-      <div className="l4-progress-bar-outer"><div className="l4-progress-bar-inner" style={{width:`${(taskIdx/TASKS.length)*100}%`}}/></div>
-      <div className="l4-progress-text">{tasksPassed} done / {TASKS.length} total</div>
+      <div className="l4-progress-bar-outer"><div className="l4-progress-bar-inner" style={{width:`${(taskIdx/INSTALL_SUBTASKS.length)*100}%`}}/></div>
+      <div className="l4-progress-text">{tasksPassed} done / {INSTALL_SUBTASKS.length} total</div>
     </div>
 
     <ControlsHelp/>
