@@ -69,7 +69,14 @@ function checkCollision(x, z) {
   return false;
 }
 
-function moveWithWalls(x, z, dx, dz) {
+function moveWithWalls(x, z, dx, dz, onRoof = false) {
+  if (onRoof) {
+    // On roof: no wall collision, just roof bounds
+    return {
+      x: Math.max(-9, Math.min(9, x + dx)),
+      z: Math.max(-7, Math.min(7, z + dz)),
+    };
+  }
   // World bounds (outdoor area)
   let nx = Math.max(-30, Math.min(30, x + dx));
   let nz = Math.max(-30, Math.min(30, z + dz));
@@ -82,7 +89,8 @@ function moveWithWalls(x, z, dx, dz) {
   return { x, z };
 }
 
-function getRoom(x, z) {
+function getRoom(x, z, onRoof) {
+  if (onRoof) return 'Rooftop';
   // Outside house?
   if (x < -10 || x > 10 || z < -8 || z > 8) return 'Outside';
   if (x < 0 && z < 0) return 'Living Room';
@@ -157,8 +165,11 @@ function ArjunModel({ isMoving }) {
   );
 }
 
-// ═══ SHARED STATE — Start OUTSIDE the house ═══
-export const l4PlayerState = { x: -12, z: -2, nearestAppliance: null, nearestSolar: null, isOnRoof: false, cameraYaw: -Math.PI / 2, cameraPitch: 0.3 };
+// Shared state - start OUTSIDE the house
+export const l4PlayerState = { x: -12, z: -2, y: 0, nearestAppliance: null, nearestSolar: null, isOnRoof: false, cameraYaw: -Math.PI / 2, cameraPitch: 0.3 };
+
+const ROOF_Y = 5.5;  // Rooftop height
+const GROUND_Y = 0;  // Ground level
 
 // ═══ PLAYER ═══
 export default function Level4Player({ onRoomChange, onNearestApplianceChange, onInteract, applianceIdList, onRooftopReach, onNearestSolarChange, onSolarInteract, isOnRoof }) {
@@ -213,11 +224,11 @@ export default function Level4Player({ onRoomChange, onNearestApplianceChange, o
     let moved = false;
 
     if (k['w'] || k['arrowup']) {
-      const r = moveWithWalls(posRef.current.x, posRef.current.z, forwardX * speed, forwardZ * speed);
+      const r = moveWithWalls(posRef.current.x, posRef.current.z, forwardX * speed, forwardZ * speed, isOnRoof);
       posRef.current.x = r.x; posRef.current.z = r.z; moved = true;
     }
     if (k['s'] || k['arrowdown']) {
-      const r = moveWithWalls(posRef.current.x, posRef.current.z, -forwardX * speed, -forwardZ * speed);
+      const r = moveWithWalls(posRef.current.x, posRef.current.z, -forwardX * speed, -forwardZ * speed, isOnRoof);
       posRef.current.x = r.x; posRef.current.z = r.z; moved = true;
     }
 
@@ -241,32 +252,31 @@ export default function Level4Player({ onRoomChange, onNearestApplianceChange, o
     }
 
     // Room
-    const room = getRoom(posRef.current.x, posRef.current.z);
+    const room = getRoom(posRef.current.x, posRef.current.z, isOnRoof);
     if (onRoomChange) onRoomChange(room);
 
-    // Check if near rooftop area (outside + near house front)
-    if (onRooftopReach) {
-      const isNearRoof = (posRef.current.x < -10 || posRef.current.x > 10 ||
-                          posRef.current.z < -8 || posRef.current.z > 8);
-      if (isNearRoof) onRooftopReach();
-    }
+    // Smooth Y transition for roof climbing
+    const targetY = isOnRoof ? ROOF_Y : GROUND_Y;
+    l4PlayerState.y += (targetY - l4PlayerState.y) * 0.08;
+    l4PlayerState.isOnRoof = isOnRoof;
 
-    // Update mesh
+    // Update mesh position (including Y for roof)
     if (groupRef.current) {
       groupRef.current.position.x = posRef.current.x;
+      groupRef.current.position.y = l4PlayerState.y;
       groupRef.current.position.z = posRef.current.z;
       groupRef.current.rotation.y = rotRef.current;
     }
 
-    // Camera: behind + above, with pitch control
+    // Camera: behind + above, with pitch control + roof offset
     const camDist = 8;
-    const camHeight = 3 + pitchRef.current * 5; // 3-8 range based on pitch
+    const baseHeight = l4PlayerState.y + 3 + pitchRef.current * 5;
     const targetCamX = posRef.current.x - Math.sin(rotRef.current) * camDist;
     const targetCamZ = posRef.current.z - Math.cos(rotRef.current) * camDist;
-    const lookY = 1.5 + pitchRef.current * 2;
+    const lookY = l4PlayerState.y + 1.5 + pitchRef.current * 2;
 
     camera.position.x += (targetCamX - camera.position.x) * 0.05;
-    camera.position.y += (camHeight - camera.position.y) * 0.05;
+    camera.position.y += (baseHeight - camera.position.y) * 0.05;
     camera.position.z += (targetCamZ - camera.position.z) * 0.05;
     camera.lookAt(posRef.current.x, lookY, posRef.current.z);
   });

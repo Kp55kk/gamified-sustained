@@ -1,14 +1,29 @@
-// ═══════════════════════════════════════════════════════════
-//  LEVEL 4: SOLAR-SPECIFIC 3D OBJECTS
-//  Premium animated objects for solar education
-// ═══════════════════════════════════════════════════════════
+// Level 4: Solar-Specific 3D Objects with Name Labels
+// Premium animated objects for solar education
 import React, { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 import * as THREE from 'three';
 import { SOLAR_OBJECT_POSITIONS } from '../applianceData';
 
-// ═══ SOLAR INVERTER BOX (left outer wall) ═══
+// --- ALWAYS-VISIBLE NAME PLATE (like previous levels) ---
+function NamePlate({ position, name, icon, color = '#ffd700' }) {
+  return (
+    <Html position={position} center>
+      <div style={{
+        background: 'rgba(0,0,0,0.82)', color, padding: '4px 12px',
+        borderRadius: '8px', fontSize: '12px', fontFamily: "'Nunito',sans-serif",
+        fontWeight: 700, whiteSpace: 'nowrap', border: `1px solid ${color}33`,
+        boxShadow: `0 0 10px ${color}22`, pointerEvents: 'none',
+        textAlign: 'center', letterSpacing: '0.5px',
+      }}>
+        {icon} {name}
+      </div>
+    </Html>
+  );
+}
+
+// --- SOLAR INVERTER BOX (wall-mounted) ---
 function SolarInverter() {
   const p = SOLAR_OBJECT_POSITIONS.solar_inverter;
   const ledRef = useRef();
@@ -32,13 +47,15 @@ function SolarInverter() {
       <mesh ref={ledRef} position={[0.25, 0.35, 0.18]}>
         <sphereGeometry args={[0.03, 8, 8]}/><meshStandardMaterial color="#22c55e" emissive="#22c55e" emissiveIntensity={0.5}/>
       </mesh>
-      {/* Label */}
+      {/* Brand label */}
       <mesh position={[0, 0.2, 0.18]}><boxGeometry args={[0.4, 0.08, 0.01]}/><meshStandardMaterial color="#1a5276" emissive="#1a5276" emissiveIntensity={0.2}/></mesh>
+      {/* Name plate */}
+      <NamePlate position={[0, 0.9, 0]} name="Solar Inverter" icon={'\uD83D\uDD0C'} color="#4fc3f7"/>
     </group>
   );
 }
 
-// ═══ NET METER / SMART METER (right outer wall) ═══
+// --- NET METER / SMART METER (wall-mounted) ---
 function SolarMeter() {
   const p = SOLAR_OBJECT_POSITIONS.solar_meter;
   const discRef = useRef();
@@ -63,11 +80,13 @@ function SolarMeter() {
       {/* Arrows (bidirectional) */}
       <mesh position={[-0.15, -0.3, 0.11]}><boxGeometry args={[0.12, 0.04, 0.01]}/><meshStandardMaterial color="#e74c3c" emissive="#e74c3c" emissiveIntensity={0.3}/></mesh>
       <mesh position={[0.15, -0.3, 0.11]}><boxGeometry args={[0.12, 0.04, 0.01]}/><meshStandardMaterial color="#27ae60" emissive="#27ae60" emissiveIntensity={0.3}/></mesh>
+      {/* Name plate */}
+      <NamePlate position={[0, 0.7, 0]} name="Net Meter" icon={'\uD83D\uDCCA'} color="#66bb6a"/>
     </group>
   );
 }
 
-// ═══ BATTERY STORAGE UNIT (back-left outside) ═══
+// --- BATTERY STORAGE UNIT ---
 function SolarBattery() {
   const p = SOLAR_OBJECT_POSITIONS.solar_battery;
   const barsRef = useRef([]);
@@ -95,12 +114,14 @@ function SolarBattery() {
       ))}
       {/* Lightning bolt icon */}
       <mesh position={[0, 0.4, 0.28]}><boxGeometry args={[0.06, 0.15, 0.01]}/><meshStandardMaterial color="#f1c40f" emissive="#f1c40f" emissiveIntensity={0.5}/></mesh>
+      {/* Name plate */}
+      <NamePlate position={[0, 1.0, 0]} name="Battery Storage" icon={'\uD83D\uDD0B'} color="#81c784"/>
     </group>
   );
 }
 
-// ═══ INFO BOARD (reusable — 3 variants) ═══
-function InfoBoard({ id, frameColor, icon }) {
+// --- INFO BOARD (reusable - 3 variants) ---
+function InfoBoard({ id, frameColor, icon, label }) {
   const p = SOLAR_OBJECT_POSITIONS[id];
   if (!p) return null;
   const glowRef = useRef();
@@ -123,11 +144,13 @@ function InfoBoard({ id, frameColor, icon }) {
       <mesh position={[0, 0.3, 0.035]}><boxGeometry args={[0.78, 0.48, 0.01]}/><meshStandardMaterial color="#f5f5f0" roughness={0.8}/></mesh>
       {/* Base */}
       <mesh position={[0, -1.0, 0]}><cylinderGeometry args={[0.15, 0.18, 0.05, 8]}/><meshStandardMaterial color="#555" metalness={0.5}/></mesh>
+      {/* Name plate */}
+      <NamePlate position={[0, 1.0, 0]} name={label} icon={icon} color="#ffb74d"/>
     </group>
   );
 }
 
-// ═══ EV CHARGING STATION (driveway) ═══
+// --- EV CHARGING STATION ---
 function EVCharger() {
   const p = SOLAR_OBJECT_POSITIONS.solar_ev_charger;
   const ringRef = useRef();
@@ -155,11 +178,13 @@ function EVCharger() {
       <mesh position={[0.3, -0.05, 0.1]}><boxGeometry args={[0.06, 0.08, 0.04]}/><meshStandardMaterial color="#333" metalness={0.6}/></mesh>
       {/* Base plate */}
       <mesh position={[0, -0.28, 0]}><boxGeometry args={[0.5, 0.04, 0.35]}/><meshStandardMaterial color="#444" metalness={0.6}/></mesh>
+      {/* Name plate */}
+      <NamePlate position={[0, 1.5, 0]} name="EV Charger" icon={'\uD83D\uDE97'} color="#ce93d8"/>
     </group>
   );
 }
 
-// ═══ WEATHER STATION (garden right) ═══
+// --- WEATHER STATION ---
 function WeatherStation() {
   const p = SOLAR_OBJECT_POSITIONS.solar_weather;
   const vaneRef = useRef();
@@ -181,11 +206,13 @@ function WeatherStation() {
       <mesh position={[0, 0.5, 0.05]}><boxGeometry args={[0.15, 0.1, 0.02]}/><meshStandardMaterial color="#0a0a2a" emissive="#ff8800" emissiveIntensity={0.3}/></mesh>
       {/* Base */}
       <mesh position={[0, -0.25, 0]}><cylinderGeometry args={[0.12, 0.15, 0.05, 8]}/><meshStandardMaterial color="#666" metalness={0.5}/></mesh>
+      {/* Name plate */}
+      <NamePlate position={[0, 1.5, 0]} name="Weather Station" icon={'\uD83C\uDF24\uFE0F'} color="#90caf9"/>
     </group>
   );
 }
 
-// ═══ LADDER (on left wall — climb to roof) ═══
+// --- LADDER (leaning on left wall - climb to roof) ---
 function SolarLadder() {
   const p = SOLAR_OBJECT_POSITIONS.solar_ladder;
   return (
@@ -197,11 +224,13 @@ function SolarLadder() {
       {[0, 0.4, 0.8, 1.2, 1.6, 2.0, 2.4, 2.8].map((y, i) => (
         <mesh key={i} position={[0, y, 0]}><boxGeometry args={[0.4, 0.04, 0.06]}/><meshStandardMaterial color="#A0522D" roughness={0.6}/></mesh>
       ))}
+      {/* Name plate */}
+      <NamePlate position={[0, 3.5, 0]} name="Ladder (Climb to Roof)" icon={'\uD83E\uDE9C'} color="#ffcc80"/>
     </group>
   );
 }
 
-// ═══ ROOF PANEL (interactable on rooftop) ═══
+// --- ROOF PANEL (interactable on rooftop) ---
 function RoofPanel() {
   const p = SOLAR_OBJECT_POSITIONS.solar_roof_panel;
   const shimmerRef = useRef();
@@ -228,30 +257,13 @@ function RoofPanel() {
         <torusGeometry args={[0.15, 0.01, 4, 12, Math.PI / 2]}/>
         <meshStandardMaterial color="#f39c12" emissive="#f39c12" emissiveIntensity={0.3}/>
       </mesh>
+      {/* Name plate */}
+      <NamePlate position={[0, 0.8, 0]} name="Solar Panel" icon={'\u2600\uFE0F'} color="#ffd54f"/>
     </group>
   );
 }
 
-// ═══ SOLAR LABEL (shows "Press E" when near) ═══
-function SolarLabel({ id, label, showLevel }) {
-  const p = SOLAR_OBJECT_POSITIONS[id];
-  if (!p || !showLevel || showLevel === 'hidden') return null;
-  const yOffset = id === 'solar_roof_panel' ? 0.8 : (id.includes('board') ? 1.0 : 0.9);
-  return (
-    <Html position={[p.pos[0], p.pos[1] + yOffset, p.pos[2]]} center>
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', pointerEvents: 'none' }}>
-        <div style={{ background: 'rgba(0,0,0,0.85)', color: '#ffd700', padding: '5px 14px', borderRadius: '10px', fontSize: '12px', fontFamily: 'Nunito, sans-serif', fontWeight: 700, whiteSpace: 'nowrap', border: '1px solid rgba(255,215,0,0.4)', boxShadow: '0 0 12px rgba(255,215,0,0.2)' }}>
-          ☀️ {label}
-        </div>
-        <div style={{ background: 'rgba(255,165,0,0.9)', color: '#fff', padding: '3px 10px', borderRadius: '6px', fontSize: '11px', fontFamily: 'Nunito, sans-serif', fontWeight: 600, whiteSpace: 'nowrap' }}>
-          Press <span style={{ background: 'rgba(255,255,255,0.3)', padding: '1px 5px', borderRadius: '3px', fontWeight: 700 }}>E</span> to learn
-        </div>
-      </div>
-    </Html>
-  );
-}
-
-// ═══ PROXIMITY FOR SOLAR OBJECTS ═══
+// --- PROXIMITY DETECTION FOR SOLAR OBJECTS ---
 export function getSolarProximity(px, pz, isOnRoof = false) {
   const levels = {};
   let nearestId = null, minDist = 3.0;
@@ -268,21 +280,26 @@ export function getSolarProximity(px, pz, isOnRoof = false) {
   return { levels, nearest: nearestId };
 }
 
-// ═══ SOLAR OBJECT LABELS ═══
-const SOLAR_LABELS = {
-  solar_inverter: 'Inverter Box',
-  solar_meter: 'Net Meter',
-  solar_battery: 'Battery Unit',
-  solar_board_1: 'Info Board ☀️',
-  solar_board_2: 'Info Board 🔋',
-  solar_board_3: 'Info Board 💰',
-  solar_ev_charger: 'EV Charger',
-  solar_weather: 'Weather Station',
-  solar_roof_panel: 'Solar Panel',
-  solar_ladder: 'Ladder 🪜',
-};
+// --- PRESS-E PROMPT (shows when near) ---
+function InteractPrompt({ id, showLevel }) {
+  const p = SOLAR_OBJECT_POSITIONS[id];
+  if (!p || !showLevel || showLevel === 'hidden') return null;
+  const yOffset = id === 'solar_roof_panel' ? 1.4 : (id.includes('board') ? 1.6 : 1.5);
+  return (
+    <Html position={[p.pos[0], p.pos[1] + yOffset, p.pos[2]]} center>
+      <div style={{
+        background: 'rgba(245,166,35,0.92)', color: '#fff', padding: '4px 12px',
+        borderRadius: '8px', fontSize: '12px', fontFamily: "'Nunito',sans-serif",
+        fontWeight: 700, whiteSpace: 'nowrap', animation: 'pulse 1.5s infinite',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+      }}>
+        Press <span style={{ background: 'rgba(255,255,255,0.3)', padding: '1px 6px', borderRadius: '4px', fontWeight: 800 }}>E</span> to learn
+      </div>
+    </Html>
+  );
+}
 
-// ═══ MAIN EXPORT ═══
+// --- MAIN EXPORT ---
 export default function Level4SolarObjects({ solarProximity, phaseIdx }) {
   const levels = solarProximity || {};
   return (
@@ -290,17 +307,17 @@ export default function Level4SolarObjects({ solarProximity, phaseIdx }) {
       <SolarInverter />
       <SolarMeter />
       <SolarBattery />
-      <InfoBoard id="solar_board_1" frameColor="#2980b9" icon="☀️" />
-      <InfoBoard id="solar_board_2" frameColor="#27ae60" icon="🔋" />
-      <InfoBoard id="solar_board_3" frameColor="#e67e22" icon="💰" />
+      <InfoBoard id="solar_board_1" frameColor="#2980b9" icon={'\u2600\uFE0F'} label="Solar Info" />
+      <InfoBoard id="solar_board_2" frameColor="#27ae60" icon={'\uD83D\uDD0B'} label="Energy Info" />
+      <InfoBoard id="solar_board_3" frameColor="#e67e22" icon={'\uD83D\uDCB0'} label="Cost Info" />
       <EVCharger />
       <WeatherStation />
       <SolarLadder />
-      {/* Roof panel only visible from phase 1 onwards */}
+      {/* Roof panel visible from phase 1 onwards */}
       {phaseIdx >= 1 && <RoofPanel />}
-      {/* Labels for nearby solar objects */}
-      {Object.entries(SOLAR_LABELS).map(([id, label]) => (
-        <SolarLabel key={id} id={id} label={label} showLevel={levels[id]} />
+      {/* Press E prompts - only show for nearest */}
+      {Object.keys(SOLAR_OBJECT_POSITIONS).map(id => (
+        <InteractPrompt key={id} id={id} showLevel={levels[id]} />
       ))}
     </group>
   );

@@ -26,22 +26,22 @@ import Level4Quiz from './Level4Quiz';
 import LevelIntro from '../LevelIntro';
 import './Level4.css';
 
-// ═══ AUDIO ═══
+// ═══ AUDIO ═══
 let audioCtx = null;
 function getAC() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); return audioCtx; }
 function playPlace() { try { const c=getAC(),o=c.createOscillator(),g=c.createGain(); o.connect(g);g.connect(c.destination);o.type='triangle';o.frequency.setValueAtTime(600,c.currentTime);o.frequency.linearRampToValueAtTime(900,c.currentTime+0.1);g.gain.setValueAtTime(0.1,c.currentTime);g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+0.2);o.start(c.currentTime);o.stop(c.currentTime+0.2); } catch(e){} }
 function playSuccess() { [523,659,784,1047].forEach((f,i) => { try { const c=getAC(),o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.type='triangle';o.frequency.setValueAtTime(f,c.currentTime+i*0.12);g.gain.setValueAtTime(0.08,c.currentTime+i*0.12);g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+i*0.12+0.3);o.start(c.currentTime+i*0.12);o.stop(c.currentTime+i*0.12+0.3); } catch(e){} }); }
 function playToggle(on) { try { const c=getAC(),o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.setValueAtTime(on?800:300,c.currentTime);g.gain.setValueAtTime(0.08,c.currentTime);g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+0.1);o.start(c.currentTime);o.stop(c.currentTime+0.1); } catch(e){} }
 
-// ═══ 3D HELPERS ═══
+// ═══ 3D HELPERS ═══
 function CamRef({r}){const{camera}=useThree();useEffect(()=>{r.current=camera},[camera,r]);return null;}
 
 function Scene({appStates,nearest,onRoom,onNearest,onInteract,camRef,proxLevels,recovery,timeOfDay,slots,tilt,showMarkers,onRooftopReach,solarProx,phaseIdx,onNearestSolarChange,onSolarInteract,isOnRoof}){
   return(<><CamRef r={camRef}/><Level4Environment recoveryLevel={recovery} timeOfDay={timeOfDay} installedSlots={slots} tiltAngle={tilt} showSlotMarkers={showMarkers}/><House/><Level2Appliances applianceStates={appStates} nearestAppliance={nearest} taskTargetIds={null} proximityLevels={proxLevels}/><Level4SolarObjects solarProximity={solarProx} phaseIdx={phaseIdx}/><Level4Player onRoomChange={onRoom} onNearestApplianceChange={onNearest} onInteract={onInteract} applianceIdList={L2_APPLIANCE_IDS} onRooftopReach={onRooftopReach} onNearestSolarChange={onNearestSolarChange} onSolarInteract={onSolarInteract} isOnRoof={isOnRoof}/></>);
 }
 
-// ═══ BACKWARD-COMPAT: Map old task IDs to phase flow ═══
-// Phase 1 (install) uses sub-tasks: discover â†’ install â†’ optimize â†’ energy test
+// ═══ BACKWARD-COMPAT: Map old task IDs to phase flow ═══
+// Phase 1 (install) uses sub-tasks: discover → install → optimize → energy test
 const INSTALL_SUBTASKS = [
   { id: 'discover', title: 'Solar Discovery', icon: '\u{2600}\u{FE0F}', objective: 'Walk outside and explore', desc: 'Look at the house and the surrounding environment.', hint: 'Use W to walk forward, A/D to turn.' },
   { id: 'install', title: 'Install Panels', icon: '\u{1F527}', objective: 'Place solar panels on the roof', desc: 'Click the roof grid to place panels. Place at least 3!', hint: 'Avoid shadow spots!' },
@@ -49,12 +49,12 @@ const INSTALL_SUBTASKS = [
 ];
 const TOTAL_PHASES = L4_PHASES.length;
 
-// ═══ CONTROLS HELP ═══
+// ═══ CONTROLS HELP ═══
 function ControlsHelp(){const[s,setS]=useState(false);
   return(<><button className="l4-help-btn" onClick={()=>setS(true)}>?</button>{s&&<div className="l4-controls-overlay" onClick={()=>setS(false)}><div className="l4-controls-card" onClick={e=>e.stopPropagation()}><div className="l4-controls-title">{L4_ICONS.grad} Controls</div>{[['W/\u2191','Forward'],['S/\u2193','Backward'],['A/\u2190','Turn Left'],['D/\u2192','Turn Right'],['Q','Look Up'],['Z','Look Down'],['E','Interact']].map(([k,l])=><div key={k} className="l4-ctrl-row"><span><span className="l4-key">{k}</span></span><span>{l}</span></div>)}<button className="l4-controls-got-it" onClick={()=>setS(false)}>Got it!</button></div></div>}</>);
 }
 
-// ═══ MAIN ═══
+// ═══ MAIN ═══
 export default function Level4() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -112,7 +112,7 @@ export default function Level4() {
   const [hasSeenCompare, setHasSeenCompare] = useState(false);
   const [impactPulse, setImpactPulse] = useState(false);
 
-  // â”€â”€â”€ Walk-and-Interact System (phases 1-9) â”€â”€â”€
+  // ─── Walk-and-Interact System (phases 1-9) ───
   const [visitedZones, setVisitedZones] = useState([]);
   const [learnPopup, setLearnPopup] = useState(null);
   const [phaseHint, setPhaseHint] = useState('');
@@ -224,7 +224,7 @@ export default function Level4() {
   const solarPct = houseWatts > 0 ? Math.round((solarUsed / houseWatts) * 100) : (panelCount > 0 ? 100 : 0);
   const gridPct = 100 - solarPct;
 
-  // Live solar energy in kWh (current instantaneous â†’ projected)
+  // Live solar energy in kWh (current instantaneous → projected)
   const liveKwh = useMemo(() => (currentSolarW / 1000).toFixed(1), [currentSolarW]);
   const liveCO2Saved = useMemo(() => (parseFloat(liveKwh) * 0.71).toFixed(1), [liveKwh]);
   const liveBillSaved = useMemo(() => Math.round(parseFloat(liveKwh) * 8), [liveKwh]);
@@ -268,7 +268,7 @@ export default function Level4() {
     return 0.1 + base * 0.4;
   }, [phase, taskIdx, recoveryStage, taskPhase, currentTask]);
 
-  // â”€â”€â”€ Intro animation â”€â”€â”€
+  // ─── Intro animation ───
   useEffect(() => {
     if (phase !== 'entry') return;
     const t1=setTimeout(()=>setIntroStep(1),500);
@@ -278,13 +278,13 @@ export default function Level4() {
     return()=>{clearTimeout(t1);clearTimeout(t2);clearTimeout(t3);clearTimeout(t4)};
   }, [phase]);
 
-  // â”€â”€â”€ Room change â†’ detect going outside â”€â”€â”€
+  // ─── Room change → detect going outside ───
   const handleRoomChange = useCallback(r => {
     setCurrentRoom(r);
     if (r === 'Outside' && !hasGoneOutside) setHasGoneOutside(true);
   }, [hasGoneOutside]);
 
-  // â”€â”€â”€ Interact (phase-aware) â”€â”€â”€
+  // ─── Interact (phase-aware) ───
   // ─── Interact — ONLY toggles appliances ON/OFF ───
   const handleInteract = useCallback(id => {
     if (!L2_APPLIANCE_IDS.includes(id)) return;
@@ -330,7 +330,7 @@ export default function Level4() {
     playToggle(true);
   }, [phase, phaseIdx, taskPhase, visitedZones, PHASE_ZONES, isOnRoof]);
 
-  // â”€â”€â”€ Panel slot toggle â”€â”€â”€
+  // ─── Panel slot toggle ───
   const toggleSlot = useCallback(idx => {
     setInstalledSlots(prev => {
       if (prev.includes(idx)) return prev.filter(i=>i!==idx);
@@ -341,7 +341,7 @@ export default function Level4() {
 
   const selectTilt = useCallback((angle, eff) => { setTiltAngle(angle); setTiltEff(eff); playPlace(); }, []);
 
-  // â”€â”€â”€ Task completion checks â”€â”€â”€
+  // ─── Task completion checks ───
   useEffect(() => {
     if (phase !== 'play' || taskPhase !== 'active') return;
     const t = currentTask;
@@ -383,7 +383,7 @@ export default function Level4() {
   const advanceTask = useCallback(() => {
     const next = taskIdx + 1;
     if (next >= INSTALL_SUBTASKS.length) {
-      // Phase 0 (install) complete â†’ show "How Solar Works" explainer first
+      // Phase 0 (install) complete → show "How Solar Works" explainer first
       setShowExplainer(true);
     } else {
       setTaskIdx(next);
@@ -406,7 +406,7 @@ export default function Level4() {
     if (!reachedRooftop) setReachedRooftop(true);
   }, [reachedRooftop]);
 
-  // ═══ RENDER: LEVEL INTRO (Learn Before Play) ═══
+  // ═══ RENDER: LEVEL INTRO (Learn Before Play) ═══
   if (showLevelIntro) {
     return (
       <LevelIntro
@@ -426,7 +426,7 @@ export default function Level4() {
 
   }
 
-  // ═══ RENDER: ENTRY ═══
+  // ═══ RENDER: ENTRY ═══
   if (phase === 'entry') {
     return (<div className="l4-container"><div className="l4-intro-overlay">
       <div className={`l4-intro-bg ${introBg}`}/>
@@ -441,10 +441,10 @@ export default function Level4() {
     </div></div>);
   }
 
-  // ═══ RENDER: QUIZ ═══
+  // ═══ RENDER: QUIZ ═══
   if (phase === 'quiz') return <div className="l4-container"><Level4Quiz onComplete={handleQuizComplete}/></div>;
 
-  // ═══ RENDER: REWARD ═══
+  // ═══ RENDER: REWARD ═══
   if (phase === 'reward' && quizResult) {
     const coins = LEVEL4_BADGE.coins + stars * 20;
     return (<div className="l4-container"><div className="l4-reward-overlay"><div className="l4-reward-card">
@@ -463,7 +463,7 @@ export default function Level4() {
     </div></div></div>);
   }
 
-  // ═══ RENDER: COMPARE (Enhanced Before vs After) ═══
+  // ═══ RENDER: COMPARE (Enhanced Before vs After) ═══
   if (phase === 'compare') {
     const co2Reduction = LEVEL3_BEFORE.co2Month > 0 ? Math.round((co2Saved / LEVEL3_BEFORE.co2Month) * 100) : 0;
     const billReduction = savings.pctSaved;
@@ -499,12 +499,12 @@ export default function Level4() {
     </div></div></div>);
   }
 
-  // ═══ RENDER: SOLAR EXPLAINER (How Solar Energy Works) ═══
+  // ═══ RENDER: SOLAR EXPLAINER (How Solar Energy Works) ═══
   if (phase === 'play' && showExplainer) {
     return (<div className="l4-container">
       <div className="l4-hud-top">
         <button className="l4-back-btn" onClick={() => navigate('/hub')}>← Back</button>
-        <div className="l4-hud-title">☀️ How Solar Energy Works</div>
+        <div className="l4-hud-title">☀️ How Solar Energy Works</div>
         <div className="l4-hud-room">Bonus Lesson</div>
       </div>
       <div style={{position:'absolute',top:'55px',left:0,right:0,bottom:0,zIndex:10,overflow:'auto',padding:'60px 16px 20px',display:'flex',alignItems:'center',justifyContent:'center'}}>
@@ -513,7 +513,7 @@ export default function Level4() {
     </div>);
   }
 
-  // ═══ RENDER: PHASE ROUTING (phases 1-9 use new components ON TOP OF 3D) ═══
+  // ═══ RENDER: PHASE ROUTING (phases 1-9 use new components ON TOP OF 3D) ═══
   if (phase === 'play' && phaseIdx > 0) {
     const dashMetrics = {
       solar_kwh: monthlyKwh, co2_saved: co2Saved, bill_saved: savings.saved,
@@ -550,12 +550,12 @@ export default function Level4() {
           <div style={{fontSize:'16px',fontWeight:600,color:'#ffeedd',marginBottom:'8px',lineHeight:1.5}}>{L4_ICONS.target} {currentPhase.objective}</div>
           <div style={{fontSize:'13px',color:'#999',marginBottom:'12px'}}>{currentPhase.desc}</div>
           <div style={{padding:'8px 12px',background:'rgba(245,166,35,0.06)',borderRadius:'8px',fontSize:'12px',color:'#f5a623'}}>{L4_ICONS.bulb} {currentPhase.learning}</div>
-          <div style={{fontSize:'11px',color:'#666',marginTop:'8px'}}>â±ï¸ {currentPhase.duration}</div>
-          <button className="l4-modal-btn" onClick={() => setTaskPhase('active')}>Start Phase â†’</button>
+          <div style={{fontSize:'11px',color:'#666',marginTop:'8px'}}>⏱️ {currentPhase.duration}</div>
+          <button className="l4-modal-btn" onClick={() => setTaskPhase('active')}>Start Phase →</button>
         </div></div>
       </div>);
     }
-    // Active phase â€” WALK AND INTERACT (no side panel)
+    // Active phase — WALK AND INTERACT (no side panel)
     const zones = PHASE_ZONES[phaseIdx] || [];
     const allVisited = zones.length > 0 && zones.every(z => visitedZones.includes(z.id));
     const visitCount = zones.filter(z => visitedZones.includes(z.id)).length;
@@ -609,7 +609,7 @@ export default function Level4() {
         <div className="l4-walk-zones">
           {zones.map(z => (
             <div key={z.id} className={`l4-walk-zone ${visitedZones.includes(z.id) ? 'done' : ''}`}>
-              <span className="l4-walk-zone-check">{visitedZones.includes(z.id) ? '✅' : 'â¬œ'}</span>
+              <span className="l4-walk-zone-check">{visitedZones.includes(z.id) ? '✅' : '⬜'}</span>
               <span>{z.label}</span>
             </div>
           ))}
@@ -620,7 +620,7 @@ export default function Level4() {
         <div className="l4-walk-count">{visitCount}/{zones.length} locations visited</div>
         {allVisited && (
           <button className="l4-modal-btn green l4-walk-next" onClick={() => { setVisitedZones([]); setLearnPopup(null); advancePhase(); }}>
-            ✅ All Learned! Next Phase â†’
+            ✅ All Learned! Next Phase →
           </button>
         )}
       </div>
@@ -630,7 +630,7 @@ export default function Level4() {
         <div className="l4-learn-popup">
           <div className="l4-learn-title">{learnPopup.title}</div>
           <div className="l4-learn-content">{learnPopup.content}</div>
-          <button className="l4-learn-close" onClick={() => setLearnPopup(null)}>Got it âœ“</button>
+          <button className="l4-learn-close" onClick={() => setLearnPopup(null)}>Got it ✔</button>
         </div>
       )}
 
@@ -645,19 +645,19 @@ export default function Level4() {
     </div>);
   }
 
-  // ═══ RENDER: PHASE 0 TASK OBJECTIVE (install sub-tasks briefing) ═══
+  // ═══ RENDER: PHASE 0 TASK OBJECTIVE (install sub-tasks briefing) ═══
   if (phase === 'play' && taskPhase === 'objective' && currentTask) {
     return (<div className="l4-container"><div className="l4-modal-overlay"><div className="l4-modal-card">
-      <div style={{fontSize:'11px',color:'#888',textTransform:'uppercase',letterSpacing:'2px',marginBottom:'6px'}}>Phase 1 â€” Task {taskIdx + 1} of {INSTALL_SUBTASKS.length}</div>
+      <div style={{fontSize:'11px',color:'#888',textTransform:'uppercase',letterSpacing:'2px',marginBottom:'6px'}}>Phase 1 — Task {taskIdx + 1} of {INSTALL_SUBTASKS.length}</div>
       <div className="l4-modal-title"><span style={{fontSize:'36px'}}>{currentTask.icon}</span> {currentTask.title}</div>
       <div style={{fontSize:'16px',fontWeight:600,color:'#ffeedd',marginBottom:'8px',lineHeight:1.5}}>{L4_ICONS.target} {currentTask.objective}</div>
       <div style={{fontSize:'13px',color:'#999',marginBottom:'12px'}}>{currentTask.desc}</div>
       <div style={{padding:'8px 12px',background:'rgba(245,166,35,0.06)',borderRadius:'8px',fontSize:'12px',color:'#f5a623'}}>{L4_ICONS.bulb} {currentTask.hint}</div>
-      <button className="l4-modal-btn" onClick={()=>setTaskPhase('active')}>Start Task â†’</button>
+      <button className="l4-modal-btn" onClick={()=>setTaskPhase('active')}>Start Task →</button>
     </div></div></div>);
   }
 
-  // ═══ RENDER: TASK COMPLETE ═══
+  // ═══ RENDER: TASK COMPLETE ═══
   if (phase === 'play' && taskPhase === 'complete' && currentTask) {
     const learnings = {
       discover: ['Solar is 100% clean and renewable', 'Sunlight can be converted to electricity'],
@@ -682,7 +682,7 @@ export default function Level4() {
     </div></div></div>);
   }
 
-  // ═══ RENDER: INSTALL TASK (modal overlay on 3D) ═══
+  // ═══ RENDER: INSTALL TASK (modal overlay on 3D) ═══
   if (phase === 'play' && taskPhase === 'active' && currentTask?.id === 'install') {
     return (<div className="l4-container">
       <div className="l4-canvas-wrapper">
@@ -711,7 +711,7 @@ export default function Level4() {
     </div>);
   }
 
-  // ═══ RENDER: OPTIMIZE TASK ═══
+  // ═══ RENDER: OPTIMIZE TASK ═══
   if (phase === 'play' && taskPhase === 'active' && currentTask?.id === 'optimize') {
     return (<div className="l4-container">
       <div className="l4-canvas-wrapper">
@@ -739,7 +739,7 @@ export default function Level4() {
     </div>);
   }
 
-  // ═══ RENDER: RECOVERY TASK (Witness the World Recover) ═══
+  // ═══ RENDER: RECOVERY TASK (Witness the World Recover) ═══
   if (phase === 'play' && taskPhase === 'active' && currentTask?.id === 'recovery') {
     const RECOVERY_FEEDBACK = [
       { stage: 0, label: 'Damaged Environment', desc: 'The environment is still recovering\u{2026} your energy choices matter', icon: '\u{1F32A}\u{FE0F}' },
@@ -906,10 +906,10 @@ export default function Level4() {
     </div>);
   }
 
-  // ═══ RENDER: QUIZ-only phases handled above ═══
+  // ═══ RENDER: QUIZ-only phases handled above ═══
   if (phase !== 'play') return null;
 
-  // ═══ RENDER: 3D SCENE (discover, energy, daynight, battery, challenge) ═══
+  // ═══ RENDER: 3D SCENE (discover, energy, daynight, battery, challenge) ═══
   const batteryPct = Math.round((batteryCharge / BATTERY_CAPACITY_KWH) * 100);
   const showTimeSlider = currentTask && ['daynight','battery','challenge'].includes(currentTask.id);
   const showBattery = currentTask && ['battery','challenge'].includes(currentTask.id);
@@ -967,7 +967,7 @@ export default function Level4() {
       </div>
     )}
 
-    {/* ☀️ SOLAR IMPACT SYSTEM (MAIN FEATURE â€” LIVE TICKER) */}
+    {/* ☀️ SOLAR IMPACT SYSTEM (MAIN FEATURE — LIVE TICKER) */}
     {panelCount > 0 && (['energy','daynight','battery','challenge','recovery'].includes(currentTask?.id)) && (
       <>
         {/* Live Solar Ticker Strip */}
@@ -1010,7 +1010,7 @@ export default function Level4() {
           </div>
           {/* Monthly summary line */}
           <div className="l4-impact-summary">
-            {L4_ICONS.chart} Monthly: {monthlyKwh} kWh Â· {'\u20B9'}{savings.saved} saved Â· {co2Saved}kg CO{'\u2082'} reduced
+            {L4_ICONS.chart} Monthly: {monthlyKwh} kWh · {'\u20B9'}{savings.saved} saved · {co2Saved}kg CO{'\u2082'} reduced
           </div>
         </div>
       </>
@@ -1030,7 +1030,7 @@ export default function Level4() {
       </div>
     )}
 
-    {/* ðŸ“Š BEFORE vs AFTER (INLINE â€” FIRST TIME COMPARISON) */}
+    {/* 📊 BEFORE vs AFTER (INLINE — FIRST TIME COMPARISON) */}
     {showInlineCompare && (
       <div className="l4-inline-compare-overlay" onClick={() => setShowInlineCompare(false)}>
         <div className="l4-inline-compare-card" onClick={e => e.stopPropagation()}>
@@ -1074,28 +1074,28 @@ export default function Level4() {
             {L4_ICONS.sparkle} You save {'\u20B9'}{savings.saved}/month ({savings.pctSaved}% reduction)
           </div>
           <div className="l4-inline-lesson">
-            {L4_ICONS.bulb} Solar energy is the solution â€” clean, renewable, and saves money!
+            {L4_ICONS.bulb} Solar energy is the solution — clean, renewable, and saves money!
           </div>
           <button className="l4-modal-btn green" style={{marginTop:'10px',padding:'10px 20px'}} onClick={() => setShowInlineCompare(false)}>Got it! {L4_ICONS.check}</button>
         </div>
       </div>
     )}
 
-    {/* ðŸ’¡ MINI INSIGHT SYSTEM (ENHANCED) */}
+    {/* 💡 MINI INSIGHT SYSTEM (ENHANCED) */}
     {panelCount > 0 && taskPhase === 'active' && (
       <div className="l4-insight-ticker" key={`${solarPct}-${currentSolarW}-${timePeriod.id}-${gridWatts}`}>
         <span className="l4-insight-icon">{L4_ICONS.bulb}</span>
         <span className="l4-insight-text">
-          {solarPct >= 90 ? `🌍Ÿ You are using ${solarPct}% solar energy â€” Almost 100% clean power!`
-            : solarPct >= 70 ? `☀️ You are using ${solarPct}% solar energy â€” Excellent green usage!`
-            : solarPct >= 50 ? `⚡ Grid usage reduced! Solar at ${solarPct}% â€” Keep going!`
-            : solarPct >= 30 ? `ðŸ”‹ Solar supplying ${solarPct}% power. Grid usage dropping!`
-            : solarPct > 0 ? `☀️ Solar active at ${solarPct}%. Use peak sunlight for more!`
-            : currentSolarW > 0 && houseWatts === 0 ? 'ðŸ”Œ Solar panels generating! Turn on appliances to use clean energy.'
-            : timePeriod.sunlight === 0 ? '🌍™ No sunlight â€” Battery or grid powers the house at night.'
-            : gridWatts > 500 ? `âš ï¸ Grid usage high (${gridWatts}W). Shift heavy use to noon!`
-            : panelCount < 4 ? 'ðŸ“ˆ Add more panels for better solar coverage!'
-            : '☀️ Solar is powering your home cleanly!'}
+          {solarPct >= 90 ? `🌍Ÿ You are using ${solarPct}% solar energy — Almost 100% clean power!`
+            : solarPct >= 70 ? `☀️ You are using ${solarPct}% solar energy — Excellent green usage!`
+            : solarPct >= 50 ? `⚡ Grid usage reduced! Solar at ${solarPct}% — Keep going!`
+            : solarPct >= 30 ? `🔋 Solar supplying ${solarPct}% power. Grid usage dropping!`
+            : solarPct > 0 ? `☀️ Solar active at ${solarPct}%. Use peak sunlight for more!`
+            : currentSolarW > 0 && houseWatts === 0 ? '🔌 Solar panels generating! Turn on appliances to use clean energy.'
+            : timePeriod.sunlight === 0 ? '🌍™ No sunlight — Battery or grid powers the house at night.'
+            : gridWatts > 500 ? `⚠️ Grid usage high (${gridWatts}W). Shift heavy use to noon!`
+            : panelCount < 4 ? '📈 Add more panels for better solar coverage!'
+            : '☀️ Solar is powering your home cleanly!'}
         </span>
       </div>
     )}
