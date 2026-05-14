@@ -233,6 +233,13 @@ export default function Level4Player({ onRoomChange, onNearestApplianceChange, o
     }
 
     movingRef.current = moved;
+
+    // Sync posRef from any external state changes (e.g. ladder descent teleport)
+    if (Math.abs(l4PlayerState.x - posRef.current.x) > 1 || Math.abs(l4PlayerState.z - posRef.current.z) > 1) {
+      posRef.current.x = l4PlayerState.x;
+      posRef.current.z = l4PlayerState.z;
+    }
+
     l4PlayerState.x = posRef.current.x;
     l4PlayerState.z = posRef.current.z;
     l4PlayerState.cameraYaw = rotRef.current;

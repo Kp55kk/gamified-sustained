@@ -296,11 +296,17 @@ export default function Level4() {
     if (id === 'solar_ladder') {
       if (!isOnRoof) {
         setIsOnRoof(true);
-        setLearnPopup({ title: '🪜 Climbing to Roof...', content: 'You climbed the ladder! Look around at the solar panels. Press E on panels to learn.', icon: '🪜' });
+        // Teleport player to center of roof so they can freely walk to solar panel
+        l4PlayerState.x = 0;
+        l4PlayerState.z = -2;
+        setLearnPopup({ title: '\uD83E\uDE9C Climbing to Roof...', content: 'You climbed the ladder! Walk to the solar panel and press E to learn about it.', icon: '\uD83E\uDE9C' });
         setTimeout(() => setLearnPopup(null), 4000);
       } else {
         setIsOnRoof(false);
-        setLearnPopup({ title: '🪜 Climbing Down...', content: 'Back on the ground. Continue exploring the solar equipment around the house.', icon: '🪜' });
+        // Teleport player safely outside the wall to avoid collision
+        l4PlayerState.x = -12;
+        l4PlayerState.z = -6;
+        setLearnPopup({ title: '\uD83E\uDE9C Climbing Down...', content: 'Back on the ground. Continue exploring the solar equipment around the house.', icon: '\uD83E\uDE9C' });
         setTimeout(() => setLearnPopup(null), 3000);
       }
       playToggle(true);
@@ -637,7 +643,7 @@ export default function Level4() {
       {/* Proximity hint */}
       {nearest && !learnPopup && (
         <div className="l4-walk-prompt">Press <span className="l4-walk-key">E</span> to interact with {
-          (PHASE_ZONES[phaseIdx]||[]).find(z=>z.appliance===nearest)?.label || nearest
+          (PHASE_ZONES[phaseIdx]||[]).find(z=>z.appliance===nearest)?.label || L2_APPLIANCE_MAP[nearest]?.name || nearest.replace(/_/g, ' ')
         }</div>
       )}
 
