@@ -981,6 +981,8 @@
 .l4-walk-zones { display:flex; flex-direction:column; gap:4px; margin-bottom:10px; }
 .l4-walk-zone { display:flex; align-items:center; gap:6px; font-size:12px; color:#888; padding:4px 8px; border-radius:6px; transition:all 0.3s; border:1px solid transparent; }
 .l4-walk-zone.done { color:#4ade80; background:rgba(34,197,94,0.06); border-color:rgba(34,197,94,0.15); }
+.l4-walk-zone.clickable:not(.done) { color:#fbbf24; border-color:rgba(251,191,36,0.3); background:rgba(251,191,36,0.06); cursor:pointer; animation:l4-pulse-glow 2s ease infinite; }
+.l4-walk-zone.clickable:not(.done):hover { background:rgba(251,191,36,0.12); border-color:rgba(251,191,36,0.5); transform:translateX(2px); }
 .l4-walk-zone-check { font-size:14px; }
 .l4-walk-progress-bar { width:100%; height:4px; background:rgba(255,255,255,0.08); border-radius:2px; overflow:hidden; margin-bottom:4px; }
 .l4-walk-progress-fill { height:100%; background:linear-gradient(90deg,#f59e0b,#22c55e); border-radius:2px; transition:width 0.5s ease; }
@@ -997,3 +999,68 @@
 
 /* Proximity Prompt */
 .l4-walk-prompt { position:absolute; bottom:30px; left:50%; transform:translateX(-50%); background:rgba(10,8,8,0.95); border:2px solid rgba(245,166,35,0.5); border-radius:12px; padding:10px 24px; z-index:22; font-size:14px; font-weight:700; color:#fbbf24; text-align:center; animation:l4-pulse-glow 1.5s ease infinite; }
+
+/* ═══ Shadow / Battery Explainer Overlay ═══ */
+.se-overlay { position:absolute; inset:0; z-index:60; display:flex; align-items:center; justify-content:center; background:radial-gradient(ellipse at center,rgba(10,20,40,0.97),rgba(5,10,20,0.99)); backdrop-filter:blur(8px); animation:l4FadeSlide 0.5s ease; }
+.se-card { background:rgba(12,16,28,0.98); border:2px solid rgba(251,191,36,0.2); border-radius:20px; padding:24px 28px; max-width:560px; width:92%; max-height:88vh; overflow-y:auto; box-shadow:0 8px 60px rgba(0,0,0,0.6); transition:all 0.4s ease; }
+.se-card.se-enter { opacity:0; transform:translateY(20px) scale(0.97); }
+.se-card.se-active { opacity:1; transform:translateY(0) scale(1); }
+.se-card.se-exit { opacity:0; transform:translateY(-20px) scale(0.97); }
+.se-progress { display:flex; gap:6px; justify-content:center; margin-bottom:10px; }
+.se-dot { width:10px; height:10px; border-radius:50%; transition:all 0.3s; }
+.se-dot.active { transform:scale(1.3); box-shadow:0 0 8px currentColor; }
+.se-dot.done { opacity:0.6; }
+.se-step-count { text-align:center; font-size:11px; color:#666; margin-bottom:6px; font-family:'Nunito',sans-serif; }
+.se-title { font-family:'Fredoka',sans-serif; font-size:20px; font-weight:700; text-align:center; margin-bottom:14px; }
+.se-svg { width:100%; height:auto; border-radius:12px; background:rgba(0,0,0,0.3); margin-bottom:14px; }
+.se-desc { font-size:14px; color:#ddd; line-height:1.7; margin-bottom:12px; }
+.se-fact { padding:10px 14px; border-left:3px solid #fbbf24; background:rgba(251,191,36,0.05); border-radius:0 8px 8px 0; font-size:12px; color:#bbb; line-height:1.5; margin-bottom:14px; }
+.se-fact span { font-weight:700; display:block; margin-bottom:2px; }
+.se-quiz { background:rgba(139,92,246,0.06); border:1px solid rgba(139,92,246,0.2); border-radius:12px; padding:14px; margin-bottom:14px; }
+.se-quiz-q { font-size:14px; font-weight:700; color:#a78bfa; margin-bottom:10px; }
+.se-quiz-opts { display:flex; flex-direction:column; gap:8px; }
+.se-quiz-btn { background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.15); border-radius:10px; padding:10px 14px; color:#ddd; font-size:13px; cursor:pointer; transition:all 0.2s; text-align:left; }
+.se-quiz-btn:hover:not(:disabled) { background:rgba(139,92,246,0.12); border-color:rgba(139,92,246,0.4); }
+.se-quiz-btn.correct { background:rgba(34,197,94,0.15); border-color:#22c55e; color:#22c55e; }
+.se-quiz-btn.wrong { background:rgba(239,68,68,0.1); border-color:#ef4444; color:#ef4444; }
+.se-quiz-fb { padding:8px 12px; border-radius:8px; font-size:13px; font-weight:700; margin-top:10px; }
+.se-quiz-fb.correct { background:rgba(34,197,94,0.1); color:#22c55e; }
+.se-quiz-fb.wrong { background:rgba(239,68,68,0.08); color:#ef4444; }
+.se-next { display:block; width:100%; border:none; padding:12px; border-radius:12px; font-size:15px; font-weight:700; font-family:'Fredoka',sans-serif; color:#fff; cursor:pointer; transition:all 0.2s; margin-top:8px; }
+.se-next:hover:not(:disabled) { transform:translateY(-1px); box-shadow:0 4px 20px rgba(0,0,0,0.3); filter:brightness(1.1); }
+.se-next:disabled { opacity:0.4; cursor:not-allowed; }
+
+/* ═══ PM Surya Ghar Office ═══ */
+.pm-hud { position:absolute; top:16px; left:16px; z-index:20; background:rgba(8,8,8,0.92); border:2px solid rgba(245,166,35,0.3); border-radius:14px; padding:14px 18px; backdrop-filter:blur(10px); min-width:200px; }
+.pm-hud-title { font-family:'Fredoka',sans-serif; font-size:16px; font-weight:700; color:#fbbf24; margin-bottom:10px; }
+.pm-checklist { display:flex; flex-direction:column; gap:6px; }
+.pm-check-item { font-size:13px; color:#aaa; font-family:'Nunito',sans-serif; transition:color 0.3s; }
+.pm-check-item.done { color:#22c55e; }
+.pm-visited-count { font-size:11px; color:#666; margin-top:8px; border-top:1px solid #222; padding-top:6px; }
+
+.pm-interact-prompt { position:absolute; bottom:40px; left:50%; transform:translateX(-50%); background:rgba(10,8,8,0.95); border:2px solid rgba(245,166,35,0.5); border-radius:12px; padding:10px 24px; z-index:22; font-size:14px; font-weight:700; color:#fbbf24; text-align:center; animation:l4-pulse-glow 1.5s ease infinite; font-family:'Nunito',sans-serif; }
+.pm-key { display:inline-block; background:rgba(245,166,35,0.2); border:1px solid #fbbf24; border-radius:4px; padding:1px 7px; margin:0 4px; font-size:12px; }
+
+.pm-dialogue { position:absolute; bottom:60px; left:50%; transform:translateX(-50%); background:rgba(8,8,14,0.96); border:2px solid rgba(245,166,35,0.4); border-radius:18px; padding:20px 24px; z-index:30; max-width:520px; width:90%; backdrop-filter:blur(12px); box-shadow:0 4px 40px rgba(0,0,0,0.5); animation:l4FadeSlide 0.4s ease; font-family:'Nunito',sans-serif; }
+.pm-officer-name { font-family:'Fredoka',sans-serif; font-size:16px; font-weight:700; color:#fbbf24; }
+.pm-officer-role { font-size:11px; color:#888; margin-bottom:10px; }
+.pm-text { font-size:14px; color:#e0e0e0; line-height:1.7; margin-bottom:14px; }
+.pm-info-title { font-family:'Fredoka',sans-serif; font-size:16px; font-weight:700; color:#60a5fa; margin-bottom:10px; }
+.pm-info-list { padding-left:18px; margin:0 0 14px; }
+.pm-info-list li { font-size:13px; color:#ccc; line-height:1.8; }
+.pm-quiz-q { font-size:14px; font-weight:700; color:#a78bfa; margin-bottom:12px; }
+.pm-quiz-opts { display:flex; flex-direction:column; gap:8px; margin-bottom:10px; }
+.pm-quiz-btn { background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.15); border-radius:10px; padding:10px 14px; color:#ddd; font-size:13px; cursor:pointer; transition:all 0.2s; text-align:left; font-family:'Nunito',sans-serif; }
+.pm-quiz-btn:hover:not(:disabled) { background:rgba(139,92,246,0.12); border-color:#a78bfa; }
+.pm-quiz-btn.correct { background:rgba(34,197,94,0.15); border-color:#22c55e; color:#22c55e; }
+.pm-quiz-btn.wrong { background:rgba(239,68,68,0.1); border-color:#ef4444; color:#ef4444; }
+.pm-quiz-fb { padding:8px 12px; border-radius:8px; font-size:13px; font-weight:700; margin-bottom:10px; }
+.pm-quiz-fb.correct { color:#22c55e; }
+.pm-quiz-fb.wrong { color:#ef4444; }
+.pm-next-btn { display:block; width:100%; background:linear-gradient(135deg,#d4830a,#f5a623); border:none; color:#fff; padding:11px; border-radius:10px; font-size:14px; font-weight:700; font-family:'Fredoka',sans-serif; cursor:pointer; transition:all 0.2s; }
+.pm-next-btn:hover { transform:translateY(-1px); box-shadow:0 4px 16px rgba(245,158,11,0.3); }
+
+.pm-success-overlay { position:absolute; inset:0; z-index:50; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.8); backdrop-filter:blur(6px); animation:l4FadeSlide 0.5s ease; }
+.pm-success-card { background:rgba(12,16,28,0.98); border:2px solid rgba(34,197,94,0.4); border-radius:20px; padding:32px 40px; text-align:center; box-shadow:0 8px 60px rgba(34,197,94,0.15); animation:l4-compare-pop 0.6s ease; }
+.pm-success-title { font-family:'Fredoka',sans-serif; font-size:24px; font-weight:700; color:#22c55e; margin:12px 0 8px; }
+.pm-success-text { font-size:14px; color:#ccc; line-height:1.7; max-width:360px; }

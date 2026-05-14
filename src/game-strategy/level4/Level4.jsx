@@ -22,6 +22,11 @@ import {
   AutomationPhase, EVChargingPhase, WeatherPhase, DashboardPhase, FinalePhase,
 } from './Level4Phases';
 import SolarExplainer from './SolarExplainer';
+import ShadowExplainer from './ShadowExplainer';
+import RoofLoadExplainer from './RoofLoadExplainer';
+import TiltExplainer from './TiltExplainer';
+import BatteryExplainer from './BatteryExplainer';
+import PMSuryaGharOffice from './PMSuryaGharOffice';
 import Level4Quiz from './Level4Quiz';
 import LevelIntro from '../LevelIntro';
 import './Level4.css';
@@ -121,10 +126,16 @@ export default function Level4() {
   const [isOnRoof, setIsOnRoof] = useState(false);
   const [isClimbing, setIsClimbing] = useState(false);
   const [climbStep, setClimbStep] = useState(0);
+  const [showShadowExplainer, setShowShadowExplainer] = useState(false);
+  const [showBatteryExplainer, setShowBatteryExplainer] = useState(false);
+  const [showRoofLoadExplainer, setShowRoofLoadExplainer] = useState(false);
+  const [showTiltExplainer, setShowTiltExplainer] = useState(false);
 
 
   // Zone definitions - solar-specific objects (NOT appliances)
   // Tasks using solar_roof_panel require climbing the ladder first
+  // BOARD IDENTITY: solar_board_1="Solar Info", solar_board_2="Energy Info", solar_board_3="Cost Info"
+  // Each board ONLY shows content matching its name. All other content uses popup:true (clickable in HUD)
   const PHASE_ZONES = useMemo(() => ({
     1: [
       {id:'panel_basics', appliance:'solar_roof_panel', label:'\u2600\uFE0F Solar Panel \u2014 Basics', requiresRoof: true,
@@ -133,41 +144,25 @@ export default function Level4() {
         learn:'INVERTER \u2014 THE BRAIN \u2014 Converts DC from panels to AC at 230V/50Hz. String Inverter: \u20B925,000-50,000. Micro-inverter: \u20B98,000/panel. Hybrid: \u20B960,000-1L (works with battery). Efficiency: 96-98%. MPPT tracking extracts maximum power.'},
       {id:'net_meter', appliance:'solar_meter', label:'\uD83D\uDCCA Net Meter',
         learn:'NET METERING \u2014 YOUR METER RUNS BACKWARDS! Bi-directional meter records consumption FROM grid and export TO grid. Excess solar = credits! PM Surya Ghar: up to 300 units FREE/month. Earn \u20B93-4/unit for surplus.'},
-      {id:'system_types', appliance:'solar_board_1', label:'\uD83C\uDFE0 Info: System Types',
+      {id:'system_types', appliance:'solar_board_1', label:'\u2600\uFE0F Solar Info: System Types',
         learn:'THREE TYPES: 1. ON-GRID: No battery, cheapest (\u20B93-4L for 5kW). No power during cuts. 2. OFF-GRID: Fully independent, 40-60% costlier. 3. HYBRID (Best): Grid + battery backup. Works during power cuts!'},
     ],
     2: [
-      {id:'tilt_orient', appliance:'solar_roof_panel', label:'\uD83D\uDCD0 Panel \u2014 Tilt Angle', requiresRoof: true,
-        learn:'TILT & ORIENTATION \u2014 Panels must face TRUE SOUTH. Tilt = your latitude. Chennai 13\u00B0, Delhi 28\u00B0, Mumbai 19\u00B0. Wrong tilt loses 10-25% energy! 1\u00B0 wrong = 0.5% loss. Never face north \u2014 30%+ loss.'},
-      {id:'shadow_analysis', appliance:'solar_board_1', label:'\uD83C\uDF24\uFE0F Info: Shadow Analysis',
-        learn:'SHADOW \u2014 THE SILENT KILLER \u2014 Shade on ONE cell reduces entire panel 30-50%! Check shadows at 9AM, 12PM, 3PM. Min 5h shadow-free needed. India receives 4-7 kWh/m\u00B2/day solar radiation (excellent!).'},
-      {id:'roof_load', appliance:'solar_board_2', label:'\uD83C\uDFD7\uFE0F Info: Roof Load',
-        learn:'ROOF LOAD \u2014 Each panel: 20-22 kg + mounting = 15-18 kg/sq.m. RCC roof: handles easily (150+ kg/m\u00B2). 5kW needs ~50 sq.m (500 sq.ft). GI mounting lasts 25+ years.'},
+      {id:'tilt_orient', appliance: null, popup: true, label:'\uD83D\uDCD0 Info: Tilt Angle & Orientation',
+        learn:'TILT & ORIENTATION \u2014 Panels must face TRUE SOUTH. Tilt = your latitude.'},
+      {id:'shadow_analysis', appliance: null, popup: true, label:'\uD83C\uDF24\uFE0F Info: Shadow Analysis',
+        learn:'SHADOW \u2014 THE SILENT KILLER \u2014 Shade on ONE cell reduces entire panel 30-50%!'},
+      {id:'roof_load', appliance: null, popup: true, label:'\uD83C\uDFD7\uFE0F Info: Roof Load',
+        learn:'ROOF LOAD \u2014 Each panel: 20-22 kg + mounting = 15-18 kg/sq.m.'},
     ],
-    3: [
-      {id:'pm_surya', appliance:'solar_board_1', label:'\uD83C\uDFDB\uFE0F Info: PM Surya Ghar',
-        learn:'PM SURYA GHAR \u2014 Up to 2kW: \u20B930,000/kW (\u20B960,000 total). 2-3kW: \u20B918,000/kW extra (\u20B978,000 for 3kW). Above 3kW: capped \u20B978,000. Target: 1 crore homes. Must use MNRE vendor. Apply: pmsuryaghar.gov.in'},
-      {id:'cost_roi', appliance:'solar_board_2', label:'\uD83D\uDCB0 Info: Cost & ROI',
-        learn:'COST & ROI \u2014 5kW: Panels \u20B91.8L + Inverter \u20B945K + Mount \u20B935K + Install \u20B915K = \u20B92.8L. Subsidy: -\u20B978K. YOU PAY: \u20B92.02L. Annual savings: \u20B955-70K. Payback: 3-4 years. 25yr profit: \u20B912-15L!'},
-      {id:'tariff_slab', appliance:'solar_board_3', label:'\uD83D\uDCCA Info: Tariff Slabs',
-        learn:'TARIFFS \u2014 0-100 units: \u20B92-3. 100-200: \u20B94-5. 200-300: \u20B96-7. 500+: \u20B99-12. With solar: DROP from 400+ to under 100 units! Bill: \u20B93-4K becomes \u20B9200-400!'},
-      {id:'loan_finance', appliance:'solar_meter', label:'\uD83C\uDFE6 Meter: Financing',
-        learn:'FINANCING \u2014 SBI Solar Loan: 7.5%, up to \u20B910L. EMI ~\u20B93,500/mo (5yr). Solar savings (\u20B95K/mo) EXCEED EMI! RESCO Model: Company installs FREE, you buy at \u20B93-4/unit vs \u20B98 grid.'},
-    ],
-    4: [
-      {id:'battery_types', appliance:'solar_battery', label:'\uD83D\uDD0B Battery Unit \u2014 Types',
-        learn:'BATTERIES \u2014 LiFePO4 (Best): \u20B940-60K/kWh, 10-15yr (6000+ cycles), 90% usable. Lead-Acid: \u20B910-15K/kWh, 3-5yr (500-800 cycles), 50% usable. Lithium lasts 3x longer!'},
-      {id:'battery_sizing', appliance:'solar_board_1', label:'\uD83D\uDCCA Info: Battery Sizing',
-        learn:'SIZING \u2014 Night loads (12h): LEDs 600Wh + Fans 1260Wh + Fridge 1800Wh + WiFi 180Wh + Phone 100Wh + TV 300Wh = 4240Wh = 4.24kWh. Recommended: 5kWh with 15% margin.'},
-      {id:'charge_cycle', appliance:'solar_inverter', label:'\uD83D\uDD04 Inverter \u2014 Daily Cycle',
-        learn:'DAILY CYCLE \u2014 6-9AM: Solar starts, charging. 9AM-3PM: Peak \u2014 battery full + house solar + excess to grid. 6-10PM: Battery powers home (saves \u20B98-12/unit!). Grid: 100% \u2192 5-10%.'},
-    ],
+    // Phase 4 (idx 3) = PM Surya Ghar Office (handled by PMSuryaGharOffice component)
+    // Phase 5 (idx 4) = Battery Explainer (handled by BatteryExplainer component)
     5: [
-      {id:'load_shifting', appliance:'solar_board_2', label:'\u23F0 Info: Load Shifting',
+      {id:'load_shifting', appliance:'solar_board_2', label:'\uD83D\uDD0B Energy Info: Load Shifting',
         learn:'LOAD SHIFTING \u2014 Heavy loads 10AM-3PM = FREE: Washer 2PM=\u20B90 vs 7PM=\u20B94. Geyser 11AM=\u20B90 vs 7AM=\u20B924. EV noon=\u20B90 vs night=\u20B926. Savings: \u20B91,500-2,000/month.'},
-      {id:'smart_sensors', appliance:'solar_board_3', label:'\uD83E\uDD16 Info: Smart Sensors',
+      {id:'smart_sensors', appliance: null, popup: true, label:'\uD83E\uDD16 Info: Smart Sensors',
         learn:'AUTOMATION \u2014 PIR Sensor (\u20B9500/room): Auto-OFF when empty. Smart Thermostat (\u20B93K): 24\u00B0C auto. Every 1\u00B0C lower = 6% more electricity. 24\u00B0C vs 20\u00B0C saves 24%!'},
-      {id:'star_rating', appliance:'solar_board_1', label:'\u2B50 Info: BEE Star Ratings',
+      {id:'star_rating', appliance: null, popup: true, label:'\u2B50 Info: BEE Star Ratings',
         learn:'BEE RATINGS \u2014 AC 1.5T: 1-star 1800kWh/yr vs 5-star 1000kWh. SAVES \u20B96,400/yr! Fan: 75W \u2192 5-star 30W. Replace ALL with 5-star: save \u20B915,000/year!'},
       {id:'ev_solar', appliance:'solar_ev_charger', label:'\uD83D\uDE97 EV Charger \u2014 Solar+EV',
         learn:'EV + SOLAR \u2014 Per km: Petrol \u20B95.5, EV+Grid \u20B90.8, EV+Solar \u20B90.0! Nexon EV 312km range. Solar charge 9h. Save \u20B990K+/yr. V2H: EV battery powers home at night!'},
@@ -177,23 +172,23 @@ export default function Level4() {
         learn:'SEASONAL \u2014 Summer (Mar-Jun): Best! 28-30 kWh/day. Heat reduces 10-15%. Monsoon (Jul-Sep): Drops 30-50%, rain self-cleans! Winter (Oct-Feb): Cooler = better. Annual: 1500-1800 kWh/kW.'},
       {id:'maintenance', appliance:'solar_roof_panel', label:'\uD83E\uDDF9 Panel \u2014 Maintenance', requiresRoof: true,
         learn:'MAINTENANCE \u2014 Clean every 2-4 weeks: soft water + mild soap. NEVER hard water! Dusty panels lose 15-25%. Annual pro check (\u20B92-3K). Degradation 0.5%/yr. Year 25: still 87.5% output!'},
-      {id:'monsoon_prep', appliance:'solar_board_1', label:'\uD83C\uDF27\uFE0F Info: Monsoon Safety',
+      {id:'monsoon_prep', appliance:'solar_board_1', label:'\u2600\uFE0F Solar Info: Monsoon Safety',
         learn:'MONSOON PREP \u2014 Lightning arrester (\u20B93-5K). Surge protection on inverter. 3 copper earth pits. Without: one strike = \u20B91-2L damage! Wind load 150 km/h (IS 875). IP67 waterproof.'},
     ],
     7: [
-      {id:'co2_impact', appliance:'solar_board_2', label:'\uD83C\uDF3F Info: CO\u2082 Impact',
+      {id:'co2_impact', appliance:'solar_board_2', label:'\uD83D\uDD0B Energy Info: CO\u2082 Impact',
         learn:'ENVIRONMENTAL \u2014 5kW = 7500 kWh/yr. CO\u2082 prevented: 6150 kg/yr = 280 Neem trees. 25 years: 153,750 kg CO\u2082 = 153.75 TONNES! 1 crore solar homes = India aviation emissions!'},
-      {id:'community', appliance:'solar_board_3', label:'\uD83C\uDFD8\uFE0F Info: Community Solar',
+      {id:'community', appliance:'solar_board_3', label:'\uD83D\uDCB0 Cost Info: Community Solar',
         learn:'COMMUNITY SOLAR \u2014 Group housing: virtual net metering, 15-20% cheaper. Common area = 100% solar. India: 100 GW achieved (2024). Target: 500 GW by 2030.'},
-      {id:'future_tech', appliance:'solar_board_1', label:'\uD83D\uDE80 Info: Future Tech',
+      {id:'future_tech', appliance:'solar_board_1', label:'\u2600\uFE0F Solar Info: Future Tech',
         learn:'FUTURE \u2014 Bifacial Panels: both sides, 10-30% more. Solar Roof Tiles: no mounting. Solid-State Batteries (2026-2028): 2x density, 20+ years. Perovskite Cells: 30%+ efficiency, printable!'},
     ],
     8: [
       {id:'total_savings', appliance:'solar_meter', label:'\uD83D\uDCB0 Meter \u2014 25yr Savings',
         learn:'25-YEAR VIEW \u2014 Cost \u20B93.5L - Subsidy \u20B978K = \u20B92.72L. Savings \u20B965K/yr. Payback 4.2yr. 25yr profit: \u20B913.53L. ROI 497%. BEATS Fixed Deposit + saves the planet!'},
-      {id:'knowledge_check', appliance:'solar_board_1', label:'\uD83D\uDCDA Info: Knowledge Check',
+      {id:'knowledge_check', appliance:'solar_board_1', label:'\u2600\uFE0F Solar Info: Knowledge Check',
         learn:'SOLAR EXPERT: PV\u2192DC. Inverter DC\u2192AC 230V. Net metering exports. Tilt = latitude. Shadow = 30% loss. PM Surya Ghar \u20B978K. Payback 3-4yr. LiFePO4 best. Load shift \u20B91500/mo. BEE 5-star. Solar EV \u20B90/km. 153T CO\u2082 saved!'},
-      {id:'action_plan', appliance:'solar_board_2', label:'\uD83C\uDFAF Info: Action Plan',
+      {id:'action_plan', appliance:'solar_board_3', label:'\uD83D\uDCB0 Cost Info: Action Plan',
         learn:'10-STEP PLAN: 1. pmsuryaghar.gov.in 2. Site survey 3. Choose Hybrid 4. MNRE vendor 5. Roof check 6. South-facing + latitude tilt 7. DISCOM + net meter 8. Claim \u20B978K 9. Smart sensors + 5-star 10. Heavy loads 10AM-3PM.'},
     ],
   }), []);
@@ -322,6 +317,11 @@ export default function Level4() {
           return;
         }
         if (!visitedZones.includes(zone.id)) {
+          // Shadow Analysis -> trigger ShadowExplainer instead of text popup
+          if (zone.id === 'shadow_analysis') {
+            setShowShadowExplainer(true);
+            return;
+          }
           setVisitedZones(prev => [...prev, zone.id]);
           setLearnPopup({ title: zone.label, content: zone.learn, icon: zone.label.slice(0,2) });
           playToggle(true);
@@ -591,6 +591,23 @@ export default function Level4() {
       </div>);
     }
 
+    // Phase 4 (phaseIdx===3): PM Surya Ghar Office — full 3D office scene
+    if (phaseIdx === 3 && taskPhase === 'active') {
+      return <PMSuryaGharOffice onComplete={() => { setVisitedZones([]); setLearnPopup(null); advancePhase(); }}/>;
+    }
+
+    // Phase 5 (phaseIdx===4): Battery Explainer — fullscreen animated tutorial
+    if (phaseIdx === 4 && taskPhase === 'active') {
+      return (<div className="l4-container">
+        <div className="l4-hud-top">
+          <button className="l4-back-btn" onClick={() => navigate('/hub')}>{'\u2190'} Back</button>
+          <div className="l4-hud-title">{currentPhase?.icon} {currentPhase?.title}</div>
+          <div className="l4-hud-room">Phase {phaseIdx + 1}/{TOTAL_PHASES}</div>
+        </div>
+        <BatteryExplainer onComplete={() => { setVisitedZones([]); setLearnPopup(null); advancePhase(); }}/>
+      </div>);
+    }
+
     return (<div className="l4-container">
       <div className="l4-canvas-wrapper" style={{width:'100%'}}>
         <Canvas camera={{position:[-5,8,-14],fov:50}} gl={{antialias:false}} onCreated={({gl})=>{gl.setClearColor('#050a15');gl.toneMapping=1;gl.toneMappingExposure=1.0;gl.setPixelRatio(Math.min(window.devicePixelRatio,1.5))}}>
@@ -614,9 +631,22 @@ export default function Level4() {
         <div className="l4-walk-objective">{L4_ICONS.target} Walk to each location and press <span className="l4-walk-key">E</span> to learn</div>
         <div className="l4-walk-zones">
           {zones.map(z => (
-            <div key={z.id} className={`l4-walk-zone ${visitedZones.includes(z.id) ? 'done' : ''}`}>
-              <span className="l4-walk-zone-check">{visitedZones.includes(z.id) ? '✅' : '⬜'}</span>
-              <span>{z.label}</span>
+            <div key={z.id} className={`l4-walk-zone ${visitedZones.includes(z.id) ? 'done' : ''} ${z.popup ? 'clickable' : ''}`}
+              onClick={() => {
+                if (!z.popup || visitedZones.includes(z.id)) return;
+                if (z.id === 'shadow_analysis') setShowShadowExplainer(true);
+                else if (z.id === 'roof_load') setShowRoofLoadExplainer(true);
+                else if (z.id === 'tilt_orient') setShowTiltExplainer(true);
+                else {
+                  // Generic popup for smart_sensors, star_rating, etc.
+                  setLearnPopup({ title: z.label, content: z.learn, icon: z.label.slice(0,2) });
+                  setVisitedZones(prev => [...prev, z.id]);
+                  setTimeout(() => setLearnPopup(null), 12000);
+                }
+              }}
+              style={z.popup && !visitedZones.includes(z.id) ? {cursor:'pointer'} : {}}>
+              <span className="l4-walk-zone-check">{visitedZones.includes(z.id) ? '\u2705' : '\u2B1C'}</span>
+              <span>{z.label}{z.popup && !visitedZones.includes(z.id) ? ' \u{1F449} Click' : ''}</span>
             </div>
           ))}
         </div>
@@ -638,6 +668,33 @@ export default function Level4() {
           <div className="l4-learn-content">{learnPopup.content}</div>
           <button className="l4-learn-close" onClick={() => setLearnPopup(null)}>Got it ✔</button>
         </div>
+      )}
+
+      {/* Shadow Analysis Explainer (premium animated popup) */}
+      {showShadowExplainer && (
+        <ShadowExplainer onComplete={() => {
+          setShowShadowExplainer(false);
+          setVisitedZones(prev => [...prev, 'shadow_analysis']);
+          playToggle(true);
+        }}/>
+      )}
+
+      {/* Roof Load Explainer (premium animated popup) */}
+      {showRoofLoadExplainer && (
+        <RoofLoadExplainer onComplete={() => {
+          setShowRoofLoadExplainer(false);
+          setVisitedZones(prev => [...prev, 'roof_load']);
+          playToggle(true);
+        }}/>
+      )}
+
+      {/* Tilt Angle Explainer (premium animated popup) */}
+      {showTiltExplainer && (
+        <TiltExplainer onComplete={() => {
+          setShowTiltExplainer(false);
+          setVisitedZones(prev => [...prev, 'tilt_orient']);
+          playToggle(true);
+        }}/>
       )}
 
       {/* Proximity hint */}
