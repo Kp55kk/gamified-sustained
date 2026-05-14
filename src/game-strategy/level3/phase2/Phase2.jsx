@@ -425,8 +425,8 @@ const charState=useMemo(()=>{
       cam={target:[11,1.5,0],offset:[6,4,6]};
     }
     else if(tid==='climb_down'){
-      // Camera outside left, watching Arjun descend
-      const climbY=Math.max(0,(2-climbStep)*1.1);
+      // Camera outside left, watching Arjun descend — climbStep 3=top, 0=ground
+      const climbY=climbStep*1.1;
       pos=[-10.5,climbY,-3];action='climb';angle=0;
       cam={target:[-10.5,climbY+1.5,-3],offset:[-10,3,8]};
     }

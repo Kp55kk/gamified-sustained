@@ -5,6 +5,7 @@ import House from '../House';
 import Level4Player, { l4PlayerState } from './Level4Player';
 import Level2Appliances, { getProximityLevels } from '../level2/Level2Appliances';
 import Level4Environment from './Level4Environment';
+import Level4SolarObjects, { getSolarProximity } from './Level4SolarObjects';
 import { useGame } from '../../context/GameContext';
 import {
   L2_APPLIANCE_IDS, L2_APPLIANCE_MAP, USAGE_HOURS,
@@ -25,22 +26,22 @@ import Level4Quiz from './Level4Quiz';
 import LevelIntro from '../LevelIntro';
 import './Level4.css';
 
-// ═══ AUDIO ═══
+// ═══ AUDIO ═══
 let audioCtx = null;
 function getAC() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); return audioCtx; }
 function playPlace() { try { const c=getAC(),o=c.createOscillator(),g=c.createGain(); o.connect(g);g.connect(c.destination);o.type='triangle';o.frequency.setValueAtTime(600,c.currentTime);o.frequency.linearRampToValueAtTime(900,c.currentTime+0.1);g.gain.setValueAtTime(0.1,c.currentTime);g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+0.2);o.start(c.currentTime);o.stop(c.currentTime+0.2); } catch(e){} }
 function playSuccess() { [523,659,784,1047].forEach((f,i) => { try { const c=getAC(),o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.type='triangle';o.frequency.setValueAtTime(f,c.currentTime+i*0.12);g.gain.setValueAtTime(0.08,c.currentTime+i*0.12);g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+i*0.12+0.3);o.start(c.currentTime+i*0.12);o.stop(c.currentTime+i*0.12+0.3); } catch(e){} }); }
 function playToggle(on) { try { const c=getAC(),o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.setValueAtTime(on?800:300,c.currentTime);g.gain.setValueAtTime(0.08,c.currentTime);g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+0.1);o.start(c.currentTime);o.stop(c.currentTime+0.1); } catch(e){} }
 
-// ═══ 3D HELPERS ═══
+// ═══ 3D HELPERS ═══
 function CamRef({r}){const{camera}=useThree();useEffect(()=>{r.current=camera},[camera,r]);return null;}
 
-function Scene({appStates,nearest,onRoom,onNearest,onInteract,camRef,proxLevels,recovery,timeOfDay,slots,tilt,showMarkers,onRooftopReach}){
-  return(<><CamRef r={camRef}/><Level4Environment recoveryLevel={recovery} timeOfDay={timeOfDay} installedSlots={slots} tiltAngle={tilt} showSlotMarkers={showMarkers}/><House/><Level2Appliances applianceStates={appStates} nearestAppliance={nearest} taskTargetIds={null} proximityLevels={proxLevels}/><Level4Player onRoomChange={onRoom} onNearestApplianceChange={onNearest} onInteract={onInteract} applianceIdList={L2_APPLIANCE_IDS} onRooftopReach={onRooftopReach}/></>);
+function Scene({appStates,nearest,onRoom,onNearest,onInteract,camRef,proxLevels,recovery,timeOfDay,slots,tilt,showMarkers,onRooftopReach,solarProx,phaseIdx,onNearestSolarChange,onSolarInteract,isOnRoof}){
+  return(<><CamRef r={camRef}/><Level4Environment recoveryLevel={recovery} timeOfDay={timeOfDay} installedSlots={slots} tiltAngle={tilt} showSlotMarkers={showMarkers}/><House/><Level2Appliances applianceStates={appStates} nearestAppliance={nearest} taskTargetIds={null} proximityLevels={proxLevels}/><Level4SolarObjects solarProximity={solarProx} phaseIdx={phaseIdx}/><Level4Player onRoomChange={onRoom} onNearestApplianceChange={onNearest} onInteract={onInteract} applianceIdList={L2_APPLIANCE_IDS} onRooftopReach={onRooftopReach} onNearestSolarChange={onNearestSolarChange} onSolarInteract={onSolarInteract} isOnRoof={isOnRoof}/></>);
 }
 
-// ═══ BACKWARD-COMPAT: Map old task IDs to phase flow ═══
-// Phase 1 (install) uses sub-tasks: discover → install → optimize → energy test
+// ═══ BACKWARD-COMPAT: Map old task IDs to phase flow ═══
+// Phase 1 (install) uses sub-tasks: discover â†’ install â†’ optimize â†’ energy test
 const INSTALL_SUBTASKS = [
   { id: 'discover', title: 'Solar Discovery', icon: '\u{2600}\u{FE0F}', objective: 'Walk outside and explore', desc: 'Look at the house and the surrounding environment.', hint: 'Use W to walk forward, A/D to turn.' },
   { id: 'install', title: 'Install Panels', icon: '\u{1F527}', objective: 'Place solar panels on the roof', desc: 'Click the roof grid to place panels. Place at least 3!', hint: 'Avoid shadow spots!' },
@@ -48,12 +49,12 @@ const INSTALL_SUBTASKS = [
 ];
 const TOTAL_PHASES = L4_PHASES.length;
 
-// ═══ CONTROLS HELP ═══
+// ═══ CONTROLS HELP ═══
 function ControlsHelp(){const[s,setS]=useState(false);
   return(<><button className="l4-help-btn" onClick={()=>setS(true)}>?</button>{s&&<div className="l4-controls-overlay" onClick={()=>setS(false)}><div className="l4-controls-card" onClick={e=>e.stopPropagation()}><div className="l4-controls-title">{L4_ICONS.grad} Controls</div>{[['W/\u2191','Forward'],['S/\u2193','Backward'],['A/\u2190','Turn Left'],['D/\u2192','Turn Right'],['Q','Look Up'],['Z','Look Down'],['E','Interact']].map(([k,l])=><div key={k} className="l4-ctrl-row"><span><span className="l4-key">{k}</span></span><span>{l}</span></div>)}<button className="l4-controls-got-it" onClick={()=>setS(false)}>Got it!</button></div></div>}</>);
 }
 
-// ═══ MAIN ═══
+// ═══ MAIN ═══
 export default function Level4() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -111,58 +112,91 @@ export default function Level4() {
   const [hasSeenCompare, setHasSeenCompare] = useState(false);
   const [impactPulse, setImpactPulse] = useState(false);
 
-  // ─── Walk-and-Interact System (phases 1-9) ───
+  // â”€â”€â”€ Walk-and-Interact System (phases 1-9) â”€â”€â”€
   const [visitedZones, setVisitedZones] = useState([]);
-  const [learnPopup, setLearnPopup] = useState(null); // {title, content, icon}
+  const [learnPopup, setLearnPopup] = useState(null);
   const [phaseHint, setPhaseHint] = useState('');
+  const [nearestSolar, setNearestSolar] = useState(null);
+  const [solarProxLevels, setSolarProxLevels] = useState({});
+  const [isOnRoof, setIsOnRoof] = useState(false);
+  const [isClimbing, setIsClimbing] = useState(false);
+  const [climbStep, setClimbStep] = useState(0);
 
-  // Zone definitions for each phase — player walks here and presses E
+
+  // Zone definitions - solar-specific objects (NOT appliances)
+  // Tasks using solar_roof_panel require climbing the ladder first
   const PHASE_ZONES = useMemo(() => ({
-    1: [ // Energy Flow: trace the circuit
-      {id:'panels',   appliance:'ac',         label:'🔆 Solar Panels (Roof)',  learn:'☀️ Photons from sunlight knock electrons loose in silicon cells, creating DC electricity. Each panel generates 300-400W. Your 5kW system has 12-15 panels producing DC current at 30-40V.'},
-      {id:'inverter',  appliance:'geyser',     label:'🔌 Inverter (Wall)',      learn:'⚡ The inverter converts DC (Direct Current) from panels to AC (Alternating Current) at 230V/50Hz — India standard. Without this, your home appliances cannot use solar power. Modern inverters are 97% efficient!'},
-      {id:'meter',     appliance:'fridge',      label:'📊 Smart Meter (Outside)', learn:'📊 The net meter measures two-way flow: power FROM grid and power TO grid. When your panels produce more than you use, excess flows back — your meter runs backwards! This is net metering (MNRE policy).'},
-      {id:'switchboard',appliance:'fan',       label:'🏠 Switchboard (Inside)', learn:'🏠 The switchboard distributes AC power to all rooms. Solar power flows: Panels → Inverter → Switchboard → Appliances. During daytime, 100% of your power comes from the sun — zero grid cost!'},
+    1: [
+      {id:'panel_basics', appliance:'solar_roof_panel', label:'\u2600\uFE0F Solar Panel \u2014 Basics', requiresRoof: true,
+        learn:'SOLAR PANELS (PHOTOVOLTAIC CELLS) \u2014 Silicon cells convert sunlight to DC electricity via the photovoltaic effect. Monocrystalline: 18-22% efficiency (best). Polycrystalline: 15-17% (budget). A 400W panel = 1.6 kWh/day in India. Lifespan: 25-30 years with only 0.5% annual degradation!'},
+      {id:'inverter_learn', appliance:'solar_inverter', label:'\uD83D\uDD0C Inverter Box',
+        learn:'INVERTER \u2014 THE BRAIN \u2014 Converts DC from panels to AC at 230V/50Hz. String Inverter: \u20B925,000-50,000. Micro-inverter: \u20B98,000/panel. Hybrid: \u20B960,000-1L (works with battery). Efficiency: 96-98%. MPPT tracking extracts maximum power.'},
+      {id:'net_meter', appliance:'solar_meter', label:'\uD83D\uDCCA Net Meter',
+        learn:'NET METERING \u2014 YOUR METER RUNS BACKWARDS! Bi-directional meter records consumption FROM grid and export TO grid. Excess solar = credits! PM Surya Ghar: up to 300 units FREE/month. Earn \u20B93-4/unit for surplus.'},
+      {id:'system_types', appliance:'solar_board_1', label:'\uD83C\uDFE0 Info: System Types',
+        learn:'THREE TYPES: 1. ON-GRID: No battery, cheapest (\u20B93-4L for 5kW). No power during cuts. 2. OFF-GRID: Fully independent, 40-60% costlier. 3. HYBRID (Best): Grid + battery backup. Works during power cuts!'},
     ],
-    2: [ // Battery Storage
-      {id:'battery_day',  appliance:'geyser',  label:'🔋 Battery Unit (Day)',   learn:'☀️ During 10AM-3PM, solar panels produce excess power. The lithium-ion battery stores this at 95% efficiency. A 10kWh battery costs ₹4-6 lakh. MNRE offers 40% subsidy, bringing cost to ₹2.4-3.6 lakh!'},
-      {id:'battery_night',appliance:'fridge',  label:'🌙 Battery Unit (Night)', learn:'🌙 At night (6PM-6AM), no solar power. The battery discharges to power your home. 10kWh powers lights (200W) + fan (75W) + fridge (150W) + TV (100W) = 525W for ~19 hours! No grid needed.'},
-      {id:'meter_check',  appliance:'fan',     label:'📊 Check Grid Usage',     learn:'📊 With battery: Grid usage drops from 100% to just 5-10% (only during cloudy monsoon days). Annual savings: ₹15,000-25,000. Battery pays for itself in 8-10 years, lasts 15+ years.'},
+    2: [
+      {id:'tilt_orient', appliance:'solar_roof_panel', label:'\uD83D\uDCD0 Panel \u2014 Tilt Angle', requiresRoof: true,
+        learn:'TILT & ORIENTATION \u2014 Panels must face TRUE SOUTH. Tilt = your latitude. Chennai 13\u00B0, Delhi 28\u00B0, Mumbai 19\u00B0. Wrong tilt loses 10-25% energy! 1\u00B0 wrong = 0.5% loss. Never face north \u2014 30%+ loss.'},
+      {id:'shadow_analysis', appliance:'solar_board_1', label:'\uD83C\uDF24\uFE0F Info: Shadow Analysis',
+        learn:'SHADOW \u2014 THE SILENT KILLER \u2014 Shade on ONE cell reduces entire panel 30-50%! Check shadows at 9AM, 12PM, 3PM. Min 5h shadow-free needed. India receives 4-7 kWh/m\u00B2/day solar radiation (excellent!).'},
+      {id:'roof_load', appliance:'solar_board_2', label:'\uD83C\uDFD7\uFE0F Info: Roof Load',
+        learn:'ROOF LOAD \u2014 Each panel: 20-22 kg + mounting = 15-18 kg/sq.m. RCC roof: handles easily (150+ kg/m\u00B2). 5kW needs ~50 sq.m (500 sq.ft). GI mounting lasts 25+ years.'},
     ],
-    3: [ // Peak Hour Management
-      {id:'washer',    appliance:'fan',        label:'👕 Washing Machine',      learn:'👕 Washing machine uses 500W for ~1 hour. Running at 2PM (solar hours) = FREE. Running at 7PM (peak) = ₹4/unit × 0.5 kWh = ₹2 per wash. Over a month: ₹60 saved just on washing!'},
-      {id:'geyser',    appliance:'geyser',     label:'🚿 Water Heater',         learn:'🚿 Geyser is the heaviest load: 3000W! Running for 30 min at peak = ₹12. At solar hours = FREE. Monthly geyser savings alone: ₹360. Solar water heater (₹15,000) eliminates this completely.'},
-      {id:'ev_charge', appliance:'ac',         label:'🚗 EV Charger',           learn:'🚗 EV charging needs 3.3kW for 8 hours (26.4 kWh). At peak tariff (₹12/unit) = ₹317/charge. During solar hours = ₹0! That is ₹9,500/month saved. Schedule charging 10AM-3PM always.'},
-      {id:'tariff',    appliance:'fridge',     label:'📊 Tariff Display',       learn:'📊 Indian electricity uses slab pricing: 0-100 units = ₹3/unit, 100-200 = ₹5, 200-300 = ₹7, 300+ = ₹8. Peak hours (6-10 PM) add surcharge. Solar eliminates the expensive upper slabs entirely!'},
+    3: [
+      {id:'pm_surya', appliance:'solar_board_1', label:'\uD83C\uDFDB\uFE0F Info: PM Surya Ghar',
+        learn:'PM SURYA GHAR \u2014 Up to 2kW: \u20B930,000/kW (\u20B960,000 total). 2-3kW: \u20B918,000/kW extra (\u20B978,000 for 3kW). Above 3kW: capped \u20B978,000. Target: 1 crore homes. Must use MNRE vendor. Apply: pmsuryaghar.gov.in'},
+      {id:'cost_roi', appliance:'solar_board_2', label:'\uD83D\uDCB0 Info: Cost & ROI',
+        learn:'COST & ROI \u2014 5kW: Panels \u20B91.8L + Inverter \u20B945K + Mount \u20B935K + Install \u20B915K = \u20B92.8L. Subsidy: -\u20B978K. YOU PAY: \u20B92.02L. Annual savings: \u20B955-70K. Payback: 3-4 years. 25yr profit: \u20B912-15L!'},
+      {id:'tariff_slab', appliance:'solar_board_3', label:'\uD83D\uDCCA Info: Tariff Slabs',
+        learn:'TARIFFS \u2014 0-100 units: \u20B92-3. 100-200: \u20B94-5. 200-300: \u20B96-7. 500+: \u20B99-12. With solar: DROP from 400+ to under 100 units! Bill: \u20B93-4K becomes \u20B9200-400!'},
+      {id:'loan_finance', appliance:'solar_meter', label:'\uD83C\uDFE6 Meter: Financing',
+        learn:'FINANCING \u2014 SBI Solar Loan: 7.5%, up to \u20B910L. EMI ~\u20B93,500/mo (5yr). Solar savings (\u20B95K/mo) EXCEED EMI! RESCO Model: Company installs FREE, you buy at \u20B93-4/unit vs \u20B98 grid.'},
     ],
-    4: [ // Smart Cooling
-      {id:'thermostat', appliance:'ac',        label:'🌡️ Thermostat',          learn:'🌡️ ECBC 2017 recommends 24±1°C for comfort. Every 1°C lower increases AC energy by 6%. Setting AC at 24°C instead of 20°C saves 24% electricity! Use a smart thermostat for auto-adjustment.'},
-      {id:'cool_roof',  appliance:'geyser',    label:'🏠 Roof Coating',         learn:'🏠 White reflective roof coating (₹50/sq.ft) reflects 70% of sunlight. Reduces indoor temp by 3-5°C. A 1000 sq.ft roof coating costs ₹50,000 but saves ₹8,000/year on AC bills. ROI in 6 years.'},
-      {id:'fan_mode',   appliance:'fan',       label:'🌀 Ceiling Fan',          learn:'🌀 A 5-star BEE-rated ceiling fan uses just 30-35W vs old fans at 75W. Combined with cool roof coating, ceiling fan alone maintains 26°C comfort without AC. Annual saving: ₹12,000 per room.'},
+    4: [
+      {id:'battery_types', appliance:'solar_battery', label:'\uD83D\uDD0B Battery Unit \u2014 Types',
+        learn:'BATTERIES \u2014 LiFePO4 (Best): \u20B940-60K/kWh, 10-15yr (6000+ cycles), 90% usable. Lead-Acid: \u20B910-15K/kWh, 3-5yr (500-800 cycles), 50% usable. Lithium lasts 3x longer!'},
+      {id:'battery_sizing', appliance:'solar_board_1', label:'\uD83D\uDCCA Info: Battery Sizing',
+        learn:'SIZING \u2014 Night loads (12h): LEDs 600Wh + Fans 1260Wh + Fridge 1800Wh + WiFi 180Wh + Phone 100Wh + TV 300Wh = 4240Wh = 4.24kWh. Recommended: 5kWh with 15% margin.'},
+      {id:'charge_cycle', appliance:'solar_inverter', label:'\uD83D\uDD04 Inverter \u2014 Daily Cycle',
+        learn:'DAILY CYCLE \u2014 6-9AM: Solar starts, charging. 9AM-3PM: Peak \u2014 battery full + house solar + excess to grid. 6-10PM: Battery powers home (saves \u20B98-12/unit!). Grid: 100% \u2192 5-10%.'},
     ],
-    5: [ // Smart Automation
-      {id:'bedroom_sensor',  appliance:'fan',   label:'🛏️ Bedroom Sensor',    learn:'🛏️ PIR occupancy sensor (₹500) detects motion. When you leave the bedroom, lights + fan auto-OFF after 5 minutes. Average bedroom wastes 4 hours/day with lights on in empty room = 300W × 4h = 1.2 kWh/day wasted!'},
-      {id:'bathroom_sensor', appliance:'geyser', label:'🚿 Bathroom Sensor',   learn:'🚿 Bathroom lights left ON are the #1 energy waste in Indian homes. Auto-OFF sensor saves 0.5 kWh/day. Over a year: 182 kWh = ₹1,100 saved from just one bathroom sensor costing ₹500!'},
-      {id:'kitchen_sensor',  appliance:'fridge', label:'🍳 Kitchen Sensor',    learn:'🍳 Smart kitchen sensor controls exhaust fan + light. Detects cooking (heat/humidity) and auto-ventilates. No more forgotten exhaust fans running all night! Saves 0.8 kWh/day.'},
-      {id:'hall_sensor',     appliance:'ac',     label:'🏠 Living Room Sensor', learn:'🏠 Living room has TV + lights + fan running even when empty. Smart sensor + timer saves 2 kWh/day. Total home automation savings: 4.5 kWh/day = ₹900/month. Sensors pay for themselves in 2 months!'},
+    5: [
+      {id:'load_shifting', appliance:'solar_board_2', label:'\u23F0 Info: Load Shifting',
+        learn:'LOAD SHIFTING \u2014 Heavy loads 10AM-3PM = FREE: Washer 2PM=\u20B90 vs 7PM=\u20B94. Geyser 11AM=\u20B90 vs 7AM=\u20B924. EV noon=\u20B90 vs night=\u20B926. Savings: \u20B91,500-2,000/month.'},
+      {id:'smart_sensors', appliance:'solar_board_3', label:'\uD83E\uDD16 Info: Smart Sensors',
+        learn:'AUTOMATION \u2014 PIR Sensor (\u20B9500/room): Auto-OFF when empty. Smart Thermostat (\u20B93K): 24\u00B0C auto. Every 1\u00B0C lower = 6% more electricity. 24\u00B0C vs 20\u00B0C saves 24%!'},
+      {id:'star_rating', appliance:'solar_board_1', label:'\u2B50 Info: BEE Star Ratings',
+        learn:'BEE RATINGS \u2014 AC 1.5T: 1-star 1800kWh/yr vs 5-star 1000kWh. SAVES \u20B96,400/yr! Fan: 75W \u2192 5-star 30W. Replace ALL with 5-star: save \u20B915,000/year!'},
+      {id:'ev_solar', appliance:'solar_ev_charger', label:'\uD83D\uDE97 EV Charger \u2014 Solar+EV',
+        learn:'EV + SOLAR \u2014 Per km: Petrol \u20B95.5, EV+Grid \u20B90.8, EV+Solar \u20B90.0! Nexon EV 312km range. Solar charge 9h. Save \u20B990K+/yr. V2H: EV battery powers home at night!'},
     ],
-    6: [ // EV Charging
-      {id:'solar_charger', appliance:'ac',     label:'☀️ Solar Charger',       learn:'☀️ A solar EV charger uses your rooftop panels directly. Tata Nexon EV: 30.2 kWh battery, 312km range. Solar charging cost: ₹0. That is ₹0.0/km! Petrol car costs ₹5-7/km. Annual fuel saving: ₹90,000+!'},
-      {id:'grid_charger',  appliance:'geyser', label:'🌙 Grid Charger',        learn:'🌙 Grid charging at night: 30 kWh × ₹8/unit = ₹240/charge. With 15 charges/month = ₹3,600/month. Solar charging saves ₹43,200/year on EV fuel alone. Plus zero emissions — no tailpipe CO₂.'},
-      {id:'ev_compare',    appliance:'fridge',  label:'📊 Cost Comparison',     learn:'📊 EV + Solar: ₹0.0/km. EV + Grid: ₹0.8/km. Petrol car: ₹5.5/km. Diesel car: ₹4.2/km. CNG car: ₹3.0/km. Solar EV is 100% cheapest AND cleanest. FAME II subsidy: up to ₹1.5 lakh off EV purchase price.'},
+    6: [
+      {id:'seasonal_output', appliance:'solar_weather', label:'\uD83D\uDCC5 Weather: Seasonal Output',
+        learn:'SEASONAL \u2014 Summer (Mar-Jun): Best! 28-30 kWh/day. Heat reduces 10-15%. Monsoon (Jul-Sep): Drops 30-50%, rain self-cleans! Winter (Oct-Feb): Cooler = better. Annual: 1500-1800 kWh/kW.'},
+      {id:'maintenance', appliance:'solar_roof_panel', label:'\uD83E\uDDF9 Panel \u2014 Maintenance', requiresRoof: true,
+        learn:'MAINTENANCE \u2014 Clean every 2-4 weeks: soft water + mild soap. NEVER hard water! Dusty panels lose 15-25%. Annual pro check (\u20B92-3K). Degradation 0.5%/yr. Year 25: still 87.5% output!'},
+      {id:'monsoon_prep', appliance:'solar_board_1', label:'\uD83C\uDF27\uFE0F Info: Monsoon Safety',
+        learn:'MONSOON PREP \u2014 Lightning arrester (\u20B93-5K). Surge protection on inverter. 3 copper earth pits. Without: one strike = \u20B91-2L damage! Wind load 150 km/h (IS 875). IP67 waterproof.'},
     ],
-    7: [ // Weather Response
-      {id:'sunny_check',  appliance:'ac',      label:'☀️ Sunny Mode',          learn:'☀️ On sunny days (300+ days/year in India), 5kW system produces 25 kWh. Home uses ~15 kWh. Excess 10 kWh goes to battery (5 kWh) + grid export (5 kWh). Net metering credits: ₹40/day earned!'},
-      {id:'cloudy_check',  appliance:'fan',    label:'☁️ Cloudy Mode',          learn:'☁️ On cloudy days, solar output drops to 40-60%. Smart system auto-reduces non-essential loads (AC → fan, geyser OFF). Battery covers essential loads. Grid backup only if battery < 20%.'},
-      {id:'monsoon_check', appliance:'geyser',  label:'🌧️ Monsoon Mode',       learn:'🌧️ During monsoon (Jun-Sep), solar drops 30-50%. Smart home pre-charges battery using weather forecast (IMD API). Shifts heavy loads to sunny windows between rain. Annual monsoon grid cost: only ₹2,000.'},
+    7: [
+      {id:'co2_impact', appliance:'solar_board_2', label:'\uD83C\uDF3F Info: CO\u2082 Impact',
+        learn:'ENVIRONMENTAL \u2014 5kW = 7500 kWh/yr. CO\u2082 prevented: 6150 kg/yr = 280 Neem trees. 25 years: 153,750 kg CO\u2082 = 153.75 TONNES! 1 crore solar homes = India aviation emissions!'},
+      {id:'community', appliance:'solar_board_3', label:'\uD83C\uDFD8\uFE0F Info: Community Solar',
+        learn:'COMMUNITY SOLAR \u2014 Group housing: virtual net metering, 15-20% cheaper. Common area = 100% solar. India: 100 GW achieved (2024). Target: 500 GW by 2030.'},
+      {id:'future_tech', appliance:'solar_board_1', label:'\uD83D\uDE80 Info: Future Tech',
+        learn:'FUTURE \u2014 Bifacial Panels: both sides, 10-30% more. Solar Roof Tiles: no mounting. Solid-State Batteries (2026-2028): 2x density, 20+ years. Perovskite Cells: 30%+ efficiency, printable!'},
     ],
-    8: [ // Dashboard
-      {id:'meter_final',  appliance:'fridge',  label:'📊 Smart Meter',          learn:'📊 Your smart solar home results: 5kW system generates 7,500 kWh/year. Self-consumption: 5,500 kWh. Grid export: 2,000 kWh. Net bill: ₹0 (often negative!). Total annual saving: ₹60,000-80,000.'},
-      {id:'co2_meter',    appliance:'fan',     label:'🌿 CO₂ Impact',           learn:'🌿 Your 5kW system prevents 7,500 kg CO₂/year. That equals planting 340 neem trees! Over 25-year panel life: 187,500 kg CO₂ prevented. You are single-handedly fighting climate change.'},
-      {id:'roi_check',    appliance:'ac',      label:'💰 ROI Calculator',       learn:'💰 System cost: ₹3.5 lakh (after 40% MNRE subsidy). Annual savings: ₹70,000. Payback period: 5 years. Remaining 20 years = ₹14 lakh profit. ROI: 400%. Best investment in Indian homes!'},
+    8: [
+      {id:'total_savings', appliance:'solar_meter', label:'\uD83D\uDCB0 Meter \u2014 25yr Savings',
+        learn:'25-YEAR VIEW \u2014 Cost \u20B93.5L - Subsidy \u20B978K = \u20B92.72L. Savings \u20B965K/yr. Payback 4.2yr. 25yr profit: \u20B913.53L. ROI 497%. BEATS Fixed Deposit + saves the planet!'},
+      {id:'knowledge_check', appliance:'solar_board_1', label:'\uD83D\uDCDA Info: Knowledge Check',
+        learn:'SOLAR EXPERT: PV\u2192DC. Inverter DC\u2192AC 230V. Net metering exports. Tilt = latitude. Shadow = 30% loss. PM Surya Ghar \u20B978K. Payback 3-4yr. LiFePO4 best. Load shift \u20B91500/mo. BEE 5-star. Solar EV \u20B90/km. 153T CO\u2082 saved!'},
+      {id:'action_plan', appliance:'solar_board_2', label:'\uD83C\uDFAF Info: Action Plan',
+        learn:'10-STEP PLAN: 1. pmsuryaghar.gov.in 2. Site survey 3. Choose Hybrid 4. MNRE vendor 5. Roof check 6. South-facing + latitude tilt 7. DISCOM + net meter 8. Claim \u20B978K 9. Smart sensors + 5-star 10. Heavy loads 10AM-3PM.'},
     ],
   }), []);
-
 
   // Quiz/Reward
   const [quizResult, setQuizResult] = useState(null);
@@ -190,7 +224,7 @@ export default function Level4() {
   const solarPct = houseWatts > 0 ? Math.round((solarUsed / houseWatts) * 100) : (panelCount > 0 ? 100 : 0);
   const gridPct = 100 - solarPct;
 
-  // Live solar energy in kWh (current instantaneous → projected)
+  // Live solar energy in kWh (current instantaneous â†’ projected)
   const liveKwh = useMemo(() => (currentSolarW / 1000).toFixed(1), [currentSolarW]);
   const liveCO2Saved = useMemo(() => (parseFloat(liveKwh) * 0.71).toFixed(1), [liveKwh]);
   const liveBillSaved = useMemo(() => Math.round(parseFloat(liveKwh) * 8), [liveKwh]);
@@ -234,7 +268,7 @@ export default function Level4() {
     return 0.1 + base * 0.4;
   }, [phase, taskIdx, recoveryStage, taskPhase, currentTask]);
 
-  // ─── Intro animation ───
+  // â”€â”€â”€ Intro animation â”€â”€â”€
   useEffect(() => {
     if (phase !== 'entry') return;
     const t1=setTimeout(()=>setIntroStep(1),500);
@@ -244,37 +278,59 @@ export default function Level4() {
     return()=>{clearTimeout(t1);clearTimeout(t2);clearTimeout(t3);clearTimeout(t4)};
   }, [phase]);
 
-  // ─── Room change → detect going outside ───
+  // â”€â”€â”€ Room change â†’ detect going outside â”€â”€â”€
   const handleRoomChange = useCallback(r => {
     setCurrentRoom(r);
     if (r === 'Outside' && !hasGoneOutside) setHasGoneOutside(true);
   }, [hasGoneOutside]);
 
-  // ─── Interact (phase-aware) ───
+  // â”€â”€â”€ Interact (phase-aware) â”€â”€â”€
+  // ─── Interact — ONLY toggles appliances ON/OFF ───
   const handleInteract = useCallback(id => {
     if (!L2_APPLIANCE_IDS.includes(id)) return;
-    // During phases 1-8: walk-and-interact learning
+    setAppStates(p => { playToggle(!p[id]); return {...p,[id]:!p[id]}; });
+  }, []);
+
+  // ─── Solar Object Interact — education popups ───
+  const handleSolarInteract = useCallback(id => {
+    if (id === 'solar_ladder') {
+      if (!isOnRoof) {
+        setIsOnRoof(true);
+        setLearnPopup({ title: '🪜 Climbing to Roof...', content: 'You climbed the ladder! Look around at the solar panels. Press E on panels to learn.', icon: '🪜' });
+        setTimeout(() => setLearnPopup(null), 4000);
+      } else {
+        setIsOnRoof(false);
+        setLearnPopup({ title: '🪜 Climbing Down...', content: 'Back on the ground. Continue exploring the solar equipment around the house.', icon: '🪜' });
+        setTimeout(() => setLearnPopup(null), 3000);
+      }
+      playToggle(true);
+      return;
+    }
     if (phase === 'play' && phaseIdx > 0 && phaseIdx <= 8 && taskPhase === 'active') {
       const zones = PHASE_ZONES[phaseIdx] || [];
       const zone = zones.find(z => z.appliance === id);
-      if (zone && !visitedZones.includes(zone.id)) {
-        setVisitedZones(prev => [...prev, zone.id]);
-        setLearnPopup({ title: zone.label, content: zone.learn, icon: zone.label.slice(0,2) });
-        playToggle(true);
-        // Auto-close after 8 seconds
-        setTimeout(() => setLearnPopup(null), 8000);
-        return;
-      } else if (zone && visitedZones.includes(zone.id)) {
-        // Already visited — show again briefly
-        setLearnPopup({ title: zone.label + ' ✅', content: zone.learn, icon: '✅' });
-        setTimeout(() => setLearnPopup(null), 5000);
+      if (zone) {
+        if (zone.requiresRoof && !isOnRoof) {
+          setLearnPopup({ title: '🪜 Go to the Roof First!', content: 'Walk to the ladder on the left wall and press E to climb up!', icon: '🪜' });
+          setTimeout(() => setLearnPopup(null), 5000);
+          return;
+        }
+        if (!visitedZones.includes(zone.id)) {
+          setVisitedZones(prev => [...prev, zone.id]);
+          setLearnPopup({ title: zone.label, content: zone.learn, icon: zone.label.slice(0,2) });
+          playToggle(true);
+          setTimeout(() => setLearnPopup(null), 10000);
+        } else {
+          setLearnPopup({ title: zone.label + ' ✅', content: zone.learn, icon: '✅' });
+          setTimeout(() => setLearnPopup(null), 5000);
+        }
         return;
       }
     }
-    setAppStates(p => { playToggle(!p[id]); return {...p,[id]:!p[id]}; });
-  }, [phase, phaseIdx, taskPhase, visitedZones, PHASE_ZONES]);
+    playToggle(true);
+  }, [phase, phaseIdx, taskPhase, visitedZones, PHASE_ZONES, isOnRoof]);
 
-  // ─── Panel slot toggle ───
+  // â”€â”€â”€ Panel slot toggle â”€â”€â”€
   const toggleSlot = useCallback(idx => {
     setInstalledSlots(prev => {
       if (prev.includes(idx)) return prev.filter(i=>i!==idx);
@@ -285,7 +341,7 @@ export default function Level4() {
 
   const selectTilt = useCallback((angle, eff) => { setTiltAngle(angle); setTiltEff(eff); playPlace(); }, []);
 
-  // ─── Task completion checks ───
+  // â”€â”€â”€ Task completion checks â”€â”€â”€
   useEffect(() => {
     if (phase !== 'play' || taskPhase !== 'active') return;
     const t = currentTask;
@@ -327,7 +383,7 @@ export default function Level4() {
   const advanceTask = useCallback(() => {
     const next = taskIdx + 1;
     if (next >= INSTALL_SUBTASKS.length) {
-      // Phase 0 (install) complete → show "How Solar Works" explainer first
+      // Phase 0 (install) complete â†’ show "How Solar Works" explainer first
       setShowExplainer(true);
     } else {
       setTaskIdx(next);
@@ -350,26 +406,27 @@ export default function Level4() {
     if (!reachedRooftop) setReachedRooftop(true);
   }, [reachedRooftop]);
 
-  // ═══ RENDER: LEVEL INTRO (Learn Before Play) ═══
+  // ═══ RENDER: LEVEL INTRO (Learn Before Play) ═══
   if (showLevelIntro) {
     return (
       <LevelIntro
         levelNumber={4}
         levelTitle="Solar Revolution"
-        levelIcon="☀️"
+        levelIcon={'\u2600\uFE0F'}
         objective="Install solar panels on your home's roof, optimize their angle for maximum sunlight, and discover how renewable energy can power your entire house while reducing pollution and electricity bills."
         learningOutcome="By the end of this level, you will understand how solar energy works, how to store it in batteries for night use, and how clean energy can restore the environment and save money."
         terms={[
-          { icon: '☀️', name: 'Solar Energy', definition: 'Energy captured from sunlight using solar panels. It is clean, free, and does not create any pollution or CO₂ emissions.', example: '6 solar panels can generate enough power for most homes' },
-          { icon: '🔋', name: 'Energy Storage', definition: 'Saving excess solar energy in batteries during the day so you can use it at night when there is no sunlight.', example: 'A battery charged at noon can power lights all night' },
-          { icon: '⚡', name: 'Clean Energy', definition: 'Energy that comes from natural sources like sunlight, wind, or water. It does not pollute the air or harm the environment.', example: 'Solar and wind are clean; coal and gas are not' },
+          { icon: '\u2600\uFE0F', name: 'Solar Energy', definition: 'Energy captured from sunlight using solar panels. It is clean, free, and does not create any pollution or CO\u2082 emissions.', example: '6 solar panels can generate enough power for most homes' },
+          { icon: '\uD83D\uDD0B', name: 'Energy Storage', definition: 'Saving excess solar energy in batteries during the day so you can use it at night when there is no sunlight.', example: 'A battery charged at noon can power lights all night' },
+          { icon: '\u26A1', name: 'Clean Energy', definition: 'Energy that comes from natural sources like sunlight, wind, or water. It does not pollute the air or harm the environment.', example: 'Solar and wind are clean; coal and gas are not' },
         ]}
         onComplete={() => setShowLevelIntro(false)}
       />
     );
+
   }
 
-  // ═══ RENDER: ENTRY ═══
+  // ═══ RENDER: ENTRY ═══
   if (phase === 'entry') {
     return (<div className="l4-container"><div className="l4-intro-overlay">
       <div className={`l4-intro-bg ${introBg}`}/>
@@ -384,10 +441,10 @@ export default function Level4() {
     </div></div>);
   }
 
-  // ═══ RENDER: QUIZ ═══
+  // ═══ RENDER: QUIZ ═══
   if (phase === 'quiz') return <div className="l4-container"><Level4Quiz onComplete={handleQuizComplete}/></div>;
 
-  // ═══ RENDER: REWARD ═══
+  // ═══ RENDER: REWARD ═══
   if (phase === 'reward' && quizResult) {
     const coins = LEVEL4_BADGE.coins + stars * 20;
     return (<div className="l4-container"><div className="l4-reward-overlay"><div className="l4-reward-card">
@@ -406,7 +463,7 @@ export default function Level4() {
     </div></div></div>);
   }
 
-  // ═══ RENDER: COMPARE (Enhanced Before vs After) ═══
+  // ═══ RENDER: COMPARE (Enhanced Before vs After) ═══
   if (phase === 'compare') {
     const co2Reduction = LEVEL3_BEFORE.co2Month > 0 ? Math.round((co2Saved / LEVEL3_BEFORE.co2Month) * 100) : 0;
     const billReduction = savings.pctSaved;
@@ -442,12 +499,12 @@ export default function Level4() {
     </div></div></div>);
   }
 
-  // ═══ RENDER: SOLAR EXPLAINER (How Solar Energy Works) ═══
+  // ═══ RENDER: SOLAR EXPLAINER (How Solar Energy Works) ═══
   if (phase === 'play' && showExplainer) {
     return (<div className="l4-container">
       <div className="l4-hud-top">
         <button className="l4-back-btn" onClick={() => navigate('/hub')}>← Back</button>
-        <div className="l4-hud-title">☀️ How Solar Energy Works</div>
+        <div className="l4-hud-title">☀️ How Solar Energy Works</div>
         <div className="l4-hud-room">Bonus Lesson</div>
       </div>
       <div style={{position:'absolute',top:'55px',left:0,right:0,bottom:0,zIndex:10,overflow:'auto',padding:'60px 16px 20px',display:'flex',alignItems:'center',justifyContent:'center'}}>
@@ -456,7 +513,7 @@ export default function Level4() {
     </div>);
   }
 
-  // ═══ RENDER: PHASE ROUTING (phases 1-9 use new components ON TOP OF 3D) ═══
+  // ═══ RENDER: PHASE ROUTING (phases 1-9 use new components ON TOP OF 3D) ═══
   if (phase === 'play' && phaseIdx > 0) {
     const dashMetrics = {
       solar_kwh: monthlyKwh, co2_saved: co2Saved, bill_saved: savings.saved,
@@ -483,7 +540,8 @@ export default function Level4() {
               onNearest={id=>{setNearest(id);setProxLevels(getProximityLevels(l4PlayerState.x,l4PlayerState.z))}}
               onInteract={handleInteract} camRef={camRef} proxLevels={proxLevels}
               recovery={recoveryLevel} timeOfDay={timePeriod.id} slots={installedSlots} tilt={tiltAngle}
-              showMarkers={false} onRooftopReach={handleRooftopReach}/></Suspense>
+              showMarkers={false} onRooftopReach={handleRooftopReach}
+              solarProx={solarProxLevels} phaseIdx={phaseIdx} onNearestSolarChange={setNearestSolar} onSolarInteract={handleSolarInteract} isOnRoof={isOnRoof}/></Suspense>
           </Canvas>
         </div>
         <div className="l4-modal-overlay"><div className="l4-modal-card">
@@ -492,12 +550,12 @@ export default function Level4() {
           <div style={{fontSize:'16px',fontWeight:600,color:'#ffeedd',marginBottom:'8px',lineHeight:1.5}}>{L4_ICONS.target} {currentPhase.objective}</div>
           <div style={{fontSize:'13px',color:'#999',marginBottom:'12px'}}>{currentPhase.desc}</div>
           <div style={{padding:'8px 12px',background:'rgba(245,166,35,0.06)',borderRadius:'8px',fontSize:'12px',color:'#f5a623'}}>{L4_ICONS.bulb} {currentPhase.learning}</div>
-          <div style={{fontSize:'11px',color:'#666',marginTop:'8px'}}>⏱️ {currentPhase.duration}</div>
-          <button className="l4-modal-btn" onClick={() => setTaskPhase('active')}>Start Phase →</button>
+          <div style={{fontSize:'11px',color:'#666',marginTop:'8px'}}>â±ï¸ {currentPhase.duration}</div>
+          <button className="l4-modal-btn" onClick={() => setTaskPhase('active')}>Start Phase â†’</button>
         </div></div>
       </div>);
     }
-    // Active phase — WALK AND INTERACT (no side panel)
+    // Active phase â€” WALK AND INTERACT (no side panel)
     const zones = PHASE_ZONES[phaseIdx] || [];
     const allVisited = zones.length > 0 && zones.every(z => visitedZones.includes(z.id));
     const visitCount = zones.filter(z => visitedZones.includes(z.id)).length;
@@ -511,7 +569,8 @@ export default function Level4() {
               onNearest={id=>{setNearest(id);setProxLevels(getProximityLevels(l4PlayerState.x,l4PlayerState.z))}}
               onInteract={handleInteract} camRef={camRef} proxLevels={proxLevels}
               recovery={recoveryLevel} timeOfDay={timePeriod.id} slots={installedSlots} tilt={tiltAngle}
-              showMarkers={false} onRooftopReach={handleRooftopReach}/></Suspense>
+              showMarkers={false} onRooftopReach={handleRooftopReach}
+              solarProx={solarProxLevels} phaseIdx={phaseIdx} onNearestSolarChange={setNearestSolar} onSolarInteract={handleSolarInteract} isOnRoof={isOnRoof}/></Suspense>
           </Canvas>
         </div>
         <div className="l4-hud-top">
@@ -533,7 +592,8 @@ export default function Level4() {
             onNearest={id=>{setNearest(id);setProxLevels(getProximityLevels(l4PlayerState.x,l4PlayerState.z))}}
             onInteract={handleInteract} camRef={camRef} proxLevels={proxLevels}
             recovery={recoveryLevel} timeOfDay={timePeriod.id} slots={installedSlots} tilt={tiltAngle}
-            showMarkers={false} onRooftopReach={handleRooftopReach}/></Suspense>
+            showMarkers={false} onRooftopReach={handleRooftopReach}
+              solarProx={solarProxLevels} phaseIdx={phaseIdx} onNearestSolarChange={setNearestSolar} onSolarInteract={handleSolarInteract} isOnRoof={isOnRoof}/></Suspense>
         </Canvas>
       </div>
       {/* Top HUD */}
@@ -549,7 +609,7 @@ export default function Level4() {
         <div className="l4-walk-zones">
           {zones.map(z => (
             <div key={z.id} className={`l4-walk-zone ${visitedZones.includes(z.id) ? 'done' : ''}`}>
-              <span className="l4-walk-zone-check">{visitedZones.includes(z.id) ? '✅' : '⬜'}</span>
+              <span className="l4-walk-zone-check">{visitedZones.includes(z.id) ? '✅' : 'â¬œ'}</span>
               <span>{z.label}</span>
             </div>
           ))}
@@ -560,7 +620,7 @@ export default function Level4() {
         <div className="l4-walk-count">{visitCount}/{zones.length} locations visited</div>
         {allVisited && (
           <button className="l4-modal-btn green l4-walk-next" onClick={() => { setVisitedZones([]); setLearnPopup(null); advancePhase(); }}>
-            ✅ All Learned! Next Phase →
+            ✅ All Learned! Next Phase â†’
           </button>
         )}
       </div>
@@ -570,7 +630,7 @@ export default function Level4() {
         <div className="l4-learn-popup">
           <div className="l4-learn-title">{learnPopup.title}</div>
           <div className="l4-learn-content">{learnPopup.content}</div>
-          <button className="l4-learn-close" onClick={() => setLearnPopup(null)}>Got it ✓</button>
+          <button className="l4-learn-close" onClick={() => setLearnPopup(null)}>Got it âœ“</button>
         </div>
       )}
 
@@ -585,19 +645,19 @@ export default function Level4() {
     </div>);
   }
 
-  // ═══ RENDER: PHASE 0 TASK OBJECTIVE (install sub-tasks briefing) ═══
+  // ═══ RENDER: PHASE 0 TASK OBJECTIVE (install sub-tasks briefing) ═══
   if (phase === 'play' && taskPhase === 'objective' && currentTask) {
     return (<div className="l4-container"><div className="l4-modal-overlay"><div className="l4-modal-card">
-      <div style={{fontSize:'11px',color:'#888',textTransform:'uppercase',letterSpacing:'2px',marginBottom:'6px'}}>Phase 1 — Task {taskIdx + 1} of {INSTALL_SUBTASKS.length}</div>
+      <div style={{fontSize:'11px',color:'#888',textTransform:'uppercase',letterSpacing:'2px',marginBottom:'6px'}}>Phase 1 â€” Task {taskIdx + 1} of {INSTALL_SUBTASKS.length}</div>
       <div className="l4-modal-title"><span style={{fontSize:'36px'}}>{currentTask.icon}</span> {currentTask.title}</div>
       <div style={{fontSize:'16px',fontWeight:600,color:'#ffeedd',marginBottom:'8px',lineHeight:1.5}}>{L4_ICONS.target} {currentTask.objective}</div>
       <div style={{fontSize:'13px',color:'#999',marginBottom:'12px'}}>{currentTask.desc}</div>
       <div style={{padding:'8px 12px',background:'rgba(245,166,35,0.06)',borderRadius:'8px',fontSize:'12px',color:'#f5a623'}}>{L4_ICONS.bulb} {currentTask.hint}</div>
-      <button className="l4-modal-btn" onClick={()=>setTaskPhase('active')}>Start Task →</button>
+      <button className="l4-modal-btn" onClick={()=>setTaskPhase('active')}>Start Task â†’</button>
     </div></div></div>);
   }
 
-  // ═══ RENDER: TASK COMPLETE ═══
+  // ═══ RENDER: TASK COMPLETE ═══
   if (phase === 'play' && taskPhase === 'complete' && currentTask) {
     const learnings = {
       discover: ['Solar is 100% clean and renewable', 'Sunlight can be converted to electricity'],
@@ -622,7 +682,7 @@ export default function Level4() {
     </div></div></div>);
   }
 
-  // ═══ RENDER: INSTALL TASK (modal overlay on 3D) ═══
+  // ═══ RENDER: INSTALL TASK (modal overlay on 3D) ═══
   if (phase === 'play' && taskPhase === 'active' && currentTask?.id === 'install') {
     return (<div className="l4-container">
       <div className="l4-canvas-wrapper">
@@ -651,7 +711,7 @@ export default function Level4() {
     </div>);
   }
 
-  // ═══ RENDER: OPTIMIZE TASK ═══
+  // ═══ RENDER: OPTIMIZE TASK ═══
   if (phase === 'play' && taskPhase === 'active' && currentTask?.id === 'optimize') {
     return (<div className="l4-container">
       <div className="l4-canvas-wrapper">
@@ -679,7 +739,7 @@ export default function Level4() {
     </div>);
   }
 
-  // ═══ RENDER: RECOVERY TASK (Witness the World Recover) ═══
+  // ═══ RENDER: RECOVERY TASK (Witness the World Recover) ═══
   if (phase === 'play' && taskPhase === 'active' && currentTask?.id === 'recovery') {
     const RECOVERY_FEEDBACK = [
       { stage: 0, label: 'Damaged Environment', desc: 'The environment is still recovering\u{2026} your energy choices matter', icon: '\u{1F32A}\u{FE0F}' },
@@ -699,7 +759,8 @@ export default function Level4() {
               onNearest={id=>{setNearest(id);setProxLevels(getProximityLevels(l4PlayerState.x,l4PlayerState.z))}}
               onInteract={handleInteract} camRef={camRef} proxLevels={proxLevels}
               recovery={recoveryLevel} timeOfDay={timePeriod.id} slots={installedSlots} tilt={tiltAngle}
-              showMarkers={false} onRooftopReach={handleRooftopReach}/>
+              showMarkers={false} onRooftopReach={handleRooftopReach}
+              solarProx={solarProxLevels} phaseIdx={phaseIdx} onNearestSolarChange={setNearestSolar} onSolarInteract={handleSolarInteract} isOnRoof={isOnRoof}/>
           </Suspense>
         </Canvas>
       </div>
@@ -845,10 +906,10 @@ export default function Level4() {
     </div>);
   }
 
-  // ═══ RENDER: QUIZ-only phases handled above ═══
+  // ═══ RENDER: QUIZ-only phases handled above ═══
   if (phase !== 'play') return null;
 
-  // ═══ RENDER: 3D SCENE (discover, energy, daynight, battery, challenge) ═══
+  // ═══ RENDER: 3D SCENE (discover, energy, daynight, battery, challenge) ═══
   const batteryPct = Math.round((batteryCharge / BATTERY_CAPACITY_KWH) * 100);
   const showTimeSlider = currentTask && ['daynight','battery','challenge'].includes(currentTask.id);
   const showBattery = currentTask && ['battery','challenge'].includes(currentTask.id);
@@ -865,7 +926,8 @@ export default function Level4() {
             onNearest={id=>{setNearest(id);setProxLevels(getProximityLevels(l4PlayerState.x,l4PlayerState.z))}}
             onInteract={handleInteract} camRef={camRef} proxLevels={proxLevels}
             recovery={recoveryLevel} timeOfDay={timePeriod.id} slots={installedSlots} tilt={tiltAngle}
-            showMarkers={false} onRooftopReach={handleRooftopReach}/>
+            showMarkers={false} onRooftopReach={handleRooftopReach}
+              solarProx={solarProxLevels} phaseIdx={phaseIdx} onNearestSolarChange={setNearestSolar} onSolarInteract={handleSolarInteract} isOnRoof={isOnRoof}/>
         </Suspense>
       </Canvas>
     </div>
@@ -905,7 +967,7 @@ export default function Level4() {
       </div>
     )}
 
-    {/* ☀️ SOLAR IMPACT SYSTEM (MAIN FEATURE — LIVE TICKER) */}
+    {/* ☀️ SOLAR IMPACT SYSTEM (MAIN FEATURE â€” LIVE TICKER) */}
     {panelCount > 0 && (['energy','daynight','battery','challenge','recovery'].includes(currentTask?.id)) && (
       <>
         {/* Live Solar Ticker Strip */}
@@ -948,7 +1010,7 @@ export default function Level4() {
           </div>
           {/* Monthly summary line */}
           <div className="l4-impact-summary">
-            {L4_ICONS.chart} Monthly: {monthlyKwh} kWh · {'\u20B9'}{savings.saved} saved · {co2Saved}kg CO{'\u2082'} reduced
+            {L4_ICONS.chart} Monthly: {monthlyKwh} kWh Â· {'\u20B9'}{savings.saved} saved Â· {co2Saved}kg CO{'\u2082'} reduced
           </div>
         </div>
       </>
@@ -968,7 +1030,7 @@ export default function Level4() {
       </div>
     )}
 
-    {/* 📊 BEFORE vs AFTER (INLINE — FIRST TIME COMPARISON) */}
+    {/* ðŸ“Š BEFORE vs AFTER (INLINE â€” FIRST TIME COMPARISON) */}
     {showInlineCompare && (
       <div className="l4-inline-compare-overlay" onClick={() => setShowInlineCompare(false)}>
         <div className="l4-inline-compare-card" onClick={e => e.stopPropagation()}>
@@ -1012,28 +1074,28 @@ export default function Level4() {
             {L4_ICONS.sparkle} You save {'\u20B9'}{savings.saved}/month ({savings.pctSaved}% reduction)
           </div>
           <div className="l4-inline-lesson">
-            {L4_ICONS.bulb} Solar energy is the solution — clean, renewable, and saves money!
+            {L4_ICONS.bulb} Solar energy is the solution â€” clean, renewable, and saves money!
           </div>
           <button className="l4-modal-btn green" style={{marginTop:'10px',padding:'10px 20px'}} onClick={() => setShowInlineCompare(false)}>Got it! {L4_ICONS.check}</button>
         </div>
       </div>
     )}
 
-    {/* 💡 MINI INSIGHT SYSTEM (ENHANCED) */}
+    {/* ðŸ’¡ MINI INSIGHT SYSTEM (ENHANCED) */}
     {panelCount > 0 && taskPhase === 'active' && (
       <div className="l4-insight-ticker" key={`${solarPct}-${currentSolarW}-${timePeriod.id}-${gridWatts}`}>
         <span className="l4-insight-icon">{L4_ICONS.bulb}</span>
         <span className="l4-insight-text">
-          {solarPct >= 90 ? `🌟 You are using ${solarPct}% solar energy — Almost 100% clean power!`
-            : solarPct >= 70 ? `☀️ You are using ${solarPct}% solar energy — Excellent green usage!`
-            : solarPct >= 50 ? `⚡ Grid usage reduced! Solar at ${solarPct}% — Keep going!`
-            : solarPct >= 30 ? `🔋 Solar supplying ${solarPct}% power. Grid usage dropping!`
-            : solarPct > 0 ? `☀️ Solar active at ${solarPct}%. Use peak sunlight for more!`
-            : currentSolarW > 0 && houseWatts === 0 ? '🔌 Solar panels generating! Turn on appliances to use clean energy.'
-            : timePeriod.sunlight === 0 ? '🌙 No sunlight — Battery or grid powers the house at night.'
-            : gridWatts > 500 ? `⚠️ Grid usage high (${gridWatts}W). Shift heavy use to noon!`
-            : panelCount < 4 ? '📈 Add more panels for better solar coverage!'
-            : '☀️ Solar is powering your home cleanly!'}
+          {solarPct >= 90 ? `🌍Ÿ You are using ${solarPct}% solar energy â€” Almost 100% clean power!`
+            : solarPct >= 70 ? `☀️ You are using ${solarPct}% solar energy â€” Excellent green usage!`
+            : solarPct >= 50 ? `⚡ Grid usage reduced! Solar at ${solarPct}% â€” Keep going!`
+            : solarPct >= 30 ? `ðŸ”‹ Solar supplying ${solarPct}% power. Grid usage dropping!`
+            : solarPct > 0 ? `☀️ Solar active at ${solarPct}%. Use peak sunlight for more!`
+            : currentSolarW > 0 && houseWatts === 0 ? 'ðŸ”Œ Solar panels generating! Turn on appliances to use clean energy.'
+            : timePeriod.sunlight === 0 ? '🌍™ No sunlight â€” Battery or grid powers the house at night.'
+            : gridWatts > 500 ? `âš ï¸ Grid usage high (${gridWatts}W). Shift heavy use to noon!`
+            : panelCount < 4 ? 'ðŸ“ˆ Add more panels for better solar coverage!'
+            : '☀️ Solar is powering your home cleanly!'}
         </span>
       </div>
     )}

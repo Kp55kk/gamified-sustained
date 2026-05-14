@@ -5,7 +5,7 @@
 import React, { useRef, useEffect } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
-import { APPLIANCE_POSITIONS } from '../applianceData';
+import { APPLIANCE_POSITIONS, SOLAR_OBJECT_POSITIONS } from '../applianceData';
 
 const INTERACTION_RADIUS = 3.0;
 const PLAYER_RADIUS = 0.45;
@@ -103,6 +103,18 @@ function getNearestAppliance(px, pz, idList) {
   return nearest;
 }
 
+function getNearestSolar(px, pz, isOnRoof = false) {
+  let nearest = null, minDist = INTERACTION_RADIUS;
+  for (const [id, obj] of Object.entries(SOLAR_OBJECT_POSITIONS)) {
+    if (id === 'solar_roof_panel' && !isOnRoof) continue;
+    if (id !== 'solar_roof_panel' && id !== 'solar_ladder' && isOnRoof) continue;
+    const dx = px - obj.pos[0], dz = pz - obj.pos[2];
+    const dist = Math.sqrt(dx * dx + dz * dz);
+    if (dist < minDist) { minDist = dist; nearest = id; }
+  }
+  return nearest;
+}
+
 // ── Arjun Character Model ──
 function ArjunModel({ isMoving }) {
   const leftArmRef = useRef(), rightArmRef = useRef(), leftLegRef = useRef(), rightLegRef = useRef(), bodyRef = useRef();
@@ -146,10 +158,10 @@ function ArjunModel({ isMoving }) {
 }
 
 // ═══ SHARED STATE — Start OUTSIDE the house ═══
-export const l4PlayerState = { x: -12, z: -2, nearestAppliance: null, cameraYaw: -Math.PI / 2, cameraPitch: 0.3 };
+export const l4PlayerState = { x: -12, z: -2, nearestAppliance: null, nearestSolar: null, isOnRoof: false, cameraYaw: -Math.PI / 2, cameraPitch: 0.3 };
 
 // ═══ PLAYER ═══
-export default function Level4Player({ onRoomChange, onNearestApplianceChange, onInteract, applianceIdList, onRooftopReach }) {
+export default function Level4Player({ onRoomChange, onNearestApplianceChange, onInteract, applianceIdList, onRooftopReach, onNearestSolarChange, onSolarInteract, isOnRoof }) {
   const groupRef = useRef();
   const { camera } = useThree();
   const keys = useRef({});
@@ -173,13 +185,16 @@ export default function Level4Player({ onRoomChange, onNearestApplianceChange, o
       const k = e.key.toLowerCase();
       keys.current[k] = true;
       if (['arrowup','arrowdown','arrowleft','arrowright'].includes(k)) e.preventDefault();
-      if (k === 'e' && onInteract && l4PlayerState.nearestAppliance) onInteract(l4PlayerState.nearestAppliance);
+      if (k === 'e') {
+        if (l4PlayerState.nearestSolar && onSolarInteract) onSolarInteract(l4PlayerState.nearestSolar);
+        else if (l4PlayerState.nearestAppliance && onInteract) onInteract(l4PlayerState.nearestAppliance);
+      }
     };
     const onUp = e => { keys.current[e.key.toLowerCase()] = false; };
     window.addEventListener('keydown', onDown);
     window.addEventListener('keyup', onUp);
     return () => { window.removeEventListener('keydown', onDown); window.removeEventListener('keyup', onUp); };
-  }, [onInteract]);
+  }, [onInteract, onSolarInteract]);
 
   useFrame(() => {
     const k = keys.current;
@@ -217,6 +232,12 @@ export default function Level4Player({ onRoomChange, onNearestApplianceChange, o
     if (nearest !== l4PlayerState.nearestAppliance) {
       l4PlayerState.nearestAppliance = nearest;
       if (onNearestApplianceChange) onNearestApplianceChange(nearest);
+    }
+    // Nearest solar object
+    const nearSolar = getNearestSolar(posRef.current.x, posRef.current.z, isOnRoof);
+    if (nearSolar !== l4PlayerState.nearestSolar) {
+      l4PlayerState.nearestSolar = nearSolar;
+      if (onNearestSolarChange) onNearestSolarChange(nearSolar);
     }
 
     // Room
