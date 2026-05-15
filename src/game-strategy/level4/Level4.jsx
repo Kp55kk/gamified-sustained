@@ -130,6 +130,7 @@ export default function Level4() {
   const [showBatteryExplainer, setShowBatteryExplainer] = useState(false);
   const [showRoofLoadExplainer, setShowRoofLoadExplainer] = useState(false);
   const [showTiltExplainer, setShowTiltExplainer] = useState(false);
+  const [showPMExplainer, setShowPMExplainer] = useState(false);
 
 
   // Zone definitions - solar-specific objects (NOT appliances)
@@ -155,7 +156,11 @@ export default function Level4() {
       {id:'roof_load', appliance: null, popup: true, label:'\uD83C\uDFD7\uFE0F Info: Roof Load',
         learn:'ROOF LOAD \u2014 Each panel: 20-22 kg + mounting = 15-18 kg/sq.m.'},
     ],
-    // Phase 4 (idx 3) = PM Surya Ghar Office (handled by PMSuryaGharOffice component)
+    // Phase 4 (idx 3) = Walk to PM Surya Ghar Office, press E to learn
+    3: [
+      {id:'pm_surya_ghar', appliance:'gov_office', label:'\uD83C\uDFDB\uFE0F PM Surya Ghar Office',
+        learn:'Walk to the government office across the road and press E to learn about the PM Surya Ghar Muft Bijli Yojana scheme!'},
+    ],
     // Phase 5 (idx 4) = Battery Explainer (handled by BatteryExplainer component)
     5: [
       {id:'load_shifting', appliance:'solar_board_2', label:'\uD83D\uDD0B Energy Info: Load Shifting',
@@ -320,6 +325,11 @@ export default function Level4() {
           // Shadow Analysis -> trigger ShadowExplainer instead of text popup
           if (zone.id === 'shadow_analysis') {
             setShowShadowExplainer(true);
+            return;
+          }
+          // PM Surya Ghar Office -> trigger PM explainer
+          if (zone.id === 'pm_surya_ghar') {
+            setShowPMExplainer(true);
             return;
           }
           setVisitedZones(prev => [...prev, zone.id]);
@@ -591,10 +601,7 @@ export default function Level4() {
       </div>);
     }
 
-    // Phase 4 (phaseIdx===3): PM Surya Ghar Office — full 3D office scene
-    if (phaseIdx === 3 && taskPhase === 'active') {
-      return <PMSuryaGharOffice onComplete={() => { setVisitedZones([]); setLearnPopup(null); advancePhase(); }}/>;
-    }
+    // Phase 4 (phaseIdx===3): PM Surya Ghar — player walks to gov_office, presses E → explainer opens
 
     // Phase 5 (phaseIdx===4): Battery Explainer — fullscreen animated tutorial
     if (phaseIdx === 4 && taskPhase === 'active') {
@@ -693,6 +700,15 @@ export default function Level4() {
         <TiltExplainer onComplete={() => {
           setShowTiltExplainer(false);
           setVisitedZones(prev => [...prev, 'tilt_orient']);
+          playToggle(true);
+        }}/>
+      )}
+
+      {/* PM Surya Ghar Explainer (opened after walking to office & pressing E) */}
+      {showPMExplainer && (
+        <PMSuryaGharOffice onComplete={() => {
+          setShowPMExplainer(false);
+          setVisitedZones(prev => [...prev, 'pm_surya_ghar']);
           playToggle(true);
         }}/>
       )}

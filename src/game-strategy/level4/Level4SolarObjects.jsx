@@ -299,9 +299,199 @@ function InteractPrompt({ id, showLevel }) {
   );
 }
 
+// --- GOVERNMENT OFFICE BUILDING (detailed, realistic) ---
+function GovOffice({ visible }) {
+  const p = SOLAR_OBJECT_POSITIONS.gov_office;
+  const glowRef = useRef();
+  useFrame(() => {
+    if (glowRef.current) {
+      glowRef.current.material.emissiveIntensity = 0.3 + Math.sin(performance.now() * 0.002) * 0.15;
+    }
+  });
+  if (!visible) return null;
+  return (
+    <group position={p.pos}>
+      {/* === FOUNDATION & STEPS === */}
+      <mesh position={[0, 0.1, 3]}>
+        <boxGeometry args={[14, 0.2, 2]}/>
+        <meshStandardMaterial color="#c4b090" roughness={0.9}/>
+      </mesh>
+      {/* Entry steps (3 steps) */}
+      {[0, 1, 2].map(i => (
+        <mesh key={i} position={[0, 0.1 + i * 0.15, 4.5 - i * 0.4]}>
+          <boxGeometry args={[5 - i * 0.3, 0.15, 0.8]}/>
+          <meshStandardMaterial color="#d4c4a0" roughness={0.8}/>
+        </mesh>
+      ))}
+
+      {/* === MAIN BUILDING === */}
+      {/* Back wall */}
+      <mesh position={[0, 2.5, 0]}>
+        <boxGeometry args={[13, 5, 0.3]}/>
+        <meshStandardMaterial color="#f5ecd7" roughness={0.7}/>
+      </mesh>
+      {/* Left wall */}
+      <mesh position={[-6.5, 2.5, 2]}>
+        <boxGeometry args={[0.3, 5, 4.3]}/>
+        <meshStandardMaterial color="#efe4cc" roughness={0.7}/>
+      </mesh>
+      {/* Right wall */}
+      <mesh position={[6.5, 2.5, 2]}>
+        <boxGeometry args={[0.3, 5, 4.3]}/>
+        <meshStandardMaterial color="#efe4cc" roughness={0.7}/>
+      </mesh>
+      {/* Front wall left */}
+      <mesh position={[-4.25, 2.5, 4]}>
+        <boxGeometry args={[4.8, 5, 0.3]}/>
+        <meshStandardMaterial color="#f5ecd7" roughness={0.7}/>
+      </mesh>
+      {/* Front wall right */}
+      <mesh position={[4.25, 2.5, 4]}>
+        <boxGeometry args={[4.8, 5, 0.3]}/>
+        <meshStandardMaterial color="#f5ecd7" roughness={0.7}/>
+      </mesh>
+      {/* Above door */}
+      <mesh position={[0, 4.2, 4]}>
+        <boxGeometry args={[3.5, 1.6, 0.3]}/>
+        <meshStandardMaterial color="#f5ecd7" roughness={0.7}/>
+      </mesh>
+
+      {/* === DOOR (dark wood, arched look) === */}
+      <mesh position={[0, 1.7, 4.1]}>
+        <boxGeometry args={[2.2, 3.4, 0.15]}/>
+        <meshStandardMaterial color="#5a3520" roughness={0.5} metalness={0.1}/>
+      </mesh>
+      {/* Door frame */}
+      <mesh position={[0, 1.7, 4.15]}>
+        <boxGeometry args={[2.4, 3.6, 0.05]}/>
+        <meshStandardMaterial color="#3d2010" roughness={0.4}/>
+      </mesh>
+      {/* Door handles */}
+      <mesh position={[-0.4, 1.5, 4.2]}>
+        <sphereGeometry args={[0.06, 8, 8]}/>
+        <meshStandardMaterial color="#c4a030" metalness={0.8} roughness={0.2}/>
+      </mesh>
+      <mesh position={[0.4, 1.5, 4.2]}>
+        <sphereGeometry args={[0.06, 8, 8]}/>
+        <meshStandardMaterial color="#c4a030" metalness={0.8} roughness={0.2}/>
+      </mesh>
+
+      {/* === WINDOWS (6 windows, 3 per side) === */}
+      {[-5, -3, -1.5, 1.5, 3, 5].map((x, i) => {
+        if (Math.abs(x) < 1.8) return null; // skip door area
+        const onFront = true;
+        return (
+          <group key={i} position={[x, 2.5, onFront ? 4.12 : 0.15]}>
+            {/* Window glass */}
+            <mesh><boxGeometry args={[1, 1.8, 0.05]}/><meshStandardMaterial color="#87CEEB" transparent opacity={0.4} metalness={0.1}/></mesh>
+            {/* Window frame */}
+            <mesh position={[0, 0, 0.03]}><boxGeometry args={[1.15, 1.95, 0.03]}/><meshStandardMaterial color="#5a3a1a" roughness={0.5}/></mesh>
+            {/* Cross bars */}
+            <mesh position={[0, 0, 0.05]}><boxGeometry args={[0.04, 1.8, 0.02]}/><meshStandardMaterial color="#5a3a1a"/></mesh>
+            <mesh position={[0, 0, 0.05]}><boxGeometry args={[1, 0.04, 0.02]}/><meshStandardMaterial color="#5a3a1a"/></mesh>
+          </group>
+        );
+      })}
+
+      {/* === PILLARS (4 decorative columns) === */}
+      {[-3.5, -1.5, 1.5, 3.5].map((x, i) => (
+        <group key={i} position={[x, 0, 4.5]}>
+          {/* Base */}
+          <mesh position={[0, 0.15, 0]}><boxGeometry args={[0.5, 0.3, 0.5]}/><meshStandardMaterial color="#d4c4a0" roughness={0.6}/></mesh>
+          {/* Column */}
+          <mesh position={[0, 2.5, 0]}><cylinderGeometry args={[0.15, 0.18, 4.4, 8]}/><meshStandardMaterial color="#f0e8d0" roughness={0.5}/></mesh>
+          {/* Capital */}
+          <mesh position={[0, 4.75, 0]}><boxGeometry args={[0.5, 0.3, 0.5]}/><meshStandardMaterial color="#d4c4a0" roughness={0.6}/></mesh>
+        </group>
+      ))}
+
+      {/* === ROOF / PARAPET === */}
+      <mesh position={[0, 5.1, 2]}>
+        <boxGeometry args={[14, 0.3, 5]}/>
+        <meshStandardMaterial color="#c4a882" roughness={0.6}/>
+      </mesh>
+      {/* Parapet wall */}
+      <mesh position={[0, 5.5, 2]}>
+        <boxGeometry args={[14, 0.5, 0.15]}/>
+        <meshStandardMaterial color="#e0d4bc" roughness={0.7}/>
+      </mesh>
+
+      {/* === SIGNBOARD === */}
+      <mesh position={[0, 4.8, 4.3]}>
+        <boxGeometry args={[5, 0.8, 0.1]}/>
+        <meshStandardMaterial color="#1a3a6e" roughness={0.4}/>
+      </mesh>
+      <NamePlate position={[0, 5.2, 4.5]} name="PM Surya Ghar Office" icon={'\u{1F3DB}'} color="#fbbf24"/>
+
+      {/* === FLAG POLE === */}
+      <group position={[5.5, 0, 5]}>
+        <mesh position={[0, 3.5, 0]}><cylinderGeometry args={[0.04, 0.06, 7, 8]}/><meshStandardMaterial color="#888" metalness={0.8}/></mesh>
+        {/* Indian flag (tricolor) */}
+        <mesh position={[0.5, 6.5, 0]}><boxGeometry args={[1.0, 0.2, 0.02]}/><meshStandardMaterial color="#FF9933"/></mesh>
+        <mesh position={[0.5, 6.3, 0]}><boxGeometry args={[1.0, 0.2, 0.02]}/><meshStandardMaterial color="#FFFFFF"/></mesh>
+        <mesh position={[0.5, 6.1, 0]}><boxGeometry args={[1.0, 0.2, 0.02]}/><meshStandardMaterial color="#138808"/></mesh>
+      </group>
+
+      {/* === INTERIOR GLOW (visible through door) === */}
+      <pointLight position={[0, 2.5, 2]} intensity={1.2} color="#fff5e0" distance={8}/>
+      <mesh ref={glowRef} position={[0, 2.5, 2]}>
+        <sphereGeometry args={[0.2, 8, 8]}/>
+        <meshStandardMaterial color="#ffd700" emissive="#ffd700" emissiveIntensity={0.3} transparent opacity={0.3}/>
+      </mesh>
+
+      {/* === FLOOR (interior tile) === */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 2]}>
+        <planeGeometry args={[13, 4]}/>
+        <meshStandardMaterial color="#d4c8b0" roughness={0.8}/>
+      </mesh>
+
+      {/* === COMPOUND WALL & GATE === */}
+      {/* Left compound wall */}
+      <mesh position={[-6.5, 0.5, 6]}><boxGeometry args={[0.2, 1, 4]}/><meshStandardMaterial color="#d4c090" roughness={0.8}/></mesh>
+      {/* Right compound wall */}
+      <mesh position={[6.5, 0.5, 6]}><boxGeometry args={[0.2, 1, 4]}/><meshStandardMaterial color="#d4c090" roughness={0.8}/></mesh>
+      {/* Gate pillars */}
+      <mesh position={[-1.5, 0.75, 8]}><boxGeometry args={[0.4, 1.5, 0.4]}/><meshStandardMaterial color="#c4a070" roughness={0.6}/></mesh>
+      <mesh position={[1.5, 0.75, 8]}><boxGeometry args={[0.4, 1.5, 0.4]}/><meshStandardMaterial color="#c4a070" roughness={0.6}/></mesh>
+    </group>
+  );
+}
+
+// --- ROAD (connecting house to office) ---
+function RoadToOffice({ visible }) {
+  if (!visible) return null;
+  return (
+    <group>
+      {/* Main road */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.01, -16]}>
+        <planeGeometry args={[4, 14]}/>
+        <meshStandardMaterial color="#444" roughness={0.95}/>
+      </mesh>
+      {/* Road center line */}
+      {[-12, -14, -16, -18, -20].map((z, i) => (
+        <mesh key={i} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, z]}>
+          <planeGeometry args={[0.15, 1]}/>
+          <meshStandardMaterial color="#fbbf24" roughness={0.8}/>
+        </mesh>
+      ))}
+      {/* Footpath left */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-2.5, 0.015, -16]}>
+        <planeGeometry args={[1, 14]}/>
+        <meshStandardMaterial color="#999" roughness={0.9}/>
+      </mesh>
+      {/* Footpath right */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[2.5, 0.015, -16]}>
+        <planeGeometry args={[1, 14]}/>
+        <meshStandardMaterial color="#999" roughness={0.9}/>
+      </mesh>
+    </group>
+  );
+}
+
 // --- MAIN EXPORT ---
 export default function Level4SolarObjects({ solarProximity, phaseIdx }) {
   const levels = solarProximity || {};
+  const showOffice = phaseIdx >= 3; // Show office from PM Surya Ghar phase onwards
   return (
     <group>
       <SolarInverter />
@@ -315,6 +505,9 @@ export default function Level4SolarObjects({ solarProximity, phaseIdx }) {
       <SolarLadder />
       {/* Roof panel visible from phase 1 onwards */}
       {phaseIdx >= 1 && <RoofPanel />}
+      {/* Government office building + road (phase 4+) */}
+      <RoadToOffice visible={showOffice}/>
+      <GovOffice visible={showOffice}/>
       {/* Press E prompts - only show for nearest */}
       {Object.keys(SOLAR_OBJECT_POSITIONS).map(id => (
         <InteractPrompt key={id} id={id} showLevel={levels[id]} />
@@ -322,3 +515,4 @@ export default function Level4SolarObjects({ solarProximity, phaseIdx }) {
     </group>
   );
 }
+

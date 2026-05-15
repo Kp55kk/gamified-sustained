@@ -504,6 +504,7 @@ export const SOLAR_OBJECT_POSITIONS = {
   solar_weather:    { pos: [8, 1.0, -10],     rot: [0, Math.PI, 0] },       // Front yard, faces player
   solar_roof_panel: { pos: [0, 5.8, 0],       rot: [0, 0, 0] },             // On the roof
   solar_ladder:     { pos: [-10.3, 1.5, -6],  rot: [0, 0, 0] },             // Ladder leaning on left wall
+  gov_office:       { pos: [0, 0, -22],       rot: [0, 0, 0] },             // Government office across the road
 };
 export const SOLAR_OBJECT_IDS = Object.keys(SOLAR_OBJECT_POSITIONS);
 
