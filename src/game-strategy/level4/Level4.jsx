@@ -27,6 +27,7 @@ import RoofLoadExplainer from './RoofLoadExplainer';
 import TiltExplainer from './TiltExplainer';
 import BatteryExplainer from './BatteryExplainer';
 import PMSuryaGharOffice from './PMSuryaGharOffice';
+import PhaseExplainer from './PhaseExplainer';
 import Level4Quiz from './Level4Quiz';
 import LevelIntro from '../LevelIntro';
 import './Level4.css';
@@ -131,6 +132,7 @@ export default function Level4() {
   const [showRoofLoadExplainer, setShowRoofLoadExplainer] = useState(false);
   const [showTiltExplainer, setShowTiltExplainer] = useState(false);
   const [showPMExplainer, setShowPMExplainer] = useState(false);
+  const [activeExplainer, setActiveExplainer] = useState(null); // topicId for PhaseExplainer
 
 
   // Zone definitions - solar-specific objects (NOT appliances)
@@ -322,23 +324,18 @@ export default function Level4() {
           return;
         }
         if (!visitedZones.includes(zone.id)) {
-          // Shadow Analysis -> trigger ShadowExplainer instead of text popup
-          if (zone.id === 'shadow_analysis') {
-            setShowShadowExplainer(true);
-            return;
-          }
-          // PM Surya Ghar Office -> trigger PM explainer
-          if (zone.id === 'pm_surya_ghar') {
-            setShowPMExplainer(true);
-            return;
-          }
-          setVisitedZones(prev => [...prev, zone.id]);
-          setLearnPopup({ title: zone.label, content: zone.learn, icon: zone.label.slice(0,2) });
-          playToggle(true);
-          setTimeout(() => setLearnPopup(null), 10000);
+          // Special dedicated explainers
+          if (zone.id === 'shadow_analysis') { setShowShadowExplainer(true); return; }
+          if (zone.id === 'pm_surya_ghar') { setShowPMExplainer(true); return; }
+          if (zone.id === 'tilt_orient') { setShowTiltExplainer(true); return; }
+          if (zone.id === 'roof_load') { setShowRoofLoadExplainer(true); return; }
+          // Universal PhaseExplainer for all other topics
+          setActiveExplainer(zone.id);
+          return;
         } else {
-          setLearnPopup({ title: zone.label + ' ✅', content: zone.learn, icon: '✅' });
-          setTimeout(() => setLearnPopup(null), 5000);
+          // Already visited — reopen explainer
+          setActiveExplainer(zone.id);
+          return;
         }
         return;
       }
@@ -645,10 +642,8 @@ export default function Level4() {
                 else if (z.id === 'roof_load') setShowRoofLoadExplainer(true);
                 else if (z.id === 'tilt_orient') setShowTiltExplainer(true);
                 else {
-                  // Generic popup for smart_sensors, star_rating, etc.
-                  setLearnPopup({ title: z.label, content: z.learn, icon: z.label.slice(0,2) });
-                  setVisitedZones(prev => [...prev, z.id]);
-                  setTimeout(() => setLearnPopup(null), 12000);
+                  // Universal PhaseExplainer for all popup topics
+                  setActiveExplainer(z.id);
                 }
               }}
               style={z.popup && !visitedZones.includes(z.id) ? {cursor:'pointer'} : {}}>
@@ -709,6 +704,15 @@ export default function Level4() {
         <PMSuryaGharOffice onComplete={() => {
           setShowPMExplainer(false);
           setVisitedZones(prev => [...prev, 'pm_surya_ghar']);
+          playToggle(true);
+        }}/>
+      )}
+
+      {/* Universal Phase Explainer (animated tutorial for any topic) */}
+      {activeExplainer && (
+        <PhaseExplainer topicId={activeExplainer} onComplete={() => {
+          setVisitedZones(prev => prev.includes(activeExplainer) ? prev : [...prev, activeExplainer]);
+          setActiveExplainer(null);
           playToggle(true);
         }}/>
       )}
