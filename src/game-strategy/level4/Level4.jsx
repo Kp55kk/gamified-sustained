@@ -297,14 +297,14 @@ export default function Level4() {
         // Teleport player to center of roof so they can freely walk to solar panel
         l4PlayerState.x = 0;
         l4PlayerState.z = -2;
-        setLearnPopup({ title: '\uD83E\uDE9C Climbing to Roof...', content: 'You climbed the ladder! Walk to the solar panel and press E to learn about it.', icon: '\uD83E\uDE9C' });
+        setLearnPopup({ title: '🔼 Climbing to Roof...', content: 'You climbed the ladder! Walk to the solar panel and press E to learn about it.', icon: '🔼' });
         setTimeout(() => setLearnPopup(null), 4000);
       } else {
         setIsOnRoof(false);
         // Teleport player safely outside the wall to avoid collision
         l4PlayerState.x = -12;
         l4PlayerState.z = -6;
-        setLearnPopup({ title: '\uD83E\uDE9C Climbing Down...', content: 'Back on the ground. Continue exploring the solar equipment around the house.', icon: '\uD83E\uDE9C' });
+        setLearnPopup({ title: '🔽 Climbing Down...', content: 'Back on the ground. Continue exploring the solar equipment around the house.', icon: '🔽' });
         setTimeout(() => setLearnPopup(null), 3000);
       }
       playToggle(true);
@@ -421,13 +421,13 @@ export default function Level4() {
       <LevelIntro
         levelNumber={4}
         levelTitle="Solar Revolution"
-        levelIcon={'\u2600\uFE0F'}
+        levelIcon={'☀️'}
         objective="Install solar panels on your home's roof, optimize their angle for maximum sunlight, and discover how renewable energy can power your entire house while reducing pollution and electricity bills."
         learningOutcome="By the end of this level, you will understand how solar energy works, how to store it in batteries for night use, and how clean energy can restore the environment and save money."
         terms={[
-          { icon: '\u2600\uFE0F', name: 'Solar Energy', definition: 'Energy captured from sunlight using solar panels. It is clean, free, and does not create any pollution or CO\u2082 emissions.', example: '6 solar panels can generate enough power for most homes' },
-          { icon: '\uD83D\uDD0B', name: 'Energy Storage', definition: 'Saving excess solar energy in batteries during the day so you can use it at night when there is no sunlight.', example: 'A battery charged at noon can power lights all night' },
-          { icon: '\u26A1', name: 'Clean Energy', definition: 'Energy that comes from natural sources like sunlight, wind, or water. It does not pollute the air or harm the environment.', example: 'Solar and wind are clean; coal and gas are not' },
+          { icon: '☀️', name: 'Solar Energy', definition: 'Energy captured from sunlight using solar panels. It is clean, free, and does not create any pollution.', example: '6 solar panels can generate enough power for most homes' },
+          { icon: '🔋', name: 'Energy Storage', definition: 'Saving extra solar energy in batteries during the day so you can use it at night when there is no sunlight.', example: 'A battery charged at noon can power lights all night' },
+          { icon: '⚡', name: 'Clean Energy', definition: 'Energy that comes from natural sources like sunlight, wind, or water. It does not pollute the air or harm the environment.', example: 'Solar and wind are clean; coal and gas are not' },
         ]}
         onComplete={() => setShowLevelIntro(false)}
       />
@@ -443,7 +443,7 @@ export default function Level4() {
       <h1 className={`l4-intro-title ${introStep>=3?'visible':''}`}>SOLAR REVOLUTION</h1>
       <div className={`l4-intro-subtitle ${introStep>=3?'visible':''}`}>Level 4</div>
       <div className={`l4-intro-dialogue ${introStep>=3?'visible':''}`}>
-        <div className="l4-intro-avatar">{'\u{1F9D1}\u{200D}\u{1F393}'}</div>
+        <div className="l4-intro-avatar">{'🧑‍🎓'}</div>
         <p className="l4-intro-quote">"{ENTRY_DIALOGUE.join(' ')}"</p>
       </div>
       <button className={`l4-intro-start-btn ${introStep>=4?'visible':''}`} onClick={()=>{setPhase('play');setTaskPhase('objective')}}>Begin Level 4 {'\u{2192}'}</button>
@@ -741,11 +741,11 @@ export default function Level4() {
     const learnings = {
       discover: ['Solar is 100% clean and renewable', 'Sunlight can be converted to electricity'],
       install: ['Panel placement affects output', 'Shadows reduce efficiency'],
-      optimize: ['25\u00B0 tilt is best for India', 'Better placement = more energy'],
+      optimize: ['25° tilt is best for India', 'Better placement = more energy'],
       energy: ['Solar supplies power first', 'Reduce usage to minimize grid'],
       daynight: ['Solar output peaks at noon', 'Plan heavy usage for peak sunlight'],
       battery: ['Battery stores excess solar', 'Night usage can be solar-powered'],
-      recovery: ['Using solar energy reduces CO\u{2082} emissions', 'Cleaner energy helps restore the environment', 'Your choices directly impact the world'],
+      recovery: ['Using solar energy reduces CO2 emissions', 'Cleaner energy helps restore the environment', 'Your choices directly impact the world'],
       challenge: ['Smart usage maximizes solar', 'You can run a home on clean energy!'],
     };
     return (<div className="l4-container"><div className="l4-modal-overlay"><div className="l4-modal-card" style={{borderColor:'rgba(34,197,94,0.3)'}}>
@@ -783,7 +783,7 @@ export default function Level4() {
               </div>);
             })}
           </div>
-          <div style={{fontSize:'13px',color:'#f5a623',textAlign:'center'}}>{panelCount}/{MAX_PANELS} panels {' \u2022 '}{panelCount * PANEL_WATT_PEAK}W peak</div>
+          <div style={{fontSize:'13px',color:'#38d9a9',textAlign:'center'}}>{panelCount}/{MAX_PANELS} panels {' \u2022 '}{panelCount * PANEL_WATT_PEAK}W peak</div>
           <button className="l4-modal-btn" disabled={panelCount<3} onClick={completeTask}>Done Installing {'\u{2192}'}</button>
         </div>
       </div>
@@ -808,7 +808,7 @@ export default function Level4() {
             </div>))}
           </div>
           <div className="l4-eff-gauge">
-            <div className="l4-eff-value" style={{color:effPct>=80?'#22c55e':'#f5a623'}}>{effPct}%</div>
+            <div className="l4-eff-value" style={{color:effPct>=80?'#22c55e':'#38d9a9'}}>{effPct}%</div>
             <div className="l4-eff-label">Overall Efficiency</div>
           </div>
           {effPct >= 80 && <div style={{padding:'6px',background:'rgba(34,197,94,0.08)',borderRadius:'6px',fontSize:'12px',color:'#22c55e',textAlign:'center'}}>{L4_ICONS.check} Excellent!</div>}
@@ -870,10 +870,10 @@ export default function Level4() {
 
       {/* Step 1: Initial Observation */}
       {recoveryStep === 0 && (
-        <div style={{position:'absolute',bottom:'120px',left:'50%',transform:'translateX(-50%)',zIndex:25,background:'rgba(5,10,20,0.95)',border:'1px solid rgba(245,166,35,0.3)',borderRadius:'14px',padding:'16px 24px',maxWidth:'400px',textAlign:'center',boxShadow:'0 0 30px rgba(0,0,0,0.5)'}}>
+        <div style={{position:'absolute',bottom:'120px',left:'50%',transform:'translateX(-50%)',zIndex:25,background:'rgba(5,10,20,0.95)',border:'1px solid rgba(56,217,169,0.3)',borderRadius:'14px',padding:'16px 24px',maxWidth:'400px',textAlign:'center',boxShadow:'0 0 30px rgba(0,0,0,0.5)'}}>
           <div style={{fontSize:'28px',marginBottom:'8px'}}>{'\u{1F32A}\u{FE0F}'}</div>
-          <div style={{fontSize:'14px',fontWeight:700,color:'#f5a623',marginBottom:'6px'}}>Look Outside the Window</div>
-          <div style={{fontSize:'13px',color:'#ffeedd',marginBottom:'10px',lineHeight:1.5}}>The environment is still recovering\u{2026} your energy choices matter</div>
+          <div style={{fontSize:'14px',fontWeight:700,color:'#38d9a9',marginBottom:'6px'}}>Look Outside the Window</div>
+          <div style={{fontSize:'13px',color:'#e0f2f1',marginBottom:'10px',lineHeight:1.5}}>The environment is still recovering\u{2026} your energy choices matter</div>
           <div style={{fontSize:'11px',color:'#aaa',marginBottom:'10px'}}>Faded trees \u{2022} Dull sky \u{2022} Light pollution haze</div>
           <button className="l4-modal-btn" style={{padding:'10px 20px',marginTop:'4px'}} onClick={()=>{setRecoveryStep(1);setRecoveryObserved(true)}}>I understand, let me fix this {'\u{2192}'}</button>
         </div>
@@ -883,10 +883,10 @@ export default function Level4() {
       {recoveryStep >= 1 && (
         <div className="l4-solar-panel">
           <div className="l4-solar-header"><span>{L4_ICONS.sun}</span><span>Solar Output</span></div>
-          <div className="l4-solar-bar-outer"><div className="l4-solar-bar-fill" style={{width:`${Math.min(currentSolarW/(panelCount*PANEL_WATT_PEAK||1)*100,100)}%`,backgroundColor:recoveryStage>=2?'#22c55e':'#f5a623',color:recoveryStage>=2?'#22c55e':'#f5a623'}}/></div>
+          <div className="l4-solar-bar-outer"><div className="l4-solar-bar-fill" style={{width:`${Math.min(currentSolarW/(panelCount*PANEL_WATT_PEAK||1)*100,100)}%`,backgroundColor:recoveryStage>=2?'#22c55e':'#38d9a9',color:recoveryStage>=2?'#22c55e':'#38d9a9'}}/></div>
           <div className="l4-solar-output">
             <span className="l4-solar-watts">{currentSolarW}W</span>
-            <span className="l4-solar-eff" style={{backgroundColor:effPct>=80?'rgba(34,197,94,0.15)':'rgba(245,166,35,0.15)',color:effPct>=80?'#22c55e':'#f5a623'}}>{effPct}% eff</span>
+            <span className="l4-solar-eff" style={{backgroundColor:effPct>=80?'rgba(34,197,94,0.15)':'rgba(56,217,169,0.15)',color:effPct>=80?'#22c55e':'#38d9a9'}}>{effPct}% eff</span>
           </div>
           <div className="l4-solar-details"><span>{panelCount} panels</span><span>{dailyKwh} kWh/day</span></div>
           {houseWatts > 0 && <div style={{marginTop:'6px'}}>
@@ -897,7 +897,7 @@ export default function Level4() {
             </div>
           </div>}
           {/* Recovery condition target */}
-          <div style={{marginTop:'8px',padding:'6px 10px',background:solarPct>=70?'rgba(34,197,94,0.1)':'rgba(245,166,35,0.06)',border:`1px solid ${solarPct>=70?'rgba(34,197,94,0.3)':'rgba(245,166,35,0.15)'}`,borderRadius:'8px',fontSize:'11px',color:solarPct>=70?'#22c55e':'#f5a623',textAlign:'center'}}>
+          <div style={{marginTop:'8px',padding:'6px 10px',background:solarPct>=70?'rgba(34,197,94,0.1)':'rgba(56,217,169,0.06)',border:`1px solid ${solarPct>=70?'rgba(34,197,94,0.3)':'rgba(56,217,169,0.15)'}`,borderRadius:'8px',fontSize:'11px',color:solarPct>=70?'#22c55e':'#38d9a9',textAlign:'center'}}>
             {L4_ICONS.target} Solar Usage: {solarPct}% {solarPct>=70 ? L4_ICONS.check : '(need \u{2265}70%)'}
           </div>
         </div>
@@ -905,8 +905,8 @@ export default function Level4() {
 
       {/* Step 2 instruction */}
       {recoveryStep === 1 && (
-        <div style={{position:'absolute',bottom:'20px',left:'50%',transform:'translateX(-50%)',zIndex:25,background:'rgba(5,10,20,0.95)',border:'1px solid rgba(245,166,35,0.3)',borderRadius:'10px',padding:'10px 18px',maxWidth:'360px',textAlign:'center'}}>
-          <div style={{fontSize:'12px',fontWeight:700,color:'#f5a623',marginBottom:'4px'}}>{L4_ICONS.zap} Activate Solar System</div>
+        <div style={{position:'absolute',bottom:'20px',left:'50%',transform:'translateX(-50%)',zIndex:25,background:'rgba(5,10,20,0.95)',border:'1px solid rgba(56,217,169,0.3)',borderRadius:'10px',padding:'10px 18px',maxWidth:'360px',textAlign:'center'}}>
+          <div style={{fontSize:'12px',fontWeight:700,color:'#38d9a9',marginBottom:'4px'}}>{L4_ICONS.zap} Activate Solar System</div>
           <div style={{fontSize:'11px',color:'#aaa'}}>Turn on appliances and let solar power do its magic. Achieve \u{2265}70% solar usage!</div>
         </div>
       )}
@@ -926,8 +926,8 @@ export default function Level4() {
           <div style={{fontSize:'14px',color:'#aaddbb',textAlign:'center',maxWidth:'400px',lineHeight:1.6}}>Bright sunlight fills the scene. Green environment fully visible. Clean air returns.</div>
           {/* Learning Output */}
           <div style={{background:'rgba(5,10,20,0.9)',border:'1px solid rgba(34,197,94,0.3)',borderRadius:'14px',padding:'16px 20px',maxWidth:'420px',width:'90%',marginTop:'8px'}}>
-            <div style={{fontSize:'12px',fontWeight:700,color:'#f5a623',marginBottom:'8px',textTransform:'uppercase',letterSpacing:'1px'}}>{L4_ICONS.brain} What You Learned</div>
-            {['Using solar energy reduces CO\u{2082} emissions', 'Cleaner energy helps restore the environment', 'Your choices directly impact the world'].map((msg,i)=>(
+            <div style={{fontSize:'12px',fontWeight:700,color:'#38d9a9',marginBottom:'8px',textTransform:'uppercase',letterSpacing:'1px'}}>{L4_ICONS.brain} What You Learned</div>
+            {['Using solar energy reduces CO2 emissions', 'Cleaner energy helps restore the environment', 'Your choices directly impact the world'].map((msg,i)=>(
               <div key={i} style={{display:'flex',alignItems:'center',gap:'8px',padding:'6px 0',fontSize:'13px',color:'#aaddbb'}}>
                 <span>{L4_ICONS.bulb}</span><span>{msg}</span>
               </div>
@@ -1019,9 +1019,9 @@ export default function Level4() {
     </div>
 
     {/* TASK BAR */}
-    <div style={{position:'absolute',top:'55px',left:'50%',transform:'translateX(-50%)',zIndex:20,background:'rgba(5,10,20,0.95)',border:'1px solid rgba(245,166,35,0.25)',borderRadius:'12px',padding:'10px 18px',maxWidth:'420px',width:'90%',textAlign:'center'}}>
+    <div style={{position:'absolute',top:'55px',left:'50%',transform:'translateX(-50%)',zIndex:20,background:'rgba(5,10,20,0.95)',border:'1px solid rgba(56,217,169,0.25)',borderRadius:'12px',padding:'10px 18px',maxWidth:'420px',width:'90%',textAlign:'center'}}>
       <div style={{fontSize:'10px',color:'#888',textTransform:'uppercase',letterSpacing:'1px'}}>Task {taskIdx+1}/{INSTALL_SUBTASKS.length}</div>
-      <div style={{fontSize:'14px',fontWeight:700,color:'#f5a623'}}>{currentTask?.icon} {currentTask?.title}</div>
+      <div style={{fontSize:'14px',fontWeight:700,color:'#38d9a9'}}>{currentTask?.icon} {currentTask?.title}</div>
       <div style={{fontSize:'12px',color:'#aaa',marginTop:'2px'}}>{L4_ICONS.target} {currentTask?.objective}</div>
       {currentTask?.id === 'discover' && <div style={{fontSize:'11px',color:'#88ccff',marginTop:'4px'}}>{L4_ICONS.check} Outside! {' \u2022 '} Q=Look Up, Z=Look Down</div>}
     </div>
@@ -1030,10 +1030,10 @@ export default function Level4() {
     {panelCount > 0 && (
       <div className="l4-solar-panel">
         <div className="l4-solar-header"><span>{L4_ICONS.sun}</span><span>Solar Output</span></div>
-        <div className="l4-solar-bar-outer"><div className="l4-solar-bar-fill" style={{width:`${Math.min(currentSolarW/(panelCount*PANEL_WATT_PEAK||1)*100,100)}%`,backgroundColor:'#f5a623',color:'#f5a623'}}/></div>
+        <div className="l4-solar-bar-outer"><div className="l4-solar-bar-fill" style={{width:`${Math.min(currentSolarW/(panelCount*PANEL_WATT_PEAK||1)*100,100)}%`,backgroundColor:'#38d9a9',color:'#38d9a9'}}/></div>
         <div className="l4-solar-output">
           <span className="l4-solar-watts">{currentSolarW}W</span>
-          <span className="l4-solar-eff" style={{backgroundColor:effPct>=80?'rgba(34,197,94,0.15)':'rgba(245,166,35,0.15)',color:effPct>=80?'#22c55e':'#f5a623'}}>{L4_ICONS.zap} {effPct}%</span>
+          <span className="l4-solar-eff" style={{backgroundColor:effPct>=80?'rgba(34,197,94,0.15)':'rgba(56,217,169,0.15)',color:effPct>=80?'#22c55e':'#38d9a9'}}>{L4_ICONS.zap} {effPct}%</span>
         </div>
         <div className="l4-solar-details"><span>{panelCount} panels</span><span>{dailyKwh} kWh/day</span></div>
         {houseWatts > 0 && <div style={{marginTop:'6px'}}>
@@ -1208,14 +1208,14 @@ export default function Level4() {
     {showWeather && (
       <div style={{position:'absolute',top:'110px',left:'50%',transform:'translateX(-50%)',zIndex:20,display:'flex',gap:'6px'}}>
         {WEATHER_TYPES.map((w,i)=>(
-          <button key={w.id} onClick={()=>setWeatherIdx(i)} style={{padding:'5px 10px',borderRadius:'6px',border:`1px solid ${i===weatherIdx?'rgba(245,166,35,0.4)':'rgba(255,255,255,0.1)'}`,background:i===weatherIdx?'rgba(245,166,35,0.12)':'rgba(5,10,20,0.9)',color:'#ddd',fontSize:'11px',fontWeight:600,cursor:'pointer'}}>{w.icon} {w.label}</button>
+          <button key={w.id} onClick={()=>setWeatherIdx(i)} style={{padding:'5px 10px',borderRadius:'6px',border:`1px solid ${i===weatherIdx?'rgba(56,217,169,0.4)':'rgba(255,255,255,0.1)'}`,background:i===weatherIdx?'rgba(56,217,169,0.12)':'rgba(5,10,20,0.9)',color:'#ddd',fontSize:'11px',fontWeight:600,cursor:'pointer'}}>{w.icon} {w.label}</button>
         ))}
       </div>
     )}
 
     {/* CHALLENGE HUD */}
     {currentTask?.id === 'challenge' && (
-      <div style={{position:'absolute',top:'145px',left:'50%',transform:'translateX(-50%)',zIndex:20,background:'rgba(5,10,20,0.95)',border:'2px solid rgba(245,166,35,0.3)',borderRadius:'10px',padding:'8px 14px',display:'flex',gap:'12px'}}>
+      <div style={{position:'absolute',top:'145px',left:'50%',transform:'translateX(-50%)',zIndex:20,background:'rgba(5,10,20,0.95)',border:'2px solid rgba(56,217,169,0.3)',borderRadius:'10px',padding:'8px 14px',display:'flex',gap:'12px'}}>
         <span style={{fontSize:'12px',color:challengeMetSolar?'#22c55e':'#ef4444',fontWeight:700}}>{L4_ICONS.sun} Solar {solarPct}% {challengeMetSolar?L4_ICONS.check:''}</span>
         <span style={{fontSize:'12px',color:challengeMetGrid?'#22c55e':'#ef4444',fontWeight:700}}>{L4_ICONS.zap} Grid {gridWatts}W {challengeMetGrid?L4_ICONS.check:''}</span>
       </div>
@@ -1223,9 +1223,9 @@ export default function Level4() {
 
     {/* DISCOVERY QUESTION */}
     {currentTask?.id === 'discover' && hasGoneOutside && discoveryQ === null && (
-      <div style={{position:'absolute',bottom:'80px',left:'50%',transform:'translateX(-50%)',zIndex:20,background:'rgba(5,10,20,0.95)',border:'1px solid rgba(245,166,35,0.3)',borderRadius:'12px',padding:'14px 20px',maxWidth:'340px',textAlign:'center'}}>
-        <div style={{fontSize:'13px',fontWeight:700,color:'#f5a623',marginBottom:'6px'}}>{L4_ICONS.bulb} Quick Question</div>
-        <div style={{fontSize:'13px',color:'#ffeedd',marginBottom:'8px'}}>Is solar energy clean energy?</div>
+      <div style={{position:'absolute',bottom:'80px',left:'50%',transform:'translateX(-50%)',zIndex:20,background:'rgba(5,10,20,0.95)',border:'1px solid rgba(56,217,169,0.3)',borderRadius:'12px',padding:'14px 20px',maxWidth:'340px',textAlign:'center'}}>
+        <div style={{fontSize:'13px',fontWeight:700,color:'#38d9a9',marginBottom:'6px'}}>{L4_ICONS.bulb} Quick Question</div>
+        <div style={{fontSize:'13px',color:'#e0f2f1',marginBottom:'8px'}}>Is solar energy clean energy?</div>
         <div style={{display:'flex',gap:'8px'}}>
           <button onClick={()=>setDiscoveryQ(true)} style={{flex:1,padding:'8px',borderRadius:'8px',border:'1px solid rgba(34,197,94,0.3)',background:'rgba(34,197,94,0.08)',color:'#22c55e',fontWeight:700,cursor:'pointer',fontSize:'13px'}}>Yes {L4_ICONS.check}</button>
           <button onClick={()=>setDiscoveryQ(false)} style={{flex:1,padding:'8px',borderRadius:'8px',border:'1px solid rgba(239,68,68,0.3)',background:'rgba(239,68,68,0.08)',color:'#ef4444',fontWeight:700,cursor:'pointer',fontSize:'13px'}}>No {L4_ICONS.cross}</button>

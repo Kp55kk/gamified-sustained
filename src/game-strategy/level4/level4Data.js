@@ -28,29 +28,29 @@ export const ROOF_GRID_SLOTS = [
 
 // ═══ TIME OF DAY ═══
 export const TIME_PERIODS = [
-  { id: 'dawn',    label: 'Dawn (6 AM)',      hour: 6,  sunlight: 0.2,  icon: '\u{1F305}', skyColor: '#ff9966' },
-  { id: 'morning', label: 'Morning (9 AM)',   hour: 9,  sunlight: 0.6,  icon: '\u{1F304}', skyColor: '#87CEEB' },
-  { id: 'noon',    label: 'Noon (12 PM)',     hour: 12, sunlight: 1.0,  icon: '\u{2600}\u{FE0F}', skyColor: '#4a9eda' },
-  { id: 'afternoon', label: 'Afternoon (3 PM)', hour: 15, sunlight: 0.8, icon: '\u{1F31E}', skyColor: '#6bb3d9' },
-  { id: 'evening', label: 'Evening (6 PM)',   hour: 18, sunlight: 0.15, icon: '\u{1F307}', skyColor: '#cc6633' },
-  { id: 'night',   label: 'Night (9 PM)',     hour: 21, sunlight: 0.0,  icon: '\u{1F303}', skyColor: '#0a1628' },
+  { id: 'dawn',    label: 'Dawn (6 AM)',      hour: 6,  sunlight: 0.2,  icon: '🌅', skyColor: '#ff9966' },
+  { id: 'morning', label: 'Morning (9 AM)',   hour: 9,  sunlight: 0.6,  icon: '🌄', skyColor: '#87CEEB' },
+  { id: 'noon',    label: 'Noon (12 PM)',     hour: 12, sunlight: 1.0,  icon: '☀️', skyColor: '#4a9eda' },
+  { id: 'afternoon', label: 'Afternoon (3 PM)', hour: 15, sunlight: 0.8, icon: '🌞', skyColor: '#6bb3d9' },
+  { id: 'evening', label: 'Evening (6 PM)',   hour: 18, sunlight: 0.15, icon: '🌇', skyColor: '#cc6633' },
+  { id: 'night',   label: 'Night (9 PM)',     hour: 21, sunlight: 0.0,  icon: '🌃', skyColor: '#0a1628' },
 ];
 
 // ═══ WEATHER ═══
 export const WEATHER_TYPES = [
-  { id: 'clear',   label: 'Clear Sky',    factor: 1.0,  icon: '\u{2600}\u{FE0F}' },
-  { id: 'partial', label: 'Partly Cloudy', factor: 0.7, icon: '\u{26C5}' },
-  { id: 'cloudy',  label: 'Cloudy',       factor: 0.4,  icon: '\u{2601}\u{FE0F}' },
-  { id: 'rainy',   label: 'Rainy',        factor: 0.2,  icon: '\u{1F327}\u{FE0F}' },
+  { id: 'clear',   label: 'Clear Sky',    factor: 1.0,  icon: '☀️' },
+  { id: 'partial', label: 'Partly Cloudy', factor: 0.7, icon: '⛅' },
+  { id: 'cloudy',  label: 'Cloudy',       factor: 0.4,  icon: '☁️' },
+  { id: 'rainy',   label: 'Rainy',        factor: 0.2,  icon: '🌧️' },
 ];
 
 // ═══ PANEL TILT ANGLES ═══
 export const TILT_OPTIONS = [
-  { angle: 0,  label: 'Flat (0\u{00B0})',      efficiency: 0.65 },
-  { angle: 15, label: '15\u{00B0} Tilt',        efficiency: 0.85 },
-  { angle: 25, label: '25\u{00B0} Tilt (Best)', efficiency: 1.0  },
-  { angle: 35, label: '35\u{00B0} Tilt',        efficiency: 0.90 },
-  { angle: 45, label: '45\u{00B0} Tilt',        efficiency: 0.75 },
+  { angle: 0,  label: 'Flat (0°)',      efficiency: 0.65 },
+  { angle: 15, label: '15° Tilt',        efficiency: 0.85 },
+  { angle: 25, label: '25° Tilt (Best)', efficiency: 1.0  },
+  { angle: 35, label: '35° Tilt',        efficiency: 0.90 },
+  { angle: 45, label: '45° Tilt',        efficiency: 0.75 },
 ];
 
 // ═══ BATTERY ═══
@@ -261,16 +261,16 @@ export const L4_QUIZ_QUESTIONS = [
     explanation: 'Solar panels use special cells to turn sunlight directly into electricity!',
   },
   {
-    question: 'How much pollution (CO\u{2082}) does solar energy create?',
+    question: 'How much pollution (CO2) does solar energy create?',
     options: ['Same as coal', 'Half of gas', 'Zero pollution', 'More than diesel'],
     correctIndex: 2,
-    explanation: 'Solar panels create ZERO pollution while working \u{2014} truly clean energy!',
+    explanation: 'Solar panels create ZERO pollution while working — truly clean energy!',
   },
   {
     question: 'What angle gives the best solar power in India?',
-    options: ['Flat (0\u{00B0})', '25\u{00B0} tilt', '90\u{00B0} straight up', '60\u{00B0} steep'],
+    options: ['Flat (0°)', '25° tilt', '90° straight up', '60° steep'],
     correctIndex: 1,
-    explanation: 'For most of India, a 25\u{00B0} tilt on solar panels catches the most sunlight.',
+    explanation: 'For most of India, a 25° tilt on solar panels catches the most sunlight.',
   },
   {
     question: 'Why should you charge your electric car during the day?',
@@ -292,15 +292,15 @@ export const L4_QUIZ_QUESTIONS = [
   },
   {
     question: 'What is the best comfortable room temperature?',
-    options: ['18\u{00B0}C', '20\u{00B0}C', '24\u{00B0}C', '28\u{00B0}C'],
+    options: ['18°C', '20°C', '24°C', '28°C'],
     correctIndex: 2,
-    explanation: '24\u{00B0}C is the perfect comfortable temperature \u{2014} saves energy too!',
+    explanation: '24°C is the perfect comfortable temperature — saves energy too!',
   },
   {
     question: 'What does a cool roof coating do?',
-    options: ['Makes roof pretty', 'Reduces heat inside by 5\u{00B0}C', 'Makes electricity', 'Blocks rain'],
+    options: ['Makes roof pretty', 'Reduces heat inside by 5°C', 'Makes electricity', 'Blocks rain'],
     correctIndex: 1,
-    explanation: 'A white cool roof coating bounces sunlight away, making your house up to 5\u{00B0}C cooler!',
+    explanation: 'A white cool roof coating bounces sunlight away, making your house up to 5°C cooler!',
   },
   {
     question: 'Smart motion sensors help by:',
@@ -318,11 +318,11 @@ export const L4_QUIZ_QUESTIONS = [
 
 // ═══ DISCOVERY FACTS ═══
 export const SOLAR_FACTS = [
-  { icon: '\u{2600}\u{FE0F}', fact: 'Solar panels convert sunlight directly into electricity' },
-  { icon: '\u{1F33F}', fact: 'Zero CO\u{2082} emissions during operation' },
-  { icon: '\u{267B}\u{FE0F}', fact: 'Solar is 100% renewable \u{2014} the sun won\u{2019}t run out' },
-  { icon: '\u{1F4B0}', fact: 'Panels last 25+ years with minimal maintenance' },
-  { icon: '\u{1F3E0}', fact: 'A typical Indian home needs 3\u{2013}5 kW solar system' },
+  { icon: '☀️', fact: 'Solar panels convert sunlight directly into electricity' },
+  { icon: '🌿', fact: 'Zero CO2 emissions during operation' },
+  { icon: '♻️', fact: 'Solar is 100% renewable — the sun will not run out' },
+  { icon: '💰', fact: 'Panels last 25+ years with very little cleaning needed' },
+  { icon: '🏠', fact: 'A typical Indian home needs 3-5 kW solar system' },
 ];
 
 // ═══ STAR SYSTEM ═══
@@ -340,14 +340,14 @@ export const LEVEL4_BADGE = {
   id: 'solar_home_manager',
   title: 'Smart Solar Home Manager',
   description: 'Mastered solar energy, battery storage, and smart home management!',
-  icon: '\u{2600}\u{FE0F}',
+  icon: '☀️',
   coins: 150,
 };
 
 // ═══ DIALOGUE ═══
 export const ENTRY_DIALOGUE = [
-  'Welcome to the Smart Solar Home\u{2026}',
-  'You will learn to manage energy like a pro! \u{2600}\u{FE0F}',
+  'Welcome to the Smart Solar Home...',
+  'You will learn to manage energy like a pro! ☀️',
   'Install, store, optimize, and save!',
 ];
 
@@ -398,27 +398,27 @@ export const TRANSFORMATION_AFTER = [
 
 // ═══ ICONS ═══
 export const L4_ICONS = {
-  sun: '\u{2600}\u{FE0F}', panel: '\u{1FA9F}', zap: '\u{26A1}',
-  battery: '\u{1F50B}', globe: '\u{1F30D}', tree: '\u{1F333}',
-  money: '\u{1F4B0}', chart: '\u{1F4CA}', check: '\u{2705}',
-  cross: '\u{274C}', star: '\u{2B50}', trophy: '\u{1F3C6}',
-  coin: '\u{1FA99}', bulb: '\u{1F4A1}', brain: '\u{1F9E0}',
-  target: '\u{1F3AF}', clock: '\u{23F1}\u{FE0F}',
-  leaf: '\u{1F33F}', wind: '\u{1F32C}\u{FE0F}',
-  shield: '\u{1F6E1}\u{FE0F}', grad: '\u{1F393}',
-  pin: '\u{1F4CD}', sparkle: '\u{2728}', muscle: '\u{1F4AA}',
-  house: '\u{1F3E0}', wrench: '\u{1F527}', gear: '\u{2699}\u{FE0F}',
-  down: '\u{2B07}\u{FE0F}', up: '\u{2B06}\u{FE0F}',
-  warn: '\u{26A0}\u{FE0F}', party: '\u{1F389}',
-  cloud: '\u{2601}\u{FE0F}', night: '\u{1F303}',
-  sunrise: '\u{1F305}', book: '\u{1F4D8}',
-  car: '\u{1F697}', robot: '\u{1F916}', temp: '\u{1F321}\u{FE0F}',
-  plug: '\u{1F50C}', sensor: '\u{1F4E1}', schedule: '\u{1F4C5}',
-  flow: '\u{27A1}\u{FE0F}', dashboard: '\u{1F4F1}',
+  sun: '☀️', panel: '📐', zap: '⚡',
+  battery: '🔋', globe: '🌍', tree: '🌳',
+  money: '💰', chart: '📊', check: '✅',
+  cross: '❌', star: '⭐', trophy: '🏆',
+  coin: '💰', bulb: '💡', brain: '🧠',
+  target: '🎯', clock: '⏱️',
+  leaf: '🌿', wind: '💨',
+  shield: '🛡️', grad: '🎓',
+  pin: '📍', sparkle: '✨', muscle: '💪',
+  house: '🏠', wrench: '🔧', gear: '⚙️',
+  down: '⬇️', up: '⬆️',
+  warn: '⚠️', party: '🎉',
+  cloud: '☁️', night: '🌃',
+  sunrise: '🌅', book: '📘',
+  car: '🚗', robot: '🤖', temp: '🌡️',
+  plug: '🔌', sensor: '📡', schedule: '📅',
+  flow: '➡️', dashboard: '📱',
 };
 
 export const ROOM_ICONS = {
-  'Living Room': '\u{1F6CB}\u{FE0F}', 'Bedroom': '\u{1F6CF}\u{FE0F}',
-  'Kitchen': '\u{1F373}', 'Bathroom': '\u{1F6BF}', 'Rooftop': '\u{1F3E0}',
-  'Outside': '\u{1F333}',
+  'Living Room': '🛋️', 'Bedroom': '🛏️',
+  'Kitchen': '🍳', 'Bathroom': '🚿', 'Rooftop': '🏠',
+  'Outside': '🌳',
 };
