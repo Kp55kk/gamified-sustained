@@ -13,19 +13,19 @@ const STEPS = [
   },
   {
     id: 'sizing', title: 'How Big Should Your Battery Be?', color: '#f59e0b', glow: 'rgba(245,158,11,0.4)',
-    desc: 'At night (12 hours), your home uses: LED bulbs + Fans + Fridge + WiFi + Phone charging + TV = about 4,240 Watt-hours. So you need a battery that can store at least 5,000 Watt-hours (5 units)!',
+    desc: 'At night (12 hours), your home uses: LED bulbs + Fans + Fridge + WiFi + Phone charging + TV = about 4,240 energy units (Wh). So you need a battery that can store at least 5,000 energy units (5 units of electricity)!',
     fact: 'A 5-unit Modern Lithium battery is only the size of a small suitcase (35 kg). An old-style battery for the same power would weigh 120 kg!',
     quiz: null,
   },
   {
     id: 'daily_cycle', title: 'How the Battery Works All Day', color: '#a78bfa', glow: 'rgba(167,139,250,0.4)',
-    desc: 'Morning: Solar starts, battery begins filling up. Noon: Battery is FULL + house runs on solar + extra power goes to the grid. Evening: No sunlight, so the battery powers your home. Night: Battery + a little grid power.',
-    fact: 'In the evening (6-10 PM), grid electricity costs the most. But battery power is basically FREE because the sun already charged it during the day!',
+    desc: 'Morning: Solar starts, battery begins filling up. Noon: Battery is FULL + house runs on solar + extra power goes to the grid. Evening: No sunlight, so the battery powers your home. Night: Battery + a little outside power.',
+    fact: 'In the evening (6-10 PM), outside electricity costs the most. But battery power is basically FREE because the sun already charged it during the day!',
     quiz: { q: 'When does the battery save you the most money?', opts: ['Morning (6-9 AM)', 'Evening (6-10 PM)', 'Midnight'], ans: 1 },
   },
   {
     id: 'grid_independence', title: 'Freedom from Power Cuts!', color: '#3b82f6', glow: 'rgba(59,130,246,0.4)',
-    desc: 'Without solar: You depend 100% on outside power (grid). With solar only: 65% of your power comes from the sun. With solar + battery (BEST!): 90-95% of power is your own! You barely need the grid at all!',
+    desc: 'Without solar: You depend 100% on outside power. With solar only: 65% of your power comes from the sun. With solar + battery (BEST!): 90-95% of power is your own! You barely need outside power at all!',
     fact: 'Many areas in India have 68 hours of power cuts every month. With solar + battery, power cuts don\'t affect you at all!',
     quiz: null,
   },
@@ -78,9 +78,9 @@ function StepSVG({ stepId, color }) {
       <text x="210" y="15" fill="#888" fontSize="9" textAnchor="middle">NIGHT-TIME LOAD CALCULATION (12 HOURS)</text>
       {/* Appliance breakdown bars */}
       {[
-        {n:'Fridge',w:1800,c:'#60a5fa',icon:'\uD83E\uDDCA'}, {n:'Fans (3x)',w:1260,c:'#22c55e',icon:'\uD83C\uDF2C\uFE0F'},
-        {n:'LED Bulbs',w:600,c:'#fbbf24',icon:'\uD83D\uDCA1'}, {n:'TV',w:300,c:'#a78bfa',icon:'\uD83D\uDCFA'},
-        {n:'WiFi Router',w:180,c:'#f97316',icon:'\uD83C\uDF10'}, {n:'Phone',w:100,c:'#ec4899',icon:'\uD83D\uDCF1'},
+        {n:'Fridge',w:1800,c:'#60a5fa',icon:'🧊'}, {n:'Fans (3x)',w:1260,c:'#22c55e',icon:'🌬️'},
+        {n:'LED Bulbs',w:600,c:'#fbbf24',icon:'💡'}, {n:'TV',w:300,c:'#a78bfa',icon:'📺'},
+        {n:'WiFi Router',w:180,c:'#f97316',icon:'🌐'}, {n:'Phone',w:100,c:'#ec4899',icon:'📱'},
       ].map((a, i) => {
         const maxW = 1800, barW = (a.w / maxW) * 200;
         const y = 28 + i * 22;

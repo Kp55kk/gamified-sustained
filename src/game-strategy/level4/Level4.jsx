@@ -148,7 +148,7 @@ export default function Level4() {
       {id:'net_meter', appliance:'solar_meter', label:'📊 Smart Meter — Sell Extra Power',
         learn:'A special meter that counts BOTH ways! When you USE power from the grid, it counts UP. When your solar panels send EXTRA power back, it counts DOWN! With PM Surya Ghar, you can get up to 300 units FREE every month!'},
       {id:'system_types', appliance:'solar_board_1', label:'☀️ Solar Info: 3 System Types',
-        learn:'THREE TYPES: 1. ON-GRID: No battery, cheapest (Rs.3-4 Lakh). Stops during power cuts. 2. OFF-GRID: Works alone, no grid needed. 3. HYBRID (Best!): Has grid + battery backup. Works even during power cuts!'},
+        learn:'THREE TYPES: 1. ON-GRID: No battery, cheapest (Rs.3-4 Lakh). Stops during power cuts. 2. OFF-GRID: Works alone, no outside power needed. 3. HYBRID (Best!): Has outside power + battery backup. Works even during power cuts!'},
     ],
     2: [
       {id:'tilt_orient', appliance: null, popup: true, label:'📐 Info: Panel Angle & Direction',
@@ -168,7 +168,7 @@ export default function Level4() {
       {id:'smart_sensors', appliance: null, popup: true, label:'🤖 Info: Smart Sensors',
         learn:'Smart sensors automatically turn OFF lights and fans when nobody is in the room! A motion sensor costs just Rs.500 and saves Rs.200-300 every month. Setting AC to 24°C instead of 20°C saves 24% electricity!'},
       {id:'ev_solar', appliance:'solar_ev_charger', label:'🚗 Electric Car + Solar',
-        learn:'Charge your electric car with solar power for FREE! Cost per km: Petrol car = Rs.5.50, Electric car from grid = Rs.0.80, Electric car from SOLAR = Rs.0! A family driving 15,000 km/year saves Rs.82,500!'},
+        learn:'Charge your electric car with solar power for FREE! Cost per km: Petrol car = Rs.5.50, Electric car from outside power = Rs.0.80, Electric car from SOLAR = Rs.0! A family driving 15,000 km/year saves Rs.82,500!'},
     ],
     6: [
       {id:'seasonal_output', appliance:'solar_weather', label:'📅 How Seasons Affect Solar',
@@ -643,7 +643,7 @@ export default function Level4() {
                 }
               }}
               style={z.popup && !visitedZones.includes(z.id) ? {cursor:'pointer'} : {}}>
-              <span className="l4-walk-zone-check">{visitedZones.includes(z.id) ? '✅' : '⬡'}</span>
+              <span className="l4-walk-zone-check">{visitedZones.includes(z.id) ? '✅' : '○'}</span>
               <span>{z.label}{z.popup && !visitedZones.includes(z.id) ? ' 👉 Click' : ''}</span>
             </div>
           ))}
@@ -888,7 +888,7 @@ export default function Level4() {
             <span className="l4-solar-watts">{currentSolarW}W</span>
             <span className="l4-solar-eff" style={{backgroundColor:effPct>=80?'rgba(34,197,94,0.15)':'rgba(56,217,169,0.15)',color:effPct>=80?'#22c55e':'#38d9a9'}}>{effPct}% eff</span>
           </div>
-          <div className="l4-solar-details"><span>{panelCount} panels</span><span>{dailyKwh} kWh/day</span></div>
+          <div className="l4-solar-details"><span>{panelCount} panels</span><span>{dailyKwh} units/day</span></div>
           {houseWatts > 0 && <div style={{marginTop:'6px'}}>
             <div style={{fontSize:'10px',color:'#888',marginBottom:'2px'}}>Power Source</div>
             <div className="l4-split-bar">
@@ -1054,7 +1054,7 @@ export default function Level4() {
           <span className="l4-solar-ticker-item">
             <span className="l4-ticker-icon">{L4_ICONS.sun}</span>
             <span className="l4-ticker-label">Solar:</span>
-            <span className="l4-ticker-val solar">{liveKwh} kWh</span>
+            <span className="l4-ticker-val solar">{liveKwh} units</span>
           </span>
           <span className="l4-ticker-sep">|</span>
           <span className="l4-solar-ticker-item">
@@ -1076,7 +1076,7 @@ export default function Level4() {
           <div className="l4-impact-row">
             <div className="l4-impact-item">
               <div className={`l4-impact-val solar ${impactPulse ? 'animate' : ''}`}>{monthlyKwh}</div>
-              <div className="l4-impact-lbl">kWh/month</div>
+              <div className="l4-impact-lbl">units/month</div>
             </div>
             <div className="l4-impact-item">
               <div className={`l4-impact-val co2 ${impactPulse ? 'animate' : ''}`}>{co2Saved} kg</div>
@@ -1089,7 +1089,7 @@ export default function Level4() {
           </div>
           {/* Monthly summary line */}
           <div className="l4-impact-summary">
-            {L4_ICONS.chart} Monthly: {monthlyKwh} kWh · {'\u20B9'}{savings.saved} saved · {co2Saved}kg CO{'\u2082'} reduced
+            {L4_ICONS.chart} Monthly: {monthlyKwh} units · {'\u20B9'}{savings.saved} saved · {co2Saved}kg CO{'\u2082'} reduced
           </div>
         </div>
       </>
@@ -1165,16 +1165,16 @@ export default function Level4() {
       <div className="l4-insight-ticker" key={`${solarPct}-${currentSolarW}-${timePeriod.id}-${gridWatts}`}>
         <span className="l4-insight-icon">{L4_ICONS.bulb}</span>
         <span className="l4-insight-text">
-          {solarPct >= 90 ? `🌍 Amazing! ${solarPct}% of your power is from the sun — almost 100% clean!`
-            : solarPct >= 70 ? `☀️ Great job! ${solarPct}% solar energy — your home is super green!`
-            : solarPct >= 50 ? `⚡ Nice! Solar is at ${solarPct}% — keep going to reduce grid use!`
-            : solarPct >= 30 ? `🔋 Solar is giving ${solarPct}% of your power. Grid use is dropping!`
-            : solarPct > 0 ? `☀️ Solar is active at ${solarPct}%. Use more during peak sunlight!`
-            : currentSolarW > 0 && houseWatts === 0 ? '🔌 Solar panels are making power! Turn on some appliances to use it.'
-            : timePeriod.sunlight === 0 ? '🌙 No sunlight right now. Battery or grid powers your home at night.'
-            : gridWatts > 500 ? `⚠️ Using too much grid power (${gridWatts}W). Try using appliances at noon!`
-            : panelCount < 4 ? '📈 Add more panels to get more solar power!'
-            : '☀️ Solar is powering your home with clean energy!'}
+          {solarPct >= 90 ? `${L4_ICONS.globe} Amazing! ${solarPct}% of your power is from the sun — almost 100% clean!`
+            : solarPct >= 70 ? `${L4_ICONS.sun} Great job! ${solarPct}% solar energy — your home is super green!`
+            : solarPct >= 50 ? `${L4_ICONS.zap} Nice! Solar is at ${solarPct}% — keep going to reduce outside power use!`
+            : solarPct >= 30 ? `${L4_ICONS.battery} Solar is giving ${solarPct}% of your power. Outside power use is dropping!`
+            : solarPct > 0 ? `${L4_ICONS.sun} Solar is active at ${solarPct}%. Use more during peak sunlight!`
+            : currentSolarW > 0 && houseWatts === 0 ? `${L4_ICONS.plug} Solar panels are making power! Turn on some appliances to use it.`
+            : timePeriod.sunlight === 0 ? `${L4_ICONS.night} No sunlight right now. Battery or outside power keeps your home running at night.`
+            : gridWatts > 500 ? `${L4_ICONS.warn} Using too much outside power (${gridWatts}W). Try using appliances at noon!`
+            : panelCount < 4 ? `${L4_ICONS.chart} Add more panels to get more solar power!`
+            : `${L4_ICONS.sun} Solar is powering your home with clean energy!`}
         </span>
       </div>
     )}
@@ -1184,7 +1184,7 @@ export default function Level4() {
       <div className="l4-battery-panel">
         <div className="l4-battery-header"><span>{L4_ICONS.battery}</span><span>Battery</span></div>
         <div className="l4-battery-bar-outer"><div className="l4-battery-bar-fill" style={{width:`${batteryPct}%`}}/></div>
-        <div className="l4-battery-info"><span>{batteryCharge.toFixed(1)}/{BATTERY_CAPACITY_KWH} kWh</span><span>{excessSolar>0?'Charging':timePeriod.sunlight===0?'Discharging':'Idle'}</span></div>
+        <div className="l4-battery-info"><span>{batteryCharge.toFixed(1)}/{BATTERY_CAPACITY_KWH} units</span><span>{excessSolar>0?'Charging':timePeriod.sunlight===0?'Discharging':'Idle'}</span></div>
       </div>
     )}
 

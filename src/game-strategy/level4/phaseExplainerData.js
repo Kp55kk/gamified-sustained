@@ -9,7 +9,7 @@ export const EXPLAINER_TOPICS = {
         desc: 'A solar panel is made of a special material called silicon. When sunlight hits it, the silicon creates electricity! Think of it like a magic sheet that turns sunshine into power.',
         fact: 'One solar panel can power 5 LED bulbs for 6 hours every day!' },
       { title: 'How Does It Make Electricity?', svg: 'panel_cells',
-        desc: 'Inside each panel are tiny squares called "cells". When sunlight hits these cells, tiny particles called electrons start moving — and moving electrons = electricity!',
+        desc: 'Inside each panel are tiny squares called "solar cells". When sunlight hits these cells, tiny energy particles start moving — and moving energy particles = electricity!',
         fact: 'A single panel has 60-72 cells, each one working like a tiny battery powered by sunlight.',
         quiz: { q: 'What material are solar panels made of?', opts: ['Plastic', 'Silicon', 'Glass'], ans: 1 }},
       { title: 'Types of Solar Panels', svg: 'panel_types',
@@ -19,14 +19,14 @@ export const EXPLAINER_TOPICS = {
   inverter_learn: {
     name: 'The Inverter', color: '#a78bfa', steps: [
       { title: 'What Does an Inverter Do?', svg: 'inverter_convert',
-        desc: 'Solar panels make DC electricity (like a battery). But your home uses AC electricity (like from the plug point). The inverter changes DC into AC so your appliances can work!',
-        fact: 'DC = Direct Current (flows one way, like water in a pipe). AC = Alternating Current (switches back and forth 50 times per second!).' },
+        desc: 'Solar panels make battery-type power (DC). But your home uses plug-point power (AC). The inverter changes battery-type power into home-type power so your appliances can work!',
+        fact: 'Battery-type power (DC) flows one way, like water in a pipe. Home-type power (AC) switches back and forth 50 times per second!' },
       { title: 'Why is it Called the "Brain"?', svg: 'inverter_brain',
         desc: 'The inverter is smart! It tracks the sun and adjusts power to get the MAXIMUM electricity from your panels. It also protects your home if something goes wrong.',
         fact: 'Modern inverters waste only 2-3% of power. That means 97% of solar energy reaches your home!',
         quiz: { q: 'What does an inverter convert?', opts: ['AC to DC', 'DC to AC', 'Heat to light'], ans: 1 }},
       { title: 'Types of Inverters', svg: 'inverter_types',
-        desc: 'String Inverter (Rs.25,000-50,000): One box for all panels — simple and cheap. Micro-inverter (Rs.8,000 each): One per panel — best if panels get shade. Hybrid (Rs.60,000-1L): Works with battery too!',
+        desc: 'Basic Inverter (Rs.25,000-50,000): One box for all panels — simple and cheap. Mini Inverter (Rs.8,000 each): One per panel — best if panels get shade. Hybrid (Rs.60,000-1L): Works with battery too!',
         fact: 'A hybrid inverter lets you store solar power in a battery for nighttime — no more power cuts!' },
     ]},
   net_meter: {
@@ -58,9 +58,9 @@ export const EXPLAINER_TOPICS = {
 
   // ═══ PHASE 5: Smart Energy ═══
   load_shifting: {
-    name: 'Load Shifting', color: '#f59e0b', steps: [
-      { title: 'What is Load Shifting?', svg: 'load_clock',
-        desc: 'Load shifting means using your heavy appliances (washing machine, geyser, iron) during DAYTIME (10 AM - 3 PM) when solar panels are making FREE electricity, instead of at night when you pay for grid power.',
+    name: 'Smart Timing', color: '#f59e0b', steps: [
+      { title: 'What is Smart Timing?', svg: 'load_clock',
+        desc: 'Smart timing means using your heavy appliances (washing machine, geyser, iron) during DAYTIME (10 AM - 3 PM) when solar panels are making FREE electricity, instead of at night when you pay for outside power.',
         fact: 'Just by changing WHEN you use appliances, you can save Rs.1,500-2,000 every month without buying anything new!' },
       { title: 'Best Times for Each Appliance', svg: 'load_schedule',
         desc: 'Washing Machine at 2 PM = FREE (vs Rs.4 at 7 PM). Geyser at 11 AM = FREE (vs Rs.24 at 7 AM). Iron at noon = FREE (vs Rs.8 at evening). EV charging at noon = FREE (vs Rs.26 at night).',
@@ -109,8 +109,8 @@ export const EXPLAINER_TOPICS = {
         fact: 'Modern panels can generate electricity even from scattered light on cloudy days!',
         quiz: { q: 'What happens to solar panels during monsoon rain?', opts: ['They break', 'They get cleaned for free!', 'They stop working'], ans: 1 }},
       { title: 'Winter: Cool & Efficient', svg: 'season_winter',
-        desc: 'October to February: shorter days mean less hours of sunlight, but cooler temperatures make panels MORE efficient! Overall output is good. Yearly average: 1500-1800 kWh per kW installed.',
-        fact: 'A 5kW system makes about 7,500-9,000 units per year — enough to power an average Indian home completely!' },
+        desc: 'October to February: shorter days mean less hours of sunlight, but cooler temperatures make panels MORE efficient! Overall output is good. Yearly average: 1,500-1,800 units per kW installed.',
+        fact: 'A 5kW system makes about 7,500-9,000 units of electricity per year — enough to power an average Indian home completely!' },
     ]},
   maintenance: {
     name: 'Panel Maintenance', color: '#22c55e', steps: [
@@ -197,7 +197,7 @@ export const EXPLAINER_TOPICS = {
   knowledge_check: {
     name: 'Knowledge Review', color: '#a78bfa', steps: [
       { title: 'Solar Basics Review', svg: 'review_basics',
-        desc: 'You have learned so much! Solar panels use silicon to convert sunlight into DC electricity. The inverter changes DC to AC for your home. Net metering lets you sell extra power back to the grid.',
+        desc: 'You have learned so much! Solar panels use a special material to convert sunlight into battery-type power. The inverter changes it to home-type power. Net metering lets you sell extra power back!',
         fact: 'You now know more about solar energy than 95% of adults!',
         quiz: { q: 'What converts DC from panels to AC for your home?', opts: ['Solar Panel', 'Net Meter', 'Inverter'], ans: 2 }},
       { title: 'Installation & Money Review', svg: 'review_install',

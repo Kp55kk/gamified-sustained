@@ -360,20 +360,20 @@ export const FINAL_MESSAGE = [
 // ═══ ENERGY FLOW STEPS ═══
 export const ENERGY_FLOW_STEPS = [
   { id: 'sun_to_panel', label: 'Sunlight hits panels', from: 'sun', to: 'panel', color: '#fbbf24' },
-  { id: 'panel_to_inverter', label: 'DC → AC conversion', from: 'panel', to: 'inverter', color: '#f59e0b' },
-  { id: 'inverter_to_battery', label: 'Excess → Battery storage', from: 'inverter', to: 'battery', color: '#22c55e' },
-  { id: 'inverter_to_home', label: 'Power → Home appliances', from: 'inverter', to: 'home', color: '#3b82f6' },
-  { id: 'battery_to_home', label: 'Night: Battery → Home', from: 'battery', to: 'home', color: '#8b5cf6' },
-  { id: 'grid_backup', label: 'Grid backup (if needed)', from: 'grid', to: 'home', color: '#ef4444' },
+  { id: 'panel_to_inverter', label: 'Changing battery-type to home-type power', from: 'panel', to: 'inverter', color: '#f59e0b' },
+  { id: 'inverter_to_battery', label: 'Extra power saved in battery', from: 'inverter', to: 'battery', color: '#22c55e' },
+  { id: 'inverter_to_home', label: 'Power goes to home appliances', from: 'inverter', to: 'home', color: '#3b82f6' },
+  { id: 'battery_to_home', label: 'Night: Battery powers your home', from: 'battery', to: 'home', color: '#8b5cf6' },
+  { id: 'grid_backup', label: 'Outside power backup (if needed)', from: 'grid', to: 'home', color: '#ef4444' },
 ];
 
 // ═══ DASHBOARD METRICS ═══
 export const DASHBOARD_METRICS = [
-  { id: 'solar_kwh', label: 'Solar Generated', unit: 'kWh/month', icon: '☀️', color: '#f59e0b' },
-  { id: 'co2_saved', label: 'CO₂ Reduced', unit: 'kg/month', icon: '🌿', color: '#22c55e' },
+  { id: 'solar_kwh', label: 'Solar Power Made', unit: 'units/month', icon: '☀️', color: '#f59e0b' },
+  { id: 'co2_saved', label: 'Pollution Stopped', unit: 'kg/month', icon: '🌿', color: '#22c55e' },
   { id: 'bill_saved', label: 'Bill Saved', unit: '₹/month', icon: '💰', color: '#10b981' },
-  { id: 'battery_stored', label: 'Battery Stored', unit: 'kWh', icon: '🔋', color: '#8b5cf6' },
-  { id: 'grid_reduced', label: 'Grid Dependency', unit: '%', icon: '⚡', color: '#ef4444' },
+  { id: 'battery_stored', label: 'Battery Stored', unit: 'units', icon: '🔋', color: '#8b5cf6' },
+  { id: 'grid_reduced', label: 'Need for Outside Power', unit: '%', icon: '⚡', color: '#ef4444' },
   { id: 'trees_equiv', label: 'Trees Equivalent', unit: '/year', icon: '🌳', color: '#16a34a' },
 ];
 

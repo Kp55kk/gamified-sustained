@@ -73,7 +73,7 @@ export function EnergyFlowPhase({ solarW, onComplete }) {
           <button className="l4-modal-btn" onClick={() => setStep(p => Math.min(p + 1, ENERGY_FLOW_STEPS.length - 1))}>Next Step →</button>
         </div>
       )}
-      <div className="l4-phase-learning">{L4_ICONS.bulb} In India, a 1kW solar panel makes about 4.5 units of electricity per day. Solar panels create one type of power (DC), the inverter changes it to another type (AC) that your home can use. Extra power goes to a battery or back to the grid. The grid is only backup!</div>
+      <div className="l4-phase-learning">{L4_ICONS.bulb} In India, a 1kW solar panel makes about 4.5 units of electricity per day. Solar panels create battery-type power, the inverter changes it to home-type power that your appliances can use. Extra power goes to a battery or back to the power company. Outside power is only backup!</div>
     </PhaseWrap>
   );
 }
@@ -106,7 +106,7 @@ export function BatteryPhase({ solarW, houseW, onComplete }) {
       <div className="l4-battery-visual">
         <div className="l4-batt-meter"><div className="l4-batt-fill" style={{ height: `${battPct}%` }} /><span>{battPct}%</span></div>
         <div className="l4-batt-info">
-          <div>{charge.toFixed(1)} / {BATTERY_CAPACITY_KWH} kWh</div>
+          <div>{charge.toFixed(1)} / {BATTERY_CAPACITY_KWH} units</div>
           <div className={`l4-batt-status ${isCharging ? 'charging' : isDischarging ? 'discharging' : ''}`}>
             {isCharging ? '⚡ Charging' : isDischarging ? '🔌 Discharging' : nightPowered ? '🌙 Night Power!' : '— Idle'}
           </div>
@@ -182,7 +182,7 @@ export function SmartCoolingPhase({ onComplete }) {
 
   return (
     <PhaseWrap title="Smart Cooling" icon="❄️" onComplete={isComfort && (coolRoof || insulation) ? onComplete : null}>
-      <p className="l4-phase-desc">Achieve {COOLING_DATA.comfortTemp}°C comfort using minimum energy (ECBC standard).</p>
+      <p className="l4-phase-desc">Achieve {COOLING_DATA.comfortTemp}°C comfort using minimum energy (Comfort temperature rule).</p>
       <div className="l4-cool-temp">
         <div className="l4-cool-outdoor">🌡️ Outside: {outdoor}°C</div>
         <div className={`l4-cool-indoor ${isComfort ? 'comfort' : 'hot'}`}>🏠 Inside: {indoor}°C {isComfort ? '✅' : '⚠️'}</div>
@@ -205,7 +205,7 @@ export function SmartCoolingPhase({ onComplete }) {
           </div>
         ))}
       </div>
-      <div className="l4-phase-learning">{L4_ICONS.bulb} The comfort standard says 24°C is the perfect temperature. A cool roof coating (white paint on roof) reflects sunlight and reduces indoor heat by 3-5°C. With good insulation + ceiling fan ({COOLING_DATA.fanWatts}W), you can avoid using AC ({COOLING_DATA.acWatts}W) — saving 80% on cooling!</div>
+      <div className="l4-phase-learning">{L4_ICONS.bulb} The comfort rule says 24°C is the perfect temperature. A cool roof coating (white paint on roof) reflects sunlight and reduces indoor heat by 3-5°C. With good insulation + ceiling fan ({COOLING_DATA.fanWatts}W), you can avoid using AC ({COOLING_DATA.acWatts}W) — saving 80% on cooling!</div>
     </PhaseWrap>
   );
 }
@@ -261,7 +261,7 @@ export function EVChargingPhase({ onComplete }) {
           <div className="l4-ev-opt-icon">☀️</div>
           <div className="l4-ev-opt-title">Daytime Solar Charging</div>
           <div className="l4-ev-opt-stats">
-            <div>⚡ {EV_DATA.solarChargeKwh} kWh from solar</div>
+            <div>⚡ {EV_DATA.solarChargeKwh} units from solar</div>
             <div>💰 Cost: ₹{EV_DATA.solarCost}</div>
             <div>🌿 Zero CO₂</div>
           </div>
@@ -269,9 +269,9 @@ export function EVChargingPhase({ onComplete }) {
         <div className="l4-ev-vs">VS</div>
         <div className={`l4-ev-option bad ${schedule === 'grid' ? 'selected' : ''}`} onClick={() => setSchedule('grid')}>
           <div className="l4-ev-opt-icon">🌙</div>
-          <div className="l4-ev-opt-title">Nighttime Grid Charging</div>
+          <div className="l4-ev-opt-title">Nighttime Outside Power Charging</div>
           <div className="l4-ev-opt-stats">
-            <div>⚡ {EV_DATA.gridChargeKwh} kWh from grid</div>
+            <div>⚡ {EV_DATA.gridChargeKwh} units from outside power</div>
             <div>💸 Cost: ₹{EV_DATA.gridCost}</div>
             <div>💨 High CO₂</div>
           </div>
@@ -281,10 +281,10 @@ export function EVChargingPhase({ onComplete }) {
         <div className={`l4-ev-result ${schedule === 'solar' ? 'good' : 'bad'}`}>
           {schedule === 'solar'
             ? `✅ Smart choice! Save ₹${EV_DATA.gridCost}/charge and zero emissions!`
-            : `⚠️ Grid charging costs ₹${EV_DATA.gridCost} and generates CO₂. Try solar!`}
+            : `⚠️ Outside power charging costs ₹${EV_DATA.gridCost} and creates pollution. Try solar!`}
         </div>
       )}
-      <div className="l4-phase-learning">{L4_ICONS.bulb} India supports electric vehicles! A Tata Nexon EV needs about 30 units for 300km range. Solar charging at home costs Rs.0 per km compared to Rs.1.50 per km from grid. That saves Rs.45,000 per year! Charge between 10AM-3PM when your solar panels are making the most power.</div>
+      <div className="l4-phase-learning">{L4_ICONS.bulb} India supports electric vehicles! A Tata Nexon EV needs about 30 units for 300km range. Solar charging at home costs Rs.0 per km compared to Rs.1.50 per km from outside power. That saves Rs.45,000 per year! Charge between 10AM-3PM when your solar panels are making the most power.</div>
     </PhaseWrap>
   );
 }
@@ -324,7 +324,7 @@ export function WeatherPhase({ solarW, batteryCharge, onComplete }) {
         )}
         {responded.includes(scenarioIdx) && <div className="l4-weather-done">✅ Adapted!</div>}
       </div>
-      <div className="l4-phase-learning">{L4_ICONS.bulb} India gets 300+ sunny days per year, but monsoon season (June-September) reduces solar by 30-50%. Smart homes automatically adjust: sunny day → charge battery + send power to grid, cloudy day → use less power, rainy/night → use battery. Weather apps help you plan ahead!</div>
+      <div className="l4-phase-learning">{L4_ICONS.bulb} India gets 300+ sunny days per year, but monsoon season (June-September) reduces solar by 30-50%. Smart homes automatically adjust: sunny day → charge battery + send extra power out, cloudy day → use less power, rainy/night → use battery. Weather apps help you plan ahead!</div>
     </PhaseWrap>
   );
 }
@@ -382,7 +382,7 @@ export function FinalePhase({ onComplete }) {
       </div>
       {showAfter && (
         <div className="l4-finale-message">
-          {L4_ICONS.sparkle} You transformed a polluted, grid-dependent home into a smart, sustainable, solar-powered future home!
+          {L4_ICONS.sparkle} You transformed a polluted, power-cut-prone home into a smart, sustainable, solar-powered future home!
         </div>
       )}
     </PhaseWrap>
