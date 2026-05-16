@@ -73,7 +73,7 @@ export function EnergyFlowPhase({ solarW, onComplete }) {
           <button className="l4-modal-btn" onClick={() => setStep(p => Math.min(p + 1, ENERGY_FLOW_STEPS.length - 1))}>Next Step →</button>
         </div>
       )}
-      <div className="l4-phase-learning">{L4_ICONS.bulb} In India, a 1kW panel generates ~4.5 kWh/day (1,600 kWh/year). Panels produce DC → inverter converts to AC → powers your home. Excess goes to battery or grid via net metering (MNRE policy). Grid is only backup!</div>
+      <div className="l4-phase-learning">{L4_ICONS.bulb} In India, a 1kW solar panel makes about 4.5 units of electricity per day. Solar panels create one type of power (DC), the inverter changes it to another type (AC) that your home can use. Extra power goes to a battery or back to the grid. The grid is only backup!</div>
     </PhaseWrap>
   );
 }
@@ -125,7 +125,7 @@ export function BatteryPhase({ solarW, houseW, onComplete }) {
         <div><span>{L4_ICONS.house}</span> House: {houseW}W</div>
         <div><span>{excess > 0 ? '📥' : '📤'}</span> {excess > 0 ? `Excess: ${excess}W` : `Need: ${deficit}W`}</div>
       </div>
-      <div className="l4-phase-learning">{L4_ICONS.bulb} Lithium-ion batteries (like Tesla Powerwall) store excess solar. In India, a 10kWh battery costs ₹4-6 lakh but saves ₹15,000+/year. Charge at 10AM-3PM (peak solar), use at 6PM-6AM. MNRE offers 40% subsidy on residential solar+battery!</div>
+      <div className="l4-phase-learning">{L4_ICONS.bulb} Modern batteries store extra solar power for night use. In India, a 10-unit battery costs Rs.4-6 Lakh but saves Rs.15,000+ every year. Charge between 10AM-3PM (when the sun is strongest), use at night. The government offers help paying for solar + battery systems!</div>
     </PhaseWrap>
   );
 }
@@ -164,7 +164,7 @@ export function PeakHourPhase({ onComplete }) {
         <span key={a.id} className="l4-peak-fixed-item">{a.icon} {a.name}</span>
       ))}</div>
       {savings > 0 && <div className="l4-peak-savings">{L4_ICONS.money} Monthly savings: ₹{savings} by shifting to solar hours!</div>}
-      <div className="l4-phase-learning">{L4_ICONS.bulb} Indian electricity uses slab pricing: ₹3-8/unit depending on usage. Peak hours (6-10 PM) cost most. By shifting washing machine (2000W), geyser (3000W), and EV charging to solar hours (10AM-3PM), you use FREE solar power and save ₹800-1,500/month!</div>
+      <div className="l4-phase-learning">{L4_ICONS.bulb} In India, electricity gets more expensive the more you use. Evening hours (6-10 PM) cost the most! By running the washing machine, geyser, and car charger during daytime (10AM-3PM), you use FREE solar power and save Rs.800-1,500 every month!</div>
     </PhaseWrap>
   );
 }
@@ -205,7 +205,7 @@ export function SmartCoolingPhase({ onComplete }) {
           </div>
         ))}
       </div>
-      <div className="l4-phase-learning">{L4_ICONS.bulb} ECBC 2017 says 24±1°C is ideal comfort. Cool roof (white coating) reflects 70% sunlight, reducing indoor temp by 3-5°C. Combined with insulation + ceiling fan ({COOLING_DATA.fanWatts}W), you avoid running AC ({COOLING_DATA.acWatts}W) — saving 80% cooling energy!</div>
+      <div className="l4-phase-learning">{L4_ICONS.bulb} The comfort standard says 24°C is the perfect temperature. A cool roof coating (white paint on roof) reflects sunlight and reduces indoor heat by 3-5°C. With good insulation + ceiling fan ({COOLING_DATA.fanWatts}W), you can avoid using AC ({COOLING_DATA.acWatts}W) — saving 80% on cooling!</div>
     </PhaseWrap>
   );
 }
@@ -245,7 +245,7 @@ export function AutomationPhase({ onComplete }) {
       <div className="l4-auto-savings">
         <span>{L4_ICONS.check}</span> {installed}/4 sensors installed — {totalSavings}% energy saved
       </div>
-      <div className="l4-phase-learning">{L4_ICONS.bulb} PIR (Passive Infrared) occupancy sensors cost ₹300-800 each and save 15-25% energy. BIS IS 17323 recommends auto-off within 15 minutes of room vacancy. Installing in 4 rooms saves ~₹500/month on wasted lighting and fan energy!</div>
+      <div className="l4-phase-learning">{L4_ICONS.bulb} Motion sensors (Rs.300-800 each) detect if someone is in the room and turn lights OFF automatically. This saves 15-25% energy. Installing in 4 rooms saves about Rs.500 every month on wasted light and fan electricity!</div>
     </PhaseWrap>
   );
 }
@@ -284,7 +284,7 @@ export function EVChargingPhase({ onComplete }) {
             : `⚠️ Grid charging costs ₹${EV_DATA.gridCost} and generates CO₂. Try solar!`}
         </div>
       )}
-      <div className="l4-phase-learning">{L4_ICONS.bulb} India's FAME II policy promotes EVs. A Tata Nexon EV needs ~30 kWh for 300km range. Solar charging at home costs ₹0/km vs ₹1.5/km for grid. That's ₹45,000/year saved! Schedule charging 10AM-3PM when solar output peaks at 4-5 kWh/kW.</div>
+      <div className="l4-phase-learning">{L4_ICONS.bulb} India supports electric vehicles! A Tata Nexon EV needs about 30 units for 300km range. Solar charging at home costs Rs.0 per km compared to Rs.1.50 per km from grid. That saves Rs.45,000 per year! Charge between 10AM-3PM when your solar panels are making the most power.</div>
     </PhaseWrap>
   );
 }
@@ -324,7 +324,7 @@ export function WeatherPhase({ solarW, batteryCharge, onComplete }) {
         )}
         {responded.includes(scenarioIdx) && <div className="l4-weather-done">✅ Adapted!</div>}
       </div>
-      <div className="l4-phase-learning">{L4_ICONS.bulb} India gets 300+ sunny days/year, but monsoon (Jun-Sep) reduces output by 30-50%. Smart homes auto-switch: sunny → charge battery + export to grid, cloudy → reduce non-essential loads, rain/night → battery mode. IMD weather data helps predict solar output 24hrs ahead!</div>
+      <div className="l4-phase-learning">{L4_ICONS.bulb} India gets 300+ sunny days per year, but monsoon season (June-September) reduces solar by 30-50%. Smart homes automatically adjust: sunny day → charge battery + send power to grid, cloudy day → use less power, rainy/night → use battery. Weather apps help you plan ahead!</div>
     </PhaseWrap>
   );
 }
@@ -350,7 +350,7 @@ export function DashboardPhase({ metrics, onComplete }) {
       <div className="l4-dash-summary">
         {L4_ICONS.sparkle} You're saving the planet one kilowatt at a time!
       </div>
-      <div className="l4-phase-learning">{L4_ICONS.bulb} India's National Solar Mission targets 100 GW by 2026. A single 5kW home system prevents 7,500 kg CO₂/year (= 340 trees). If 10 million homes adopt solar, India saves 75 billion kg CO₂/year — equal to taking 16 million cars off the road!</div>
+      <div className="l4-phase-learning">{L4_ICONS.bulb} India aims for 100 GW of solar power by 2026. A single 5kW home system prevents 7,500 kg of pollution every year (equal to planting 340 trees!). If 10 million homes go solar, India saves 75 billion kg of pollution per year — that is like removing 16 million cars from the road!</div>
     </PhaseWrap>
   );
 }

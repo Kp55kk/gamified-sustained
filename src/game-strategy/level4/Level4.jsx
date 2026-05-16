@@ -49,9 +49,9 @@ function Scene({appStates,nearest,onRoom,onNearest,onInteract,camRef,proxLevels,
 // ═══ BACKWARD-COMPAT: Map old task IDs to phase flow ═══
 // Phase 1 (install) uses sub-tasks: discover → install → optimize → energy test
 const INSTALL_SUBTASKS = [
-  { id: 'discover', title: 'Solar Discovery', icon: '\u{2600}\u{FE0F}', objective: 'Walk outside and explore', desc: 'Look at the house and the surrounding environment.', hint: 'Use W to walk forward, A/D to turn.' },
-  { id: 'install', title: 'Install Panels', icon: '\u{1F527}', objective: 'Place solar panels on the roof', desc: 'Click the roof grid to place panels. Place at least 3!', hint: 'Avoid shadow spots!' },
-  { id: 'optimize', title: 'Optimize Angle', icon: '\u{2699}\u{FE0F}', objective: 'Adjust tilt for max efficiency', desc: 'Set the best panel angle. Target: 80%+ efficiency.', hint: '25\u{00B0} is optimal for India!' },
+  { id: 'discover', title: 'Explore the Area', icon: '☀️', objective: 'Walk outside and look around', desc: 'Explore the house and see the environment around it.', hint: 'Use W to walk forward, A/D to turn.' },
+  { id: 'install', title: 'Put Up Solar Panels', icon: '🔧', objective: 'Place solar panels on the roof', desc: 'Click on roof spots to place panels. Place at least 3!', hint: 'Avoid spots with shadows!' },
+  { id: 'optimize', title: 'Set the Best Angle', icon: '⚙️', objective: 'Tilt panels for maximum sunlight', desc: 'Choose the angle that catches the most sunlight. Aim for 80%+ efficiency.', hint: '25° works best in India!' },
 ];
 const TOTAL_PHASES = L4_PHASES.length;
 
@@ -141,62 +141,58 @@ export default function Level4() {
   // Each board ONLY shows content matching its name. All other content uses popup:true (clickable in HUD)
   const PHASE_ZONES = useMemo(() => ({
     1: [
-      {id:'panel_basics', appliance:'solar_roof_panel', label:'\u2600\uFE0F Solar Panel \u2014 Basics', requiresRoof: true,
-        learn:'SOLAR PANELS (PHOTOVOLTAIC CELLS) \u2014 Silicon cells convert sunlight to DC electricity via the photovoltaic effect. Monocrystalline: 18-22% efficiency (best). Polycrystalline: 15-17% (budget). A 400W panel = 1.6 kWh/day in India. Lifespan: 25-30 years with only 0.5% annual degradation!'},
-      {id:'inverter_learn', appliance:'solar_inverter', label:'\uD83D\uDD0C Inverter Box',
-        learn:'INVERTER \u2014 THE BRAIN \u2014 Converts DC from panels to AC at 230V/50Hz. String Inverter: \u20B925,000-50,000. Micro-inverter: \u20B98,000/panel. Hybrid: \u20B960,000-1L (works with battery). Efficiency: 96-98%. MPPT tracking extracts maximum power.'},
-      {id:'net_meter', appliance:'solar_meter', label:'\uD83D\uDCCA Net Meter',
-        learn:'NET METERING \u2014 YOUR METER RUNS BACKWARDS! Bi-directional meter records consumption FROM grid and export TO grid. Excess solar = credits! PM Surya Ghar: up to 300 units FREE/month. Earn \u20B93-4/unit for surplus.'},
-      {id:'system_types', appliance:'solar_board_1', label:'\u2600\uFE0F Solar Info: System Types',
-        learn:'THREE TYPES: 1. ON-GRID: No battery, cheapest (\u20B93-4L for 5kW). No power during cuts. 2. OFF-GRID: Fully independent, 40-60% costlier. 3. HYBRID (Best): Grid + battery backup. Works during power cuts!'},
+      {id:'panel_basics', appliance:'solar_roof_panel', label:'☀️ Solar Panel — How It Works', requiresRoof: true,
+        learn:'Solar panels are made of a special material called silicon. When sunlight hits them, they make electricity! Dark black panels (best quality, 20-22% power) and blue panels (good quality, 15-17% power). One panel can power 5 LED bulbs for 6 hours! They last 25-30 years!'},
+      {id:'inverter_learn', appliance:'solar_inverter', label:'🔌 Inverter — The Brain Box',
+        learn:'The inverter is the BRAIN of your solar system! Solar panels make one type of electricity (DC), but your home uses another type (AC). The inverter changes DC to AC so your TV, fan, and fridge can work. It is 97% efficient — almost no power is wasted!'},
+      {id:'net_meter', appliance:'solar_meter', label:'📊 Smart Meter — Sell Extra Power',
+        learn:'A special meter that counts BOTH ways! When you USE power from the grid, it counts UP. When your solar panels send EXTRA power back, it counts DOWN! With PM Surya Ghar, you can get up to 300 units FREE every month!'},
+      {id:'system_types', appliance:'solar_board_1', label:'☀️ Solar Info: 3 System Types',
+        learn:'THREE TYPES: 1. ON-GRID: No battery, cheapest (Rs.3-4 Lakh). Stops during power cuts. 2. OFF-GRID: Works alone, no grid needed. 3. HYBRID (Best!): Has grid + battery backup. Works even during power cuts!'},
     ],
     2: [
-      {id:'tilt_orient', appliance: null, popup: true, label:'\uD83D\uDCD0 Info: Tilt Angle & Orientation',
-        learn:'TILT & ORIENTATION \u2014 Panels must face TRUE SOUTH. Tilt = your latitude.'},
-      {id:'shadow_analysis', appliance: null, popup: true, label:'\uD83C\uDF24\uFE0F Info: Shadow Analysis',
-        learn:'SHADOW \u2014 THE SILENT KILLER \u2014 Shade on ONE cell reduces entire panel 30-50%!'},
-      {id:'roof_load', appliance: null, popup: true, label:'\uD83C\uDFD7\uFE0F Info: Roof Load',
-        learn:'ROOF LOAD \u2014 Each panel: 20-22 kg + mounting = 15-18 kg/sq.m.'},
+      {id:'tilt_orient', appliance: null, popup: true, label:'📐 Info: Panel Angle & Direction',
+        learn:'Panels must face towards the SUN (South direction in India). The angle should match your city\'s latitude. Getting this right means more sunlight = more electricity!'},
+      {id:'shadow_analysis', appliance: null, popup: true, label:'🌤️ Info: Why Shadows Are Bad',
+        learn:'Even a SMALL shadow on ONE part of a panel can reduce the whole panel\'s power by 30-50%! Keep panels away from trees, buildings, and water tanks that create shadows.'},
+      {id:'roof_load', appliance: null, popup: true, label:'🏗️ Info: Is Your Roof Strong Enough?',
+        learn:'Each solar panel weighs about 20-22 kg. Your roof needs to be strong enough to hold all the panels plus their metal frame. A technician checks this before installing.'},
     ],
-    // Phase 4 (idx 3) = Walk to PM Surya Ghar Office, press E to learn
     3: [
-      {id:'pm_surya_ghar', appliance:'gov_office', label:'\uD83C\uDFDB\uFE0F PM Surya Ghar Office',
-        learn:'Walk to the government office across the road and press E to learn about the PM Surya Ghar Muft Bijli Yojana scheme!'},
+      {id:'pm_surya_ghar', appliance:'gov_office', label:'🏛️ PM Surya Ghar Office',
+        learn:'Walk to the government office across the road and press E to learn about the PM Surya Ghar Muft Bijli Yojana — a scheme that gives you Rs.78,000 to help install solar panels!'},
     ],
-    // Phase 5 (idx 4) = Battery Explainer (handled by BatteryExplainer component)
     5: [
-      {id:'load_shifting', appliance:'solar_board_2', label:'\uD83D\uDD0B Energy Info: Load Shifting',
-        learn:'LOAD SHIFTING \u2014 Heavy loads 10AM-3PM = FREE: Washer 2PM=\u20B90 vs 7PM=\u20B94. Geyser 11AM=\u20B90 vs 7AM=\u20B924. EV noon=\u20B90 vs night=\u20B926. Savings: \u20B91,500-2,000/month.'},
-      {id:'smart_sensors', appliance: null, popup: true, label:'\uD83E\uDD16 Info: Smart Sensors',
-        learn:'AUTOMATION \u2014 PIR Sensor (\u20B9500/room): Auto-OFF when empty. Smart Thermostat (\u20B93K): 24\u00B0C auto. Every 1\u00B0C lower = 6% more electricity. 24\u00B0C vs 20\u00B0C saves 24%!'},
-      {id:'star_rating', appliance: null, popup: true, label:'\u2B50 Info: BEE Star Ratings',
-        learn:'BEE RATINGS \u2014 AC 1.5T: 1-star 1800kWh/yr vs 5-star 1000kWh. SAVES \u20B96,400/yr! Fan: 75W \u2192 5-star 30W. Replace ALL with 5-star: save \u20B915,000/year!'},
-      {id:'ev_solar', appliance:'solar_ev_charger', label:'\uD83D\uDE97 EV Charger \u2014 Solar+EV',
-        learn:'EV + SOLAR \u2014 Per km: Petrol \u20B95.5, EV+Grid \u20B90.8, EV+Solar \u20B90.0! Nexon EV 312km range. Solar charge 9h. Save \u20B990K+/yr. V2H: EV battery powers home at night!'},
+      {id:'load_shifting', appliance:'solar_board_2', label:'🔋 Using Appliances at the Right Time',
+        learn:'Use heavy appliances (washing machine, iron, geyser) between 10 AM and 3 PM when solar is making FREE electricity! Washing at 2 PM = Rs.0. Washing at 7 PM = Rs.4. Just by changing WHEN you use appliances, save Rs.1,500-2,000 every month!'},
+      {id:'smart_sensors', appliance: null, popup: true, label:'🤖 Info: Smart Sensors',
+        learn:'Smart sensors automatically turn OFF lights and fans when nobody is in the room! A motion sensor costs just Rs.500 and saves Rs.200-300 every month. Setting AC to 24°C instead of 20°C saves 24% electricity!'},
+      {id:'ev_solar', appliance:'solar_ev_charger', label:'🚗 Electric Car + Solar',
+        learn:'Charge your electric car with solar power for FREE! Cost per km: Petrol car = Rs.5.50, Electric car from grid = Rs.0.80, Electric car from SOLAR = Rs.0! A family driving 15,000 km/year saves Rs.82,500!'},
     ],
     6: [
-      {id:'seasonal_output', appliance:'solar_weather', label:'\uD83D\uDCC5 Weather: Seasonal Output',
-        learn:'SEASONAL \u2014 Summer (Mar-Jun): Best! 28-30 kWh/day. Heat reduces 10-15%. Monsoon (Jul-Sep): Drops 30-50%, rain self-cleans! Winter (Oct-Feb): Cooler = better. Annual: 1500-1800 kWh/kW.'},
-      {id:'maintenance', appliance:'solar_roof_panel', label:'\uD83E\uDDF9 Panel \u2014 Maintenance', requiresRoof: true,
-        learn:'MAINTENANCE \u2014 Clean every 2-4 weeks: soft water + mild soap. NEVER hard water! Dusty panels lose 15-25%. Annual pro check (\u20B92-3K). Degradation 0.5%/yr. Year 25: still 87.5% output!'},
-      {id:'monsoon_prep', appliance:'solar_board_1', label:'\u2600\uFE0F Solar Info: Monsoon Safety',
-        learn:'MONSOON PREP \u2014 Lightning arrester (\u20B93-5K). Surge protection on inverter. 3 copper earth pits. Without: one strike = \u20B91-2L damage! Wind load 150 km/h (IS 875). IP67 waterproof.'},
+      {id:'seasonal_output', appliance:'solar_weather', label:'📅 How Seasons Affect Solar',
+        learn:'Summer (March-June): BEST time! Maximum sunlight = most electricity. Monsoon (July-September): Clouds reduce power by 30-50%, but rain cleans your panels for free! Winter (October-February): Shorter days but cooler weather helps panels work better.'},
+      {id:'maintenance', appliance:'solar_roof_panel', label:'🧹 Keeping Panels Clean', requiresRoof: true,
+        learn:'Dust and bird droppings block sunlight! Dirty panels lose 15-25% of their power. Clean every 2-4 weeks with soft water and mild soap. Never use hard water! After 25 years, panels still give 87.5% power!'},
+      {id:'monsoon_prep', appliance:'solar_board_1', label:'☀️ Solar Info: Storm Safety',
+        learn:'Lightning can damage solar panels! A lightning protector (Rs.3-5K) saves your system. Panels are waterproof and can handle winds up to 150 km/h. Rain actually helps by cleaning the panels naturally!'},
     ],
     7: [
-      {id:'co2_impact', appliance:'solar_board_2', label:'\uD83D\uDD0B Energy Info: CO\u2082 Impact',
-        learn:'ENVIRONMENTAL \u2014 5kW = 7500 kWh/yr. CO\u2082 prevented: 6150 kg/yr = 280 Neem trees. 25 years: 153,750 kg CO\u2082 = 153.75 TONNES! 1 crore solar homes = India aviation emissions!'},
-      {id:'community', appliance:'solar_board_3', label:'\uD83D\uDCB0 Cost Info: Community Solar',
-        learn:'COMMUNITY SOLAR \u2014 Group housing: virtual net metering, 15-20% cheaper. Common area = 100% solar. India: 100 GW achieved (2024). Target: 500 GW by 2030.'},
-      {id:'future_tech', appliance:'solar_board_1', label:'\u2600\uFE0F Solar Info: Future Tech',
-        learn:'FUTURE \u2014 Bifacial Panels: both sides, 10-30% more. Solar Roof Tiles: no mounting. Solid-State Batteries (2026-2028): 2x density, 20+ years. Perovskite Cells: 30%+ efficiency, printable!'},
+      {id:'co2_impact', appliance:'solar_board_2', label:'🌿 Energy Info: Saving the Planet',
+        learn:'Your solar panels prevent 6,150 kg of harmful CO₂ gas every year — that is like planting 280 trees! Over 25 years, you prevent 153 TONNES of pollution. If 1 crore Indian homes go solar, it equals all of India\'s airplane pollution!'},
+      {id:'community', appliance:'solar_board_3', label:'💰 Cost Info: Solar for Everyone',
+        learn:'Apartment buildings can share one big solar system — 15-20% cheaper for everyone! India already has 100 GW of solar power. The goal is 500 GW by 2030. You can be part of this solar revolution!'},
+      {id:'future_tech', appliance:'solar_board_1', label:'☀️ Solar Info: Future Technology',
+        learn:'Amazing new inventions coming soon! Two-sided panels that catch sunlight from both sides (10-30% more power). Solar roof tiles that look like normal tiles. Super-batteries that last 20+ years and store 2x more power!'},
     ],
     8: [
-      {id:'total_savings', appliance:'solar_meter', label:'\uD83D\uDCB0 Meter \u2014 25yr Savings',
-        learn:'25-YEAR VIEW \u2014 Cost \u20B93.5L - Subsidy \u20B978K = \u20B92.72L. Savings \u20B965K/yr. Payback 4.2yr. 25yr profit: \u20B913.53L. ROI 497%. BEATS Fixed Deposit + saves the planet!'},
-      {id:'knowledge_check', appliance:'solar_board_1', label:'\u2600\uFE0F Solar Info: Knowledge Check',
-        learn:'SOLAR EXPERT: PV\u2192DC. Inverter DC\u2192AC 230V. Net metering exports. Tilt = latitude. Shadow = 30% loss. PM Surya Ghar \u20B978K. Payback 3-4yr. LiFePO4 best. Load shift \u20B91500/mo. BEE 5-star. Solar EV \u20B90/km. 153T CO\u2082 saved!'},
-      {id:'action_plan', appliance:'solar_board_3', label:'\uD83D\uDCB0 Cost Info: Action Plan',
-        learn:'10-STEP PLAN: 1. pmsuryaghar.gov.in 2. Site survey 3. Choose Hybrid 4. MNRE vendor 5. Roof check 6. South-facing + latitude tilt 7. DISCOM + net meter 8. Claim \u20B978K 9. Smart sensors + 5-star 10. Heavy loads 10AM-3PM.'},
+      {id:'total_savings', appliance:'solar_meter', label:'💰 Total Savings in 25 Years',
+        learn:'A 3kW solar system costs Rs.2.1 Lakh. After government subsidy of Rs.78,000, you pay only Rs.1.32 Lakh. It saves Rs.40,000-50,000 every year! In 3-4 years it pays for itself. Total savings in 25 years: Rs.12-15 LAKH!'},
+      {id:'knowledge_check', appliance:'solar_board_1', label:'☀️ Solar Info: What You Learned',
+        learn:'You now know: Solar panels turn sunlight into electricity. The inverter makes it usable at home. Smart meters let you sell extra power. Panels face south at the right angle. Shadows are bad. Government gives Rs.78,000 help. Batteries store power for night. Use heavy appliances during daytime!'},
+      {id:'action_plan', appliance:'solar_board_3', label:'💰 Cost Info: Your Action Plan',
+        learn:'10 STEPS TO GO SOLAR: 1. Visit pmsuryaghar.gov.in 2. Get a site check 3. Choose a Hybrid system 4. Pick a good solar company 5. Check your roof strength 6. Install facing South 7. Apply for smart meter 8. Get Rs.78,000 subsidy 9. Add smart sensors 10. Use heavy appliances 10 AM-3 PM!'},
     ],
   }), []);
 
@@ -558,12 +554,12 @@ export default function Level4() {
           </Canvas>
         </div>
         <div className="l4-modal-overlay"><div className="l4-modal-card">
-          <div style={{fontSize:'11px',color:'#888',textTransform:'uppercase',letterSpacing:'2px',marginBottom:'6px'}}>Phase {phaseIdx + 1} of {TOTAL_PHASES}</div>
+          <div style={{fontSize:'11px',color:'#94a3b8',textTransform:'uppercase',letterSpacing:'2px',marginBottom:'6px'}}>Phase {phaseIdx + 1} of {TOTAL_PHASES}</div>
           <div className="l4-modal-title"><span style={{fontSize:'36px'}}>{currentPhase.icon}</span> {currentPhase.title}</div>
-          <div style={{fontSize:'16px',fontWeight:600,color:'#ffeedd',marginBottom:'8px',lineHeight:1.5}}>{L4_ICONS.target} {currentPhase.objective}</div>
-          <div style={{fontSize:'13px',color:'#999',marginBottom:'12px'}}>{currentPhase.desc}</div>
-          <div style={{padding:'8px 12px',background:'rgba(245,166,35,0.06)',borderRadius:'8px',fontSize:'12px',color:'#f5a623'}}>{L4_ICONS.bulb} {currentPhase.learning}</div>
-          <div style={{fontSize:'11px',color:'#666',marginTop:'8px'}}>⏱️ {currentPhase.duration}</div>
+          <div style={{fontSize:'16px',fontWeight:600,color:'#e0f2f1',marginBottom:'8px',lineHeight:1.5}}>{L4_ICONS.target} {currentPhase.objective}</div>
+          <div style={{fontSize:'13px',color:'#b0bec5',marginBottom:'12px'}}>{currentPhase.desc}</div>
+          <div style={{padding:'8px 12px',background:'rgba(56,217,169,0.08)',borderRadius:'8px',fontSize:'12px',color:'#38d9a9'}}>{L4_ICONS.bulb} {currentPhase.learning}</div>
+          <div style={{fontSize:'11px',color:'#78909c',marginTop:'8px'}}>⏱️ {currentPhase.duration}</div>
           <button className="l4-modal-btn" onClick={() => setTaskPhase('active')}>Start Phase →</button>
         </div></div>
       </div>);
@@ -647,8 +643,8 @@ export default function Level4() {
                 }
               }}
               style={z.popup && !visitedZones.includes(z.id) ? {cursor:'pointer'} : {}}>
-              <span className="l4-walk-zone-check">{visitedZones.includes(z.id) ? '\u2705' : '\u2B1C'}</span>
-              <span>{z.label}{z.popup && !visitedZones.includes(z.id) ? ' \u{1F449} Click' : ''}</span>
+              <span className="l4-walk-zone-check">{visitedZones.includes(z.id) ? '✅' : '⬡'}</span>
+              <span>{z.label}{z.popup && !visitedZones.includes(z.id) ? ' 👉 Click' : ''}</span>
             </div>
           ))}
         </div>
@@ -731,11 +727,11 @@ export default function Level4() {
   // ═══ RENDER: PHASE 0 TASK OBJECTIVE (install sub-tasks briefing) ═══
   if (phase === 'play' && taskPhase === 'objective' && currentTask) {
     return (<div className="l4-container"><div className="l4-modal-overlay"><div className="l4-modal-card">
-      <div style={{fontSize:'11px',color:'#888',textTransform:'uppercase',letterSpacing:'2px',marginBottom:'6px'}}>Phase 1 — Task {taskIdx + 1} of {INSTALL_SUBTASKS.length}</div>
+      <div style={{fontSize:'11px',color:'#94a3b8',textTransform:'uppercase',letterSpacing:'2px',marginBottom:'6px'}}>Phase 1 — Task {taskIdx + 1} of {INSTALL_SUBTASKS.length}</div>
       <div className="l4-modal-title"><span style={{fontSize:'36px'}}>{currentTask.icon}</span> {currentTask.title}</div>
-      <div style={{fontSize:'16px',fontWeight:600,color:'#ffeedd',marginBottom:'8px',lineHeight:1.5}}>{L4_ICONS.target} {currentTask.objective}</div>
-      <div style={{fontSize:'13px',color:'#999',marginBottom:'12px'}}>{currentTask.desc}</div>
-      <div style={{padding:'8px 12px',background:'rgba(245,166,35,0.06)',borderRadius:'8px',fontSize:'12px',color:'#f5a623'}}>{L4_ICONS.bulb} {currentTask.hint}</div>
+      <div style={{fontSize:'16px',fontWeight:600,color:'#e0f2f1',marginBottom:'8px',lineHeight:1.5}}>{L4_ICONS.target} {currentTask.objective}</div>
+      <div style={{fontSize:'13px',color:'#b0bec5',marginBottom:'12px'}}>{currentTask.desc}</div>
+      <div style={{padding:'8px 12px',background:'rgba(56,217,169,0.08)',borderRadius:'8px',fontSize:'12px',color:'#38d9a9'}}>{L4_ICONS.bulb} {currentTask.hint}</div>
       <button className="l4-modal-btn" onClick={()=>setTaskPhase('active')}>Start Task →</button>
     </div></div></div>);
   }
@@ -1169,16 +1165,16 @@ export default function Level4() {
       <div className="l4-insight-ticker" key={`${solarPct}-${currentSolarW}-${timePeriod.id}-${gridWatts}`}>
         <span className="l4-insight-icon">{L4_ICONS.bulb}</span>
         <span className="l4-insight-text">
-          {solarPct >= 90 ? `🌍Ÿ You are using ${solarPct}% solar energy — Almost 100% clean power!`
-            : solarPct >= 70 ? `☀️ You are using ${solarPct}% solar energy — Excellent green usage!`
-            : solarPct >= 50 ? `⚡ Grid usage reduced! Solar at ${solarPct}% — Keep going!`
-            : solarPct >= 30 ? `🔋 Solar supplying ${solarPct}% power. Grid usage dropping!`
-            : solarPct > 0 ? `☀️ Solar active at ${solarPct}%. Use peak sunlight for more!`
-            : currentSolarW > 0 && houseWatts === 0 ? '🔌 Solar panels generating! Turn on appliances to use clean energy.'
-            : timePeriod.sunlight === 0 ? '🌍™ No sunlight — Battery or grid powers the house at night.'
-            : gridWatts > 500 ? `⚠️ Grid usage high (${gridWatts}W). Shift heavy use to noon!`
-            : panelCount < 4 ? '📈 Add more panels for better solar coverage!'
-            : '☀️ Solar is powering your home cleanly!'}
+          {solarPct >= 90 ? `🌍 Amazing! ${solarPct}% of your power is from the sun — almost 100% clean!`
+            : solarPct >= 70 ? `☀️ Great job! ${solarPct}% solar energy — your home is super green!`
+            : solarPct >= 50 ? `⚡ Nice! Solar is at ${solarPct}% — keep going to reduce grid use!`
+            : solarPct >= 30 ? `🔋 Solar is giving ${solarPct}% of your power. Grid use is dropping!`
+            : solarPct > 0 ? `☀️ Solar is active at ${solarPct}%. Use more during peak sunlight!`
+            : currentSolarW > 0 && houseWatts === 0 ? '🔌 Solar panels are making power! Turn on some appliances to use it.'
+            : timePeriod.sunlight === 0 ? '🌙 No sunlight right now. Battery or grid powers your home at night.'
+            : gridWatts > 500 ? `⚠️ Using too much grid power (${gridWatts}W). Try using appliances at noon!`
+            : panelCount < 4 ? '📈 Add more panels to get more solar power!'
+            : '☀️ Solar is powering your home with clean energy!'}
         </span>
       </div>
     )}

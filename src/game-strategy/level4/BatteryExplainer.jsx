@@ -6,34 +6,34 @@ import React, { useState, useEffect } from 'react';
 
 const STEPS = [
   {
-    id: 'comparison', title: 'LiFePO4 vs Lead-Acid', color: '#22c55e', glow: 'rgba(34,197,94,0.4)',
-    desc: 'LiFePO4 (Lithium Iron Phosphate) is the BEST battery for solar. It costs more upfront but lasts 3x longer, uses 90% capacity, and handles 6000+ charge cycles vs just 500-800 for Lead-Acid.',
-    fact: 'Over 10 years, LiFePO4 actually costs LESS per kWh stored because you don\'t need to replace it every 3-5 years like Lead-Acid!',
-    quiz: { q: 'Which battery type is best for solar homes?', opts: ['Lead-Acid (cheapest)', 'LiFePO4 (best value long-term)', 'Car battery'], ans: 1 },
+    id: 'comparison', title: 'Modern vs Old Battery', color: '#22c55e', glow: 'rgba(34,197,94,0.4)',
+    desc: 'Modern Lithium batteries are the BEST for solar! They cost a bit more but last 3 times longer and give you 90% of stored power. Old-style batteries only last 3-5 years and give just 50% power.',
+    fact: 'A Modern Lithium battery lasts 10-15 years. An old-style battery needs replacing every 3-5 years, so the modern one actually saves more money!',
+    quiz: { q: 'Which battery is best for a solar home?', opts: ['Old-style (cheapest)', 'Modern Lithium (best value)', 'Car battery'], ans: 1 },
   },
   {
-    id: 'sizing', title: 'Battery Sizing Calculator', color: '#f59e0b', glow: 'rgba(245,158,11,0.4)',
-    desc: 'Calculate your night-time load (12 hours): LED bulbs 600Wh + Fans 1260Wh + Fridge 1800Wh + WiFi 180Wh + Phone charging 100Wh + TV 300Wh = 4,240Wh = 4.24 kWh. Recommended: 5 kWh battery with 15% safety margin.',
-    fact: 'A 5 kWh LiFePO4 battery weighs only 35-40 kg and is the size of a small suitcase. Lead-Acid for the same capacity would weigh 120+ kg!',
+    id: 'sizing', title: 'How Big Should Your Battery Be?', color: '#f59e0b', glow: 'rgba(245,158,11,0.4)',
+    desc: 'At night (12 hours), your home uses: LED bulbs + Fans + Fridge + WiFi + Phone charging + TV = about 4,240 Watt-hours. So you need a battery that can store at least 5,000 Watt-hours (5 units)!',
+    fact: 'A 5-unit Modern Lithium battery is only the size of a small suitcase (35 kg). An old-style battery for the same power would weigh 120 kg!',
     quiz: null,
   },
   {
-    id: 'daily_cycle', title: 'Daily Charge/Discharge Cycle', color: '#a78bfa', glow: 'rgba(167,139,250,0.4)',
-    desc: '6-9AM: Solar begins, battery starts charging. 9AM-3PM: PEAK SOLAR \u2014 battery fills up + house runs on solar + excess exported to grid. 3-6PM: Solar drops, battery supplements. 6-10PM: Battery POWERS the home (saves \u20B98-12/unit vs grid peak rates!). 10PM-6AM: Battery + minimal grid.',
-    fact: 'During peak hours (6-10PM), grid electricity costs \u20B98-12/unit. Battery power costs effectively \u20B90/unit \u2014 that\'s massive savings!',
-    quiz: { q: 'When does battery save the most money?', opts: ['Morning (6-9AM)', 'Evening peak hours (6-10PM)', 'Midnight'], ans: 1 },
+    id: 'daily_cycle', title: 'How the Battery Works All Day', color: '#a78bfa', glow: 'rgba(167,139,250,0.4)',
+    desc: 'Morning: Solar starts, battery begins filling up. Noon: Battery is FULL + house runs on solar + extra power goes to the grid. Evening: No sunlight, so the battery powers your home. Night: Battery + a little grid power.',
+    fact: 'In the evening (6-10 PM), grid electricity costs the most. But battery power is basically FREE because the sun already charged it during the day!',
+    quiz: { q: 'When does the battery save you the most money?', opts: ['Morning (6-9 AM)', 'Evening (6-10 PM)', 'Midnight'], ans: 1 },
   },
   {
-    id: 'grid_independence', title: 'Grid Independence', color: '#3b82f6', glow: 'rgba(59,130,246,0.4)',
-    desc: 'Without solar+battery: 100% grid dependent. With solar only: 60-70% self-sufficient (no power during outages). With solar+battery (HYBRID): 90-95% independent! Grid usage drops to just 5-10% \u2014 only for extended cloudy periods.',
-    fact: 'India averages 68 hours of power cuts per month in rural areas. A hybrid solar system means ZERO impact from power cuts!',
+    id: 'grid_independence', title: 'Freedom from Power Cuts!', color: '#3b82f6', glow: 'rgba(59,130,246,0.4)',
+    desc: 'Without solar: You depend 100% on outside power (grid). With solar only: 65% of your power comes from the sun. With solar + battery (BEST!): 90-95% of power is your own! You barely need the grid at all!',
+    fact: 'Many areas in India have 68 hours of power cuts every month. With solar + battery, power cuts don\'t affect you at all!',
     quiz: null,
   },
   {
-    id: 'cost_savings', title: 'Battery ROI & Savings', color: '#ec4899', glow: 'rgba(236,72,153,0.4)',
-    desc: '5 kWh LiFePO4: \u20B92-3L. Peak hour savings: \u20B92,000-3,000/month. Power cut independence: priceless! Payback: 5-6 years. Battery lasts 15 years. Net savings over lifetime: \u20B93-4 Lakh. Plus: no inverter/UPS needed \u2014 hybrid system handles everything!',
-    fact: 'A single LiFePO4 battery replaces 3-4 Lead-Acid batteries over its lifetime, reducing e-waste by 75%!',
-    quiz: { q: 'How much can battery peak-hour shifting save monthly?', opts: ['\u20B9100-200', '\u20B92,000-3,000', '\u20B920,000+'], ans: 1 },
+    id: 'cost_savings', title: 'Battery Savings Over Time', color: '#ec4899', glow: 'rgba(236,72,153,0.4)',
+    desc: 'A 5-unit battery costs about Rs.2-3 Lakh. But it saves Rs.2,000-3,000 every month on electricity! In 5-6 years, it pays for itself. After that, you save Rs.3-4 Lakh over its lifetime. Plus: no power cuts ever!',
+    fact: 'One Modern Lithium battery replaces 3-4 old-style batteries over its lifetime. That means less waste for our planet!',
+    quiz: { q: 'How much can a battery save you every month?', opts: ['Rs.100-200', 'Rs.2,000-3,000', 'Rs.20,000+'], ans: 1 },
   },
 ];
 
@@ -43,8 +43,8 @@ function StepSVG({ stepId, color }) {
       <text x="210" y="15" fill="#888" fontSize="9" textAnchor="middle">BATTERY TECHNOLOGY COMPARISON</text>
       {/* LiFePO4 column */}
       <rect x="30" y="25" width="170" height="145" rx="8" fill="rgba(34,197,94,0.06)" stroke="#22c55e" strokeWidth="1.5"/>
-      <text x="115" y="43" fill="#22c55e" fontSize="12" textAnchor="middle" fontWeight="bold">LiFePO4</text>
-      <text x="115" y="58" fill="#22c55e" fontSize="8" textAnchor="middle">Best for Solar</text>
+      <text x="115" y="43" fill="#22c55e" fontSize="11" textAnchor="middle" fontWeight="bold">Modern Lithium</text>
+      <text x="115" y="58" fill="#22c55e" fontSize="8" textAnchor="middle">Best Choice!</text>
       {/* LiFePO4 bars */}
       {[{l:'Cost',v:70,c:'#f59e0b',t:'\u20B940-60K/kWh',y:72},{l:'Life',v:95,c:'#22c55e',t:'10-15 years',y:92},{l:'Cycles',v:90,c:'#3b82f6',t:'6000+',y:112},{l:'Usable',v:90,c:'#a78bfa',t:'90%',y:132},{l:'Weight',v:30,c:'#ec4899',t:'Light!',y:152}].map((b,i) => (
         <g key={i}>
@@ -58,8 +58,8 @@ function StepSVG({ stepId, color }) {
       ))}
       {/* Lead-Acid column */}
       <rect x="220" y="25" width="170" height="145" rx="8" fill="rgba(239,68,68,0.06)" stroke="#ef4444" strokeWidth="1.5"/>
-      <text x="305" y="43" fill="#ef4444" fontSize="12" textAnchor="middle" fontWeight="bold">Lead-Acid</text>
-      <text x="305" y="58" fill="#ef4444" fontSize="8" textAnchor="middle">Budget Option</text>
+      <text x="305" y="43" fill="#ef4444" fontSize="11" textAnchor="middle" fontWeight="bold">Old-Style</text>
+      <text x="305" y="58" fill="#ef4444" fontSize="8" textAnchor="middle">Not Recommended</text>
       {[{l:'Cost',v:30,c:'#22c55e',t:'\u20B910-15K/kWh',y:72},{l:'Life',v:25,c:'#ef4444',t:'3-5 years',y:92},{l:'Cycles',v:15,c:'#ef4444',t:'500-800',y:112},{l:'Usable',v:50,c:'#f59e0b',t:'50%',y:132},{l:'Weight',v:90,c:'#ef4444',t:'Heavy!',y:152}].map((b,i) => (
         <g key={i}>
           <text x="230" y={b.y} fill="#aaa" fontSize="8">{b.l}</text>
@@ -240,7 +240,7 @@ export default function BatteryExplainer({ onComplete }) {
           ))}
         </div>
         <div className="se-step-count" style={{ color: current.color }}>Step {step + 1} of {STEPS.length}</div>
-        <div className="se-title" style={{ color: current.color }}>\uD83D\uDD0B {current.title}</div>
+        <div className="se-title" style={{ color: current.color }}>{'🔋'} {current.title}</div>
         <StepSVG stepId={current.id} color={current.color}/>
         <div className="se-desc">{current.desc}</div>
         <div className="se-fact" style={{ borderLeftColor: current.color }}>

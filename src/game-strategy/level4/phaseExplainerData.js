@@ -83,19 +83,7 @@ export const EXPLAINER_TOPICS = {
         desc: 'With smart sensors, your home automatically saves energy without you doing anything! Lights turn off when you leave. AC adjusts to save power. You get alerts on your phone if something wastes electricity.',
         fact: 'A fully smart solar home can cut electricity usage by 30-40% — that means even more power to sell back to the grid!' },
     ]},
-  star_rating: {
-    name: 'BEE Star Ratings', color: '#fbbf24', steps: [
-      { title: 'What are Star Ratings?', svg: 'star_label',
-        desc: 'BEE (Bureau of Energy Efficiency) gives 1 to 5 stars to appliances. More stars = less electricity used = lower bill! Always look for the star label before buying any appliance.',
-        fact: 'BEE star ratings are like report cards for appliances. 5 stars = best student, 1 star = needs improvement!' },
-      { title: '1-Star vs 5-Star: The Difference', svg: 'star_compare',
-        desc: 'AC (1.5 Ton): 1-star uses 1800 units/year, 5-star uses only 1000 units/year — saves Rs.6,400/year! Fan: Old fan 75W, 5-star BLDC fan only 30W — saves 60% electricity!',
-        fact: 'Replacing ALL appliances with 5-star rated ones can save Rs.15,000 per year. In 25 years that is Rs.3.75 Lakh!',
-        quiz: { q: 'A 5-star AC uses how much less electricity than 1-star?', opts: ['10% less', '25% less', '45% less'], ans: 2 }},
-      { title: 'How to Check Before Buying', svg: 'star_howto',
-        desc: 'Every appliance has a BEE label sticker. Look for: Number of stars (5 is best), yearly electricity units used, and estimated yearly cost. Compare these numbers before you buy. Always choose 5 stars!',
-        fact: 'The government website (beestarlabel.com) lets you compare star ratings of all brands online before you buy!' },
-    ]},
+
   ev_solar: {
     name: 'EV + Solar Power', color: '#22c55e', steps: [
       { title: 'What is an EV Charger?', svg: 'ev_charger',
