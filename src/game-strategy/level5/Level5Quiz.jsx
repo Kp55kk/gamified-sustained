@@ -1,6 +1,6 @@
 // ═══════════════════════════════════════════════════════════
-//  LEVEL 5 — Reflection Quiz (Hidden Style — No ✅/❌)
-//  Narrative feedback only, experience-based questions
+//  LEVEL 5 — Quiz (Green/Red Feedback + Explanations)
+//  Shows correct/wrong with color + detailed explanation
 // ═══════════════════════════════════════════════════════════
 import React, { useState, useCallback } from 'react';
 import { L5_QUIZ, L5 } from './level5Data';
@@ -24,9 +24,9 @@ export default function Level5Quiz({ onComplete }) {
   }, [sel, q]);
 
   const handleNext = useCallback(() => {
-    if (idx + 1 >= total) { onComplete({ score, total }); return; }
+    if (idx + 1 >= total) { onComplete({ score: score + (sel === q.correctIndex ? 0 : 0), total }); return; }
     setIdx(c => c + 1); setSel(null); setShowFeedback(false);
-  }, [idx, total, score, onComplete]);
+  }, [idx, total, score, sel, q, onComplete]);
 
   if (!q) return null;
 
@@ -34,7 +34,7 @@ export default function Level5Quiz({ onComplete }) {
     <div className="l5-quiz-container">
       <div className="l5-quiz-card">
         <div className="l5-quiz-progress">
-          {L5.brain} Reflection {idx + 1} of {total}
+          {L5.brain} Question {idx + 1} of {total}
         </div>
 
         {/* Progress bar */}
@@ -44,39 +44,51 @@ export default function Level5Quiz({ onComplete }) {
         }}>
           <div style={{
             width: `${progress}%`, height: '100%',
-            background: 'linear-gradient(90deg, #16a34a, #22c55e)',
+            background: 'linear-gradient(90deg, #d97706, #f59e0b)',
             borderRadius: 2, transition: 'width 0.5s ease',
           }}></div>
         </div>
 
         <div className="l5-quiz-question">{q.question}</div>
 
-        {/* Options — NO correct/wrong coloring */}
+        {/* Options with correct/wrong coloring */}
         <div className="l5-sim-options">
-          {q.options.map((opt, i) => (
-            <button
-              key={i}
-              className={`l5-sim-option ${sel === i ? 'selected' : ''}`}
-              onClick={() => handleSelect(i)}
-              disabled={sel !== null}
-            >
-              <span className="l5-sim-option-icon">{L5.play}</span>
-              <span className="l5-sim-option-label">{opt}</span>
-            </button>
-          ))}
+          {q.options.map((opt, i) => {
+            let cls = '';
+            if (sel !== null) {
+              if (i === q.correctIndex) cls = 'correct';
+              else if (i === sel) cls = 'wrong';
+            }
+            return (
+              <button
+                key={i}
+                className={`l5-sim-option ${sel === i ? 'selected' : ''} ${cls}`}
+                onClick={() => handleSelect(i)}
+                disabled={sel !== null}
+              >
+                <span className="l5-sim-option-letter">{String.fromCharCode(65 + i)}</span>
+                <span className="l5-sim-option-label">{opt}</span>
+                {sel !== null && i === q.correctIndex && <span className="l5-sim-option-check">{'\u2705'}</span>}
+                {sel !== null && i === sel && i !== q.correctIndex && <span className="l5-sim-option-check">{'\u274C'}</span>}
+              </button>
+            );
+          })}
         </div>
 
-        {/* Narrative feedback — no ✅/❌ */}
+        {/* Explanation feedback */}
         {showFeedback && (<>
-          <div className="l5-narrative-feedback" style={{ marginTop: 12 }}>
-            <div className="l5-narrative-icon">{L5.speech}</div>
-            <div className="l5-narrative-text">
+          <div className={`l5-quiz-feedback ${isCorrect ? 'correct' : 'wrong'}`}>
+            <div className="l5-quiz-feedback-header">
+              <span className="l5-quiz-feedback-icon">{isCorrect ? '\u2705' : '\u274C'}</span>
+              <span className="l5-quiz-feedback-status">{isCorrect ? 'Correct!' : 'Incorrect'}</span>
+            </div>
+            <div className="l5-quiz-feedback-text">
               {isCorrect ? q.feedback.correct : q.feedback.wrong}
             </div>
           </div>
 
           <button className="l5-quiz-next-btn" onClick={handleNext}>
-            {idx + 1 >= total ? 'Finish Reflection' : 'Next'} {'\u{2192}'}
+            {idx + 1 >= total ? `See Results ${'\u2192'}` : `Next Question ${'\u2192'}`}
           </button>
         </>)}
       </div>
