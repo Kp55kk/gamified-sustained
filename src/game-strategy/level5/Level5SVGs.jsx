@@ -410,6 +410,195 @@ export default function TopicSVG({ svgId, color }) {
           <text x={148+parseInt(e.rec)*2.5} y={e.y+10} fill={e.c} fontSize="7" fontWeight="bold">{e.rec} recyclable</text>
         </g>))}
     </svg>);
+  // ═══ PHASE 3: BIOGAS SVGs ═══
+  if (svgId === 'kitchen_waste_sort') return (
+    <svg viewBox="0 0 440 150" className="se-svg">
+      <text x="220" y="14" fill="#888" fontSize="8" textAnchor="middle">SORTING KITCHEN WASTE</text>
+      <rect x="20" y="25" width="185" height="105" rx="8" fill="rgba(34,197,94,0.06)" stroke="#22c55e" strokeWidth="1.5"/>
+      <text x="112" y="42" fill="#22c55e" fontSize="9" textAnchor="middle" fontWeight="bold">{'\u2705'} BIOGAS BIN</text>
+      {['Vegetable peels','Fruit scraps','Leftover food','Tea leaves','Cow dung'].map((t,i)=><text key={i} x="112" y={58+i*14} fill="#a8e6c0" fontSize="7" textAnchor="middle">{t}</text>)}
+      <rect x="235" y="25" width="185" height="105" rx="8" fill="rgba(239,68,68,0.06)" stroke="#ef4444" strokeWidth="1.5"/>
+      <text x="327" y="42" fill="#ef4444" fontSize="9" textAnchor="middle" fontWeight="bold">{'\u274C'} RECYCLING BIN</text>
+      {['Plastic bags','Metal cans','Glass bottles','Paper/cardboard','Batteries'].map((t,i)=><text key={i} x="327" y={58+i*14} fill="#fca5a5" fontSize="7" textAnchor="middle">{t}</text>)}
+    </svg>);
+  if (svgId === 'waste_types') return (
+    <svg viewBox="0 0 440 150" className="se-svg">
+      <text x="220" y="14" fill="#888" fontSize="8" textAnchor="middle">BEST ORGANIC WASTE FOR BIOGAS</text>
+      {[{n:'Veggie Peels',s:'Fastest',c:'#22c55e',x:55},{n:'Fruit Waste',s:'Fast',c:'#10b981',x:143},{n:'Cooked Food',s:'Medium',c:'#f59e0b',x:231},{n:'Tea/Coffee',s:'Medium',c:'#a78bfa',x:319},{n:'Cow Dung',s:'Best starter!',c:'#f97316',x:407}].map((u,i)=>(
+        <g key={i}><rect x={u.x-40} y="25" width="80" height="85" rx="10" fill={`${u.c}11`} stroke={u.c} strokeWidth="1"><animate attributeName="opacity" values="0;1" dur="0.4s" begin={`${i*0.12}s`} fill="freeze"/></rect>
+          <text x={u.x} y="55" fill={u.c} fontSize="9" textAnchor="middle" fontWeight="bold">{u.n}</text>
+          <text x={u.x} y="75" fill="#ccc" fontSize="7" textAnchor="middle">{u.s}</text>
+          <rect x={u.x-25} y="88" width="50" height="8" rx="4" fill={`${u.c}44`}><animate attributeName="width" values="0;50" dur="0.6s" begin={`${i*0.15}s`} fill="freeze"/></rect>
+        </g>))}
+      <text x="220" y="138" fill="#22c55e" fontSize="8" textAnchor="middle" fontWeight="bold">2-3 kg/day from a family of 4 = enough for biogas!</text>
+    </svg>);
+  if (svgId === 'waste_collection_flow') return (
+    <svg viewBox="0 0 440 150" className="se-svg">
+      <text x="220" y="14" fill="#888" fontSize="8" textAnchor="middle">DAILY WASTE COLLECTION ROUTINE</text>
+      {[{n:'1. Separate',d:'While cooking',c:'#22c55e',x:65},{n:'2. Collect',d:'Covered bucket',c:'#0ea5e9',x:175},{n:'3. Mix Water',d:'Equal parts',c:'#a78bfa',x:285},{n:'4. Pour In',d:'Into inlet',c:'#f59e0b',x:395}].map((s,i)=>(
+        <g key={i}><rect x={s.x-50} y="28" width="100" height="80" rx="8" fill={`${s.c}11`} stroke={s.c} strokeWidth="1.5"><animate attributeName="opacity" values="0;1" dur="0.4s" begin={`${i*0.25}s`} fill="freeze"/></rect>
+          <text x={s.x} y="55" fill={s.c} fontSize="9" textAnchor="middle" fontWeight="bold">{s.n}</text>
+          <text x={s.x} y="75" fill="#aaa" fontSize="7" textAnchor="middle">{s.d}</text>
+          {i<3 && <text x={s.x+55} y="68" fill="#555" fontSize="10">→</text>}
+        </g>))}
+      <rect x="80" y="118" width="280" height="22" rx="6" fill="rgba(34,197,94,0.1)" stroke="#22c55e" strokeWidth="1"/>
+      <text x="220" y="133" fill="#22c55e" fontSize="8" textAnchor="middle" fontWeight="bold">Just 5 minutes/day → FREE gas + fertilizer!</text>
+    </svg>);
+  if (svgId === 'biogas_tank_dig') return (
+    <svg viewBox="0 0 440 150" className="se-svg">
+      <text x="220" y="14" fill="#888" fontSize="8" textAnchor="middle">TYPES OF BIOGAS DIGESTERS</text>
+      {[{n:'Fixed-Dome',d:'Brick/cement',cost:'₹25-40K',life:'20+ yrs',c:'#0ea5e9',x:80},{n:'Floating-Drum',d:'Metal drum',cost:'₹15-25K',life:'15 yrs',c:'#a78bfa',x:220},{n:'Portable',d:'Plastic/FRP',cost:'₹8-15K',life:'10 yrs',c:'#22c55e',x:360}].map((t,i)=>(
+        <g key={i}><rect x={t.x-65} y="25" width="130" height="95" rx="10" fill={`${t.c}11`} stroke={t.c} strokeWidth="1.5"/>
+          <text x={t.x} y="45" fill={t.c} fontSize="10" textAnchor="middle" fontWeight="bold">{t.n}</text>
+          <text x={t.x} y="62" fill="#ccc" fontSize="7" textAnchor="middle">{t.d}</text>
+          <text x={t.x} y="80" fill={t.c} fontSize="9" textAnchor="middle" fontWeight="bold">{t.cost}</text>
+          <text x={t.x} y="96" fill="#888" fontSize="7" textAnchor="middle">Lasts {t.life}</text>
+          <text x={t.x} y="112" fill="#22c55e" fontSize="7" textAnchor="middle">Gov subsidy available!</text>
+        </g>))}
+    </svg>);
+  if (svgId === 'biogas_inlet_outlet') return (
+    <svg viewBox="0 0 440 150" className="se-svg">
+      <text x="220" y="14" fill="#888" fontSize="8" textAnchor="middle">3 CONNECTIONS OF A BIOGAS PLANT</text>
+      <rect x="140" y="50" width="160" height="70" rx="30" fill="rgba(14,165,233,0.08)" stroke="#0ea5e9" strokeWidth="2"/>
+      <text x="220" y="90" fill="#0ea5e9" fontSize="9" textAnchor="middle" fontWeight="bold">DIGESTER DOME</text>
+      <line x1="60" y1="85" x2="140" y2="85" stroke="#22c55e" strokeWidth="3"/><rect x="15" y="70" width="50" height="30" rx="6" fill="rgba(34,197,94,0.15)" stroke="#22c55e" strokeWidth="1"/>
+      <text x="40" y="89" fill="#22c55e" fontSize="7" textAnchor="middle" fontWeight="bold">INLET</text>
+      <line x1="300" y1="85" x2="380" y2="85" stroke="#f97316" strokeWidth="3"/><rect x="375" y="70" width="50" height="30" rx="6" fill="rgba(249,115,22,0.15)" stroke="#f97316" strokeWidth="1"/>
+      <text x="400" y="89" fill="#f97316" fontSize="7" textAnchor="middle" fontWeight="bold">OUTLET</text>
+      <line x1="220" y1="50" x2="220" y2="30" stroke="#f59e0b" strokeWidth="3"/><rect x="195" y="15" width="50" height="20" rx="6" fill="rgba(245,158,11,0.15)" stroke="#f59e0b" strokeWidth="1"/>
+      <text x="220" y="29" fill="#f59e0b" fontSize="7" textAnchor="middle" fontWeight="bold">GAS</text>
+      <text x="40" y="110" fill="#22c55e" fontSize="6" textAnchor="middle">Waste+water in</text>
+      <text x="400" y="110" fill="#f97316" fontSize="6" textAnchor="middle">Slurry out</text>
+      <text x="220" y="140" fill="#f59e0b" fontSize="7" textAnchor="middle" fontWeight="bold">Gas rises naturally — no pump needed!</text>
+    </svg>);
+  if (svgId === 'biogas_plant_complete') return (
+    <svg viewBox="0 0 440 150" className="se-svg">
+      <text x="220" y="14" fill="#888" fontSize="8" textAnchor="middle">COMPLETE BIOGAS PLANT SYSTEM</text>
+      {[{n:'Inlet Chamber',c:'#22c55e',x:50},{n:'Digester Dome',c:'#0ea5e9',x:150},{n:'Gas Storage',c:'#f59e0b',x:250},{n:'Outlet Chamber',c:'#f97316',x:350}].map((p,i)=>(
+        <g key={i}><rect x={p.x-40} y="28" width="80" height="55" rx="8" fill={`${p.c}11`} stroke={p.c} strokeWidth="1.5"/>
+          <text x={p.x} y="52" fill={p.c} fontSize="8" textAnchor="middle" fontWeight="bold">{p.n}</text>
+          <text x={p.x} y="72" fill="#22c55e" fontSize="12" textAnchor="middle">{'\u2705'}</text>
+          {i<3 && <text x={p.x+48} y="55" fill="#555" fontSize="10">→</text>}
+        </g>))}
+      <rect x="60" y="95" width="320" height="40" rx="8" fill="rgba(34,197,94,0.08)" stroke="#22c55e" strokeWidth="1"/>
+      <text x="220" y="112" fill="#22c55e" fontSize="8" textAnchor="middle" fontWeight="bold">Works automatically — just feed it waste daily!</text>
+      <text x="220" y="128" fill="#888" fontSize="7" textAnchor="middle">Lasts 20-25 years with minimal maintenance</text>
+    </svg>);
+  if (svgId === 'digestion_bacteria') return (
+    <svg viewBox="0 0 440 150" className="se-svg">
+      <text x="220" y="14" fill="#888" fontSize="8" textAnchor="middle">3 STAGES OF ANAEROBIC DIGESTION</text>
+      {[{n:'Stage 1',s:'Hydrolysis',d:'Food → Sugars',c:'#22c55e',x:80},{n:'Stage 2',s:'Acidogenesis',d:'Sugars → Acids',c:'#f59e0b',x:220},{n:'Stage 3',s:'Methanogenesis',d:'Acids → Methane!',c:'#a78bfa',x:360}].map((s,i)=>(
+        <g key={i}><rect x={s.x-60} y="25" width="120" height="85" rx="10" fill={`${s.c}11`} stroke={s.c} strokeWidth="1.5"/>
+          <text x={s.x} y="42" fill="#888" fontSize="7" textAnchor="middle">{s.n}</text>
+          <text x={s.x} y="58" fill={s.c} fontSize="10" textAnchor="middle" fontWeight="bold">{s.s}</text>
+          <text x={s.x} y="78" fill="#ccc" fontSize="8" textAnchor="middle">{s.d}</text>
+          <circle cx={s.x} cy="97" r="5" fill={s.c} opacity="0.3"><animate attributeName="r" values="3;6;3" dur="1.5s" begin={`${i*0.3}s`} repeatCount="indefinite"/></circle>
+          {i<2 && <text x={s.x+68} y="68" fill="#555" fontSize="12">→</text>}
+        </g>))}
+      <text x="220" y="138" fill="#a78bfa" fontSize="8" textAnchor="middle" fontWeight="bold">All done by bacteria — no oxygen needed!</text>
+    </svg>);
+  if (svgId === 'digestion_methane') return (
+    <svg viewBox="0 0 440 150" className="se-svg">
+      <text x="220" y="14" fill="#888" fontSize="8" textAnchor="middle">BIOGAS COMPOSITION</text>
+      <circle cx="140" cy="80" r="50" fill="none" stroke="#333" strokeWidth="10"/>
+      <circle cx="140" cy="80" r="50" fill="none" stroke="#22c55e" strokeWidth="10" strokeDasharray="314" strokeDashoffset="126" strokeLinecap="round" transform="rotate(-90 140 80)"><animate attributeName="stroke-dashoffset" values="314;126" dur="1.5s" fill="freeze"/></circle>
+      <circle cx="140" cy="80" r="50" fill="none" stroke="#f59e0b" strokeWidth="10" strokeDasharray="314" strokeDashoffset="188" strokeLinecap="round" transform="rotate(138 140 80)"><animate attributeName="stroke-dashoffset" values="314;188" dur="1.5s" fill="freeze"/></circle>
+      <text x="140" y="77" fill="#22c55e" fontSize="14" textAnchor="middle" fontWeight="bold">60%</text>
+      <text x="140" y="92" fill="#22c55e" fontSize="7" textAnchor="middle">Methane</text>
+      <rect x="230" y="35" width="180" height="30" rx="6" fill="rgba(34,197,94,0.1)" stroke="#22c55e" strokeWidth="1"/>
+      <text x="320" y="55" fill="#22c55e" fontSize="8" textAnchor="middle" fontWeight="bold">Methane (CH₄) — Burns!</text>
+      <rect x="230" y="75" width="180" height="30" rx="6" fill="rgba(245,158,11,0.1)" stroke="#f59e0b" strokeWidth="1"/>
+      <text x="320" y="95" fill="#f59e0b" fontSize="8" textAnchor="middle" fontWeight="bold">CO₂ (40%) — Harmless</text>
+      <text x="220" y="140" fill="#22c55e" fontSize="8" textAnchor="middle" fontWeight="bold">Burns with clean blue flame — just like LPG!</text>
+    </svg>);
+  if (svgId === 'digestion_pressure') return (
+    <svg viewBox="0 0 440 150" className="se-svg">
+      <text x="220" y="14" fill="#888" fontSize="8" textAnchor="middle">GAS PRESSURE IN THE DOME</text>
+      <circle cx="220" cy="80" r="50" fill="none" stroke="#333" strokeWidth="3"/>
+      <path d="M220,80 L220,40" stroke="#22c55e" strokeWidth="2" strokeLinecap="round"><animateTransform attributeName="transform" type="rotate" values="−60,220,80;60,220,80" dur="2s" fill="freeze"/></path>
+      <circle cx="220" cy="80" r="5" fill="#22c55e"/>
+      <text x="220" y="77" fill="#22c55e" fontSize="6" textAnchor="middle">PRESSURE</text>
+      <text x="170" y="105" fill="#ef4444" fontSize="6">Low</text><text x="265" y="105" fill="#22c55e" fontSize="6">High</text>
+      <rect x="60" y="118" width="320" height="22" rx="6" fill="rgba(34,197,94,0.1)" stroke="#22c55e" strokeWidth="1"/>
+      <text x="220" y="133" fill="#22c55e" fontSize="8" textAnchor="middle" fontWeight="bold">8-12 cm water column — enough to push gas to stove!</text>
+    </svg>);
+  if (svgId === 'biogas_stove') return (
+    <svg viewBox="0 0 440 150" className="se-svg">
+      <text x="220" y="14" fill="#888" fontSize="8" textAnchor="middle">BIOGAS-POWERED KITCHEN</text>
+      <rect x="140" y="55" width="160" height="50" rx="8" fill="rgba(34,197,94,0.08)" stroke="#22c55e" strokeWidth="2"/>
+      <circle cx="190" cy="65" r="12" fill="none" stroke="#22c55e" strokeWidth="2"><animate attributeName="r" values="10;14;10" dur="1.5s" repeatCount="indefinite"/></circle>
+      <circle cx="250" cy="65" r="12" fill="none" stroke="#22c55e" strokeWidth="2"><animate attributeName="r" values="10;14;10" dur="1.5s" begin="0.3s" repeatCount="indefinite"/></circle>
+      <text x="220" y="95" fill="#22c55e" fontSize="8" textAnchor="middle" fontWeight="bold">Biogas Stove</text>
+      <text x="80" y="55" fill="#f59e0b" fontSize="8" textAnchor="middle" fontWeight="bold">Clean blue flame</text>
+      <text x="80" y="70" fill="#ccc" fontSize="7" textAnchor="middle">No smoke/soot</text>
+      <text x="360" y="55" fill="#22c55e" fontSize="8" textAnchor="middle" fontWeight="bold">2-3 hrs/day</text>
+      <text x="360" y="70" fill="#ccc" fontSize="7" textAnchor="middle">cooking time</text>
+      <text x="220" y="135" fill="#22c55e" fontSize="8" textAnchor="middle" fontWeight="bold">Stove cost: just Rs.500-1,500!</text>
+    </svg>);
+  if (svgId === 'lpg_vs_biogas') return (
+    <svg viewBox="0 0 440 150" className="se-svg">
+      <text x="220" y="14" fill="#888" fontSize="8" textAnchor="middle">LPG vs BIOGAS COMPARISON</text>
+      <rect x="20" y="25" width="185" height="100" rx="8" fill="rgba(239,68,68,0.06)" stroke="#ef4444" strokeWidth="1.5"/>
+      <text x="112" y="42" fill="#ef4444" fontSize="9" textAnchor="middle" fontWeight="bold">LPG Cylinder</text>
+      <text x="112" y="58" fill="#ccc" fontSize="7" textAnchor="middle">Rs.900-1,100 each</text>
+      <text x="112" y="72" fill="#ccc" fontSize="7" textAnchor="middle">Lasts ~45 days</text>
+      <text x="112" y="86" fill="#ef4444" fontSize="8" textAnchor="middle" fontWeight="bold">Fossil fuel — CO₂</text>
+      <text x="112" y="102" fill="#ccc" fontSize="7" textAnchor="middle">Must buy every month</text>
+      <rect x="235" y="25" width="185" height="100" rx="8" fill="rgba(34,197,94,0.06)" stroke="#22c55e" strokeWidth="1.5"/>
+      <text x="327" y="42" fill="#22c55e" fontSize="9" textAnchor="middle" fontWeight="bold">Biogas</text>
+      <text x="327" y="58" fill="#ccc" fontSize="7" textAnchor="middle">FREE after setup!</text>
+      <text x="327" y="72" fill="#ccc" fontSize="7" textAnchor="middle">Renewable daily</text>
+      <text x="327" y="86" fill="#22c55e" fontSize="8" textAnchor="middle" fontWeight="bold">Carbon-neutral!</text>
+      <text x="327" y="102" fill="#ccc" fontSize="7" textAnchor="middle">Saves Rs.2-3K/year</text>
+      <text x="220" y="140" fill="#22c55e" fontSize="8" textAnchor="middle" fontWeight="bold">Over 20 years: Rs.40-60K saved!</text>
+    </svg>);
+  if (svgId === 'biogas_output') return (
+    <svg viewBox="0 0 440 150" className="se-svg">
+      <text x="220" y="14" fill="#888" fontSize="8" textAnchor="middle">DAILY OUTPUT FROM 2-3 KG KITCHEN WASTE</text>
+      {[{n:'Biogas',v:'1-2 m³',d:'2-3 hrs cooking',c:'#f59e0b',x:110},{n:'Slurry',v:'1-2 kg',d:'Organic fertilizer',c:'#22c55e',x:220},{n:'Landfill Waste',v:'ZERO',d:'Nothing wasted!',c:'#10b981',x:330}].map((o,i)=>(
+        <g key={i}><rect x={o.x-50} y="28" width="100" height="85" rx="10" fill={`${o.c}11`} stroke={o.c} strokeWidth="1.5"/>
+          <text x={o.x} y="48" fill={o.c} fontSize="8" textAnchor="middle" fontWeight="bold">{o.n}</text>
+          <text x={o.x} y="70" fill={o.c} fontSize="14" textAnchor="middle" fontWeight="bold">{o.v}</text>
+          <text x={o.x} y="92" fill="#ccc" fontSize="7" textAnchor="middle">{o.d}</text>
+        </g>))}
+      <text x="220" y="135" fill="#f59e0b" fontSize="7" textAnchor="middle" fontWeight="bold">Can also power gas lamps, generators, and water heaters!</text>
+    </svg>);
+  if (svgId === 'slurry_fertilizer') return (
+    <svg viewBox="0 0 440 150" className="se-svg">
+      <text x="220" y="14" fill="#888" fontSize="8" textAnchor="middle">SLURRY = FREE ORGANIC FERTILIZER</text>
+      {[{n:'Nitrogen (N)',d:'Leaf growth',c:'#22c55e',x:80},{n:'Phosphorus (P)',d:'Roots & flowers',c:'#0ea5e9',x:220},{n:'Potassium (K)',d:'Fruit & strength',c:'#f59e0b',x:360}].map((n,i)=>(
+        <g key={i}><rect x={n.x-60} y="28" width="120" height="65" rx="10" fill={`${n.c}11`} stroke={n.c} strokeWidth="1.5"/>
+          <text x={n.x} y="50" fill={n.c} fontSize="10" textAnchor="middle" fontWeight="bold">{n.n}</text>
+          <text x={n.x} y="70" fill="#ccc" fontSize="7" textAnchor="middle">{n.d}</text>
+          <rect x={n.x-30} y="78" width="60" height="6" rx="3" fill={`${n.c}44`}><animate attributeName="width" values="0;60" dur="0.8s" begin={`${i*0.2}s`} fill="freeze"/></rect>
+        </g>))}
+      <rect x="60" y="105" width="320" height="32" rx="8" fill="rgba(34,197,94,0.08)" stroke="#22c55e" strokeWidth="1"/>
+      <text x="220" y="118" fill="#22c55e" fontSize="8" textAnchor="middle" fontWeight="bold">2x more nitrogen than raw compost!</text>
+      <text x="220" y="132" fill="#888" fontSize="7" textAnchor="middle">Farmers report 20-30% higher crop yields</text>
+    </svg>);
+  if (svgId === 'circular_kitchen') return (
+    <svg viewBox="0 0 440 150" className="se-svg">
+      <text x="220" y="14" fill="#888" fontSize="8" textAnchor="middle">PERFECT CIRCULAR ECONOMY</text>
+      {[{n:'Kitchen Waste',c:'#f97316',x:110,y:45},{n:'Biogas Plant',c:'#0ea5e9',x:330,y:45},{n:'Cook + Slurry',c:'#f59e0b',x:330,y:105},{n:'Garden Grows',c:'#22c55e',x:110,y:105}].map((s,i)=>(
+        <g key={i}><rect x={s.x-55} y={s.y-15} width="110" height="35" rx="8" fill={`${s.c}11`} stroke={s.c} strokeWidth="1.5"/>
+          <text x={s.x} y={s.y+5} fill={s.c} fontSize="9" textAnchor="middle" fontWeight="bold">{s.n}</text>
+        </g>))}
+      <text x="220" y="42" fill="#555" fontSize="10">→</text><text x="345" y="78" fill="#555" fontSize="10">↓</text>
+      <text x="220" y="108" fill="#555" fontSize="10">←</text><text x="95" y="78" fill="#555" fontSize="10">↑</text>
+      <text x="220" y="75" fill="#10b981" fontSize="9" textAnchor="middle" fontWeight="bold">♻️ ZERO WASTE</text>
+    </svg>);
+  if (svgId === 'sustainability_loop') return (
+    <svg viewBox="0 0 440 150" className="se-svg">
+      <text x="220" y="14" fill="#888" fontSize="8" textAnchor="middle">YOUR NET-POSITIVE SUSTAINABLE HOME</text>
+      {[{n:'5★ Appliances',d:'50-70% less power',c:'#f59e0b',x:55},{n:'Solar Panels',d:'25+ yrs clean energy',c:'#0ea5e9',x:143},{n:'Panel Recycling',d:'95% recyclable',c:'#a78bfa',x:231},{n:'Biogas',d:'Free fuel+fertilizer',c:'#22c55e',x:319},{n:'Net Positive!',d:'Rs.50-80K saved/yr',c:'#10b981',x:407}].map((s,i)=>(
+        <g key={i}><rect x={s.x-40} y="25" width="80" height="80" rx="10" fill={`${s.c}11`} stroke={s.c} strokeWidth="1"><animate attributeName="opacity" values="0;1" dur="0.4s" begin={`${i*0.15}s`} fill="freeze"/></rect>
+          <text x={s.x} y="50" fill={s.c} fontSize="8" textAnchor="middle" fontWeight="bold">{s.n}</text>
+          <text x={s.x} y="68" fill="#ccc" fontSize="6" textAnchor="middle">{s.d}</text>
+          <text x={s.x} y="92" fill="#22c55e" fontSize="12" textAnchor="middle">{'\u2705'}</text>
+        </g>))}
+      <rect x="60" y="115" width="320" height="22" rx="6" fill="rgba(16,185,129,0.12)" stroke="#10b981" strokeWidth="1"/>
+      <text x="220" y="130" fill="#10b981" fontSize="8" textAnchor="middle" fontWeight="bold">80% less carbon footprint — YOU are the change!</text>
+    </svg>);
   // ─── FALLBACK ───
   return (
     <svg viewBox="0 0 440 120" className="se-svg">

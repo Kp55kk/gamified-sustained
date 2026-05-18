@@ -21,7 +21,9 @@ const L5_APPLIANCE_POSITIONS = {
   shop_washer:        { pos: [29, 0.5, 4] },         // Right-back
   shop_label:         { pos: [24, 0.5, 6] },         // Center-back
   // Roof panels (Phase 2)
-  roof_panels:        { pos: [0, 0.5, -12] },        // Near house roof access
+  roof_panels:        { pos: [0, 0.5, -12] },
+  // Biogas plant (Phase 3)
+  biogas_plant:       { pos: [-8, 0.5, 12] },
 };
 
 const WALL_SEGMENTS = [

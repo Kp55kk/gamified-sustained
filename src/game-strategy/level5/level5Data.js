@@ -37,7 +37,9 @@ export const STORY_STAGES = [
   { id: 'learn',     name: 'Inspect Appliances',       icon: '\u{1F50D}', objective: 'Interact with all 5 appliance displays in the shop' },
   { id: 'roof',      name: 'Inspect Roof Panels',      icon: '\u{2600}\u{FE0F}', objective: 'Walk to the roof to inspect the 25-year-old solar panels' },
   { id: 'phase2',    name: 'Solar Panel Lifecycle',     icon: '\u{267B}\u{FE0F}', objective: 'Learn about solar panel aging, recycling, and second-life uses' },
-  { id: 'quiz',      name: 'Take Final Quiz',          icon: '\u{1F9E0}', objective: 'Test your knowledge of star ratings AND solar lifecycle' },
+  { id: 'biogas',    name: 'Visit Biogas Plant',        icon: '\u{1F33F}', objective: 'Walk to the biogas plant behind the house' },
+  { id: 'phase3',    name: 'Biogas Energy System',      icon: '\u{267B}\u{FE0F}', objective: 'Learn about waste collection, biogas production, and slurry reuse' },
+  { id: 'quiz',      name: 'Take Final Quiz',          icon: '\u{1F9E0}', objective: 'Test your knowledge of all 3 phases' },
 ];
 
 // ═══ TEACHER DIALOGUES ═══
@@ -66,6 +68,17 @@ export const ROOF_DIALOGUE = [
 
 // ═══ PHASE 2 TOPIC IDS ═══
 export const PHASE2_TOPIC_IDS = ['panel_aging', 'recycling_process', 'second_life', 'circular_economy'];
+
+// ═══ BIOGAS DIALOGUE (Phase 3 transition) ═══
+export const BIOGAS_DIALOGUE = [
+  "Amazing work on solar lifecycle, Arjun!",
+  "Now let's explore the THIRD pillar of sustainable living — BIOGAS!",
+  "There's a biogas plant behind the house. Let's see how kitchen waste becomes free cooking gas!",
+  "Walk to the biogas plant to begin.",
+];
+
+// ═══ PHASE 3 TOPIC IDS ═══
+export const PHASE3_TOPIC_IDS = ['waste_collection', 'plant_construction', 'anaerobic_digestion', 'biogas_usage', 'slurry_reuse'];
 
 // ═══ SHOP APPLIANCE DISPLAYS ═══
 export const SHOP_DISPLAYS = [
@@ -110,6 +123,11 @@ export const L5_QUIZ = [
   { question: 'What is the largest material component of a solar panel?', options: ['Silicon', 'Glass (75%)', 'Aluminum'], correctIndex: 1, feedback: { correct: 'Glass makes up 75% and is fully recyclable!', wrong: 'Glass is 75% of a solar panel — the largest component.' }},
   { question: 'How long can second-life panels serve in rural areas?', options: ['1-2 years', '5-7 years', '10-15 years'], correctIndex: 2, feedback: { correct: '10-15 more years of useful service!', wrong: 'Second-life panels can serve 10-15 more years.' }},
   { question: 'What does cradle-to-cradle design mean?', options: ['Making panels cheaper', 'Designing for easy recycling from Day 1', 'Using plastic instead of glass'], correctIndex: 1, feedback: { correct: 'Design for recycling from the very beginning!', wrong: 'Cradle-to-cradle means designing for easy recycling from Day 1.' }},
+  // Phase 3: Biogas
+  { question: 'What type of waste goes into a biogas plant?', options: ['Plastic and metal', 'Organic kitchen waste', 'Glass bottles'], correctIndex: 1, feedback: { correct: 'Only organic waste like veggie peels and food scraps!', wrong: 'Biogas plants need organic kitchen waste — not plastic or glass.' }},
+  { question: 'What is the main fuel component of biogas?', options: ['Carbon dioxide', 'Methane (CH\u2084)', 'Hydrogen'], correctIndex: 1, feedback: { correct: 'Methane makes up 60% of biogas and burns cleanly!', wrong: 'Methane (CH\u2084) at 60% is the fuel that burns in biogas.' }},
+  { question: 'How many LPG cylinders can a biogas plant replace per year?', options: ['1 cylinder', '2-3 cylinders', '10 cylinders'], correctIndex: 1, feedback: { correct: '2-3 cylinders per year — saving Rs.2,000-3,000!', wrong: 'A household biogas plant replaces 2-3 LPG cylinders per year.' }},
+  { question: 'What is biogas slurry used for?', options: ['Throwing in the river', 'Organic fertilizer for plants', 'Building material'], correctIndex: 1, feedback: { correct: 'Slurry is nutrient-rich fertilizer with N, P, and K!', wrong: 'Biogas slurry is an excellent organic fertilizer for plants.' }},
 ];
 
 // ═══ CONFIDENCE BOOST ═══

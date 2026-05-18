@@ -144,4 +144,84 @@ export const EXPLAINER_TOPICS = {
         desc: 'Solar panels create MUCH less e-waste than other electronics: A phone lasts 2-3 years → solar panel lasts 25-40 years! Per kWh of energy, solar produces 300x less waste than coal. Solar waste is 95% recyclable vs smartphones at 30%. By choosing solar AND proper recycling, you help build a future with ZERO energy waste!',
         fact: 'India generates 32 Lakh tonnes of e-waste per year. Solar panel waste (even at peak in 2050) will be only 2.4% of that — and it is far more recyclable!' },
     ]},
+
+  // ═══════════════════════════════════════════════════════════
+  //  PHASE 3: Biogas Energy System
+  //  5 topics × 3 steps = 15 steps, 15 animated SVGs
+  // ═══════════════════════════════════════════════════════════
+
+  // ═══ TOPIC 10: Waste Collection ═══
+  waste_collection: {
+    name: 'Kitchen Waste Sorting', color: '#22c55e', steps: [
+      { title: 'Sorting Your Kitchen Waste', svg: 'kitchen_waste_sort',
+        desc: 'The first step to biogas is sorting waste! Organic waste (vegetable peels, fruit scraps, leftover food, tea leaves) goes into the biogas bin. NON-organic waste (plastic, metal, glass, paper) goes to recycling. Only organic matter can be digested by bacteria to produce gas.',
+        fact: 'An average Indian household produces 2-3 kg of organic kitchen waste per day — enough to run a biogas stove for 2-3 hours!' },
+      { title: 'Types of Organic Waste', svg: 'waste_types',
+        desc: 'Best biogas feedstock: Vegetable peels and scraps (fastest to digest). Fruit waste and rinds. Leftover cooked food. Tea leaves and coffee grounds. Cow dung (traditional and very effective!). Avoid: Citrus peels (too acidic), bones, oils, and anything non-biodegradable.',
+        fact: 'Cow dung is the BEST biogas starter because it already contains the right bacteria. Mixing kitchen waste with cow dung speeds up gas production by 40%!',
+        quiz: { q: 'What type of waste goes into a biogas plant?', opts: ['Plastic and metal', 'Organic kitchen waste', 'Glass bottles'], ans: 1 }},
+      { title: 'Waste Collection Flow', svg: 'waste_collection_flow',
+        desc: 'Daily routine: 1) Separate organic waste while cooking. 2) Collect in a covered bucket (prevents smell). 3) Mix with equal amount of water. 4) Pour into biogas plant inlet. That is it! Just 5 minutes per day of effort produces FREE cooking gas and organic fertilizer for your garden.',
+        fact: 'A family of 4 generates enough kitchen waste to produce 1-2 cubic meters of biogas daily — replacing 2-3 LPG cylinders per year (saving Rs.2,000-3,000)!' },
+    ]},
+
+  // ═══ TOPIC 11: Plant Construction ═══
+  plant_construction: {
+    name: 'Building a Biogas Plant', color: '#0ea5e9', steps: [
+      { title: 'Digging the Tank', svg: 'biogas_tank_dig',
+        desc: 'A household biogas plant needs a underground tank (called a digester). Types: Fixed-dome (brick/cement, lasts 20+ years, Rs.25,000-40,000). Floating-drum (metal drum on water, Rs.15,000-25,000). Portable/compact (plastic, Rs.8,000-15,000, good for apartments). The tank is buried underground to maintain constant temperature.',
+        fact: 'The Indian government provides subsidies of Rs.5,000-10,000 for biogas plants under the National Biogas Programme. Over 50 lakh plants are already installed!' },
+      { title: 'Inlet, Outlet & Gas Pipe', svg: 'biogas_inlet_outlet',
+        desc: 'Every biogas plant has 3 connections: INLET pipe — where you pour waste + water mixture daily. OUTLET pipe — where used-up waste (slurry) comes out as fertilizer. GAS pipe — connects to your kitchen stove through a valve. The gas pipe goes from the top of the dome (where gas collects) directly to the burner.',
+        fact: 'The gas pipe is just 1-2 inches wide. Biogas is lighter than air, so it naturally rises to the top of the dome — no pump needed!',
+        quiz: { q: 'How many connections does a biogas plant have?', opts: ['1 (just gas)', '2 (inlet + gas)', '3 (inlet, outlet, gas)'], ans: 2 }},
+      { title: 'Complete Biogas Plant', svg: 'biogas_plant_complete',
+        desc: 'A complete biogas plant has: Underground dome (2-4 cubic meters for a family). Inlet chamber with mixing tank. Gas storage dome at the top. Outlet chamber for slurry collection. Gas pipe with valve to kitchen. Water seal for safety. The whole system works automatically — just feed it waste daily!',
+        fact: 'A well-maintained biogas plant lasts 20-25 years! The only maintenance is occasional cleaning of the inlet and checking the gas pipe for leaks.' },
+    ]},
+
+  // ═══ TOPIC 12: Anaerobic Digestion ═══
+  anaerobic_digestion: {
+    name: 'How Biogas Forms', color: '#a78bfa', steps: [
+      { title: 'Bacteria at Work', svg: 'digestion_bacteria',
+        desc: 'Inside the sealed tank, billions of tiny bacteria break down organic waste WITHOUT oxygen (that is what "anaerobic" means!). Stage 1: Hydrolysis — complex food breaks into simple sugars. Stage 2: Acidogenesis — sugars convert to organic acids. Stage 3: Methanogenesis — special bacteria convert acids into methane gas!',
+        fact: 'The bacteria inside a biogas plant are the same type found in the stomachs of cows! That is why cow dung is such a perfect starter material.' },
+      { title: 'Methane Formation', svg: 'digestion_methane',
+        desc: 'The gas produced is a mixture: Methane (CH₄): 55-65% — this is the fuel that burns! Carbon dioxide (CO₂): 35-45% — harmless. Trace gases: Hydrogen sulfide (H₂S) — gives a slight smell. The methane is what makes biogas valuable — it burns with a clean blue flame, just like LPG!',
+        fact: 'Biogas has about 60% of the energy content of LPG. But it is FREE and renewable — you make it from waste every single day!',
+        quiz: { q: 'What is the main fuel component of biogas?', opts: ['Carbon dioxide', 'Methane (CH₄)', 'Hydrogen'], ans: 1 }},
+      { title: 'Gas Pressure Building', svg: 'digestion_pressure',
+        desc: 'As bacteria produce gas, pressure builds inside the dome. In a fixed-dome plant, pressure reaches 8-12 cm of water column — enough to push gas through the pipe to your stove! In a floating-drum plant, the metal drum rises as gas fills up. The process takes 15-30 days from waste input to full gas production.',
+        fact: 'Temperature matters! Biogas production is fastest at 35-40°C. In Indian summers, production increases by 30-40% compared to winter.' },
+    ]},
+
+  // ═══ TOPIC 13: Biogas Usage ═══
+  biogas_usage: {
+    name: 'Using Biogas', color: '#f59e0b', steps: [
+      { title: 'Powering Your Kitchen', svg: 'biogas_stove',
+        desc: 'Biogas connects directly to a special biogas stove (Rs.500-1,500). It burns with a clean blue flame — no smoke, no soot, no health hazards! A family biogas plant (2 cubic meters) provides 2-3 hours of cooking time per day. That covers breakfast, lunch and dinner for a family of 4-5.',
+        fact: 'Indoor air pollution from wood/coal stoves kills 5 lakh Indians per year. Switching to biogas eliminates 100% of indoor cooking smoke!' },
+      { title: 'Biogas vs LPG', svg: 'lpg_vs_biogas',
+        desc: 'LPG: Rs.900-1,100 per cylinder, lasts ~45 days, fossil fuel, causes CO₂. Biogas: FREE after plant construction, renewable daily, carbon-neutral! A biogas plant replaces 2-3 LPG cylinders/year = Rs.2,000-3,000 saved. Over 20 years, that is Rs.40,000-60,000 in savings — more than the plant cost!',
+        fact: 'Biogas is carbon-neutral because the CO₂ released when burning was recently absorbed by the plants that became your food waste. No new carbon enters the atmosphere!',
+        quiz: { q: 'How many LPG cylinders can a biogas plant replace per year?', opts: ['1 cylinder', '2-3 cylinders', '10 cylinders'], ans: 1 }},
+      { title: 'Daily Biogas Output', svg: 'biogas_output',
+        desc: 'What you get daily from 2-3 kg kitchen waste: 1-2 cubic meters of biogas (2-3 hours cooking). 1-2 kg of organic slurry fertilizer. Zero waste going to landfill! Beyond cooking, biogas can also power: Gas lamps for lighting. Small generators for electricity (1 kW per 2 cubic meters). Water heating systems.',
+        fact: 'Large community biogas plants can produce enough gas to power a 5 kW generator — providing electricity for 10-15 houses!' },
+    ]},
+
+  // ═══ TOPIC 14: Slurry Reuse ═══
+  slurry_reuse: {
+    name: 'Slurry as Fertilizer', color: '#10b981', steps: [
+      { title: 'Nutrient-Rich Fertilizer', svg: 'slurry_fertilizer',
+        desc: 'The waste that comes out of the biogas plant (called "slurry" or "digestate") is an AMAZING organic fertilizer! It contains: Nitrogen (N) — for leaf growth. Phosphorus (P) — for roots and flowers. Potassium (K) — for fruit and strength. These are the same nutrients in expensive chemical fertilizers — but slurry is FREE!',
+        fact: 'Biogas slurry has 2x more nitrogen than raw compost because the digestion process concentrates nutrients. Farmers using slurry report 20-30% higher crop yields!' },
+      { title: 'Garden to Kitchen Cycle', svg: 'circular_kitchen',
+        desc: 'The beautiful cycle: Kitchen waste → Biogas plant → Cooking gas + Slurry. Slurry → Garden/farm → Vegetables and fruits grow. Vegetables → Kitchen → Cook with biogas → More waste. This is a PERFECT circular economy — zero waste, zero emissions, free energy AND free fertilizer! Your home becomes a self-sustaining ecosystem.',
+        fact: 'A single biogas plant can fertilize a 200 sq ft kitchen garden — growing enough vegetables to save Rs.500-1,000 per month on groceries!',
+        quiz: { q: 'What is biogas slurry used for?', opts: ['Throwing in the river', 'Organic fertilizer for plants', 'Building material'], ans: 1 }},
+      { title: 'Complete Sustainability Loop', svg: 'sustainability_loop',
+        desc: 'Level 5 complete picture: 5-Star appliances use 50-70% LESS electricity. Solar panels generate clean energy for 25+ years. Old panels get recycled (95%) or reused in rural areas. Kitchen waste becomes biogas (free fuel) and fertilizer. Your home produces MORE energy than it uses — you are a NET POSITIVE household!',
+        fact: 'A fully sustainable Indian home with 5-star appliances, solar panels, and biogas saves Rs.50,000-80,000 per year AND reduces carbon footprint by 80%!' },
+    ]},
 };

@@ -464,9 +464,45 @@ function Garden() {
   ));
 }
 
+// ═══ BIOGAS PLANT ═══
+function BiogasPlant({ visible, isNear, visited }) {
+  if (!visible) return null;
+  return (
+    <group position={[-8, 0, 12]}>
+      {/* Underground dome */}
+      <mesh position={[0, -0.3, 0]}><sphereGeometry args={[1.8, 16, 12, 0, Math.PI * 2, 0, Math.PI / 2]} /><meshStandardMaterial color="#2a5a3a" metalness={0.3} roughness={0.7} /></mesh>
+      {/* Dome cap above ground */}
+      <mesh position={[0, 0.6, 0]}><sphereGeometry args={[1.2, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2]} /><meshStandardMaterial color="#1a4a2a" metalness={0.4} roughness={0.5} /></mesh>
+      {/* Inlet pipe */}
+      <mesh position={[-2.2, 0.2, 0]} rotation={[0, 0, Math.PI / 6]}><cylinderGeometry args={[0.12, 0.12, 1.5, 8]} /><meshStandardMaterial color="#22c55e" /></mesh>
+      {/* Outlet pipe */}
+      <mesh position={[2.2, 0.2, 0]} rotation={[0, 0, -Math.PI / 6]}><cylinderGeometry args={[0.12, 0.12, 1.5, 8]} /><meshStandardMaterial color="#f97316" /></mesh>
+      {/* Gas pipe going up */}
+      <mesh position={[0, 1.2, 0]}><cylinderGeometry args={[0.08, 0.08, 1.0, 8]} /><meshStandardMaterial color="#f59e0b" /></mesh>
+      {/* Gas valve */}
+      <mesh position={[0, 1.7, 0]}><boxGeometry args={[0.3, 0.15, 0.15]} /><meshStandardMaterial color="#f59e0b" metalness={0.6} /></mesh>
+      {/* Ground ring */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 0]}><ringGeometry args={[1.9, 2.2, 24]} /><meshStandardMaterial color="#22c55e" transparent opacity={0.2} /></mesh>
+      {/* Label */}
+      <Html position={[0, 2.5, 0]} center>
+        <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:'4px',pointerEvents:'none'}}>
+          <div style={{background:'rgba(34,197,94,0.9)',color:'#fff',padding:'5px 14px',borderRadius:'10px',fontSize:'12px',fontWeight:700,whiteSpace:'nowrap',fontFamily:'Nunito',boxShadow:'0 2px 12px rgba(34,197,94,0.4)'}}>
+            {'\u267B\uFE0F'} Biogas Plant
+          </div>
+          {isNear && !visited && <div style={{background:'rgba(34,197,94,0.95)',color:'#fff',padding:'5px 14px',borderRadius:'8px',fontSize:'12px',fontWeight:700,whiteSpace:'nowrap',fontFamily:'Nunito',boxShadow:'0 2px 12px rgba(34,197,94,0.4)',animation:'l5-pulse-glow 2s ease infinite'}}>
+            Press <span style={{background:'rgba(255,255,255,0.3)',padding:'2px 7px',borderRadius:'4px',fontWeight:800}}>E</span> to inspect
+          </div>}
+          {visited && <div style={{color:'#22c55e',fontSize:'18px',filter:'drop-shadow(0 0 4px rgba(34,197,94,0.5))'}}>{'✅'}</div>}
+        </div>
+      </Html>
+    </group>
+  );
+}
+
 // ═══ MAIN ENVIRONMENT ═══
-export default function Level5Environment({ timeOfDay = 'noon', batteryPct = 50, weatherFactor = 1.0, nearestAppliance = null, storyStage = 'discover', meterVisited = false, newspaperPickedUp = false, shopVisible = false, inspectedDisplays = [], roofVisited = false }) {
-  const showAgedPanels = ['roof','phase2','quiz'].includes(storyStage);
+export default function Level5Environment({ timeOfDay = 'noon', batteryPct = 50, weatherFactor = 1.0, nearestAppliance = null, storyStage = 'discover', meterVisited = false, newspaperPickedUp = false, shopVisible = false, inspectedDisplays = [], roofVisited = false, biogasVisited = false }) {
+  const showAgedPanels = ['roof','phase2','biogas','phase3','quiz'].includes(storyStage);
+  const showBiogas = ['biogas','phase3','quiz'].includes(storyStage);
   return (<>
     <Sky timeOfDay={timeOfDay} weatherFactor={weatherFactor} />
     <Lighting timeOfDay={timeOfDay} weatherFactor={weatherFactor} />
@@ -485,5 +521,6 @@ export default function Level5Environment({ timeOfDay = 'noon', batteryPct = 50,
     <Newspaper isNear={nearestAppliance === 'newspaper'} visible={storyStage === 'newspaper' || newspaperPickedUp} pickedUp={newspaperPickedUp} />
     <TeacherNPC visible={meterVisited && (storyStage === 'discover' || storyStage === 'teacher' || storyStage === 'newspaper')} />
     <ApplianceShop visible={shopVisible} nearestAppliance={nearestAppliance} inspectedDisplays={inspectedDisplays} />
+    <BiogasPlant visible={showBiogas} isNear={nearestAppliance === 'biogas_plant'} visited={biogasVisited} />
   </>);
 }

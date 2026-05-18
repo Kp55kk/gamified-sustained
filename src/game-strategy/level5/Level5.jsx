@@ -9,6 +9,7 @@ import { useGame } from '../../context/GameContext';
 import {
   L5, L5_TOPICS, L5_QUIZ, STORY_STAGES, SHOP_DISPLAYS, SHOP_DISPLAY_MAP, SHOP_DISPLAY_IDS,
   METER_DIALOGUE, TEACHER_DIALOGUE, NEWSPAPER_HEADLINE, NEWSPAPER_SUBTEXT, ROOF_DIALOGUE, PHASE2_TOPIC_IDS,
+  BIOGAS_DIALOGUE, PHASE3_TOPIC_IDS,
   calculateL5Stars, LEVEL5_BADGE, ENTRY_DIALOGUE, FINAL_DIALOGUE, CONFIDENCE_MESSAGES,
 } from './level5Data';
 import { L2_APPLIANCE_IDS } from '../level2/level2Data';
@@ -27,8 +28,8 @@ function playDiscover() { [330,440,550].forEach((f,i) => { try { const c=getAC()
 
 // ═══ 3D SCENE ═══
 function CamRef({r}){const{camera}=useThree();useEffect(()=>{r.current=camera},[camera,r]);return null;}
-function Scene({ nearest, onZone, onNearest, onInteract, camRef, storyStage, meterVisited, newspaperPickedUp, shopVisible, inspectedDisplays, roofVisited }) {
-  const allIds = useMemo(() => [...L2_APPLIANCE_IDS, 'electricity_meter', 'newspaper', ...SHOP_DISPLAY_IDS, 'roof_panels'], []);
+function Scene({ nearest, onZone, onNearest, onInteract, camRef, storyStage, meterVisited, newspaperPickedUp, shopVisible, inspectedDisplays, roofVisited, biogasVisited }) {
+  const allIds = useMemo(() => [...L2_APPLIANCE_IDS, 'electricity_meter', 'newspaper', ...SHOP_DISPLAY_IDS, 'roof_panels', 'biogas_plant'], []);
   const appStates = useMemo(() => {
     const s = {};
     L2_APPLIANCE_IDS.forEach(id => { s[id] = { on: true }; });
@@ -36,7 +37,7 @@ function Scene({ nearest, onZone, onNearest, onInteract, camRef, storyStage, met
   }, []);
   const proxLevels = useMemo(() => getProximityLevels(l5PlayerState.x, l5PlayerState.z, L2_APPLIANCE_IDS), [nearest]);
   return (<><CamRef r={camRef}/>
-    <Level5Environment timeOfDay="noon" batteryPct={50} weatherFactor={1.0} nearestAppliance={nearest} storyStage={storyStage} meterVisited={meterVisited} newspaperPickedUp={newspaperPickedUp} shopVisible={shopVisible} inspectedDisplays={inspectedDisplays} roofVisited={roofVisited} />
+    <Level5Environment timeOfDay="noon" batteryPct={50} weatherFactor={1.0} nearestAppliance={nearest} storyStage={storyStage} meterVisited={meterVisited} newspaperPickedUp={newspaperPickedUp} shopVisible={shopVisible} inspectedDisplays={inspectedDisplays} roofVisited={roofVisited} biogasVisited={biogasVisited} />
     <House/>
     <Level2Appliances applianceStates={appStates} nearestAppliance={nearest} taskTargetIds={null} proximityLevels={proxLevels}/>
     <Level5Player onZoneChange={onZone} onNearestApplianceChange={onNearest} onInteract={onInteract} applianceIdList={allIds}/>
@@ -68,6 +69,10 @@ export default function Level5() {
   // Phase 2 state
   const [phase2TopicsCompleted, setPhase2TopicsCompleted] = useState([]);
   const [roofVisited, setRoofVisited] = useState(false);
+
+  // Phase 3 state
+  const [phase3TopicsCompleted, setPhase3TopicsCompleted] = useState([]);
+  const [biogasVisited, setBiogasVisited] = useState(false);
 
   // Dialogue
   const [dialogue, setDialogue] = useState(null); // { lines, title, icon }
@@ -131,12 +136,21 @@ export default function Level5() {
       playDiscover();
       setRoofVisited(true);
       setStoryStage('phase2');
-      // Start first Phase 2 topic
       const firstTopic = PHASE2_TOPIC_IDS.find(t => !phase2TopicsCompleted.includes(t));
       if (firstTopic) { setActiveTopicId(firstTopic); setPhase('explainer'); }
       return;
     }
-  }, [dialogue, meterVisited, newspaperPickedUp, inspectedDisplays, storyStage, roofVisited, phase2TopicsCompleted]);
+
+    // Stage: biogas plant interaction (Phase 3)
+    if (id === 'biogas_plant' && storyStage === 'biogas' && !biogasVisited) {
+      playDiscover();
+      setBiogasVisited(true);
+      setStoryStage('phase3');
+      const firstTopic = PHASE3_TOPIC_IDS.find(t => !phase3TopicsCompleted.includes(t));
+      if (firstTopic) { setActiveTopicId(firstTopic); setPhase('explainer'); }
+      return;
+    }
+  }, [dialogue, meterVisited, newspaperPickedUp, inspectedDisplays, storyStage, roofVisited, phase2TopicsCompleted, biogasVisited, phase3TopicsCompleted]);
 
   // ─── Dialogue advance ───
   const advanceDialogue = useCallback(() => {
@@ -169,13 +183,29 @@ export default function Level5() {
     if (PHASE2_TOPIC_IDS.includes(topicId)) {
       const newCompleted = [...phase2TopicsCompleted, topicId];
       setPhase2TopicsCompleted(newCompleted);
-      // Find next Phase 2 topic
       const nextTopic = PHASE2_TOPIC_IDS.find(t => !newCompleted.includes(t));
       if (nextTopic) {
         setActiveTopicId(nextTopic);
-        // Stay in explainer phase
       } else {
-        // All Phase 2 done → quiz
+        // All Phase 2 done → trigger biogas transition
+        setActiveTopicId(null);
+        setPhase('play');
+        setDialogue({ lines: BIOGAS_DIALOGUE, title: 'Energy Teacher', icon: L5.teacher });
+        setDialogueIdx(0);
+        setStoryStage('biogas');
+      }
+      return;
+    }
+
+    // Phase 3 topic?
+    if (PHASE3_TOPIC_IDS.includes(topicId)) {
+      const newCompleted = [...phase3TopicsCompleted, topicId];
+      setPhase3TopicsCompleted(newCompleted);
+      const nextTopic = PHASE3_TOPIC_IDS.find(t => !newCompleted.includes(t));
+      if (nextTopic) {
+        setActiveTopicId(nextTopic);
+      } else {
+        // All Phase 3 done → quiz
         setActiveTopicId(null);
         setPhase('play');
         setStoryStage('quiz');
@@ -215,7 +245,7 @@ export default function Level5() {
   }, [stars, addCarbonCoins, completeLevel, unlockLevel, navigate]);
 
   const currentStoryStage = STORY_STAGES.find(s => s.id === storyStage);
-  const allInspected = inspectedDisplays.length >= SHOP_DISPLAYS.length && phase2TopicsCompleted.length >= PHASE2_TOPIC_IDS.length;
+  const allInspected = inspectedDisplays.length >= SHOP_DISPLAYS.length && phase2TopicsCompleted.length >= PHASE2_TOPIC_IDS.length && phase3TopicsCompleted.length >= PHASE3_TOPIC_IDS.length;
 
   // ═══ RENDER: LEVEL INTRO ═══
   if (showLevelIntro) {
@@ -292,7 +322,7 @@ export default function Level5() {
           <Suspense fallback={null}>
             <Scene nearest={nearest} onZone={setZone} onNearest={setNearest} onInteract={handleInteract}
               camRef={camRef} storyStage={storyStage} meterVisited={meterVisited}
-              newspaperPickedUp={newspaperPickedUp} shopVisible={shopVisible} inspectedDisplays={inspectedDisplays} roofVisited={roofVisited} />
+              newspaperPickedUp={newspaperPickedUp} shopVisible={shopVisible} inspectedDisplays={inspectedDisplays} roofVisited={roofVisited} biogasVisited={biogasVisited} />
           </Suspense>
         </Canvas>
       </div>
@@ -318,7 +348,7 @@ export default function Level5() {
       {/* Story Progress */}
       <div className="l5-story-progress">
         {STORY_STAGES.slice(0, -1).map((s, i) => {
-          const stageOrder = ['discover','teacher','newspaper','shop','learn','roof','phase2'];
+          const stageOrder = ['discover','teacher','newspaper','shop','learn','roof','phase2','biogas','phase3'];
           const ci = stageOrder.indexOf(storyStage);
           const si = stageOrder.indexOf(s.id);
           return <div key={s.id} className={`l5-story-dot ${si < ci ? 'done' : si === ci ? 'active' : ''}`} title={s.name} />;
