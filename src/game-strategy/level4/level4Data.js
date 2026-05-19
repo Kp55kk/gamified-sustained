@@ -28,29 +28,29 @@ export const ROOF_GRID_SLOTS = [
 
 // ═══ TIME OF DAY ═══
 export const TIME_PERIODS = [
-  { id: 'dawn',    label: 'Dawn (6 AM)',      hour: 6,  sunlight: 0.2,  icon: '\u{1F305}', skyColor: '#ff9966' },
-  { id: 'morning', label: 'Morning (9 AM)',   hour: 9,  sunlight: 0.6,  icon: '\u{1F304}', skyColor: '#87CEEB' },
-  { id: 'noon',    label: 'Noon (12 PM)',     hour: 12, sunlight: 1.0,  icon: '\u{2600}\u{FE0F}', skyColor: '#4a9eda' },
-  { id: 'afternoon', label: 'Afternoon (3 PM)', hour: 15, sunlight: 0.8, icon: '\u{1F31E}', skyColor: '#6bb3d9' },
-  { id: 'evening', label: 'Evening (6 PM)',   hour: 18, sunlight: 0.15, icon: '\u{1F307}', skyColor: '#cc6633' },
-  { id: 'night',   label: 'Night (9 PM)',     hour: 21, sunlight: 0.0,  icon: '\u{1F303}', skyColor: '#0a1628' },
+  { id: 'dawn',    label: 'Dawn (6 AM)',      hour: 6,  sunlight: 0.2,  icon: '🌅', skyColor: '#ff9966' },
+  { id: 'morning', label: 'Morning (9 AM)',   hour: 9,  sunlight: 0.6,  icon: '🌄', skyColor: '#87CEEB' },
+  { id: 'noon',    label: 'Noon (12 PM)',     hour: 12, sunlight: 1.0,  icon: '☀️', skyColor: '#4a9eda' },
+  { id: 'afternoon', label: 'Afternoon (3 PM)', hour: 15, sunlight: 0.8, icon: '🌞', skyColor: '#6bb3d9' },
+  { id: 'evening', label: 'Evening (6 PM)',   hour: 18, sunlight: 0.15, icon: '🌇', skyColor: '#cc6633' },
+  { id: 'night',   label: 'Night (9 PM)',     hour: 21, sunlight: 0.0,  icon: '🌃', skyColor: '#0a1628' },
 ];
 
 // ═══ WEATHER ═══
 export const WEATHER_TYPES = [
-  { id: 'clear',   label: 'Clear Sky',    factor: 1.0,  icon: '\u{2600}\u{FE0F}' },
-  { id: 'partial', label: 'Partly Cloudy', factor: 0.7, icon: '\u{26C5}' },
-  { id: 'cloudy',  label: 'Cloudy',       factor: 0.4,  icon: '\u{2601}\u{FE0F}' },
-  { id: 'rainy',   label: 'Rainy',        factor: 0.2,  icon: '\u{1F327}\u{FE0F}' },
+  { id: 'clear',   label: 'Clear Sky',    factor: 1.0,  icon: '☀️' },
+  { id: 'partial', label: 'Partly Cloudy', factor: 0.7, icon: '⛅' },
+  { id: 'cloudy',  label: 'Cloudy',       factor: 0.4,  icon: '☁️' },
+  { id: 'rainy',   label: 'Rainy',        factor: 0.2,  icon: '🌧️' },
 ];
 
 // ═══ PANEL TILT ANGLES ═══
 export const TILT_OPTIONS = [
-  { angle: 0,  label: 'Flat (0\u{00B0})',      efficiency: 0.65 },
-  { angle: 15, label: '15\u{00B0} Tilt',        efficiency: 0.85 },
-  { angle: 25, label: '25\u{00B0} Tilt (Best)', efficiency: 1.0  },
-  { angle: 35, label: '35\u{00B0} Tilt',        efficiency: 0.90 },
-  { angle: 45, label: '45\u{00B0} Tilt',        efficiency: 0.75 },
+  { angle: 0,  label: 'Flat (0°)',      efficiency: 0.65 },
+  { angle: 15, label: '15° Tilt',        efficiency: 0.85 },
+  { angle: 25, label: '25° Tilt (Best)', efficiency: 1.0  },
+  { angle: 35, label: '35° Tilt',        efficiency: 0.90 },
+  { angle: 45, label: '45° Tilt',        efficiency: 0.75 },
 ];
 
 // ═══ BATTERY ═══
@@ -120,65 +120,66 @@ export const WEATHER_SCENARIOS = [
 export const L4_PHASES = [
   {
     id: 'install', title: 'Solar Installation', icon: '🔧', duration: '5-6 min',
-    desc: 'Install solar panels on the rooftop — choose positions, avoid shadows, set optimal angle.',
-    objective: 'Place at least 3 panels and optimize tilt angle for maximum efficiency.',
-    learning: 'Panel placement, shadow avoidance, tilt angle optimization',
+    desc: 'Put solar panels on the rooftop — choose the best spots, avoid shadows, and set the right angle.',
+    objective: 'Place at least 3 panels and set the best angle to catch maximum sunlight.',
+    learning: 'Where to place panels, avoiding shadows, setting the right angle',
   },
   {
-    id: 'energy_flow', title: 'Energy Flow', icon: '⚡', duration: '3-4 min',
-    desc: 'See how energy flows from the Sun to your home in real-time.',
-    objective: 'Trace energy from Sun → Panels → Battery → Home and understand the flow.',
-    learning: 'Solar energy conversion, DC to AC, energy routing',
+    id: 'system_components', title: 'How Solar Systems Work', icon: '☀️', duration: '3-4 min',
+    desc: 'Walk around the house and learn about the 4 main parts: panels, inverter, smart meter, and system types.',
+    objective: 'Visit all 4 solar parts and learn how they work together.',
+    learning: 'Solar cells, how power is changed for home use, selling extra power, system types',
   },
   {
-    id: 'battery', title: 'Battery Storage', icon: '🔋', duration: '4-5 min',
-    desc: 'Store excess solar energy for night use. Watch battery charge/discharge live.',
-    objective: 'Charge battery during noon, then power the house at night using stored energy.',
-    learning: 'Energy storage, peak production vs consumption, night-time independence',
+    id: 'installation_science', title: 'Panel Science & Setup', icon: '📐', duration: '3-4 min',
+    desc: 'Learn why panels need the right angle, why shadows are bad, and what your roof needs.',
+    objective: 'Understand why angle matters, shadows reduce power, and roofs must be strong enough.',
+    learning: 'Best panel angle, shadow problems, roof strength check',
   },
   {
-    id: 'peak_hours', title: 'Peak Hour Management', icon: '📊', duration: '4-5 min',
-    desc: 'Evening peak (6-10 PM) = expensive grid power! Schedule appliances wisely.',
-    objective: 'Shift heavy appliances to solar hours to save ₹ on peak-hour bills.',
-    learning: 'Tariff structures, load shifting, cost optimization',
+    id: 'subsidies_roi', title: 'PM Surya Ghar & Money Help', icon: '🏛️', duration: '4-5 min',
+    desc: 'Learn about government help, how much solar costs, and how to pay for it.',
+    objective: 'Learn about the PM Surya Ghar scheme, how much you save, and loan options.',
+    learning: 'Government subsidy of Rs.78,000, total cost, electricity bill savings, solar loans',
   },
   {
-    id: 'smart_cooling', title: 'Smart Cooling', icon: '❄️', duration: '3-4 min',
-    desc: 'Keep indoor temperature comfortable using ECBC principles — cool roof, ventilation, smart AC.',
-    objective: 'Achieve 24°C comfort using minimum energy — cool roof + fan before AC.',
-    learning: 'ECBC thermal comfort, cool roof coating, insulation, 24°C standard',
+    id: 'battery_storage', title: 'Battery & Energy Storage', icon: '🔋', duration: '3-4 min',
+    desc: 'Learn about batteries — which type is best, how big you need, and how they work day and night.',
+    objective: 'Understand Modern vs Old batteries, how much storage you need, and the daily cycle.',
+    learning: 'Battery types, size calculator, how batteries fill and empty, freedom from power cuts',
   },
   {
-    id: 'automation', title: 'Smart Automation', icon: '🤖', duration: '3-4 min',
-    desc: 'Install smart sensors for automatic lighting and occupancy control.',
-    objective: 'Install sensors in all rooms — empty rooms = auto lights OFF.',
-    learning: 'Occupancy detection, standby power, automated energy savings',
+    id: 'smart_energy', title: 'Smart Energy Use', icon: '🤖', duration: '4-5 min',
+    desc: 'Learn to use appliances at the right time, add smart sensors, and charge electric cars with solar.',
+    objective: 'Learn when to use appliances, how sensors save power, and solar car charging.',
+    learning: 'Using appliances at the right time, motion sensors, energy star ratings, electric car + solar',
   },
   {
-    id: 'ev_charging', title: 'EV + Solar', icon: '🚗', duration: '2-3 min',
-    desc: 'Schedule electric vehicle charging to maximize solar power usage.',
-    objective: 'Compare daytime solar charging vs nighttime grid charging costs.',
-    learning: 'EV-solar integration, smart charging schedules, cost comparison',
+    id: 'weather_maintenance', title: 'Weather & Cleaning', icon: '🌦️', duration: '3-4 min',
+    desc: 'Learn how different seasons affect solar power, how to keep panels clean, and storm safety.',
+    objective: 'Learn seasonal changes, cleaning schedule, and how to protect panels from storms.',
+    learning: 'Summer/monsoon/winter differences, panel cleaning, lightning and storm protection',
   },
   {
-    id: 'weather', title: 'Weather Response', icon: '🌦️', duration: '3-4 min',
-    desc: 'Adapt your smart home to changing weather — cloudy, rainy, heatwave.',
-    objective: 'React to weather changes and keep the home running efficiently.',
-    learning: 'Weather adaptation, battery management, load reduction strategies',
+    id: 'environmental_impact', title: 'Saving Our Planet', icon: '🌿', duration: '3-4 min',
+    desc: 'See how much pollution your solar home prevents — trees saved, air cleaned, future technology.',
+    objective: 'Understand how solar reduces pollution, community solar, and amazing future inventions.',
+    learning: 'Pollution reduction, solar for apartments, India\'s goals, two-sided panels, super-batteries',
   },
   {
-    id: 'dashboard', title: 'Impact Dashboard', icon: '📈', duration: '2-3 min',
-    desc: 'See your real impact — CO₂ saved, money saved, solar generated, trees equivalent.',
-    objective: 'Review your total energy performance and environmental impact.',
-    learning: 'Carbon footprint reduction, financial savings, environmental recovery',
+    id: 'total_impact', title: 'Your Total Impact & Action Plan', icon: '📈', duration: '3-4 min',
+    desc: 'See your complete savings, test your knowledge, and get a step-by-step plan to go solar.',
+    objective: 'See 25-year savings, check what you learned, and get your action plan.',
+    learning: '25-year money savings, knowledge review, 10-step action plan',
   },
   {
-    id: 'finale', title: 'Future Home', icon: '🏆', duration: '2-3 min',
-    desc: 'See the dramatic before/after transformation of your home and environment.',
-    objective: 'Witness the full transformation from polluted grid-dependent home to smart solar home.',
-    learning: 'Complete energy independence, sustainability, environmental restoration',
+    id: 'finale', title: 'Solar Champion!', icon: '🏆', duration: '2-3 min',
+    desc: 'See the amazing before/after change — you are now a Solar Champion ready for India\'s clean energy future!',
+    objective: 'See the full change from a polluted home to a smart solar home.',
+    learning: 'Energy freedom, caring for the planet, clean environment',
   },
 ];
+
 
 // ═══ SOLAR CALCULATION HELPERS ═══
 export function calcSolarOutput(panelCount, tiltEfficiency, sunlight, weather, avgShadow) {
@@ -254,58 +255,58 @@ export const LEVEL3_BEFORE = {
 // ═══ QUIZ (10 questions — covering all phases) ═══
 export const L4_QUIZ_QUESTIONS = [
   {
-    question: 'What does a solar panel convert sunlight into?',
+    question: 'What does a solar panel turn sunlight into?',
     options: ['Heat', 'Electricity', 'Water', 'Wind'],
     correctIndex: 1,
-    explanation: 'Solar panels use photovoltaic cells to convert sunlight directly into electricity!',
+    explanation: 'Solar panels use special cells to turn sunlight directly into electricity!',
   },
   {
-    question: 'Solar energy produces how much CO\u{2082}?',
-    options: ['Same as coal', 'Half of gas', 'Zero CO\u{2082}', 'More than diesel'],
+    question: 'How much pollution (CO2) does solar energy create?',
+    options: ['Same as coal', 'Half of gas', 'Zero pollution', 'More than diesel'],
     correctIndex: 2,
-    explanation: 'Solar panels produce zero CO\u{2082} during operation \u{2014} truly clean energy!',
+    explanation: 'Solar panels create ZERO pollution while working — truly clean energy!',
   },
   {
-    question: 'What angle gives best solar efficiency in India?',
-    options: ['Flat (0\u{00B0})', '25\u{00B0} tilt', '90\u{00B0} vertical', '60\u{00B0} steep'],
+    question: 'What angle gives the best solar power in India?',
+    options: ['Flat (0°)', '25° tilt', '90° straight up', '60° steep'],
     correctIndex: 1,
-    explanation: 'For most of India (~15-25\u{00B0}N latitude), a 25\u{00B0} panel tilt captures maximum sunlight.',
+    explanation: 'For most of India, a 25° tilt on solar panels catches the most sunlight.',
   },
   {
-    question: 'Why should you charge your EV during the day?',
-    options: ['Faster charging', 'Free solar power', 'Better battery life', 'Quieter at night'],
+    question: 'Why should you charge your electric car during the day?',
+    options: ['Faster charging', 'Free solar power!', 'Better battery life', 'Quieter at night'],
     correctIndex: 1,
-    explanation: 'Daytime EV charging uses free solar energy instead of expensive grid power!',
+    explanation: 'Daytime charging uses FREE solar energy instead of expensive grid power!',
   },
   {
-    question: 'What are peak electricity hours?',
+    question: 'When is electricity most expensive?',
     options: ['6 AM – 10 AM', '12 PM – 4 PM', '6 PM – 10 PM', '10 PM – 2 AM'],
     correctIndex: 2,
-    explanation: 'Peak hours (6-10 PM) have highest demand and tariffs — ₹12/unit vs ₹6/unit!',
+    explanation: 'Evening hours (6-10 PM) have the highest demand, so electricity costs more!',
   },
   {
     question: 'How can you use solar power at night?',
-    options: ['Panels work at night', 'Battery storage', 'Moonlight power', 'Not possible'],
+    options: ['Panels work at night', 'Battery stores it', 'Moonlight power', 'Not possible'],
     correctIndex: 1,
-    explanation: 'Battery storage saves excess daytime solar energy for use at night!',
+    explanation: 'Batteries save extra daytime solar energy so you can use it at night!',
   },
   {
-    question: 'What is the ECBC comfort temperature standard?',
+    question: 'What is the best comfortable room temperature?',
     options: ['18°C', '20°C', '24°C', '28°C'],
     correctIndex: 2,
-    explanation: 'ECBC recommends 24°C as the comfort standard — energy efficient and comfortable!',
+    explanation: '24°C is the perfect comfortable temperature — saves energy too!',
   },
   {
     question: 'What does a cool roof coating do?',
-    options: ['Makes roof pretty', 'Reduces indoor heat by 5°C', 'Generates electricity', 'Blocks rain'],
+    options: ['Makes roof pretty', 'Reduces heat inside by 5°C', 'Makes electricity', 'Blocks rain'],
     correctIndex: 1,
-    explanation: 'Cool roof coating reflects sunlight, reducing roof temperature by up to 5°C!',
+    explanation: 'A white cool roof coating bounces sunlight away, making your house up to 5°C cooler!',
   },
   {
-    question: 'Smart occupancy sensors help by:',
-    options: ['Playing music', 'Auto-off lights in empty rooms', 'Heating the house', 'Nothing useful'],
+    question: 'Smart motion sensors help by:',
+    options: ['Playing music', 'Auto-turning off lights in empty rooms', 'Heating the house', 'Nothing useful'],
     correctIndex: 1,
-    explanation: 'Occupancy sensors auto-turn off lights/AC in empty rooms, saving 15-25% energy!',
+    explanation: 'Motion sensors detect empty rooms and turn off lights and fans, saving 15-25% energy!',
   },
   {
     question: 'When should you run the washing machine with solar?',
@@ -317,11 +318,11 @@ export const L4_QUIZ_QUESTIONS = [
 
 // ═══ DISCOVERY FACTS ═══
 export const SOLAR_FACTS = [
-  { icon: '\u{2600}\u{FE0F}', fact: 'Solar panels convert sunlight directly into electricity' },
-  { icon: '\u{1F33F}', fact: 'Zero CO\u{2082} emissions during operation' },
-  { icon: '\u{267B}\u{FE0F}', fact: 'Solar is 100% renewable \u{2014} the sun won\u{2019}t run out' },
-  { icon: '\u{1F4B0}', fact: 'Panels last 25+ years with minimal maintenance' },
-  { icon: '\u{1F3E0}', fact: 'A typical Indian home needs 3\u{2013}5 kW solar system' },
+  { icon: '☀️', fact: 'Solar panels convert sunlight directly into electricity' },
+  { icon: '🌿', fact: 'Zero CO2 emissions during operation' },
+  { icon: '♻️', fact: 'Solar is 100% renewable — the sun will not run out' },
+  { icon: '💰', fact: 'Panels last 25+ years with very little cleaning needed' },
+  { icon: '🏠', fact: 'A typical Indian home needs 3-5 kW solar system' },
 ];
 
 // ═══ STAR SYSTEM ═══
@@ -339,14 +340,14 @@ export const LEVEL4_BADGE = {
   id: 'solar_home_manager',
   title: 'Smart Solar Home Manager',
   description: 'Mastered solar energy, battery storage, and smart home management!',
-  icon: '\u{2600}\u{FE0F}',
+  icon: '☀️',
   coins: 150,
 };
 
 // ═══ DIALOGUE ═══
 export const ENTRY_DIALOGUE = [
-  'Welcome to the Smart Solar Home\u{2026}',
-  'You will learn to manage energy like a pro! \u{2600}\u{FE0F}',
+  'Welcome to the Smart Solar Home...',
+  'You will learn to manage energy like a pro! ☀️',
   'Install, store, optimize, and save!',
 ];
 
@@ -359,20 +360,20 @@ export const FINAL_MESSAGE = [
 // ═══ ENERGY FLOW STEPS ═══
 export const ENERGY_FLOW_STEPS = [
   { id: 'sun_to_panel', label: 'Sunlight hits panels', from: 'sun', to: 'panel', color: '#fbbf24' },
-  { id: 'panel_to_inverter', label: 'DC → AC conversion', from: 'panel', to: 'inverter', color: '#f59e0b' },
-  { id: 'inverter_to_battery', label: 'Excess → Battery storage', from: 'inverter', to: 'battery', color: '#22c55e' },
-  { id: 'inverter_to_home', label: 'Power → Home appliances', from: 'inverter', to: 'home', color: '#3b82f6' },
-  { id: 'battery_to_home', label: 'Night: Battery → Home', from: 'battery', to: 'home', color: '#8b5cf6' },
-  { id: 'grid_backup', label: 'Grid backup (if needed)', from: 'grid', to: 'home', color: '#ef4444' },
+  { id: 'panel_to_inverter', label: 'Changing battery-type to home-type power', from: 'panel', to: 'inverter', color: '#f59e0b' },
+  { id: 'inverter_to_battery', label: 'Extra power saved in battery', from: 'inverter', to: 'battery', color: '#22c55e' },
+  { id: 'inverter_to_home', label: 'Power goes to home appliances', from: 'inverter', to: 'home', color: '#3b82f6' },
+  { id: 'battery_to_home', label: 'Night: Battery powers your home', from: 'battery', to: 'home', color: '#8b5cf6' },
+  { id: 'grid_backup', label: 'Outside power backup (if needed)', from: 'grid', to: 'home', color: '#ef4444' },
 ];
 
 // ═══ DASHBOARD METRICS ═══
 export const DASHBOARD_METRICS = [
-  { id: 'solar_kwh', label: 'Solar Generated', unit: 'kWh/month', icon: '☀️', color: '#f59e0b' },
-  { id: 'co2_saved', label: 'CO₂ Reduced', unit: 'kg/month', icon: '🌿', color: '#22c55e' },
+  { id: 'solar_kwh', label: 'Solar Power Made', unit: 'units/month', icon: '☀️', color: '#f59e0b' },
+  { id: 'co2_saved', label: 'Pollution Stopped', unit: 'kg/month', icon: '🌿', color: '#22c55e' },
   { id: 'bill_saved', label: 'Bill Saved', unit: '₹/month', icon: '💰', color: '#10b981' },
-  { id: 'battery_stored', label: 'Battery Stored', unit: 'kWh', icon: '🔋', color: '#8b5cf6' },
-  { id: 'grid_reduced', label: 'Grid Dependency', unit: '%', icon: '⚡', color: '#ef4444' },
+  { id: 'battery_stored', label: 'Battery Stored', unit: 'units', icon: '🔋', color: '#8b5cf6' },
+  { id: 'grid_reduced', label: 'Need for Outside Power', unit: '%', icon: '⚡', color: '#ef4444' },
   { id: 'trees_equiv', label: 'Trees Equivalent', unit: '/year', icon: '🌳', color: '#16a34a' },
 ];
 
@@ -397,27 +398,27 @@ export const TRANSFORMATION_AFTER = [
 
 // ═══ ICONS ═══
 export const L4_ICONS = {
-  sun: '\u{2600}\u{FE0F}', panel: '\u{1FA9F}', zap: '\u{26A1}',
-  battery: '\u{1F50B}', globe: '\u{1F30D}', tree: '\u{1F333}',
-  money: '\u{1F4B0}', chart: '\u{1F4CA}', check: '\u{2705}',
-  cross: '\u{274C}', star: '\u{2B50}', trophy: '\u{1F3C6}',
-  coin: '\u{1FA99}', bulb: '\u{1F4A1}', brain: '\u{1F9E0}',
-  target: '\u{1F3AF}', clock: '\u{23F1}\u{FE0F}',
-  leaf: '\u{1F33F}', wind: '\u{1F32C}\u{FE0F}',
-  shield: '\u{1F6E1}\u{FE0F}', grad: '\u{1F393}',
-  pin: '\u{1F4CD}', sparkle: '\u{2728}', muscle: '\u{1F4AA}',
-  house: '\u{1F3E0}', wrench: '\u{1F527}', gear: '\u{2699}\u{FE0F}',
-  down: '\u{2B07}\u{FE0F}', up: '\u{2B06}\u{FE0F}',
-  warn: '\u{26A0}\u{FE0F}', party: '\u{1F389}',
-  cloud: '\u{2601}\u{FE0F}', night: '\u{1F303}',
-  sunrise: '\u{1F305}', book: '\u{1F4D8}',
-  car: '\u{1F697}', robot: '\u{1F916}', temp: '\u{1F321}\u{FE0F}',
-  plug: '\u{1F50C}', sensor: '\u{1F4E1}', schedule: '\u{1F4C5}',
-  flow: '\u{27A1}\u{FE0F}', dashboard: '\u{1F4F1}',
+  sun: '☀️', panel: '📐', zap: '⚡',
+  battery: '🔋', globe: '🌍', tree: '🌳',
+  money: '💰', chart: '📊', check: '✅',
+  cross: '❌', star: '⭐', trophy: '🏆',
+  coin: '💰', bulb: '💡', brain: '🧠',
+  target: '🎯', clock: '⏱️',
+  leaf: '🌿', wind: '💨',
+  shield: '🛡️', grad: '🎓',
+  pin: '📍', sparkle: '✨', muscle: '💪',
+  house: '🏠', wrench: '🔧', gear: '⚙️',
+  down: '⬇️', up: '⬆️',
+  warn: '⚠️', party: '🎉',
+  cloud: '☁️', night: '🌃',
+  sunrise: '🌅', book: '📘',
+  car: '🚗', robot: '🤖', temp: '🌡️',
+  plug: '🔌', sensor: '📡', schedule: '📅',
+  flow: '➡️', dashboard: '📱',
 };
 
 export const ROOM_ICONS = {
-  'Living Room': '\u{1F6CB}\u{FE0F}', 'Bedroom': '\u{1F6CF}\u{FE0F}',
-  'Kitchen': '\u{1F373}', 'Bathroom': '\u{1F6BF}', 'Rooftop': '\u{1F3E0}',
-  'Outside': '\u{1F333}',
+  'Living Room': '🛋️', 'Bedroom': '🛏️',
+  'Kitchen': '🍳', 'Bathroom': '🚿', 'Rooftop': '🏠',
+  'Outside': '🌳',
 };

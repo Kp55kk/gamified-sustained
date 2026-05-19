@@ -9,13 +9,21 @@ import { APPLIANCE_POSITIONS } from '../applianceData';
 const INTERACTION_RADIUS = 3.0;
 const PLAYER_RADIUS = 0.45;
 
-// Level 5 Store appliance positions (placed in the house after buying)
+// Level 5 interaction positions — Shop displays + story points
 const L5_APPLIANCE_POSITIONS = {
-  air_cooler:         { pos: [-3, 0.5, -4] },     // Living Room — near center
-  smart_power_strip:  { pos: [-8, 0.3, -3.5] },   // Living Room — near sofa
-  led_smart_system:   { pos: [3, 2.5, -5] },       // Bedroom — near table fan area
-  solar_water_heater: { pos: [9.0, 1.5, 3] },      // Bathroom — near geyser
-  ev_charger:         { pos: [0, 0, 12] },         // Outside — Behind house
+  // Story interaction points
+  electricity_meter:  { pos: [10.3, 1.2, -3] },    // Right wall of house
+  newspaper:          { pos: [-5, 0.3, -10] },      // Front yard near door
+  // Shop appliance displays (spread across larger shop centered at x=24)
+  shop_fan:           { pos: [19, 0.5, -3] },       // Left-front
+  shop_fridge:        { pos: [19, 0.5, 4] },         // Left-back
+  shop_ac:            { pos: [29, 0.5, -3] },        // Right-front
+  shop_washer:        { pos: [29, 0.5, 4] },         // Right-back
+  shop_label:         { pos: [24, 0.5, 6] },         // Center-back
+  // Roof panels (Phase 2)
+  roof_panels:        { pos: [0, 0.5, -12] },
+  // Biogas plant (Phase 3)
+  biogas_plant:       { pos: [-8, 0.5, 12] },
 };
 
 const WALL_SEGMENTS = [
@@ -57,9 +65,9 @@ function checkCollision(x, z) {
 }
 
 function moveWithWalls(x, z, dx, dz) {
-  let nx = Math.max(-30, Math.min(30, x + dx)), nz = Math.max(-30, Math.min(30, z + dz));
+  let nx = Math.max(-30, Math.min(40, x + dx)), nz = Math.max(-30, Math.min(30, z + dz));
   if (!checkCollision(nx, nz)) return { x: nx, z: nz };
-  const sx = Math.max(-30, Math.min(30, x + dx));
+  const sx = Math.max(-30, Math.min(40, x + dx));
   if (!checkCollision(sx, z)) return { x: sx, z };
   const sz = Math.max(-30, Math.min(30, z + dz));
   if (!checkCollision(x, sz)) return { x, z: sz };
@@ -67,6 +75,7 @@ function moveWithWalls(x, z, dx, dz) {
 }
 
 function getZone(x, z) {
+  if (x > 15 && x < 33 && z > -9 && z < 9) return 'Shop';
   if (x > 10 && x < 20 && z > -12 && z < 0) return 'Utility';
   if (x < -10 || x > 10 || z < -8 || z > 8) return 'Outside';
   if (x < 0 && z < 0) return 'Living Room';

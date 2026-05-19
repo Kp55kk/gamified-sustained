@@ -488,10 +488,26 @@ export const APPLIANCE_POSITIONS = {
   led_tube:       { pos: [-7, 2.85, 4],     rot: [0, 0, 0] },           // Kitchen ceiling
   phone_charger:  { pos: [5, 0.55, -7.0],   rot: [0, 0, 0] },           // Bedroom desk
   table_fan:      { pos: [3, 0.55, -5],     rot: [0, Math.PI / 4, 0] }, // Bedroom table
-  // Door positions (for Level 3 Phase 1 interaction)
   __door__bedroom_living:   { pos: [0, 1.1, -4],  rot: [0, Math.PI / 2, 0] }, // Living→Bedroom door
   __door__bedroom_bathroom: { pos: [5, 1.1, 0],   rot: [0, 0, 0] },           // Bedroom→Bathroom door
 };
+
+// --- Level 4: Solar-specific object positions (outside house) ---
+export const SOLAR_OBJECT_POSITIONS = {
+  solar_inverter:   { pos: [-10.3, 1.0, -3],  rot: [0, -Math.PI / 2, 0] }, // Left wall, faces outward (-X)
+  solar_meter:      { pos: [10.3, 1.2, -3],   rot: [0, Math.PI / 2, 0] },  // Right wall, faces outward (+X)
+  solar_battery:    { pos: [-10.3, 0.6, 2],   rot: [0, -Math.PI / 2, 0] }, // Left wall, faces outward (-X)
+  solar_board_1:    { pos: [-4, 1.0, -10],    rot: [0, Math.PI, 0] },       // Front yard, faces player (+Z)
+  solar_board_2:    { pos: [4, 1.0, -10],     rot: [0, Math.PI, 0] },       // Front yard, faces player (+Z)
+  solar_board_3:    { pos: [10.3, 1.0, 4],    rot: [0, Math.PI / 2, 0] },   // Right wall, faces outward (+X)
+  solar_ev_charger: { pos: [-6, 0.8, -11],    rot: [0, Math.PI, 0] },       // Front driveway, faces player
+  solar_weather:    { pos: [8, 1.0, -10],     rot: [0, Math.PI, 0] },       // Front yard, faces player
+  solar_roof_panel: { pos: [0, 5.8, 0],       rot: [0, 0, 0] },             // On the roof
+  solar_ladder:     { pos: [-10.3, 1.5, -6],  rot: [0, 0, 0] },             // Ladder leaning on left wall
+  gov_office:       { pos: [0, 0, -22],       rot: [0, 0, 0] },             // Government office across the road
+};
+export const SOLAR_OBJECT_IDS = Object.keys(SOLAR_OBJECT_POSITIONS);
+
 
 // ─── Quiz Questions — Phase 2 Appliance Discovery (with difficulty: 1=easy, 2=medium, 3=hard) ───
 export const QUIZ_QUESTIONS = [
