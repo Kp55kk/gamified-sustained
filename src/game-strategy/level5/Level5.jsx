@@ -228,7 +228,7 @@ export default function Level5() {
       setDialogueIdx(0);
       setStoryStage('roof');
     }
-  }, [inspectedDisplays, phase2TopicsCompleted]);
+  }, [inspectedDisplays, phase2TopicsCompleted, phase3TopicsCompleted]);
 
   const handleQuizComplete = useCallback(result => {
     setQuizResult(result);
