@@ -35,7 +35,7 @@ const SplashScreen = () => {
 
   const { t } = useGame();
 
-  const handleStart = () => { navigate('/language'); };
+  const handleStart = () => { navigate('/intro'); };
 
   return (
     <motion.div 
@@ -90,11 +90,11 @@ const SplashScreen = () => {
           className="text-5xl md:text-7xl mb-2 text-transparent bg-clip-text font-bold tracking-wide animate-pulse"
           style={{ fontFamily: 'Fredoka, sans-serif', backgroundImage: 'linear-gradient(to right, #22c55e, #ffffff, #22c55e)' }}
         >
-          {t?.splash?.title || 'BUILD TO INSPIRE'}
+          {t?.splash?.title || 'SUSTAIN-ED'}
         </motion.h1>
 
         <motion.p className="text-gray-400 uppercase tracking-[0.3em] font-semibold mb-12 text-[10px] md:text-xs">
-          {t?.splash?.subtitle || 'Save the Planet. One Home at a Time.'}
+          {t?.splash?.subtitle || 'Gamified Platform for Sustainability Learning'}
         </motion.p>
 
         <div className="w-full max-w-sm h-20 flex flex-col items-center justify-center relative">

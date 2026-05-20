@@ -56,7 +56,7 @@ export default function Level5() {
   const camRef = useRef(null);
 
   const [showLevelIntro, setShowLevelIntro] = useState(true);
-  const [phase, setPhase] = useState('entry'); // entry | play | explainer | quiz | reward
+  const [phase, setPhase] = useState('entry'); // entry | play | explainer | quiz | completion | reward
 
   // Story state
   const [storyStage, setStoryStage] = useState('discover');
@@ -234,8 +234,12 @@ export default function Level5() {
     setQuizResult(result);
     const s = calculateL5Stars(inspectedDisplays.length, result.score, result.total);
     setStars(s);
-    setPhase('reward');
+    setPhase('completion');
   }, [inspectedDisplays.length]);
+
+  const handleCompletionDone = useCallback(() => {
+    setPhase('reward');
+  }, []);
 
   const handleFinish = useCallback(() => {
     addCarbonCoins(LEVEL5_BADGE.coins + stars * 20);
@@ -285,6 +289,62 @@ export default function Level5() {
   // ═══ RENDER: QUIZ ═══
   if (phase === 'quiz') {
     return <div className="l5-container"><Level5Quiz onComplete={handleQuizComplete} /></div>;
+  }
+
+  // ═══ RENDER: COMPLETION ANIMATION CARD ═══
+  if (phase === 'completion') {
+    const completionCards = [
+      {
+        icon: '🌱',
+        title: 'Sustainability',
+        color: '#22c55e',
+        text: 'You learned that sustainability means meeting today\'s needs without compromising future generations. Every energy-efficient choice — from BEE 5-star appliances to solar panels — helps build a world that lasts.',
+      },
+      {
+        icon: '🏭',
+        title: 'Decarbonization',
+        color: '#3b82f6',
+        text: 'You discovered how to reduce carbon emissions by switching from fossil fuels to renewable energy, using energy-efficient appliances, and embracing biogas — removing carbon from our daily lives.',
+      },
+      {
+        icon: '🎯',
+        title: 'Net Zero by 2070',
+        color: '#f59e0b',
+        text: 'You now understand that Net Zero means balancing what we emit with what we remove. India\'s 2070 pledge starts with homes like yours — solar panels, smart appliances, and biogas all contribute to this goal.',
+      },
+    ];
+    return (
+      <div className="l5-container">
+        <div className="l5-completion-overlay">
+          <div className="l5-completion-header-icon">🎓</div>
+          <h1 className="l5-completion-title">What You've Learned!</h1>
+          <p className="l5-completion-subtitle">Your journey through all 5 levels has equipped you with the knowledge to make a real difference</p>
+          <div className="l5-completion-cards">
+            {completionCards.map((card, i) => (
+              <div
+                key={i}
+                className="l5-completion-card"
+                style={{
+                  borderColor: `${card.color}50`,
+                  animationDelay: `${0.3 + i * 0.25}s`,
+                }}
+              >
+                <div className="l5-completion-card-icon" style={{ background: `${card.color}20`, boxShadow: `0 0 20px ${card.color}30` }}>
+                  {card.icon}
+                </div>
+                <div className="l5-completion-card-body">
+                  <h3 className="l5-completion-card-title" style={{ color: card.color }}>{card.title}</h3>
+                  <p className="l5-completion-card-text">{card.text}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+          <button className="l5-completion-btn" onClick={handleCompletionDone}>
+            See Your Results →
+          </button>
+        </div>
+      </div>
+    );
   }
 
   // ═══ RENDER: REWARD ═══
